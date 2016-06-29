@@ -1,0 +1,19 @@
+<%
+'=====================================GLOBAL=================================================================
+If Request.ServerVariables("HTTPS") = "off" then 
+	skin_base_url = g_skin_base_url
+else
+	skin_base_url = g_skin_base_secure_url
+End If
+
+If Len(g_page_title) > 0 Then
+Else
+	g_page_title = Session("StoreTitle")
+End if
+	
+'=====================================THEME OPTIONS====================================================================
+THEME_TEMPLATE = "marketshop1"	
+'theme_10000_color = GetSettingValue("theme_10000_color", "blue")
+'THEME_TEMPLATE = "nle"
+	
+%>
