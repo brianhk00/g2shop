@@ -68,7 +68,7 @@ function IsValidAdminLogin(str_db,str_uid,str_password)
 	
 	dim sql,rs,bEC
 	sql="SELECT UserID FROM :9_profile WHERE (UserID='"&str_uid&"' AND Password='"&str_password&"')"
-	sql = Replace(sql, ":9", Session("StoreID"))
+	sql = Replace(sql, ":9", g_storeid)
 	set rs=server.CreateObject("ADODB.Recordset")
 	rs.Open sql,str_db
 	bEC=(not rs.EOF)
@@ -118,11 +118,11 @@ function UpdatePaymentMethod(ByRef str_db, ByRef str_status_msg,_
 	sql = sql & ",BillMe=" & str_billme
 	sql = sql & ",WillCall=" & str_willcall
 	
-	sql = Replace(sql, ":9", Session("StoreID"))
+	sql = Replace(sql, ":9", g_storeid)
 	
-	set dbconn=server.CreateObject("ADODB.Connection")
-	dbconn.Open db
-	dbconn.Execute sql
+	set dbconnx=server.CreateObject("ADODB.Connection")
+	dbconnx.Open db
+	dbconnx.Execute sql
 	
 	
 	UpdatePaymentMethod=true
@@ -145,11 +145,11 @@ function SetFlatShippingRate(ByRef str_db, ByRef sh_charge, ByRef str_status_msg
 	sql = "UPDATE :9_profile SET sh_method=0"
 	
 	sql = sql & ",sh_flatrate=" & sh_charge
-	sql = Replace(sql, ":9", Session("StoreID"))
+	sql = Replace(sql, ":9", g_storeid)
 	
-	set dbconn=server.CreateObject("ADODB.Connection")
-	dbconn.Open db
-	dbconn.Execute sql
+	set dbconnx=server.CreateObject("ADODB.Connection")
+	dbconnx.Open db
+	dbconnx.Execute sql
 
 	SetFlatShippingRate = true
 end function
@@ -165,10 +165,10 @@ function UpdateCustomShippingTable(ByRef str_db, ByRef array_from, ByRef array_c
 	'Delete all current shipping info
 	
 	sql="DELETE FROM :9_custom_shipping"
-	sql = Replace(sql, ":9", Session("StoreID"))
-	set dbconn=server.CreateObject("ADODB.Connection")
-	dbconn.Open db
-	dbconn.Execute sql
+	sql = Replace(sql, ":9", g_storeid)
+	set dbconnx=server.CreateObject("ADODB.Connection")
+	dbconnx.Open db
+	dbconnx.Execute sql
 	
 	'process array (~) and insert into the recordset
 	dim sp1, sp2
@@ -184,21 +184,21 @@ function UpdateCustomShippingTable(ByRef str_db, ByRef array_from, ByRef array_c
 		array_charge = mid(array_charge, sp2+1)
 	
 		sql="INSERT INTO :9_custom_shipping (range_from, range_charge) VALUES(" & tmpFrom & "," & tmpCharge & ")"
-		sql=Replace(sql, ":9", Session("StoreID"))
+		sql=Replace(sql, ":9", g_storeid)
 	
-		dbconn.Execute sql
+		dbconnx.Execute sql
 	loop
 	
 	'Update profile table for shipping method and charge basis
 	sql = "UPDATE :9_profile SET sh_method=1"
 	
 	sql = sql & ",sh_basis=" & str_basis
-	sql = Replace(sql, ":9", Session("StoreID"))
+	sql = Replace(sql, ":9", g_storeid)
 	
-	dbconn.Execute sql
+	dbconnx.Execute sql
 	
 	'Close database connection...
-	dbconn.Close
+	dbconnx.Close
 
 	UpdateCustomShippingTable = true
 	
@@ -285,7 +285,7 @@ function UpdateUPSInfo(ByRef str_db,ByRef GND,ByRef DM1,ByRef DA1,_
 		sh_markup = "1"
 	end if
 	
-	set dbconn=server.CreateObject("ADODB.Connection")
+	set dbconnx=server.CreateObject("ADODB.Connection")
 	
 	'Update profile table for shipping method and charge basis
 	sql = "UPDATE :9_profile SET sh_method=2"
@@ -295,10 +295,10 @@ function UpdateUPSInfo(ByRef str_db,ByRef GND,ByRef DM1,ByRef DA1,_
 	sql = sql & ",sh_markup=" & sh_markup
 	sql = sql & ",show_ups_tracking=" & str_show_tracking
 	
-	sql = Replace(sql, ":9", Session("StoreID"))
+	sql = Replace(sql, ":9", g_storeid)
 	
-	dbconn.Open str_db
-	dbconn.Execute sql
+	dbconnx.Open str_db
+	dbconnx.Execute sql
 	
 	UpdateUPSInfo = true
 end function
@@ -308,16 +308,16 @@ function GetClientSalesTaxRate(ByRef str_db,_
 									
 	num_sales_tax=0
 	
-	set dbconn=server.CreateObject("ADODB.Connection")
-	dbconn.Open Session("ConnectionString")
+	set dbconnx=server.CreateObject("ADODB.Connection")
+	dbconnx.Open g_connection_string
 	
 	b_tax_on_sh = 0
 	
 	'Get shopper information...
 	
 	if Len(str_shopper_id) > 1 then
-		ssql = "SELECT * FROM " & Session("StoreID") & "_shopper WHERE shopper_id='" & str_shopper_id & "'"
-		set rs1 = dbconn.Execute(ssql)
+		ssql = "SELECT * FROM " & g_storeid & "_shopper WHERE shopper_id='" & str_shopper_id & "'"
+		set rs1 = dbconnx.Execute(ssql)
 		
 		if not rs1.EOF then
 			
@@ -379,8 +379,8 @@ function GetClientSalesTaxRate(ByRef str_db,_
 	end if
 	
 	'Headquater Information...
-	psql = "SELECT * FROM " & Session("StoreID") & "_profile"
-	set rsProf = dbconn.Execute(psql)
+	psql = "SELECT * FROM " & g_storeid & "_profile"
+	set rsProf = dbconnx.Execute(psql)
 	if not rsProf.EOF then
 		hq_state = Trim(rsProf("State"))
 		hq_zip = Trim(rsProf("Zip"))
@@ -395,8 +395,8 @@ function GetClientSalesTaxRate(ByRef str_db,_
 	else
 	
 		'Get tax from nexus table...
-		nsql = "SELECT * FROM " & Session("StoreID") & "_nexus_tax WHERE CollectionMethod <> 0"
-		set rsNexus = dbconn.Execute(nsql)
+		nsql = "SELECT * FROM " & g_storeid & "_nexus_tax WHERE CollectionMethod <> 0"
+		set rsNexus = dbconnx.Execute(nsql)
 		
 		do while not rsNexus.EOF
 			
@@ -449,7 +449,7 @@ function GetClientSalesTaxRate(ByRef str_db,_
 				if (n_state_id = shipping_state) then
 			
 					tsql = "SELECT * FROM A_Sales_tax WHERE Zip='" & shipping_zip & "'"
-					set rsTax = dbconn.Execute(tsql)
+					set rsTax = dbconnx.Execute(tsql)
 					if not rsTax.EOF then
 					
 						t_StateSalesTax = rsTax("StateSalesTax")
@@ -483,7 +483,7 @@ function GetClientSalesTaxRate(ByRef str_db,_
 				if (n_state_id = billing_state) then
 				
 					tsql = "SELECT * FROM A_Sales_tax WHERE Zip='" & billing_zip & "'"
-					set rsTax = dbconn.Execute(tsql)
+					set rsTax = dbconnx.Execute(tsql)
 					if not rsTax.EOF then
 					
 						t_StateSalesTax = rsTax("StateSalesTax")
@@ -519,7 +519,7 @@ function GetClientSalesTaxRate(ByRef str_db,_
 					if Len(n_nexus_zip) > 0 then
 					
 						tsql = "SELECT * FROM A_Sales_tax WHERE Zip='" & n_nexus_zip & "'"
-						set rsTax = dbconn.Execute(tsql)
+						set rsTax = dbconnx.Execute(tsql)
 						if not rsTax.EOF then
 						
 							t_StateSalesTax = rsTax("StateSalesTax")
@@ -547,7 +547,7 @@ function GetClientSalesTaxRate(ByRef str_db,_
 					else
 					
 						tsql = "SELECT * FROM A_Sales_tax WHERE Zip='" & shipping_zip & "'"
-						set rsTax = dbconn.Execute(tsql)
+						set rsTax = dbconnx.Execute(tsql)
 						if not rsTax.EOF then
 						
 							t_StateSalesTax = rsTax("StateSalesTax")
@@ -585,7 +585,7 @@ function GetClientSalesTaxRate(ByRef str_db,_
 					if Len(hq_zip) > 0 then
 					
 						tsql = "SELECT * FROM A_Sales_tax WHERE Zip='" & hq_zip & "'"
-						set rsTax = dbconn.Execute(tsql)
+						set rsTax = dbconnx.Execute(tsql)
 						if not rsTax.EOF then
 						
 							t_StateSalesTax = rsTax("StateSalesTax")
@@ -613,7 +613,7 @@ function GetClientSalesTaxRate(ByRef str_db,_
 					else
 					
 						tsql = "SELECT * FROM A_Sales_tax WHERE Zip='" & shipping_zip & "'"
-						set rsTax = dbconn.Execute(tsql)
+						set rsTax = dbconnx.Execute(tsql)
 						if not rsTax.EOF then
 						
 							t_StateSalesTax = rsTax("StateSalesTax")
@@ -648,7 +648,7 @@ function GetClientSalesTaxRate(ByRef str_db,_
 			
 				if (n_state_id = shipping_state) then
 					tsql = "SELECT * FROM A_Sales_tax WHERE Zip='" & shipping_zip & "'"
-					set rsTax = dbconn.Execute(tsql)
+					set rsTax = dbconnx.Execute(tsql)
 					if not rsTax.EOF then
 					
 						t_StateSalesTax = rsTax("StateSalesTax")
@@ -681,7 +681,7 @@ function GetClientSalesTaxRate(ByRef str_db,_
 			
 				if (n_state_id = billing_state) then
 					tsql = "SELECT * FROM A_Sales_tax WHERE Zip='" & billing_zip & "'"
-					set rsTax = dbconn.Execute(tsql)
+					set rsTax = dbconnx.Execute(tsql)
 					if not rsTax.EOF then
 					
 						t_StateSalesTax = rsTax("StateSalesTax")
@@ -716,7 +716,7 @@ function GetClientSalesTaxRate(ByRef str_db,_
 				if (n_state_id = shipping_state) then
 				
 					tsql = "SELECT * FROM A_Sales_tax WHERE Zip='" & shipping_zip & "'"
-					set rsTax = dbconn.Execute(tsql)
+					set rsTax = dbconnx.Execute(tsql)
 					if not rsTax.EOF then
 					
 						t_StateSalesTax = rsTax("StateSalesTax")
@@ -762,7 +762,7 @@ function GetClientSalesTaxRate(ByRef str_db,_
 	
 	GetClientSalesTaxRate=true
 	
-	'dbconn.close
+	'dbconnx.close
 	
 		
 end function
@@ -781,13 +781,13 @@ function GetClientSalesTaxRateOLD(ByRef str_db,_
 		Exit Function
 	end if
 	
-	set dbconn=server.CreateObject("ADODB.Connection")
-	dbconn.Open str_db
+	set dbconnx=server.CreateObject("ADODB.Connection")
+	dbconnx.Open str_db
 	'See if shooper has own tax table...
 	if Len(str_shopper_id) > 0 then
 		str_sql = "SELECT use_shopper_tax, shopper_tax FROM :9_shopper WHERE shopper_id='" & str_shopper_id & "'"
-		str_sql = Replace(str_sql, ":9", Session("StoreID"))
-		set rs1 = dbconn.Execute(str_sql)
+		str_sql = Replace(str_sql, ":9", g_storeid)
+		set rs1 = dbconnx.Execute(str_sql)
 		if not rs1.EOF then
 			if rs1("use_shopper_tax") then
 				num_sales_tax = rs1("shopper_tax")
@@ -801,7 +801,7 @@ function GetClientSalesTaxRateOLD(ByRef str_db,_
 		end if
 	
 		rs1.close
-		dbconn.close
+		dbconnx.close
 	else
 		bmore = true
 	end if
@@ -814,7 +814,7 @@ function GetClientSalesTaxRateOLD(ByRef str_db,_
 
 		'get the states where sales tax applies
 		str_sql="SELECT * FROM :9_profile"
-		str_sql = Replace(str_sql, ":9", Session("StoreID"))
+		str_sql = Replace(str_sql, ":9", g_storeid)
 		set rs=server.CreateObject("ADODB.Recordset")
 		rs.Open str_sql,str_db
 	
@@ -844,7 +844,7 @@ function GetClientSalesTaxRateOLD(ByRef str_db,_
 		end if
 	
 		str_sql="SELECT tax_rate2, tax_rate3, tax_zip2, tax_zip3 FROM :9_profile"
-		str_sql = Replace(str_sql, ":9", Session("StoreID"))
+		str_sql = Replace(str_sql, ":9", g_storeid)
 		set rs=server.CreateObject("ADODB.Recordset")
 		rs.Open str_sql,str_db
 	
@@ -896,13 +896,13 @@ function GetClientSalesTaxRateCA(ByRef str_db,_
 		Exit Function
 	end if
 	
-	set dbconn=server.CreateObject("ADODB.Connection")
-	dbconn.Open str_db
+	set dbconnx=server.CreateObject("ADODB.Connection")
+	dbconnx.Open str_db
 	'See if shooper has own tax table...
 	if Len(str_shopper_id) > 0 then
 		str_sql = "SELECT use_shopper_tax, shopper_tax FROM :9_shopper WHERE shopper_id='" & str_shopper_id & "'"
-		str_sql = Replace(str_sql, ":9", Session("StoreID"))
-		set rs1 = dbconn.Execute(str_sql)
+		str_sql = Replace(str_sql, ":9", g_storeid)
+		set rs1 = dbconnx.Execute(str_sql)
 		if not rs1.EOF then
 			if rs1("use_shopper_tax") then
 				num_sales_tax1 = rs1("shopper_tax")
@@ -985,8 +985,8 @@ function GetClientSalesTaxRateCA(ByRef str_db,_
 			str_sql = "SELECT gst00, pst00 FROM :9_profile_CA"
 		END SELECT
 		
-		str_sql = Replace(str_sql, ":9", Session("StoreID"))
-		set rs1 = dbconn.Execute(str_sql)
+		str_sql = Replace(str_sql, ":9", g_storeid)
+		set rs1 = dbconnx.Execute(str_sql)
 		
 		if not rs1.EOF then
 			num_sales_tax1 = rs1(0)
@@ -1000,7 +1000,7 @@ function GetClientSalesTaxRateCA(ByRef str_db,_
 			
 	end if
 	
-	dbconn.close
+	dbconnx.close
 
 	if(bok) then
 		if IsNumeric(num_sales_tax1) then
@@ -1038,14 +1038,14 @@ function UpdateTaxRate(str_db,str_tax_rate,str_status_msg)
 	sql = "UPDATE :9_profile SET "
 	
 	sql = sql & "tax_rate=" & str_tax_rate
-	sql = Replace(sql, ":9", Session("StoreID"))
+	sql = Replace(sql, ":9", g_storeid)
 	
-	set dbconn=server.CreateObject("ADODB.Connection")
-	dbconn.Open db
-	dbconn.Execute sql
+	set dbconnx=server.CreateObject("ADODB.Connection")
+	dbconnx.Open db
+	dbconnx.Execute sql
 	
 	'Close database connection...
-	dbconn.Close
+	dbconnx.Close
 	
 	UpdateTaxRate = true
 end function
@@ -1085,14 +1085,14 @@ function UpdateAdminInformation(ByRef str_db,_
 	
 	sql = sql & "UserID='" & str_userid
 	sql = sql & "',Password='" & str_password1 &"'"
-	sql = Replace(sql, ":9", Session("StoreID"))
+	sql = Replace(sql, ":9", g_storeid)
 	
-	set dbconn=server.CreateObject("ADODB.Connection")
-	dbconn.Open db
-	dbconn.Execute sql
+	set dbconnx=server.CreateObject("ADODB.Connection")
+	dbconnx.Open db
+	dbconnx.Execute sql
 	
 	'Close database connection...
-	dbconn.Close
+	dbconnx.Close
 	
 	UpdateAdminInformation=true
 	
@@ -1125,14 +1125,14 @@ function UpdateContactInformation(Byref str_db,ByRef str_company,_
 	sql = sql & ",Zip='" & CheckString(str_zip) &"'"
 	sql = sql & ",Phone='" & CheckString(str_phone) &"'"
 	sql = sql & ",Email='" & CheckString(str_email) &"'"
-	sql = Replace(sql, ":9", Session("StoreID"))
+	sql = Replace(sql, ":9", g_storeid)
 	
-	set dbconn=server.CreateObject("ADODB.Connection")
-	dbconn.Open db
-	dbconn.Execute sql
+	set dbconnx=server.CreateObject("ADODB.Connection")
+	dbconnx.Open db
+	dbconnx.Execute sql
 	
 	'Close database connection...
-	dbconn.Close
+	dbconnx.Close
 	UpdateContactInformation=true
 	
 end function
@@ -1151,11 +1151,11 @@ function SendOrderNotificationViaEmail(ByRef str_db,ByRef str_status_msg,_
 	end if
 	
 	str_sql="SELECT * FROM :9_profile"
-	str_sql = Replace(str_sql, ":9", Session("StoreID"))
-	set dbconn=server.CreateObject("ADODB.Connection")
+	str_sql = Replace(str_sql, ":9", g_storeid)
+	set dbconnx=server.CreateObject("ADODB.Connection")
 	
-	dbconn.Open str_db
-	set rs = dbconn.Execute(str_sql)
+	dbconnx.Open str_db
+	set rs = dbconnx.Execute(str_sql)
 
 	if not rs.EOF then
 		company_name = Trim(rs("Company"))
@@ -1177,9 +1177,9 @@ function SendOrderNotificationViaEmail(ByRef str_db,ByRef str_status_msg,_
 	'===================================================================
 	' GET ORDER INFORMATION
 	'===================================================================
-	str_sql = "SELECT * FROM " & Session("StoreID") & "_order WHERE order_id='" & str_order_id & "'"
+	str_sql = "SELECT * FROM " & g_storeid & "_order WHERE order_id='" & str_order_id & "'"
 
-	Set rsOrder = dbconn.Execute(str_sql)
+	Set rsOrder = dbconnx.Execute(str_sql)
 
 	if not rsOrder.EOF then
 	
@@ -1327,8 +1327,8 @@ function SendOrderNotificationViaEmail(ByRef str_db,ByRef str_status_msg,_
 	s_UDF04 = ""
 	s_UDF05 = ""
 	
-	sql = "SELECT * FROM " & Session("StoreID") & "_UserField"
-	set rsUDF = dbconn.Execute(sql)
+	sql = "SELECT * FROM " & g_storeid & "_UserField"
+	set rsUDF = dbconnx.Execute(sql)
 	do while not rsUDF.EOF
 		
 		SELECT CASE rsUDF("UserField_ID")
@@ -1377,8 +1377,8 @@ function SendOrderNotificationViaEmail(ByRef str_db,ByRef str_status_msg,_
 	'===================================================================
 	'GET STORE EMAIL
 	'===================================================================
-	strSQL = "SELECT * FROM " & Session("StoreID") & "_store_email WHERE mail_id=" & str_email_flag
-	set rsEmail = dbconn.Execute(strSQL)
+	strSQL = "SELECT * FROM " & g_storeid & "_store_email WHERE mail_id=" & str_email_flag
+	set rsEmail = dbconnx.Execute(strSQL)
 
 	if not rsEmail.EOF then
 		subject = Trim(rsEmail("subject"))
@@ -1531,8 +1531,8 @@ function SendOrderNotificationViaEmail(ByRef str_db,ByRef str_status_msg,_
 		s_ccdata = ""
 		i_pk_item_count = 0
 
-		sql = "SELECT * FROM " & Session("StoreID") & "_order_tn WHERE order_id='" & str_order_id & "' ORDER BY shipped_date DESC"
-		set rsTN = dbconn.Execute(sql)
+		sql = "SELECT * FROM " & g_storeid & "_order_tn WHERE order_id='" & str_order_id & "' ORDER BY shipped_date DESC"
+		set rsTN = dbconnx.Execute(sql)
 
 		do while not rsTN.EOF
 			s_pkdata = s_pkdata & rsTN("tracking_number") & ","
@@ -1713,9 +1713,9 @@ function SendOrderNotificationViaEmail(ByRef str_db,ByRef str_status_msg,_
 
 	data_empty_cell_height = 300
 
-	sql = "SELECT * FROM " & Session("StoreID") & "_order_item WHERE order_id='" & str_order_id & "' ORDER by row_id"
+	sql = "SELECT * FROM " & g_storeid & "_order_item WHERE order_id='" & str_order_id & "' ORDER by row_id"
 
-	set rsItems = dbconn.Execute(sql)
+	set rsItems = dbconnx.Execute(sql)
 	
 	trans_subtotal = 0
 
@@ -1856,7 +1856,7 @@ function SendOrderNotificationViaEmail(ByRef str_db,ByRef str_status_msg,_
 									
 									'-------------------------------------------------------
 									'Gentech PC Only....Remove part number
-									if Session("StoreID") = "gentechpc" then
+									if g_storeid = "gentechpc" then
 										pos1 = InStrRev(options_line_value, "(")
 										If pos1 > 0 Then
 											options_line_value = Left(options_line_value, pos1-1)
@@ -1922,8 +1922,8 @@ function SendOrderNotificationViaEmail(ByRef str_db,ByRef str_status_msg,_
 	'Look up sales rep table...
 	'================================================================================
 	if Len(salesrep_id) > 0 then
-		sql = "SELECT Email, FirstName, LastName FROM " & Session("StoreID") & "_users WHERE user_id='" & salesrep_id & "'"
-		set rs = dbconn.Execute(sql)
+		sql = "SELECT Email, FirstName, LastName FROM " & g_storeid & "_users WHERE user_id='" & salesrep_id & "'"
+		set rs = dbconnx.Execute(sql)
 		if not rs.EOF then
 			trans_owner_name = rs("FirstName") & " " & rs("LastName")
 			salesrep_email = Trim(rs("Email"))
@@ -1961,8 +1961,8 @@ function SendOrderNotificationViaEmail(ByRef str_db,ByRef str_status_msg,_
 	'Look up sysemail and add it to CC later
 	'================================================================================
 	sql = "SELECT sysemail_order1 FROM :9_sysemail"
-	sql = Replace(sql, ":9", Session("StoreID"))
-	set rs = dbconn.Execute(sql)
+	sql = Replace(sql, ":9", g_storeid)
+	set rs = dbconnx.Execute(sql)
 	if not rs.EOF then
 		sysemail_order = rs("sysemail_order1")
 	else
@@ -2202,7 +2202,7 @@ function SendOrderNotificationViaEmail(ByRef str_db,ByRef str_status_msg,_
 
 	end if
 
-	dbconn.Close
+	dbconnx.Close
 
 	SendOrderNotificationViaEmail = true
 	
@@ -2249,14 +2249,14 @@ function UpdateAboutPageInfo(ByRef str_db,ByRef str_about_heading1, ByRef str_ab
 		sql = sql & ",about_url='" & CheckString(str_about_url) & "'"
 	end if
 	
-	sql = Replace(sql, ":9", Session("StoreID"))
+	sql = Replace(sql, ":9", g_storeid)
 	
-	set dbconn=server.CreateObject("ADODB.Connection")
-	dbconn.Open db
-	dbconn.Execute sql
+	set dbconnx=server.CreateObject("ADODB.Connection")
+	dbconnx.Open db
+	dbconnx.Execute sql
 	
 	'Close database connection...
-	dbconn.Close
+	dbconnx.Close
 	
 	UpdateAboutPageInfo=true
 	
@@ -2281,14 +2281,14 @@ function UpdateContactPageInfo(ByRef str_db,ByRef str_contact_text, ByRef str_st
 		sql = sql & "contact_text='" & CheckString(str_contact_text) & "'"
 	end if
 	
-	sql = Replace(sql, ":9", Session("StoreID"))
+	sql = Replace(sql, ":9", g_storeid)
 	
-	set dbconn=server.CreateObject("ADODB.Connection")
-	dbconn.Open db
-	dbconn.Execute sql
+	set dbconnx=server.CreateObject("ADODB.Connection")
+	dbconnx.Open db
+	dbconnx.Execute sql
 	
 	'Close database connection...
-	dbconn.Close
+	dbconnx.Close
 	
 	UpdateContactPageInfo=true
 	
@@ -2302,12 +2302,12 @@ function UpdateTextFlags(ByRef str_db,ByRef i_pos, ByRef str_flag)
 		exit function
 	end if
 		
-	set dbconn=server.CreateObject("ADODB.Connection")
-	dbconn.Open db
+	set dbconnx=server.CreateObject("ADODB.Connection")
+	dbconnx.Open db
 	
 	sql = "SELECT text_flags FROM :9_profile"
-	sql = Replace(sql, ":9", Session("StoreID"))
-	set rs = dbconn.execute(sql)
+	sql = Replace(sql, ":9", g_storeid)
+	set rs = dbconnx.execute(sql)
 	
 	if not rs.EOF then
 		text_flags = rs("text_flags")
@@ -2331,12 +2331,12 @@ function UpdateTextFlags(ByRef str_db,ByRef i_pos, ByRef str_flag)
 	'Update profile
 	sql = "UPDATE :9_profile SET "
 	sql = sql & "text_flags='" & text_flags & "'"
-	sql = Replace(sql, ":9", Session("StoreID"))
+	sql = Replace(sql, ":9", g_storeid)
 
-	dbconn.Execute sql
+	dbconnx.Execute sql
 	
 	'Close database connection...
-	dbconn.Close
+	dbconnx.Close
 	
 	UpdateTextFlags=true
 	
@@ -2377,11 +2377,11 @@ Function GetUPSCost(ByRef str_db, ByRef str_orig_postal, ByRef str_dest_postal, 
 		ST = "1"
 	end if
 	
-	set dbconn=server.CreateObject("ADODB.Connection")
-	dbconn.Open str_db
+	set dbconnx=server.CreateObject("ADODB.Connection")
+	dbconnx.Open str_db
 	
 	sql = "SELECT * FROM A_UPS_ZONE WHERE origin_postal >= '" & postal1 & "' AND Right(dest_postal,3) >= '" & postal2 & "' ORDER BY origin_postal, dest_postal"
-	set rsUPS = dbconn.Execute(sql)
+	set rsUPS = dbconnx.Execute(sql)
 	
 	if not rsUPS.EOF then
 		z_EA = rsUPS("z_early_am")
@@ -2414,7 +2414,7 @@ Function GetUPSCost(ByRef str_db, ByRef str_orig_postal, ByRef str_dest_postal, 
 
 	if EA = "1" then
 		sql = "SELECT Z" & Z_EA & " FROM A_UPS_EARLY_AM WHERE wt_to >= " & i_weight & " ORDER BY wt_to"
-		set rs1 = dbconn.Execute(sql)
+		set rs1 = dbconnx.Execute(sql)
 		if not rs1.EOF then
 			EA_charge = rs1(0)
 			EA_charge = (EA_charge * i_sh_markup) + i_sh_handling
@@ -2425,7 +2425,7 @@ Function GetUPSCost(ByRef str_db, ByRef str_orig_postal, ByRef str_dest_postal, 
 	
 	if EX = "1" then
 		sql = "SELECT Z" & Z_EX & " FROM A_UPS_EXPRESS WHERE wt_to >= " & i_weight & " ORDER BY wt_to"
-		set rs1 = dbconn.Execute(sql)
+		set rs1 = dbconnx.Execute(sql)
 		if not rs1.EOF then
 			EX_charge = rs1(0)
 			EX_charge = (EX_charge * i_sh_markup) + i_sh_handling
@@ -2436,7 +2436,7 @@ Function GetUPSCost(ByRef str_db, ByRef str_orig_postal, ByRef str_dest_postal, 
 	
 	if ES = "1" then
 		sql = "SELECT Z" & Z_ES & " FROM A_UPS_XPR_SAVER WHERE wt_to >= " & i_weight & " ORDER BY wt_to"
-		set rs1 = dbconn.Execute(sql)
+		set rs1 = dbconnx.Execute(sql)
 		if not rs1.EOF then
 			ES_charge = rs1(0)
 			ES_charge = (ES_charge * i_sh_markup) + i_sh_handling
@@ -2447,7 +2447,7 @@ Function GetUPSCost(ByRef str_db, ByRef str_orig_postal, ByRef str_dest_postal, 
 	
 	if EP = "1" then
 		sql = "SELECT Z" & Z_EP & " FROM A_UPS_EXPED WHERE wt_to >= " & i_weight & " ORDER BY wt_to"
-		set rs1 = dbconn.Execute(sql)
+		set rs1 = dbconnx.Execute(sql)
 		if not rs1.EOF then
 			EP_charge = rs1(0)
 			EP_charge = (EP_charge * i_sh_markup) + i_sh_handling
@@ -2458,7 +2458,7 @@ Function GetUPSCost(ByRef str_db, ByRef str_orig_postal, ByRef str_dest_postal, 
 	
 	if ST = "1" then
 		sql = "SELECT Z" & Z_ST & " FROM A_UPS_STD WHERE wt_to >= " & i_weight & " ORDER BY wt_to"
-		set rs1 = dbconn.Execute(sql)
+		set rs1 = dbconnx.Execute(sql)
 		if not rs1.EOF then
 			ST_charge = rs1(0)
 			ST_charge = (ST_charge * i_sh_markup) + i_sh_handling
@@ -2468,7 +2468,7 @@ Function GetUPSCost(ByRef str_db, ByRef str_orig_postal, ByRef str_dest_postal, 
 	End if
 	
 	'Close database connection...
-	dbconn.Close
+	dbconnx.Close
 	GetUPSCost = str_ups_ret
 End Function
 
@@ -2477,11 +2477,11 @@ Function SystemSendMailEx(ByRef str_FromEmail, ByRef str_FromName, ByRef str_To,
 	on error resume next
 
 	set econn=server.CreateObject("ADODB.Connection")
-	econn.Open Session("ConnectionString")
+	edbconn.Open g_connection_string
 
-	sql = "SELECT * FROM " & Session("StoreID") & "_profile2"
+	sql = "SELECT * FROM " & g_storeid & "_profile2"
 
-	SET rsProfile2 = econn.Execute(sql)
+	SET rsProfile2 = edbconn.Execute(sql)
 
 	if not rsProfile2.EOF then
 
@@ -2498,7 +2498,7 @@ Function SystemSendMailEx(ByRef str_FromEmail, ByRef str_FromName, ByRef str_To,
 	if smtp_flag = 0 Or Len(smtp_flag) = 0 then
 		sql = "SELECT * FROM A_ATTRIBUTES"
 
-		SET rsProfile2 = econn.Execute(sql)
+		SET rsProfile2 = edbconn.Execute(sql)
 
 		if not rsProfile2.EOF then
 
@@ -2514,19 +2514,19 @@ Function SystemSendMailEx(ByRef str_FromEmail, ByRef str_FromName, ByRef str_To,
 	end if
 
 	rsProfile2.Close
-	econn.Close
+	edbconn.Close
 	
 	'=======================================================================
 	'CREATE MAIL LOG
 	Set fs = CreateObject("Scripting.FileSystemObject")
 	Set a = fs.OpenTextFile("c:\\customers\\maillog\\" & Month(Now()) & "-" & Day(Now()) & ".log", 8, True)
 	a.WriteLine("--------------------------------------------------")
-	a.WriteLine(Now() & " : " & Session("StoreID"))
+	a.WriteLine(Now() & " : " & g_storeid)
 	a.WriteLine(smtp_flag & " : " & smtp_server & " : " & smtp_server_username & ":" & Request.ServerVariables("SCRIPT_NAME"))
 	a.WriteLine(str_FromEmail & " : " & str_FromName & " : " & str_To & " : " & str_Subject & " : " & str_cc)
 	'=======================================================================
 	
-	szStoreID = Session("StoreID")
+	szStoreID = g_storeid
 	If smtp_server_usessl = "1" Then
 		smtp_server_usessl = "true"
 	Else
@@ -2593,8 +2593,8 @@ End Function
 
 Function GenerateELF2Log(ByRef str_orderid)
 
-	set dbconn=server.CreateObject("ADODB.Connection")
-	dbconn.Open Session("ConnectionString")
+	set dbconnx=server.CreateObject("ADODB.Connection")
+	dbconnx.Open g_connection_string
 	
 	dim mDay
 	dim mMonth
@@ -2640,12 +2640,12 @@ Function GenerateELF2Log(ByRef str_orderid)
 	d_col = chr(9)
 	
 	Set fs = CreateObject("Scripting.FileSystemObject")
-	Set a = fs.OpenTextFile("c:\\Urchin\\" & Session("StoreID") & "\\elf2.txt", 8, True)
+	Set a = fs.OpenTextFile("c:\\Urchin\\" & g_storeid & "\\elf2.txt", 8, True)
 	
 	sTransactionLine = ""
 	
-	strSQL = "SELECT * FROM " & Session("StoreID") & "_order WHERE order_id='" & str_orderid & "'"
-	Set rsOrderLog = dbconn.Execute(strSQL)
+	strSQL = "SELECT * FROM " & g_storeid & "_order WHERE order_id='" & str_orderid & "'"
+	Set rsOrderLog = dbconnx.Execute(strSQL)
 		
 	if not rsOrderLog.EOF then
 	
@@ -2663,7 +2663,7 @@ Function GenerateELF2Log(ByRef str_orderid)
 		sTransactionLine = sTransactionLine & order_id & d_col
 		sTransactionLine = sTransactionLine & Request.ServerVariables("LOCAL_ADDR") & d_col
 		sTransactionLine = sTransactionLine & mLogDate & d_col
-		sTransactionLine = sTransactionLine & Session("StoreID") & d_col
+		sTransactionLine = sTransactionLine & g_storeid & d_col
 		sTransactionLine = sTransactionLine & Session.SessionID & d_col
 		sTransactionLine = sTransactionLine & FormatNumber(order_total,2) & d_col
 		sTransactionLine = sTransactionLine & FormatNumber(order_tax,2) & d_col
@@ -2683,9 +2683,9 @@ Function GenerateELF2Log(ByRef str_orderid)
 	
 	sItemLine = ""
 	
-	strSQL = "SELECT * FROM " & Session("StoreID") & "_order_item WHERE order_id='" & str_orderid & "' ORDER BY row_id"
+	strSQL = "SELECT * FROM " & g_storeid & "_order_item WHERE order_id='" & str_orderid & "' ORDER BY row_id"
 
-	Set rsOrderItem = dbconn.Execute(strSQL)
+	Set rsOrderItem = dbconnx.Execute(strSQL)
 	do while not rsOrderItem.EOF
 		item_sku = rsOrderItem("sku")
 		item_options = "-"
@@ -2717,6 +2717,6 @@ Function GenerateELF2Log(ByRef str_orderid)
 	Set fs = Nothing
 				
 
-	dbconn.Close
+	dbconnx.Close
 END FUNCTION
 </script>

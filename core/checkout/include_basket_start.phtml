@@ -1,4 +1,5 @@
 <!--#INCLUDE FILE="../../local/local.phtml"-->
+<!--#INCLUDE FILE="../i_adoopen.phtml"-->
 <!--#INCLUDE FILE="../../language_pack.phtml"-->
 <!--#INCLUDE FILE="../../util/xt_func_session.phtml"-->
 <%
@@ -29,9 +30,8 @@
 		forceLogin = true
 	end if
 %>
-<!-- #INCLUDE FILE="../../i_login.phtml"-->
+<!-- #INCLUDE FILE="../i_login.phtml"-->
 <!-- #include FILE="../../cart.inc" -->
-<!-- #INCLUDE FILE="../../i_adodb.phtml" -->
 <!-- #INCLUDE FILE="../../i_system.phtml" -->
 <%	
 
@@ -49,8 +49,8 @@
 	
 	
 	'==========================================================================
-	sql = "SELECT * FROM " & Session("StoreID") & "_profile"
-	Set rsProfile = Conn.Execute(sql)
+	sql = "SELECT * FROM " & g_storeid & "_profile"
+	Set rsProfile = dbconn.Execute(sql)
 	if (not rsProfile.EOF) then
 		espec_part_number_mode = rsProfile("espec_part_number_mode")
 	end if
@@ -225,8 +225,8 @@
 		
 	if Session("ENABLEINT") = "2" OR Session("ENABLEINT")="3" then
 		'Jerry's code 2010/01/20
-		sql = "SELECT tax_on_sh FROM " & Session("StoreID") & "_profile"
-		set rsProfile = Conn.Execute(sql)
+		sql = "SELECT tax_on_sh FROM " & g_storeid & "_profile"
+		set rsProfile = dbconn.Execute(sql)
 		bTax_on_ship = rsProfile("tax_on_sh")
 		rsProfile.Close
 

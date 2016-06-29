@@ -174,7 +174,7 @@ function getCountryCodeAccessByIP(strIPAddress)
 
 		With Rs
 
-		.Open "SELECT COUNTRYCODE FROM A_COUNTRY_IP WHERE " & tmpIPNumber & " BETWEEN LONGFROM AND LONGTO", Session("ConnectionString")
+		.Open "SELECT COUNTRYCODE FROM A_COUNTRY_IP WHERE " & tmpIPNumber & " BETWEEN LONGFROM AND LONGTO", g_connection_string
 
 		If Not(.EOF or .BOF) Then
 			country_code = Trim(.Fields(0))
@@ -195,7 +195,7 @@ function getCountryCodeAccessByIP(strIPAddress)
 	End If
 	
 	Set Rs = Server.CreateObject("ADODB.RecordSet")
-	Rs.Open "SELECT manager_accessible_countries FROM " & Session("StoreID") & "_profile2", Session("ConnectionString")
+	Rs.Open "SELECT manager_accessible_countries FROM " & g_storeid & "_profile2", g_connection_string
 		manager_accessible_countries = Trim(Rs(0))
 	Rs.Close
 	Set Rs = Nothing
@@ -334,9 +334,9 @@ function GetSettingValue(strKey, strDefault)
   sReturnValue = ""
   
   set db2=server.CreateObject("ADODB.Connection")
-	db2.Open Session("ConnectionString")
+	db2.Open g_connection_string
 	
-	sql = "SELECT setting_values FROM " & Session("StoreID") & "_setting WHERE setting_type='"& strKey & "'"
+	sql = "SELECT setting_values FROM " & g_storeid & "_setting WHERE setting_type='"& strKey & "'"
 	set rsSetting1 = db2.Execute(sql)
 	if not rsSetting1.EOF then
 	  sReturnValue = rsSetting1(0)
@@ -354,9 +354,9 @@ function GetSettingText(strKey, strDefault)
   sReturnValue = ""
   
   set db2=server.CreateObject("ADODB.Connection")
-	db2.Open Session("ConnectionString")
+	db2.Open g_connection_string
 	
-	sql = "SELECT setting_text FROM " & Session("StoreID") & "_setting WHERE setting_type='"& strKey & "'"
+	sql = "SELECT setting_text FROM " & g_storeid & "_setting WHERE setting_type='"& strKey & "'"
 	set rsSetting1 = db2.Execute(sql)
 	if not rsSetting1.EOF then
 	  sReturnValue = rsSetting1(0)
@@ -380,7 +380,7 @@ function SetSettingText(strKey, strValue)
 	
 	Response.Write(c_sql)
 	
-	dbconn.Execute c_sql
+	dbconnx.Execute c_sql
 	
 	SetSettingText = true
 	
