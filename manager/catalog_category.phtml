@@ -1,0 +1,537 @@
+<!-- #INCLUDE File="local/local.phtml" -->
+<!-- #INCLUDE File="util/xt_func_util.phtml" -->
+<!-- #INCLUDE File="util/xt_func_string.phtml" -->
+<!-- #include file="aspuploader/include_aspuploader.asp" -->
+<!-- #INCLUDE File="include/i_login.phtml" -->
+<%
+	g_access_key = "02-a"
+%>
+<!-- #INCLUDE File="include/i_access.phtml" -->
+<!--#INCLUDE FILE="include/doctype.phtml"-->
+<head>
+<!--#INCLUDE FILE="include/head.phtml"-->
+<!-- start: CSS REQUIRED FOR THIS PAGE ONLY -->
+<link rel="stylesheet" href="assets/plugins/jquery-ui/jquery-ui-1.10.4.custom.min.css" />
+<link rel="stylesheet" href="assets/plugins/dynatree/src/skin-vista/ui.dynatree.css">
+<link href="vendor/select2/select2.min.css" rel="stylesheet" media="screen">
+<link href="vendor/DataTables/css/DT_bootstrap.css" rel="stylesheet" media="screen">
+<!-- end: CSS REQUIRED FOR THIS PAGE ONLY -->
+<link rel="stylesheet" href="assets/css/custom.css">
+</head>	
+<body>
+	<div id="app" class="app-sidebar-closed">
+		<!--#INCLUDE FILE="include/sidebar.phtml"-->
+		<div class="app-content">
+			<!--#INCLUDE FILE="include/header.phtml"-->
+			<div class="main-content" >
+				<div class="wrap-content container" id="container">
+					<form role="form" class="form-horizontal" id="form">
+					<!-- start: TITLE -->
+					<section id="page-title" class="padding-top-15 padding-bottom-15">
+						<div class="row">
+							<div class="col-sm-8">
+								<h1 class="mainTitle" id="mainTitle1">Categories</h1>
+								<span class="mainDescription">overview &amp; list </span>
+							</div>
+							<ol class="breadcrumb">
+							
+								<button class="btn btn-blue btn-sm" type="submit">
+								<i class="fa fa-check-square"></i>
+								Save Category
+								</button>
+								<button class="btn btn-danger btn-sm" type="button" id="DeleteCategory">
+								<i class="fa fa-times-circle"></i>
+								Delete Category
+								</button>
+							</ol>
+						</div>
+					</section>
+					<!-- end: TITLE -->
+					<div class="container-fluid container-fullw bg-white">
+						<div class="content-header-floating" style="display: block;">
+							<div class="content-header">
+								<h3 class="mainTitle" id="mainTitle2">Categories</h3>
+								<p class="content-buttons form-buttons">
+									
+									<button class="btn btn-blue btn-sm" type="submit">
+									<i class="fa fa-check-square"></i>
+									Save Category
+									</button>
+									<button class="btn btn-danger btn-sm" type="button" id="DeleteCust">
+									<i class="fa fa-times-circle"></i>
+									Delete Category
+									</button>
+								</p>	
+							</div>
+						</div>
+						<div class="row">
+							<div class="col-md-3">
+								<div class="row">
+									<div class="col-md-12">
+									<!-- start: DEFAULT TREE PANEL -->
+									<div class="panel panel-blue">
+										<div class="panel-heading">
+											<h4 class="panel-title">Categories</h4>
+											<div class="panel-tools" >
+												<a data-original-title="Collapse" data-toggle="tooltip" data-placement="top" class="btn btn-transparent btn-sm panel-collapse" href="#"><i class="ti-minus collapse-off"></i><i class="ti-plus collapse-on"></i></a>
+											</div>
+										</div>
+										<div class="panel-body partition-white">
+											<div class="row" style="padding-bottom: 10px;">
+												<div class="col-md-12">
+													<a data-toggle="modal" class="btn btn-primary btn-sm" role="button" href="#myModal1">
+													<i class="clip-plus-circle"></i> Add Root</a>
+													<a data-toggle="modal" class="btn btn-primary btn-sm" role="button" href="#myModal2">
+													<i class="clip-plus-circle"></i> Add Sub</a>
+												</div>
+											</div>
+											<div id="tree3"></div>
+										</div>
+									</div>
+									<!-- end: DEFAULT TREE PANEL -->
+									</div>
+								</div>
+							</div>
+							<div class="col-md-9 no-padding">
+								<div class="panel panel-blue">
+									<div class="panel-heading">
+										<h4 class="panel-title">Category Detail</h4>
+										<div class="panel-tools" >
+											<a data-original-title="Collapse" data-toggle="tooltip" data-placement="top" class="btn btn-transparent btn-sm panel-collapse" href="#"><i class="ti-minus collapse-off"></i><i class="ti-plus collapse-on"></i></a>
+										</div>
+									</div>
+									<div class="panel-body partition-white">
+										
+										<div class="col-md-12">
+											<div id="errorHandler1" class="errorHandler alert alert-danger no-display">
+												<button type="button" class="close" aria-label="Close">
+													<span aria-hidden="true">&times;</span>
+												</button>
+												<i class="fa fa-times-sign"></i> You have some form errors. Please check below.
+											</div>
+											<div id="errorHandler2" class="errorHandler alert alert-danger no-display">
+												<button type="button" class="close" aria-label="Close">
+													<span aria-hidden="true">&times;</span>
+												</button>
+												<i class="fa fa-times-sign"></i> The information has not been saved properly. Please contact system administrator.
+											</div>
+											<div class="successHandler alert alert-success no-display">
+												<button type="button" class="close" aria-label="Close">
+													<span aria-hidden="true">&times;</span>
+												</button>
+												<i class="fa fa-ok"></i> The information has been saved.
+											</div>
+										</div>
+										<div class="row">
+											<div class="col-md-12">
+												<span id="dept_detail">
+												<p>Select existing category on the left or click on the "add" button to add new category.
+												</span>
+											</div>
+										</div>
+										
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+					</form>
+				</div>
+			</div>
+		</div>
+		<!--#INCLUDE FILE="include/footer.phtml"-->
+	</div>
+	
+	<div class="modal fade" id="myModal1" tabindex="-1" role="dialog" aria-hidden="true">
+		<div class="modal-dialog">
+			<div class="modal-content">
+				<div class="modal-header">
+					<button type="button" class="close" data-dismiss="modal" aria-hidden="true">
+						&times;
+					</button>
+					<h4 class="modal-title">Add New Category</h4>
+				</div>
+				<div class="modal-body">
+					<p>
+						Would you like to add new Root Cateogry?
+					</p>
+				</div>
+				<div class="modal-footer">
+					<button aria-hidden="true" data-dismiss="modal" class="btn btn-default">
+						Close
+					</button>
+					<button class="btn btn-primary" data-dismiss="modal" id="btn-add-root-category-confirm">
+						Confirm
+					</button>
+				</div>
+			</div>
+		</div>
+	</div>
+	
+	<div class="modal fade" id="myModal2" tabindex="-1" role="dialog" aria-hidden="true">
+		<div class="modal-dialog">
+			<div class="modal-content">
+				<div class="modal-header">
+					<button type="button" class="close" data-dismiss="modal" aria-hidden="true">
+						&times;
+					</button>
+					<h4 class="modal-title">Add Sub Category</h4>
+				</div>
+				<div class="modal-body">
+					<p>
+						Would you like to add Sub Category under currently selected category?
+					</p>
+				</div>
+				<div class="modal-footer">
+					<button aria-hidden="true" data-dismiss="modal" class="btn btn-default">
+						Close
+					</button>
+					<button class="btn btn-primary" data-dismiss="modal" id="btn-add-sub-category-confirm">
+						Confirm
+					</button>
+				</div>
+			</div>
+		</div>
+	</div>
+	<div id="loading-mask" style="display:none">
+		<p class="loader" id="loading_mask_loader"><img src="assets/images/ajax-loader-primary.gif" alt="Loading..."/><br/>Please wait...</p>
+	</div>
+	<div id="dialog-confirm" title="Confirmation Required">
+	  Are you sure you want to do this?
+	</div>
+	<!--#INCLUDE FILE="include/js.phtml"-->
+	<!-- start: JAVASCRIPTS REQUIRED FOR THIS PAGE ONLY -->
+	<script src="assets/plugins/jquery-ui/jquery-ui-1.10.1.custom.min.js" type="text/javascript"></script>
+	<script src="assets/plugins/dynatree/src/jquery.dynatree.js"></script>
+	<script src="vendor/ckeditor/ckeditor.js"></script>
+	<script src="vendor/ckeditor/adapters/jquery.js"></script>
+	<script src="vendor/jquery-validation/jquery.validate.min.js"></script>
+	<script src="vendor/select2/select2.min.js"></script>
+	<script src="vendor/DataTables/jquery.dataTables.min.js"></script>
+	<!-- end: JAVASCRIPTS REQUIRED FOR THIS PAGE ONLY -->
+	<script src="assets/js/main.js"></script>
+	<!-- start: JavaScript Event Handlers for this page -->
+	<script language="javascript">
+	var theActivatedCategory = "0";
+	
+	var UITreeview = function () {
+		//function to initiate jquery.dynatree
+		var runTreeView = function () {
+			//External data 
+			$("#tree3").dynatree({
+				initAjax: {
+					url: "api/sp_catalog_category_get_tree_list.phtml",
+					data: { mode: "funnyMode" }
+				},
+				
+				onActivate: function (node) {
+					theActivatedCategory = node.data.key;
+					$('#loading-mask').show();
+					jQuery.ajax({
+						type:"get",
+						url: "api/sp_catalog_category_get_edit_detail_html.phtml",
+						data: {'category_id' : node.data.key, 'isAjax':true},
+						dataType: 'html',
+						success: function(data) {
+							jQuery("#dept_detail").html(data);
+						},
+						complete: function(){
+							$('#loading-mask').hide();
+							$('#mainTitle1').html(node.data.title + "(ID:" + node.data.key + ")");
+							$('#mainTitle2').html(node.data.title + "(ID:" + node.data.key + ")");
+							window.scrollTo(0,0);
+							$('a[data-toggle="tab"]').on('shown.bs.tab', function (e) {
+								var target = $(e.target).attr("href") // activated tab
+								//alert(target);
+								jQuery.ajax({
+									type:"get",
+									url: "api/save_tab_session.phtml",
+									data: {'tabtarget' : target, 'tabpage' : 'catalog_category_tab', 'isAjax':true},
+									dataType: 'html',
+									success: function(data) {
+										//
+									}
+								});
+							  
+							  //
+							});
+						}
+					});
+				},
+				onDeactivate: function (node) {
+					//$("#echoActive").text("-");
+				},
+				
+				dnd: {
+					preventVoidMoves: true, // Prevent dropping nodes 'before self', etc.
+					onDragStart: function (node) {
+						/** This function MUST be defined to enable dragging for the tree.
+						 *  Return false to cancel dragging of node.
+						 */
+						return true;
+					},
+					onDragEnter: function (node, sourceNode) {
+						/** sourceNode may be null for non-dynatree droppables.
+						 *  Return false to disallow dropping on node. In this case
+						 *  onDragOver and onDragLeave are not called.
+						 *  Return 'over', 'before, or 'after' to force a hitMode.
+						 *  Return ['before', 'after'] to restrict available hitModes.
+						 *  Any other return value will calc the hitMode from the cursor position.
+						 */
+						// Prevent dropping a parent below another parent (only sort
+						// nodes under the same parent)
+						if (node.parent !== sourceNode.parent) {
+							return false;
+						}
+						// Don't allow dropping *over* a node (would create a child)
+						return ["before", "after"];
+						//return true;
+					},
+					onDrop: function (node, sourceNode, hitMode, ui, draggable) {
+						/** This function MUST be defined to enable dropping of items on
+						 *  the tree.
+						 */
+						var souce_key = "";
+						var dest_key = "";
+
+						souce_key = sourceNode.data.key;
+						dest_key = node.data.key;
+
+						//alert(souce_key);
+						//alert(dest_key);
+						sourceNode.move(node, hitMode);
+
+						jQuery.ajax({
+							type: "get",
+							url: "api/sp_catalog_category_update.phtml",
+							data: { 'config_id': '<%=config_id%>', 'mode': 'gsort', 'skey': souce_key, 'dkey': dest_key, isAjax: true },
+							dataType: 'json',
+							success: function (data) {
+								//$("#tree3").dynatree("getTree").reload();
+							}
+						});
+						
+					}
+				}
+			});
+			
+		};
+		return {
+			//main function to initiate template pages
+			init: function () {
+				runTreeView();
+			}
+		};
+	}();
+	
+	</script>
+	<script language="javascript">
+	var FormValidator = function () {
+	// function to initiate Validation Sample 1
+		var runValidator1 = function () {
+			var form1 = $('#form');
+			var errorHandler1 = $('#errorHandler1', form1);
+			var errorHandler2 = $('#errorHandler2', form1);
+			var successHandler1 = $('.successHandler', form1);
+			$.validator.addMethod("FullDate", function () {
+				//if all values are selected
+				if ($("#dd").val() != "" && $("#mm").val() != "" && $("#yyyy").val() != "") {
+					return true;
+				} else {
+					return false;
+				}
+			}, 'Please select a day, month, and year');
+			$('#form').validate({
+				
+				errorElement: "span", // contain the error msg in a span tag
+				errorClass: 'help-block',
+				errorPlacement: function (error, element) { // render error placement for each input type
+					if (element.attr("type") == "radio" || element.attr("type") == "checkbox") { // for chosen elements, need to insert the error after the chosen container
+						error.insertAfter($(element).closest('.form-group').children('div').children().last());
+					} else if (element.attr("name") == "dd" || element.attr("name") == "mm" || element.attr("name") == "yyyy") {
+						error.insertAfter($(element).closest('.form-group').children('div'));
+					} else {
+						error.insertAfter(element);
+						// for other inputs, just perform default behavior
+					}
+				},
+				ignore: "",
+				
+				//RULES
+				rules: {
+					dept_name: {
+						minlength: 2,
+						required: true
+					},
+					dept_markup_A: {
+						number: true
+					}/*,
+					url_key: {
+						minlength: 5,
+						"remote":
+						{
+						  url: 'api/sp_product_check_url_key.phtml?pf_id=' + $('#dept_name').val(),
+						  type: "post"
+						}
+					}*/
+				},
+				messages: {
+					dept_name: "Please specify category name"
+				},
+				//END OF RULES
+				
+				invalidHandler: function (event, validator) { //display error alert on form submit
+					successHandler1.hide();
+					errorHandler1.show();
+					window.scrollTo(0,0);
+				},
+				highlight: function (element) {
+					$(element).closest('.help-block').removeClass('valid');
+					$(element).closest('.form-group').removeClass('has-success').addClass('has-error').find('.symbol').removeClass('ok').addClass('required');
+				},
+				unhighlight: function (element) { 
+					$(element).closest('.form-group').removeClass('has-error');
+				},
+				success: function (label, element) {
+					label.addClass('help-block valid');
+					$(element).closest('.form-group').removeClass('has-error').addClass('has-success').find('.symbol').removeClass('required').addClass('ok');
+				},
+				submitHandler: function (form) {
+					successHandler1.hide();
+					errorHandler1.hide();
+					errorHandler2.hide();
+					$.ajax({
+						type: "POST",
+						url: "api/sp_catalog_category_update.phtml",
+						data: $("#form").serialize(),
+						success: function() {
+							successHandler1.show();
+							window.scrollTo(0,0);
+							$("#tree3").dynatree("getTree").reload();
+							//window.location.href = "catalog_category.phtml";
+						},
+						error: function() {
+							errorHandler2.show();
+							window.scrollTo(0,0);
+						}
+					});
+				}
+			});
+		};
+		return {
+			//main function to initiate template pages
+			init: function () {
+				runValidator1();
+			}
+		};
+	}();
+	</script>
+	<script>
+		jQuery(document).ready(function() {
+			Main.init();
+			UITreeview.init();
+			FormValidator.init();
+			
+			//Custom Scripts
+			$("#dialog-confirm").dialog({
+			  autoOpen: false,
+			  modal: true
+			});
+			
+			jQuery("#DeleteCategory").click(function(e) {
+				e.preventDefault();
+				jQuery("#dialog-confirm").html('Are you sure you want to delete "' + jQuery("#dept_name").val() + '"? <br>This will delete current category as well as all sub categories.');
+				jQuery("#dialog-confirm").dialog({
+				  autoOpen: false,
+				  modal: true,
+				  buttons : {
+					"Confirm" : function() {
+						window.location.href = "api/tp_catalog_category_delete.phtml?category_id=" + jQuery("#dept_id").val();
+					},
+					"Cancel" : function() {
+					  $(this).dialog("close");
+					}
+				  }
+				});
+				jQuery("#dialog-confirm").dialog("open");
+
+			});
+			
+			jQuery("#btn-add-root-category-confirm").click(function() {
+				$('#loading-mask').show();
+					jQuery.ajax({
+						type:"get",
+						url: "api/sp_catalog_category_get_edit_detail_html.phtml",
+						data: {'category_id' : '0', 'parent_id' : '0', 'isAjax':true},
+						dataType: 'html',
+						success: function(data) {
+							jQuery("#dept_detail").html(data);
+						},
+						complete: function(){
+							$('#loading-mask').hide();
+							$('#mainTitle1').html("New Category");
+							$('#mainTitle2').html("New Category");
+							window.scrollTo(0,0);
+							$('a[data-toggle="tab"]').on('shown.bs.tab', function (e) {
+								var target = $(e.target).attr("href") // activated tab
+								jQuery.ajax({
+									type:"get",
+									url: "api/save_tab_session.phtml",
+									data: {'tabtarget' : target, 'tabpage' : 'catalog_category_tab', 'isAjax':true},
+									dataType: 'html',
+									success: function(data) {
+										//
+									}
+								});
+							  
+							  //
+							});
+						}
+					});
+			});
+			
+			jQuery("#btn-add-sub-category-confirm").click(function() {
+				if (theActivatedCategory == '0')
+				{
+					alert("Please select category first")
+				}
+				else
+				{
+					$('#loading-mask').show();
+					jQuery.ajax({
+						type:"get",
+						url: "api/sp_catalog_category_get_edit_detail_html.phtml",
+						data: {'category_id' :'0', 'parent_id' : theActivatedCategory, 'isAjax':true},
+						dataType: 'html',
+						success: function(data) {
+							jQuery("#dept_detail").html(data);
+						},
+						complete: function(){
+							$('#loading-mask').hide();
+							$('#mainTitle1').html(node.data.title + "(ID:" + node.data.key + ")");
+							$('#mainTitle2').html(node.data.title + "(ID:" + node.data.key + ")");
+							window.scrollTo(0,0);
+							$('a[data-toggle="tab"]').on('shown.bs.tab', function (e) {
+								var target = $(e.target).attr("href") // activated tab
+								//alert(target);
+								jQuery.ajax({
+									type:"get",
+									url: "api/save_tab_session.phtml",
+									data: {'tabtarget' : target, 'tabpage' : 'catalog_category_tab', isAjax:true},
+									dataType: 'html',
+									success: function(data) {
+										//
+									}
+								});
+							  
+							  //
+							});
+						}
+					});
+				}
+			});
+		});
+	</script>
+	<!-- end: JavaScript Event Handlers for this page -->
+</body>
+</html>
