@@ -1,22 +1,20 @@
 <!--#INCLUDE FILE="../../local/local.phtml"-->
+<!--#INCLUDE FILE="../i_adoopen.phtml"-->
 <!--#INCLUDE FILE="../../language_pack.phtml"-->
 <!--#INCLUDE FILE="../../util/xt_func_session.phtml"-->
 <!--#INCLUDE File="../../util/xt_func_util.phtml" -->
 <!--#INCLUDE FILE="../../util/xt_func_string.phtml"-->
 <!--#INCLUDE FILE="../../util/xt_func_seo.phtml"-->
 <!--#INCLUDE FILE="../../i_initsession.phtml"-->
-<!--#INCLUDE FILE="../../i_login.phtml"-->
-<!--#INCLUDE FILE="../../i_adodb.phtml"-->
-
-
+<!--#INCLUDE FILE="../i_login.phtml"-->
 <script language="VBScript" RUNAT=SERVER>
 function GetParentCategoryLink(ByRef str_db, ByRef str_dept_id)
 
 	'Get Category Names...
 	dim str_dept_link
 	
-	Set dbconn = Server.CreateObject("ADODB.Connection")
-	dbconn.open str_db
+	Set dbconnx = Server.CreateObject("ADODB.Connection")
+	dbconnx.open str_db
 	
 	str_dept_link = ""
 	dept_id_len = Len(str_dept_id)
@@ -26,8 +24,8 @@ function GetParentCategoryLink(ByRef str_db, ByRef str_dept_id)
 		'no parent directory...					
 	case 6 'Sub 1
 		sql = "SELECT dept_id, dept_name FROM :9_dept WHERE dept_id IN ('" & Left(str_dept_id, InStr(str_dept_id, "-")-1) & "') ORDER BY dept_id"
-		sql = Replace(sql, ":9", Session("StoreID"))
-		set rsDept=dbconn.Execute(sql)
+		sql = Replace(sql, ":9", g_storeid)
+		set rsDept=dbconnx.Execute(sql)
 		
 		do while not rsDept.EOF
 			str_dept_link = str_dept_link & "<a href=""gdept.phtml?dept_id=" & rsDept("dept_id") & """>" & rsDept("dept_name") & "</a> > "
@@ -38,8 +36,8 @@ function GetParentCategoryLink(ByRef str_db, ByRef str_dept_id)
 
 	case 10 'Sub 2
 		sql = "SELECT dept_id, dept_name FROM :9_dept WHERE dept_id IN ('" & Left(str_dept_id,2) & "', '" & Left(str_dept_id, 6) & "') ORDER BY dept_id"
-		sql = Replace(sql, ":9", Session("StoreID"))
-		set rsDept=conn.Execute(sql)
+		sql = Replace(sql, ":9", g_storeid)
+		set rsDept=dbconn.Execute(sql)
 		
 		i = dept_level
 		do while not rsDept.EOF
@@ -53,7 +51,7 @@ function GetParentCategoryLink(ByRef str_db, ByRef str_dept_id)
 		
 	end select
 	
-	dbconn.close
+	dbconnx.close
 	
 	GetParentCategoryLink = str_dept_link
 	
@@ -68,12 +66,12 @@ function GetCategoryPriceRule(str_db, str_dept_id, str_dept_pricerule, str_defau
 	b_pricerule = false
 	a_pricerule = "0"
 	
-	Set dbconn = Server.CreateObject("ADODB.Connection")
-	dbconn.open str_db
+	Set dbconnx = Server.CreateObject("ADODB.Connection")
+	dbconnx.open str_db
 	
 	sql = "SELECT pri_pricerule_flag, pub_pricerule_flag FROM :9_profile"
-	sql = Replace(sql, ":9", Session("StoreID"))
-	set rsGlobal= dbconn.Execute(sql)
+	sql = Replace(sql, ":9", g_storeid)
+	set rsGlobal= dbconnx.Execute(sql)
 					
 	if not rsGlobal.EOF then	  	
 		pri_pricerule_flag = rsGlobal("pri_pricerule_flag")
@@ -105,8 +103,8 @@ function GetCategoryPriceRule(str_db, str_dept_id, str_dept_pricerule, str_defau
 	
 	'GRP
 	sql = "SELECT dept_pricerule FROM :9_dept WHERE dept_id='" & Left(str_dept_id,2) & "'"
-  sql = Replace(sql, ":9", Session("StoreID"))
-  set rsSub=dbconn.Execute(sql)
+  sql = Replace(sql, ":9", g_storeid)
+  set rsSub=dbconnx.Execute(sql)
   
   if not rsSub.EOF then
 		pricerule_flag = rsSub("dept_pricerule")
@@ -124,8 +122,8 @@ function GetCategoryPriceRule(str_db, str_dept_id, str_dept_pricerule, str_defau
   if Len(str_dept_id) > 2 then
 		'CAT
 		sql = "SELECT dept_pricerule FROM :9_dept WHERE dept_id='" & Left(str_dept_id,6) & "'"
-		sql = Replace(sql, ":9", Session("StoreID"))
-		set rsSub=dbconn.Execute(sql)
+		sql = Replace(sql, ":9", g_storeid)
+		set rsSub=dbconnx.Execute(sql)
   
 		if not rsSub.EOF then
 			pricerule_flag = rsSub("dept_pricerule")
@@ -144,8 +142,8 @@ function GetCategoryPriceRule(str_db, str_dept_id, str_dept_pricerule, str_defau
   if Len(str_dept_id) > 6 then
 		'CAT
 		sql = "SELECT dept_pricerule FROM :9_dept WHERE dept_id='" & Left(str_dept_id,10) & "'"
-		sql = Replace(sql, ":9", Session("StoreID"))
-		set rsSub=dbconn.Execute(sql)
+		sql = Replace(sql, ":9", g_storeid)
+		set rsSub=dbconnx.Execute(sql)
   
 		if not rsSub.EOF then
 			pricerule_flag = rsSub("dept_pricerule")
@@ -169,7 +167,7 @@ function GetCategoryPriceRule(str_db, str_dept_id, str_dept_pricerule, str_defau
 	
 	str_dept_pricerule = a_pricerule
 	
-	dbconn.Close
+	dbconnx.Close
 	
 	GetCategoryPriceRule = b_pricerule
 end function
@@ -180,13 +178,13 @@ function ApplyPriceRule(ByRef str_db, ByRef rule_dept, ByRef str_price)
 	
 	call Numberize(str_price)
 	
-	set dbconn = Server.CreateObject("ADODB.Connection")
-	dbconn.Open str_db
+	set dbconnx = Server.CreateObject("ADODB.Connection")
+	dbconnx.Open str_db
 	
 	sql = "SELECT pricerule_rule FROM :9_pricerule WHERE pricerule_from <= " & str_price & " AND pricerule_to > " & str_price & " AND pricerule_dept='" & rule_dept & "'"
-	sql = Replace(sql, ":9", Session("StoreID"))
+	sql = Replace(sql, ":9", g_storeid)
 	
-	set rsPrice = dbconn.Execute(sql)
+	set rsPrice = dbconnx.Execute(sql)
 	if not rsPrice.EOF then
 		iRule = rsPrice("pricerule_rule")
 		if IsNumeric(iRule) then
@@ -199,7 +197,7 @@ function ApplyPriceRule(ByRef str_db, ByRef rule_dept, ByRef str_price)
 	end if
 	rsPrice.Close
 	
-	dbconn.Close
+	dbconnx.Close
 	ApplyPriceRule = FormatNumber(retPrice, 2,,,0)
 	
 end function
@@ -232,7 +230,7 @@ end function
 		url_key = Replace(url_key, "/", "")
 		
 		sql = "SELECT * FROM " & g_storeid & "_rewrite WHERE rewrite_request_path='" & url_key & "'"
-		set rsRewrite = conn.Execute(sql)
+		set rsRewrite = dbconn.Execute(sql)
 		if not rsRewrite.EOF then
 			rewrite_type = rsRewrite("rewrite_type")
 			rewrite_system_type = rsRewrite("rewrite_system_type")
@@ -259,7 +257,7 @@ end function
 	'==============================================================================
 	
 	sql = "SELECT * FROM " & g_storeid & "_dept WHERE dept_id='" & dept_ID & "'"
-    Set rsDeptName = Conn.Execute(sql)
+    Set rsDeptName = dbconn.Execute(sql)
 
     if not rsDeptName.EOF then
 	    dept_name = Trim(rsDeptName("dept_name"))
@@ -292,10 +290,10 @@ end function
     rsDeptName.Close
 	
 	Set conn_ss = Server.CreateObject("ADODB.Connection")
-	conn_ss.open Session("SSCatalogConnectionString")
+	conn_ss.open g_connection_icecat_main
 
 	Set conn_ss1 = Server.CreateObject("ADODB.Connection")
-	conn_ss1.open Session("SSPriceConnectionString")
+	conn_ss1.open g_connection_icecat_catalog
 	
 	if Len(sub_id) > 0 then
 		icecat_category = sub_id
@@ -315,7 +313,7 @@ end function
 			' start of icecat catalog
 			'==============================================================================
 			sql = "SELECT * FROM " & g_storeid & "_profile"
-			Set rsProfile = Conn.Execute(sql)
+			Set rsProfile = dbconn.Execute(sql)
 			if (not rsProfile.EOF) then
 				espec_part_number_mode = rsProfile("espec_part_number_mode")
 			end if
@@ -439,8 +437,8 @@ end function
 			range_max_price = Trim(Request("max"))
 
 			If useAnchorCategory = 1 Then
-				sql = "SELECT specsource_categoryid FROM " & Session("StoreID") & "_ss_dept WHERE dept_id like '" & dept_id & "%'"
-				set rsDept=conn.Execute(sql)
+				sql = "SELECT specsource_categoryid FROM " & g_storeid & "_ss_dept WHERE dept_id like '" & dept_id & "%'"
+				set rsDept=dbconn.Execute(sql)
 				ss_categoryid = ""
 				Do While Not rsDept.EOF
 					ss_categoryid = ss_categoryid & Trim(rsDept(0)) & ","
@@ -451,8 +449,8 @@ end function
 					ss_categoryid = Left(ss_categoryid, Len(ss_categoryid)-1)
 				End If
 			else
-				sql = "SELECT specsource_categoryid FROM " & Session("StoreID") & "_ss_dept WHERE dept_id='" & dept_id & "'"
-				set rsDept=conn.Execute(sql)
+				sql = "SELECT specsource_categoryid FROM " & g_storeid & "_ss_dept WHERE dept_id='" & dept_id & "'"
+				set rsDept=dbconn.Execute(sql)
 				if not rsDept.EOF then
 					ss_categoryid = Trim(rsDept(0))
 				end if
@@ -712,7 +710,7 @@ end function
 				ga = Split(s_selectedFeatureIds, ",")
 				for i=0 to UBound(ga)
 					gx = Replace(ga(i), "'", "")
-					zsql = zsql & " pf_id IN (SELECT productid FROM " & Session("StoreID") & "_productattributes WHERE featurename='" & gx & "' AND displayvalue='" & Trim(request("ga_" & gx)) & "' ) AND"
+					zsql = zsql & " pf_id IN (SELECT productid FROM " & g_storeid & "_productattributes WHERE featurename='" & gx & "' AND displayvalue='" & Trim(request("ga_" & gx)) & "' ) AND"
 					s_filter_url = s_filter_url & "&ga_" & gx & "=" & Trim(request("ga_" & gx))
 				Next
 			End If
@@ -737,7 +735,7 @@ end function
 			
 			if cont_ok then
 				str_parent_dept = ""
-				str_parent_dept = GetParentCategoryLink(Session("ConnectionString"),dept_ID)
+				str_parent_dept = GetParentCategoryLink(g_connection_string,dept_ID)
 				if (dept_use_markup) then
 					current_markup = dept_markup
 				else
@@ -751,8 +749,8 @@ end function
 						'Do nothing.. use global markup...
 					case 6
 						sql = "SELECT markup_" & Session("LOGINGROUP") & " FROM :9_dept WHERE dept_id IN ('" & Left(dept_ID, 2) & "','" & dept_ID & "') AND use_markup=1 ORDER BY dept_id DESC"
-						sql = replace(sql, ":9", Session("StoreID"))
-						Set rsDeptMarkup = Conn.Execute(sql)
+						sql = replace(sql, ":9", g_storeid)
+						Set rsDeptMarkup = dbconn.Execute(sql)
 					
 						if rsDeptMarkup.EOF then
 							'Do nothing...
@@ -764,8 +762,8 @@ end function
 					case 10
 					
 						sql = "SELECT markup_" & Session("LOGINGROUP") & " FROM :9_dept WHERE dept_id IN ('" & Left(dept_ID, 2) & "','" & Left(dept_ID,6) & "','" & dept_ID & "') AND use_markup=1 ORDER BY dept_id DESC"
-						sql = replace(sql, ":9", Session("StoreID"))
-						Set rsDeptMarkup = Conn.Execute(sql)
+						sql = replace(sql, ":9", g_storeid)
+						Set rsDeptMarkup = dbconn.Execute(sql)
 					
 						if rsDeptMarkup.EOF then
 							'Do nothing...
@@ -781,7 +779,7 @@ end function
 			
 				'Get price rule dept...
 				dept_pricerule = "0"
-				if GetCategoryPriceRule(Session("ConnectionString"), dept_ID, dept_pricerule, "000") then
+				if GetCategoryPriceRule(g_connection_string, dept_ID, dept_pricerule, "000") then
 					b_use_pricerule = true
 				else
 					b_use_pricerule = false
@@ -839,7 +837,7 @@ end function
 					show = dept_list_num
 				end Select
 			
-				strSQL = "SELECT " & Session("StoreID") & "_product.* FROM " & Session("StoreID") & "_product WHERE pf_id IN(SELECT pf_id FROM " & Session("StoreID") & "_dept_prod WHERE dept_id like '" & dept_ID & "%')"
+				strSQL = "SELECT " & g_storeid & "_product.* FROM " & g_storeid & "_product WHERE pf_id IN(SELECT pf_id FROM " & g_storeid & "_dept_prod WHERE dept_id like '" & dept_ID & "%')"
 			
 				if Len(Session("CUSTOM_CATALOG_ID_FLAG")) > 0 then
 					strSQL = strSQL & " AND CC" & Session("CUSTOM_CATALOG_ID_FLAG") & "_FLAG=1"
@@ -861,7 +859,7 @@ end function
 				strSQL = strSQL & str_sort
 			
 				Set rsDept = Server.CreateObject("ADODB.RecordSet")
-				rsDept.Open strSQL, Session("ConnectionString"), 1, 1
+				rsDept.Open strSQL, g_connection_string, 1, 1
 			
 				page = FilterStringEx(Request("page"), "[^0-9]")
 				
@@ -956,8 +954,8 @@ end function
 			'==========================================================================================
 
 			If Len(Session("shopper_id")) > 0 Then
-				sql = "SELECT apple_authorized FROM " & Session("StoreID") & "_shopper WHERE shopper_id='" & Session("shopper_id") & "'"
-				Set rsAuthorized = conn.Execute(sql)
+				sql = "SELECT apple_authorized FROM " & g_storeid & "_shopper WHERE shopper_id='" & Session("shopper_id") & "'"
+				Set rsAuthorized = dbconn.Execute(sql)
 				If Not rsAuthorized.EOF Then
 					apple_authorized = rsAuthorized(0)
 				Else
