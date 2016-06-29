@@ -1,7 +1,7 @@
 <!--#INCLUDE FILE="../local/local.phtml"-->
 <!--#INCLUDE FILE="../core/i_initsession.phtml"-->
 <!--#INCLUDE FILE="../core/i_login.phtml"-->
-<!--#INCLUDE FILE="../core/i_adodb.phtml"-->
+<!--#INCLUDE FILE="../core/i_adoopen.phtml"-->
 <!--#INCLUDE FILE="../util/xt_func_session.phtml"-->
 <!--#INCLUDE FILE="../util/xt_func_util.phtml" -->
 <!--#INCLUDE FILE="../util/xt_func_string.phtml"-->
@@ -23,8 +23,8 @@
 
 
 	sql = "SELECT index_text, index_bottom, text_flags, show_special, special_row, event_id FROM :9_profile"
-	sql = Replace(sql, ":9", Session("StoreID"))
-	set rsText = Conn.Execute(sql)
+	sql = Replace(sql, ":9", g_storeid)
+	set rsText = dbconn.Execute(sql)
 										
 	welcome_text = rsText("index_text")
 	welcome_bottom = rsText("index_bottom")
@@ -41,9 +41,9 @@
 	if IsNumeric(event_id) then
 		if event_id > 999 then
 			EVNsql = "SELECT * FROM :9_event WHERE event_id=" & event_id
-			EVNsql = Replace(EVNsql, ":9", Session("StoreID"))
+			EVNsql = Replace(EVNsql, ":9", g_storeid)
 			
-			set rsEvent = Conn.Execute(EVNsql)
+			set rsEvent = dbconn.Execute(EVNsql)
 			if not rsEvent.EOF then
 				event_width = rsEvent("event_width")
 				event_height = rsEvent("event_height")
@@ -60,7 +60,7 @@
 	if Session("DEMOVERSION") = "1" then
 		g_storeid = "bk01"
 	else
-		g_storeid = Session("StoreID")
+		g_storeid = g_storeid
 		if Len(Session("IMFILEID")) > 3 then
 			g_storeid = Session("IMFILEID")
 		end if
@@ -80,7 +80,7 @@
 	
 	'=======================================================
 	'NOTE : OCENTURE ONLY
-	if Session("StoreID") = "ocenture" OR Session("StoreID") = "Ingram" then
+	if g_storeid = "ocenture" OR g_storeid = "Ingram" then
 		
 		g_memberid = Trim(Request("sid"))
 		if Len(g_memberid) > 0 then
@@ -114,11 +114,11 @@
 	catalogid = FilterStringEx(catalogid, "[^0-9]")
 
 	if Len(catalogid) > 0 then
-		Response.cookies(Session("StoreID"))("CATALOGID") = catalogid
-		Response.cookies(Session("StoreID")).Expires = DateAdd("d", 7, date())
-		Response.cookies(Session("StoreID")&"**").Expires = DateAdd("m", 7, date())
+		Response.cookies(g_storeid)("CATALOGID") = catalogid
+		Response.cookies(g_storeid).Expires = DateAdd("d", 7, date())
+		Response.cookies(g_storeid&"**").Expires = DateAdd("m", 7, date())
 	else
-		catalogid = Request.cookies(Session("StoreID"))("CATALOGID")
+		catalogid = Request.cookies(g_storeid)("CATALOGID")
 	end if
 
 	if Len(catalogid) > 0 then
@@ -128,13 +128,13 @@
 			Session("CATALOGPV") = 1
 			Session("CATALOGES")  = 1
 			Session("CATALOGSY")  = 1
-			Response.cookies(Session("StoreID"))("CATALOGID") = ""
-			Response.cookies(Session("StoreID")).Expires = DateAdd("d", 7, date())
-			Response.cookies(Session("StoreID")&"**").Expires = DateAdd("m", 7, date())
+			Response.cookies(g_storeid)("CATALOGID") = ""
+			Response.cookies(g_storeid).Expires = DateAdd("d", 7, date())
+			Response.cookies(g_storeid&"**").Expires = DateAdd("m", 7, date())
 			Response.Redirect Session("StoreURL") & "/index2.asp"
 		else
-			sql = "SELECT * FROM " & Session("StoreID") & "_custom_catalog where catalog_id ='" & catalogid & "'" 
-			Set rsCatalog = Conn.Execute(sql)
+			sql = "SELECT * FROM " & g_storeid & "_custom_catalog where catalog_id ='" & catalogid & "'" 
+			Set rsCatalog = dbconn.Execute(sql)
 			if not rsCatalog.EOF then
 				Session("CATALOGID") = catalogid
 				Session("CATALOGPV") = rsCatalog("show_private_catalog")
@@ -167,9 +167,9 @@
 		Session("CATALOGES")  = 1
 		Session("CATALOGSY")  = 1
 
-		Response.cookies(Session("StoreID"))("CATALOGID") = ""
-		Response.cookies(Session("StoreID")).Expires = DateAdd("d", 7, date())
-		Response.cookies(Session("StoreID")&"**").Expires = DateAdd("m", 7, date())
+		Response.cookies(g_storeid)("CATALOGID") = ""
+		Response.cookies(g_storeid).Expires = DateAdd("d", 7, date())
+		Response.cookies(g_storeid&"**").Expires = DateAdd("m", 7, date())
 
 	end if
 	'=====================================================================================

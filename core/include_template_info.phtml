@@ -1,10 +1,10 @@
 <%
 '======================================================================================================
-	Set conn = Server.CreateObject("ADODB.Connection")
-	conn.open Session("ConnectionString")
+	'Set conn = Server.CreateObject("ADODB.Connection")
+	'dbconn.open Session("ConnectionString")
 
-	sql = "SELECT setting_values FROM " &  Session("StoreID") & "_setting WHERE setting_type='THEME_ENABLE'"
-	Set rsSetting = conn.Execute(sql)
+	sql = "SELECT setting_values FROM " &  g_storeid & "_setting WHERE setting_type='THEME_ENABLE'"
+	Set rsSetting = dbconn.Execute(sql)
 	if not rsSetting.EOF then
 		THEME_ENABLE = Trim(rsSetting(0))
 	else
@@ -12,8 +12,8 @@
 	end if
 	rsSetting.Close
 
-	sql = "SELECT setting_values FROM " &  Session("StoreID") & "_setting WHERE setting_type='THEME_TEMPLATE'"
-	Set rsSetting = conn.Execute(sql)
+	sql = "SELECT setting_values FROM " &  g_storeid & "_setting WHERE setting_type='THEME_TEMPLATE'"
+	Set rsSetting = dbconn.Execute(sql)
 	if not rsSetting.EOF then
 		THEME_TEMPLATE = Trim(rsSetting(0))
 	else
@@ -21,8 +21,8 @@
 	end if
 	rsSetting.Close
 
-	sql = "SELECT setting_values FROM " &  Session("StoreID") & "_setting WHERE setting_type='THEME_SKIN'"
-	Set rsSetting = conn.Execute(sql)
+	sql = "SELECT setting_values FROM " &  g_storeid & "_setting WHERE setting_type='THEME_SKIN'"
+	Set rsSetting = dbconn.Execute(sql)
 	if not rsSetting.EOF then
 		THEME_SKIN = Trim(rsSetting(0))
 	else
@@ -30,15 +30,15 @@
 	end if
 	rsSetting.Close
 
-	sql = "SELECT setting_values FROM " &  Session("StoreID") & "_setting WHERE setting_type='THEME_ALLOWED_IPS'"
-	Set rsSetting = conn.Execute(sql)
+	sql = "SELECT setting_values FROM " &  g_storeid & "_setting WHERE setting_type='THEME_ALLOWED_IPS'"
+	Set rsSetting = dbconn.Execute(sql)
 	if not rsSetting.EOF then
 		THEME_ALLOWED_IPS = Trim(rsSetting(0))
 	else
 		THEME_ALLOWED_IPS = "0"
 	end if
 	rsSetting.Close
-	conn.close
+	dbconn.close
 
 	THEME_ALLOWED_IPS = "0"
 
@@ -59,6 +59,6 @@
 		End if
 	End if
 
-	THEME_TEMPLATE = "nle"
+	THEME_TEMPLATE = "marketshop1"
 	'======================================================================================================
 %>
