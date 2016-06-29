@@ -1,0 +1,641 @@
+<SCRIPT LANGUAGE=VBScript RUNAT=Server>
+
+Function GetNumIncrementOptionTags(str_value_prefix,num_start,num_end,num_increment,num_selected,sFormat)
+	'returns string of option tags
+	'str_value_prefix' is the string prefix for the option tag values
+	'sFormat is one of:
+	'	"none"		1970
+	'	"std"		1,970
+	'	"dollar"	$1,970
+	'	"cent"		$1970.00
+	
+	Dim i,str,tags
+	
+	'validate
+	if(num_increment<0) then
+		if(num_start-num_end<0) then
+			GetNumIncrementOptionTags=""
+			exit function
+		end if
+	else
+		if(num_end-num_end<0) then
+			GetNumIncrementOptionTags=""
+			exit function
+		end if
+	end if
+	if((Abs(num_increment)>Abs(num_end-num_start))) then
+		GetNumIncrementOptionTags=""
+		exit function
+	end if
+	
+	for i=num_start to num_end step num_increment
+		select case sFormat
+			case "none"
+				str=CStr(i)
+			case "std"
+				str=FormatNumber(i,0)
+			case "dollar"
+				str=FormatCurrency(i,0)
+			case "cent"
+				str=FormatNumber(i,2)
+			case else
+				str=CStr(i)
+		end select
+		if(i=num_selected) then
+			tags=tags&chr(13)&chr(10)&_
+				"<option value="""&str_value_prefix&i&""" selected>"&str&"</option>"
+		else
+			tags=tags&chr(13)&chr(10)&_
+				"<option value="""&str_value_prefix&i&""">"&str&"</option>"
+		end if
+	next
+	GetNumIncrementOptionTags=tags
+End Function
+
+Function GetTextMonthOptionTags(str_value_prefix,num_selected_month)
+	'returns string of option tags
+	'str_value_prefix' is the string prefix for the option tag values
+	
+	Dim i,str,tags
+	
+	for i = 1 to 12
+		select case i
+			case 1
+				str="January"
+			case 2
+				str="February"
+			case 3
+				str="March"
+			case 4
+				str="April"
+			case 5
+				str="May"
+			case 6
+				str="June"
+			case 7
+				str="July"
+			case 8
+				str="August"
+			case 9
+				str="September"
+			case 10
+				str="October"
+			case 11
+				str="November"
+			case 12
+				str="December"
+		end select
+		if(i=num_selected_month) then
+			tags=tags&chr(13)&chr(10)&_
+				"<option value="""&str_value_prefix&i&""" selected>"&str&"</option>"
+		else
+			tags=tags&chr(13)&chr(10)&_
+				"<option value="""&str_value_prefix&i&""">"&str&"</option>"
+		end if
+	next
+	
+	GetTextMonthOptionTags=tags
+End Function
+
+Function GetMonthOptionTags(str_value_prefix,num_selected_month)
+	'returns string of option tags
+	'str_value_prefix' is the string prefix for the option tag values
+	
+	Dim i,str,tags
+	
+	for i = 1 to 12
+		if(i<10) then
+			str="0"&i
+		else
+			str=i
+		end if
+		'response.write "i= " &i& "num_selected_month= " &num_selected_month& "<BR>"
+		if(i=num_selected_month) then
+			tags=tags&chr(13)&chr(10)&_
+				"<option value="""&str_value_prefix&str&""" selected>"&str&"</option>"
+		else
+			tags=tags&chr(13)&chr(10)&_
+				"<option value="""&str_value_prefix&str&""">"&str&"</option>"
+		end if
+	next
+	GetMonthOptionTags=tags
+End Function
+
+Function GetYearOptionTags(ByRef str_tofill,str_value_prefix,num_beg_year,num_end_year,num_selected_year)
+	'returns true/false
+	'str_value_prefix' is the string prefix for the option tag values
+	'str_tofill' is filled with a chain of HTML option tags
+	'generates an option tag for each year between 'num_begyear' and 'num_endyear' INCLUSIVE
+	
+	Dim i
+	
+	'===============================================================
+	'Override beg and end year
+	num_beg_year = 2010
+	num_end_year = 2030
+	
+	str_tofill=""
+	if((num_end_year-num_beg_year)<1) then
+		GetYearOptionTags=false
+	end if
+	for i = num_beg_year to num_end_year
+		if(i=num_selected_year) then
+			str_tofill=str_tofill&chr(13)&chr(10)&_
+				"<option value="""&str_value_prefix&i&""" selected>"&i&"</option>"
+		else
+			str_tofill=str_tofill&chr(13)&chr(10)&_
+				"<option value="""&str_value_prefix&i&""">"&i&"</option>"
+		end if
+	next
+	GetYearOptionTags=true
+End Function
+
+sub SelectOptionTagString(ByRef str_optiontags,ByRef str_selected_value)
+	if((not IsNull(str_selected_value))and(not IsEmpty(str_selected_value))) then
+
+		if str_selected_value = "PayPal" then
+			str_selected_value = LCase(str_selected_value)
+		end if
+
+		dim lensel,i,endb
+		lensel=Len(str_selected_value)
+		if(lensel>0) then
+			endb=" "
+			i=0
+			do while(not ((IsNull(endb))or(Len(endb)=0)))
+				i=InStr(i+1,str_optiontags,str_selected_value)
+				if((IsNull(i))or(i=0)) then
+					exit do
+				end if
+				if(i>0) then
+					endb=Mid(str_optiontags,i+lensel,1)
+					'check for quoted values
+					if(endb=chr(34)) then
+'Response.Write(chr(13)&chr(10)&"quoted value")
+						i=i+1
+						endb=Mid(str_optiontags,i+lensel,1)
+					end if
+					if(endb=">") then
+						str_optiontags=Left(str_optiontags,i+lensel-1)&" SELECTED"&Mid(str_optiontags,i+lensel)
+						exit do
+					end if
+				end if
+			loop
+		end if
+	end if
+end sub
+
+Function GetMultiSelectStatesOptionTags(arrSelStates)
+	'returns string
+	'arrSelStates is an array of selected states
+	
+	dim s,i
+	s=GetStatesOptionTags("")
+	s=Mid(s,36)	'get rid of the "click to select" option
+	for i=0 to UBound(arrSelStates,1)
+'Response.Write("arrSelStates("&CStr(i)&")="&arrSelStates(i)&chr(13)&chr(10))
+		Call SelectOptionTagString(s,arrSelStates(i))
+	next
+	GetMultiSelectStatesOptionTags=s
+end function
+
+Function GetStatesOptionTags(str_selected_state)
+  'returns string of option tags
+  'selected_state' is 2 char abbreviation according to the option values below
+    
+  Dim str,i,lensel
+    
+  str=chr(13)&chr(10)&"<OPTION VALUE=-->Click to select</option>"
+  str=str&chr(13)&chr(10)&"<OPTION VALUE=AL>Alabama</option>"
+	str=str&chr(13)&chr(10)&"<OPTION VALUE=AK>Alaska</option>"
+	str=str&chr(13)&chr(10)&"<OPTION VALUE=AZ>Arizona</option>"
+	str=str&chr(13)&chr(10)&"<OPTION VALUE=AR>Arkansas</option>"
+	str=str&chr(13)&chr(10)&"<OPTION VALUE=CA>California</option>"
+	str=str&chr(13)&chr(10)&"<OPTION VALUE=CO>Colorado</option>"
+	str=str&chr(13)&chr(10)&"<OPTION VALUE=CT>Connecticut</option>"
+	str=str&chr(13)&chr(10)&"<OPTION VALUE=DE>Delaware</option>"
+	str=str&chr(13)&chr(10)&"<OPTION VALUE=DC>District of Columbia</option>"
+	str=str&chr(13)&chr(10)&"<OPTION VALUE=FL>Florida</option>"
+	str=str&chr(13)&chr(10)&"<OPTION VALUE=GA>Georgia</option>"
+	str=str&chr(13)&chr(10)&"<OPTION VALUE=GU>Guam</option>"
+	str=str&chr(13)&chr(10)&"<OPTION VALUE=HI>Hawaii</option>"
+	str=str&chr(13)&chr(10)&"<OPTION VALUE=ID>Idaho</option>"
+	str=str&chr(13)&chr(10)&"<OPTION VALUE=IL>Illinois</option>"
+	str=str&chr(13)&chr(10)&"<OPTION VALUE=IN>Indiana</option>"
+	str=str&chr(13)&chr(10)&"<OPTION VALUE=IA>Iowa</option>"
+	str=str&chr(13)&chr(10)&"<OPTION VALUE=KS>Kansas</option>"
+	str=str&chr(13)&chr(10)&"<OPTION VALUE=KY>Kentucky</option>"
+	str=str&chr(13)&chr(10)&"<OPTION VALUE=LA>Louisiana</option>"
+	str=str&chr(13)&chr(10)&"<OPTION VALUE=ME>Maine</option>"
+	str=str&chr(13)&chr(10)&"<OPTION VALUE=MD>Maryland</option>"
+	str=str&chr(13)&chr(10)&"<OPTION VALUE=MA>Massachusetts</option>"
+	str=str&chr(13)&chr(10)&"<OPTION VALUE=MI>Michigan</option>"
+	str=str&chr(13)&chr(10)&"<OPTION VALUE=MN>Minnesota</option>"
+	str=str&chr(13)&chr(10)&"<OPTION VALUE=MS>Mississippi</option>"
+	str=str&chr(13)&chr(10)&"<OPTION VALUE=MO>Missouri</option>"
+	str=str&chr(13)&chr(10)&"<OPTION VALUE=MT>Montana</option>"
+	str=str&chr(13)&chr(10)&"<OPTION VALUE=NE>Nebraska</option>"
+	str=str&chr(13)&chr(10)&"<OPTION VALUE=NV>Nevada</option>"
+	str=str&chr(13)&chr(10)&"<OPTION VALUE=NH>New Hampshire</option>"
+	str=str&chr(13)&chr(10)&"<OPTION VALUE=NJ>New Jersey</option>"
+	str=str&chr(13)&chr(10)&"<OPTION VALUE=NM>New Mexico</option>"
+	str=str&chr(13)&chr(10)&"<OPTION VALUE=NY>New York</option>"
+	str=str&chr(13)&chr(10)&"<OPTION VALUE=NC>North Carolina</option>"
+	str=str&chr(13)&chr(10)&"<OPTION VALUE=ND>North Dakota</option>"
+	str=str&chr(13)&chr(10)&"<OPTION VALUE=OH>Ohio</option>"
+	str=str&chr(13)&chr(10)&"<OPTION VALUE=OK>Oklahoma</option>"
+	str=str&chr(13)&chr(10)&"<OPTION VALUE=OR>Oregon</option>"
+	str=str&chr(13)&chr(10)&"<OPTION VALUE=PA>Pennsylvania</option>"
+	str=str&chr(13)&chr(10)&"<OPTION VALUE=PR>Puerto Rico</option>"
+	str=str&chr(13)&chr(10)&"<OPTION VALUE=RI>Rhode Island</option>"
+	str=str&chr(13)&chr(10)&"<OPTION VALUE=SC>South Carolina</option>"
+	str=str&chr(13)&chr(10)&"<OPTION VALUE=SD>South Dakota</option>"
+	str=str&chr(13)&chr(10)&"<OPTION VALUE=TN>Tennessee</option>"
+	str=str&chr(13)&chr(10)&"<OPTION VALUE=TX>Texas</option>"
+	str=str&chr(13)&chr(10)&"<OPTION VALUE=UT>Utah</option>"
+	str=str&chr(13)&chr(10)&"<OPTION VALUE=VT>Vermont</option>"
+	str=str&chr(13)&chr(10)&"<OPTION VALUE=VA>Virginia</option>"
+	str=str&chr(13)&chr(10)&"<OPTION VALUE=WA>Washington</option>"
+	str=str&chr(13)&chr(10)&"<OPTION VALUE=WV>West Virginia</option>"
+	str=str&chr(13)&chr(10)&"<OPTION VALUE=WI>Wisconsin</option>"
+	str=str&chr(13)&chr(10)&"<OPTION VALUE=WY>Wyoming</option>" 
+	str=str&chr(13)&chr(10)&"<OPTION VALUE=""AE"">APO/FPO</option>"
+	
+	Call SelectOptionTagString(str,str_selected_state)
+	GetStatesOptionTags=str
+End Function
+
+Function GetStatesOptionTagsInt(str_selected_state, b_show_flag)
+  'returns string of option tags
+  'selected_state' is 2 char abbreviation according to the option values below
+  'b_show_flag -- 0: US and CANADA 1:CANADA ONLY
+  'IGNORE b_show_flag  - go by session...
+    
+  Dim str,i,lensel
+    
+  str="<OPTION VALUE=-->Click to select</option>"
+  
+  strUS = ""
+  strUSTitle="<OPTION VALUE=-->-- UNITED STATES --</option>"
+  
+  strUS=strUS&"<OPTION VALUE=AL>Alabama</option>"
+  strUS=strUS&"<OPTION VALUE=AK>Alaska</option>"
+  strUS=strUS&"<OPTION VALUE=AZ>Arizona</option>"
+  strUS=strUS&"<OPTION VALUE=AR>Arkansas</option>"
+  strUS=strUS&"<OPTION VALUE=CA>California</option>"
+  strUS=strUS&"<OPTION VALUE=CO>Colorado</option>"
+  strUS=strUS&"<OPTION VALUE=CT>Connecticut</option>"
+  strUS=strUS&"<OPTION VALUE=DE>Delaware</option>"
+  strUS=strUS&"<OPTION VALUE=DC>DistrUSict of Columbia</option>"
+  strUS=strUS&"<OPTION VALUE=FL>Florida</option>"
+  strUS=strUS&"<OPTION VALUE=GA>Georgia</option>"
+  strUS=strUS&"<OPTION VALUE=GU>Guam</option>"
+  strUS=strUS&"<OPTION VALUE=HI>Hawaii</option>"
+  strUS=strUS&"<OPTION VALUE=ID>Idaho</option>"
+  strUS=strUS&"<OPTION VALUE=IL>Illinois</option>"
+  strUS=strUS&"<OPTION VALUE=IN>Indiana</option>"
+  strUS=strUS&"<OPTION VALUE=IA>Iowa</option>"
+  strUS=strUS&"<OPTION VALUE=KS>Kansas</option>"
+  strUS=strUS&"<OPTION VALUE=KY>Kentucky</option>"
+  strUS=strUS&"<OPTION VALUE=LA>Louisiana</option>"
+  strUS=strUS&"<OPTION VALUE=ME>Maine</option>"
+  strUS=strUS&"<OPTION VALUE=MD>Maryland</option>"
+  strUS=strUS&"<OPTION VALUE=MA>Massachusetts</option>"
+  strUS=strUS&"<OPTION VALUE=MI>Michigan</option>"
+  strUS=strUS&"<OPTION VALUE=MN>Minnesota</option>"
+  strUS=strUS&"<OPTION VALUE=MS>Mississippi</option>"
+  strUS=strUS&"<OPTION VALUE=MO>Missouri</option>"
+  strUS=strUS&"<OPTION VALUE=MT>Montana</option>"
+  strUS=strUS&"<OPTION VALUE=NE>Nebraska</option>"
+  strUS=strUS&"<OPTION VALUE=NV>Nevada</option>"
+  strUS=strUS&"<OPTION VALUE=NH>New Hampshire</option>"
+  strUS=strUS&"<OPTION VALUE=NJ>New Jersey</option>"
+  strUS=strUS&"<OPTION VALUE=NM>New Mexico</option>"
+  strUS=strUS&"<OPTION VALUE=NY>New York</option>"
+  strUS=strUS&"<OPTION VALUE=NC>North Carolina</option>"
+  strUS=strUS&"<OPTION VALUE=ND>North Dakota</option>"
+  strUS=strUS&"<OPTION VALUE=OH>Ohio</option>"
+  strUS=strUS&"<OPTION VALUE=OK>Oklahoma</option>"
+  strUS=strUS&"<OPTION VALUE=OR>Oregon</option>"
+  strUS=strUS&"<OPTION VALUE=PA>Pennsylvania</option>"
+  strUS=strUS&"<OPTION VALUE=PR>Puerto Rico</option>"
+  strUS=strUS&"<OPTION VALUE=RI>Rhode Island</option>"
+  strUS=strUS&"<OPTION VALUE=SC>South Carolina</option>"
+  strUS=strUS&"<OPTION VALUE=SD>South Dakota</option>"
+  strUS=strUS&"<OPTION VALUE=TN>Tennessee</option>"
+  strUS=strUS&"<OPTION VALUE=TX>Texas</option>"
+  strUS=strUS&"<OPTION VALUE=UT>Utah</option>"
+  strUS=strUS&"<OPTION VALUE=VT>Vermont</option>"
+  strUS=strUS&"<OPTION VALUE=VA>Virginia</option>"
+  strUS=strUS&"<OPTION VALUE=WA>Washington</option>"
+  strUS=strUS&"<OPTION VALUE=WV>West Virginia</option>"
+  strUS=strUS&"<OPTION VALUE=WI>Wisconsin</option>"
+  strUS=strUS&"<OPTION VALUE=WY>Wyoming</option>"
+  strUS=strUS&"<OPTION VALUE=""AE"">APO/FPO</option>"
+  
+  strCA = ""
+  strCATitle = "<OPTION VALUE=-->-- CANADA --</option>"
+  strCA=strCA&"<OPTION VALUE=""Alberta"">Alberta</option>"
+  strCA=strCA&"<OPTION VALUE=""British Columbia"">British Columbia</option>"
+  strCA=strCA&"<OPTION VALUE=""Manitoba"">Manitoba</option>"
+  strCA=strCA&"<OPTION VALUE=""New Brunswick"">New Brunswick</option>"
+  strCA=strCA&"<OPTION VALUE=""Newfoundland"">Newfoundland</option>"
+  strCA=strCA&"<OPTION VALUE=""N.W. Territories"">N.W. Territories</option>"
+  strCA=strCA&"<OPTION VALUE=""Nova Scotia"">Nova Scotia</option>"
+  strCA=strCA&"<OPTION VALUE=Nunavut>Nunavut</option>"
+  strCA=strCA&"<OPTION VALUE=Ontario>Ontario</option>"
+  strCA=strCA&"<OPTION VALUE=""Prince Edward Island"">Prince Edward Island</option>"
+  strCA=strCA&"<OPTION VALUE=Quebec>Quebec</option>"
+  strCA=strCA&"<OPTION VALUE=Saskatchewan>Saskatchewan</option>"
+  strCA=strCA&"<OPTION VALUE=Yukon>Yukon</option>"
+  
+  
+  '===========================================================================
+  SELECT CASE Session("ENABLEINT")
+  CASE "0"
+    str = str & strUS
+  CASE "1"
+    str = str & strUSTitle & strUS & strCATitle & strCA
+  CASE "2"
+    str = str & strCA
+  CASE "3"
+    str = str & strCATitle & strCA & strUSTitle & strUS
+  CASE ELSE
+    str = str & strUSTitle & strUS & strCATitle & strCA
+  END SELECT
+  
+  '===========================================================================
+  
+  SELECT CASE str_selected_state
+	CASE "AB"
+		str_ss1 = "Alberta"
+	CASE "BC"
+		str_ss1 = "British Columbia"
+	CASE "MB"
+		str_ss1 = "Manitoba"
+	CASE "NB"
+		str_ss1 = "New Brunswick"
+	CASE "NL"
+		str_ss1 = "Newfoundland"
+	CASE "NT"
+		str_ss1 = "N.W. Territories"
+	CASE "NS"
+		str_ss1 = "Nova Scotia"
+	CASE "NU"
+		str_ss1 = "Nunavut"
+	CASE "ON"
+		str_ss1 = "Ontario"
+	CASE "PE"
+		str_ss1 = "Prince Edward Island"
+	CASE "QC"
+		str_ss1 = "Quebec"
+	CASE "SK"
+		str_ss1 = "Saskatchewan"
+	CASE "YT"
+		str_ss1 = "Yukon"
+	CASE ELSE
+	  str_ss1 = ""
+	END SELECT
+  	
+	Call SelectOptionTagString(str,str_selected_state)
+	if Len(str_ss1) > 0 then
+	  Call SelectOptionTagString(str,str_ss1)
+	end if
+	
+	GetStatesOptionTagsInt=str
+End Function
+
+function GetPaymentMethods(_
+				ByRef str_db,_
+				ByRef str_is_visa,ByRef str_is_master,_
+				ByRef str_is_discover,ByRef str_is_amex,ByRef str_is_cod,ByRef str_is_billme,_
+				ByRef str_is_willcall,ByRef str_is_paypal)
+	'returns true/false
+	
+	dim sql,rs
+	
+	Set dbconn = Server.CreateObject("ADODB.Connection")
+	dbconn.open Session("ConnectionString")
+	sql = "SELECT * FROM :9_profile"
+	sql = Replace(sql, ":9", Session("StoreID"))	
+	
+	Set rs = dbconn.Execute(sql)
+	
+	if(rs.EOF) then
+		GetPaymentMethods=false
+		exit function
+	end if
+	
+	if(rs("Visa")=true) then
+		str_is_visa="1"
+	else
+		str_is_visa="0"
+	end if
+	if(rs("MasterCard")=true) then
+		str_is_master="1"
+	else
+		str_is_master="0"
+	end if
+	if(rs("Discover")=true) then
+		str_is_discover="1"
+	else
+		str_is_discover="0"
+	end if
+	if(rs("AmericanExpress")=true) then
+		str_is_amex="1"
+	else
+		str_is_amex="0"
+	end if
+	if(rs("COD")=true) then
+		str_is_cod="1"
+	else
+		str_is_cod="0"
+	end if
+	if(rs("BillMe")=true) then
+		str_is_billme="1"
+	else
+		str_is_billme="0"
+	end if
+	
+	if(rs("WillCall")=true) then
+		str_is_willcall="1"
+	else
+		str_is_willcall="0"
+	end if
+
+	if(rs("PayPal")=true) then
+		str_is_paypal="1"
+	else
+		str_is_paypal="0"
+	end if
+
+	rs.Close
+	dbconn.Close
+	
+	GetPaymentMethods=true
+end function
+
+Function GetCreditCardOptionTags(ByRef str_db,str_selected_cc,ByRef show_all)
+  'returns string of option tags
+  'selected_state' is 2 char abbreviation according to the option values below
+  Dim pm_cod,pm_billme,pm_visa,pm_master,pm_amex,pm_discover
+    
+  if GetPaymentMethods(str_db,_
+			pm_visa,pm_master,_
+			pm_discover,pm_amex,pm_cod,pm_billme,pm_willcall,pm_paypal)then
+	end if
+    
+	if show_all = "1" then
+		pm_visa = "1"
+		pm_master = "1"
+		pm_discover = "1"
+		pm_amex = "1"
+		pm_cod = "1"
+		pm_billme = "1"
+		pm_willcall = "1"
+		pm_paypal = "1"
+	end if
+	
+	if str_selected_cc = "visa" then
+		pm_visa = "1"
+	end if
+	if str_selected_cc = "mc" then
+		pm_master= "1"
+	end if
+	if str_selected_cc = "discover" then
+		pm_discover = "1"
+	end if
+	if str_selected_cc = "amex" then
+		pm_amex = "1"
+	end if
+	if str_selected_cc = "cod" then
+		pm_cod = "1"
+	end if
+	if str_selected_cc = "billme" then
+		pm_billme = "1"
+	end if
+	if str_selected_cc = "willcall" then
+		pm_willcall = "1"
+	end if
+	if str_selected_cc = "paypal" then
+		pm_paypal = "1"
+	end if
+
+	
+  Dim str,i,lensel
+    
+  str=chr(13)&chr(10)&"<OPTION VALUE=-->Select Payment Method</OPTION>"
+  if(pm_visa="1") then
+		str=str&chr(13)&chr(10)&"<OPTION VALUE=visa>Visa</OPTION>"
+	end if
+	if(pm_master="1") then
+		str=str&chr(13)&chr(10)&"<OPTION VALUE=mc>MasterCard</OPTION>"
+	end if
+	if(pm_discover="1") then
+		str=str&chr(13)&chr(10)&"<OPTION VALUE=discover>Discover</OPTION>"
+	end if
+	if(pm_amex="1") then
+		str=str&chr(13)&chr(10)&"<OPTION VALUE=amex>American Express</OPTION>"
+	end if
+	if(pm_cod="1") then
+		str=str&chr(13)&chr(10)&"<OPTION VALUE=cod>COD</OPTION>"
+	end if
+	if(pm_billme="1") then
+		str=str&chr(13)&chr(10)&"<OPTION VALUE=billme>Bill Me</OPTION>"
+	end if
+	if(pm_willcall="1") then
+		str=str&chr(13)&chr(10)&"<OPTION VALUE=willcall>WillCall</OPTION>"
+	end if
+	if(pm_paypal="1") then
+		str=str&chr(13)&chr(10)&"<OPTION VALUE=paypal>PayPal</OPTION>"
+	end if
+	
+	'Add additional...
+	dim sql,rs
+	
+	Set dbconn = Server.CreateObject("ADODB.Connection")
+	dbconn.open Session("ConnectionString")
+	sql = "SELECT payment_option1, payment_option2, payment_option3, payment_option4, show_payment_option1, show_payment_option2, show_payment_option3, show_payment_option4 FROM :9_profile"
+	sql = Replace(sql, ":9", Session("StoreID"))	
+	
+	Set rs = dbconn.Execute(sql)
+	
+	if not rs.EOF then
+		if Len(Trim(rs("payment_option1"))) > 0 then
+			if Trim(rs("payment_option1")) = "--" then
+			else
+				if rs("show_payment_option1") = 1 or show_all = "1" then
+					str=str&chr(13)&chr(10)&"<OPTION VALUE=""" & Trim(rs("payment_option1")) & """>" & Trim(rs("payment_option1")) & "</OPTION>"
+				end if
+			end if
+		end if
+		if Len(Trim(rs("payment_option2"))) > 0 then
+			if Trim(rs("payment_option2")) = "--" then
+			else
+				if rs("show_payment_option2") = 1 or show_all = "1" then
+					str=str&chr(13)&chr(10)&"<OPTION VALUE=""" & Trim(rs("payment_option2")) & """>" & Trim(rs("payment_option2")) & "</OPTION>"
+				end if
+			end if
+		end if
+		if Len(Trim(rs("payment_option3"))) > 0 then
+			if Trim(rs("payment_option3")) = "--" then
+			else
+				if rs("show_payment_option3") = 1 or show_all = "1" then
+					str=str&chr(13)&chr(10)&"<OPTION VALUE=""" & Trim(rs("payment_option3")) & """>" & Trim(rs("payment_option3")) & "</OPTION>"
+				end if
+			end if
+		end if
+		if Len(Trim(rs("payment_option4"))) > 0 then
+			if Trim(rs("payment_option4")) = "--" then
+			else
+				if rs("show_payment_option4") = 1 or show_all = "1" then
+					str=str&chr(13)&chr(10)&"<OPTION VALUE=""" & Trim(rs("payment_option4")) & """>" & Trim(rs("payment_option4")) & "</OPTION>"
+				end if
+			end if
+		end if
+	end if
+	
+	rs.Close
+	dbconn.Close
+		
+	Call SelectOptionTagString(str,str_selected_cc)
+	GetCreditCardOptionTags=str
+End Function
+
+Function GetStatusOptionTags(str_selected_status)
+	Dim str,i,lensel
+    
+  str=chr(13)&chr(10)&"<OPTION VALUE=-->Select Status"
+  str=str&chr(13)&chr(10)&"<OPTION VALUE=Pending>Pending"
+	str=str&chr(13)&chr(10)&"<OPTION VALUE=Authorized>Authorized"
+	str=str&chr(13)&chr(10)&"<OPTION VALUE=Shipped>Shipped"
+	str=str&chr(13)&chr(10)&"<OPTION VALUE=Incomplete>Incomplete"
+	str=str&chr(13)&chr(10)&"<OPTION VALUE=Failed>Failed"
+	str=str&chr(13)&chr(10)&"<OPTION VALUE=Canceled>Canceled"
+	
+	Call SelectOptionTagString(str,str_selected_status)
+	GetStatusOptionTags=str
+End Function
+
+Function GetCountryOptionTags(str_selected_country)
+    'returns string of option tags
+    'selected_state' is 2 char abbreviation according to the option values below
+    
+    Dim str,i,lensel
+    
+    Set dbconn = Server.CreateObject("ADODB.Connection")
+	dbconn.open Session("ConnectionString")
+	sql = "SELECT * FROM A_COUNTRY_LIST ORDER BY Country_Name"
+	Set rs = dbconn.Execute(sql)
+	
+	str=chr(13)&chr(10)&"<OPTION VALUE='--'>Click to select"
+	do while not rs.EOF
+		str=str&chr(13)&chr(10)&"<OPTION VALUE=""" & Trim(rs("Country_Name")) & """>" & Trim(rs("Country_Name"))
+	  rs.MoveNext
+	loop
+    
+	Call SelectOptionTagString(str,str_selected_country)
+	GetCountryOptionTags=str
+End Function
+
+</SCRIPT>

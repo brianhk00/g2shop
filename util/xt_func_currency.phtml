@@ -1,0 +1,19 @@
+<script language="vbscript" runat="server">
+function ConvertFromBaseCurrency(SourceValue, TargetCurrencyCode)
+
+  dim result = SourceValue;
+  
+  if (result > 0) then
+  
+    if (TargetCurrencyCode <> GetFeedReferenceCurrencyCode()) then
+            
+    end if
+    
+  end if
+
+end function
+
+function GetFeedReferenceCurrencyCode()
+  return Session("CurrencyFeedBaseRateCurrencyCode")
+end function
+</script>

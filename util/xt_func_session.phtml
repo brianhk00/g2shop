@@ -1,0 +1,336 @@
+<SCRIPT LANGUAGE=VBSCRIPT RUNAT=SERVER>
+Function CreateSession()
+	Dim sSessionKey
+  Dim oCmd
+  Dim oCn
+  Dim oRs
+  Dim sProcName
+  Dim vData
+  
+  sProcName = "prAPP_Insert_Session"
+  
+  CreateSession = sSessionKey
+    
+  Set oCmd = CreateObject("ADODB.Command")
+  With oCmd
+      .ActiveConnection = Session("SessionConnectionString")
+      .CommandTimeout = 30
+      .CommandType = 4
+      .CommandText = sProcName
+  End With
+  
+  Set oRs = CreateObject("ADODB.Recordset")
+  With oRs
+      Set .Source = oCmd
+      .CursorLocation = 3
+      .CursorType = 3
+      .LockType = 1
+      .Open
+      .ActiveConnection = Nothing
+  End With
+
+  If Not oRs.EOF Then
+    vData = oRs.GetRows
+  End If
+
+  sSessionKey = vData(0, 0)
+  
+  Set oCmd = Nothing
+  
+  CreateSession = sSessionKey
+End Function
+
+SUB DeleteSession(ByVal sSessionKey)
+	Dim oCmd
+  Dim sProcName
+  Dim vData
+  
+  sProcName = "prAPP_Delete_Session"
+  
+	if Len(sSessionKey) > 0 then
+		'..{C37462C8-D45B-458B-9F72-10DDC33BAA14}.. 
+		'delete session key...
+		Set oCmd = CreateObject("ADODB.Command")
+    With oCmd
+        .ActiveConnection = Session("SessionConnectionString")
+        .CommandTimeout = 30
+        .CommandType = 4
+        .CommandText = sProcName
+        .Parameters("@sSessionKey").value=sSessionKey
+        .Execute
+    End With
+	end if
+	
+	Set oCmd = Nothing
+
+END SUB
+
+Sub UpdateSession(ByVal sSessionKey, ByVal sVariableName, ByVal vValue)
+  
+  if Session("USESESSIONDB") = 1 then
+  
+		Dim oCmd
+		Dim sProcName
+		Dim vData
+	                            
+		if Len(sSessionKey) > 0 then
+			if Exists(sSessionKey, sVariableName) then
+				'update...
+				sProcName = "prAPP_Update_SessionVariable"
+				Set oCmd = CreateObject("ADODB.Command")
+				With oCmd
+						.ActiveConnection = Session("SessionConnectionString")
+						.CommandTimeout = 30
+						.CommandType = 4
+						.CommandText = sProcName
+						.Parameters("@sSessionKey").value=sSessionKey
+						.Parameters("@sVariableName").value=sVariableName
+						.Parameters("@sValue").value=Trim(vValue)
+						.Execute
+				End With
+				
+			else
+				'insert...
+				sProcName = "prAPP_Insert_SessionVariable"
+				Set oCmd = CreateObject("ADODB.Command")
+				With oCmd
+						.ActiveConnection = Session("SessionConnectionString")
+						.CommandTimeout = 30
+						.CommandType = 4
+						.CommandText = sProcName
+						.Parameters("@sSessionKey").value=sSessionKey
+						.Parameters("@sVariableName").value=sVariableName
+						.Parameters("@sValue").value=Trim(vValue)
+						.Execute
+				End With
+			end if
+		end if
+		
+		Set oCmd = Nothing
+	
+	else
+	
+		SELECT CASE sVariableName
+		CASE "sCID"
+			Session("shopper_id") = vValue
+		CASE "sCName"
+			Session("Shopper_Name") = vValue
+		CASE "sCGroup"
+			Session("LOGINGROUP") = vValue
+		CASE "sLanguage"
+			Session("LANGUAGE") = vValue
+		CASE "sCartItem"
+			Session("CartItemCount") = vValue
+		CASE "sCartTotal"
+			Session("TotalPrice") = vValue
+		CASE "sCIM"
+			Session("IMFILEID") = vValue
+		CASE "sSaleMode"
+			Session("SalesMode") = vValue
+		CASE "sLN"
+			Session("LN") = vValue
+		CASE "sREFERER"
+			Session("REFERER_URL") = vValue
+		CASE "sREFERER2"
+			Session("REFERER_URL2") = vValue
+		CASE "sAffID"
+			Session("PARTNER") = vValue
+		CASE "sAffPtnr"
+			Session("Affiliate") = vValue
+		CASE "sCustomCatalog"
+			Session("CUSTOM_CATALOG_ID_FLAG") = vValue
+		END SELECT
+	
+	end if
+                       
+End Sub
+
+Function Exists(ByVal sSessionKey, ByVal sVariableName)
+	Dim oRs
+  Dim oCmd
+  Dim sProcName
+    
+  sProcName = "prAPP_Get_SessionValue"
+  
+	if Len(sSessionKey) > 0 then
+		Set oCmd = CreateObject("ADODB.Command")
+    With oCmd
+        .ActiveConnection = Session("SessionConnectionString")
+        .CommandTimeout = 30
+        .CommandType = 4
+        .CommandText = sProcName
+        .Parameters("@sSessionKey").value=sSessionKey
+        .Parameters("@sVariableName").value=sVariableName
+    End With
+    
+    Set oRs = CreateObject("ADODB.Recordset")
+    With oRs
+        Set .Source = oCmd
+        .CursorLocation = 3
+        .CursorType = 3
+        .LockType = 1
+        .Open
+        .ActiveConnection = Nothing
+    End With
+    
+    If Not oRs.EOF Then
+      '----------------------------------------------------------------------------------------------
+      '--- Get the data from the recordset
+      '----------------------------------------------------------------------------------------------
+      Exists = true
+    else
+			Exists = false
+    End If
+    
+    oRs.Close
+	else
+		'no key specified..
+		Exists = false
+	end if
+	
+  Set oRs = Nothing
+  Set oCmd = Nothing
+                        
+End Function
+
+Function GetSession(sSessionKey, sVariableName)
+	
+	Dim vSession
+	
+	if Session("USESESSIONDB") = 1 then
+		Dim oRs
+		Dim oCmd
+		Dim sProcName
+		Dim vData
+	  
+	  
+		vSession = ""
+	  
+		if Len(sSessionKey) > 0 AND Len(sVariableName) > 0 then
+			sProcName = "prAPP_Get_SessionValue"
+	    
+			Set oCmd = CreateObject("ADODB.Command")
+			With oCmd
+					.ActiveConnection = Session("SessionConnectionString")
+					.CommandTimeout = 30
+					.CommandType = 4
+					.CommandText = sProcName
+					.Parameters("@sSessionKey").value=sSessionKey
+					.Parameters("@sVariableName").value=sVariableName
+			End With
+	    
+			Set oRs = CreateObject("ADODB.Recordset")
+			With oRs
+					Set .Source = oCmd
+					.CursorLocation = 3
+					.CursorType = 3
+					.LockType = 1
+					.Open
+					.ActiveConnection = Nothing
+			End With
+	    
+			If Not oRs.EOF Then
+				vData = oRs.GetRows
+				vSession = vData(2, 0)
+			else
+				vSession = ""
+			End If
+			oRs.Close
+	    
+			GetSession = vSession
+	    
+		end if
+		
+		Set oRs = Nothing
+		Set oCmd = Nothing
+		
+	else
+	
+		vSession = ""
+		
+		SELECT CASE sVariableName
+		CASE "sCID"
+			vSession = Session("shopper_id")
+		CASE "sCName"
+			vSession = Session("Shopper_Name")
+		CASE "sCGroup"
+			vSession = Session("LOGINGROUP")
+		CASE "sLanguage"
+			vSession = Session("LANGUAGE")
+		CASE "sCartItem"
+			vSession = Session("CartItemCount")
+		CASE "sCartTotal"
+			vSession = Session("TotalPrice")
+		CASE "sCIM"
+			vSession = Session("IMFILEID")
+		CASE "sSaleMode"
+			vSession = Session("SalesMode")
+		CASE "sLN"
+			vSession = Session("LN")
+		CASE "sREFERER"
+			vSession = Session("REFERER_URL")
+		CASE "sREFERER2"
+			vSession = Session("REFERER_URL2")
+		CASE "sAffID"
+			vSession = Session("PARTNER")
+		CASE "sAffPtnr"
+			vSession = Session("Affiliate")
+		CASE "sCustomCatalog"
+			vSession = Session("CUSTOM_CATALOG_ID_FLAG")
+		END SELECT
+		
+		GetSession = vSession
+	
+	end if
+  
+End Function
+
+Function InitializeSession()
+
+	if Session("USESESSIONDB") = 1 then
+	
+		mySessionKey = CreateSession()
+		UpdateSession mySessionKey, "sCartItem", "0"
+		UpdateSession mySessionKey, "sCartTotal", "0"
+		UpdateSession mySessionKey, "sCID", ""
+		UpdateSession mySessionKey, "sCName", ""
+		
+		UpdateSession mySessionKey, "sCGroup", "D"
+		if Session("IMPRICE") = "1" then
+			UpdateSession mySessionKey, "sCIM", Session("IMFILEID")
+		else
+			UpdateSession mySessionKey, "sCIM", "D"
+		end if
+		UpdateSession Session("SESSIONKEY"), "sCustomCatalog", ""
+		
+		UpdateSession mySessionKey, "sSaleMode", "0"
+		UpdateSession mySessionKey, "sLanguage", Session("LANGUAGE")
+		UpdateSession mySessionKey, "sLN", Session("LN")
+
+		UpdateSession mySessionKey, "sREFERER", Session("REFERER_URL")
+		
+		Session("SESSIONKEY") = mySessionKey
+	
+	else
+	
+		mySessionKey = "{65F34CF8-E928-4463-FLSH}"
+		
+		Session("CartItemCount") = "0"
+		Session("TotalPrice") = "0.00"
+		Session("shopper_id") = ""
+		Session("Shopper_Name") = ""
+		Session("LOGINGROUP") = "D"
+		
+		if Session("IMPRICE") = "1" then
+		else
+			Session("IMFILEID") = "D"
+		end if
+		
+		Session("SalesMode") = "0"
+		
+		Session("SESSIONKEY") = mySessionKey
+	
+	end if
+	
+End Function
+</SCRIPT>

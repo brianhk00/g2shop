@@ -1,0 +1,1945 @@
+<SCRIPT LANGUAGE=VBScript RUNAT=Server>
+'===============================================================
+'Utility functions
+'===============================================================
+function GetLastIndex(ByRef str_db, ByRef index_type, ByRef iLen)
+	dim rval, ival
+	dim dbconn, sql, rsID
+	dim iSeed, iInc, iLastUsed
+	rval = "0"
+	
+	'Get Information....
+	
+	SELECT case index_type
+	CASE 1
+		sql = "SELECT IM_ORDER_SEED, IM_ORDER_INC, IM_ORDER_LAST_USED FROM " & Session("StoreID") & "_ID_tracker"
+	CASE 2
+		sql = "SELECT PO_SEED, PO_INC, PO_LAST_USED FROM " & Session("StoreID") & "_ID_tracker"
+	END SELECT
+	
+	Set dbconn=server.CreateObject("ADODB.Connection")
+	dbconn.Open str_db
+	
+	set rsID = dbconn.Execute(sql)
+	
+	if not rsID.EOF then
+		iSeed = rsID(0)
+		iInc = rsID(1)
+		iLastUsed = rsID(2)
+	end if 
+	
+	rsID.Close
+	
+	if iLastUsed > iSeed then
+		ival = iLastUsed + iInc
+	else
+		ival = iSeed + iInc
+	end if
+	
+	'String...
+	rval = CStr(ival)
+	
+	if Len(rval) < iLen then
+		'add 0
+		rval = String(iLen-Len(rval), "0") & rval
+		
+	end if
+	
+	dbconn.Close
+	GetLastIndex = rval
+end function
+
+Sub SaveLastIndex(ByRef str_db, ByRef index_type, ByRef iLastIndex)
+	
+	if IsNumeric(iLastIndex) then
+		dim dbconn, sql
+		
+		SELECT case index_type
+		CASE 1
+			sql = "UPDATE " & Session("StoreID") & "_ID_tracker SET IM_ORDER_LAST_USED=" & CInt(iLastIndex)
+		CASE 2
+			sql = "UPDATE " & Session("StoreID") & "_ID_tracker SET PO_LAST_USED=" & CInt(iLastIndex)
+		END SELECT
+		
+		Set dbconn=server.CreateObject("ADODB.Connection")
+		dbconn.Open str_db
+		
+		dbconn.execute(sql)
+		
+		dbconn.close
+	end if
+		
+end sub
+
+Function GetTransErrorMsg(ByRef str_db, ByRef str_ErrType, ByRef str_Trans)
+	
+	dim dbconn, rs, sql
+	
+	set dbconn=server.CreateObject("ADODB.Connection")
+	dbconn.Open str_db
+	
+	sql = "SELECT ERR_Comments FROM IMDSI_ERRORS WHERE ERR_TYPE='" & Trim(str_ErrType) & "' AND ERR_TRANS='" & str_Trans & "'"
+	
+	set rs = dbconn.Execute(sql)
+	if not rs.EOF then
+		GetTransErrorMsg = rs(0)
+	else
+		GetTransErrorMsg = str_ErrType
+	end if
+	rs.Close
+	dbconn.Close
+
+End Function
+
+'---------------------------------------------------------
+'Order Header -- LUOH
+'---------------------------------------------------------
+Function GetOrderHeader(ByRef str_ToIngramPO, ByRef str_ToCustomerPO,_
+						ByRef str_BackOrderFlag, ByRef str_ShipmentFlag, _
+						ByRef str_Addr1, ByRef str_Addr2, ByRef str_Addr3, ByRef str_City, ByRef str_State, ByRef str_Zip,_
+						ByRef str_Attn, ByRef str_CarrierCode,_
+						ByRef str_dropship,_
+						ByRef i_ReturnStatus, ByRef str_StatusMsg)
+						
+	Dim OrderHeaderRequest
+	Dim trans
+	Dim cnt
+	Dim whse
+	
+	'Response varibles..
+	dim oh_OrderBranch, oh_OrderNumber, oh_ResponseFlag, oh_ErrorType, oh_ShipBranch, oh_CarrierCode
+	dim oh_ShipVia, oh_TaxFlag, oh_ThirdPartyFreight, oh_ShipToAddress1, oh_ShipToAddress2, oh_ShipToCity, oh_ShipToState, oh_ShipToZip
+	dim oh_AddressErrType
+	
+	Dim Cnxn, sql, rsIMOrder
+	
+	'on error resume next
+    
+  Set trans = Server.CreateObject("InsideLine3.Transaction")
+  Set OrderHeaderRequest = Server.CreateObject("InsideLine3.OrderHeader")
+    
+  set OrderHeaderRequest.Trans = trans
+
+  with OrderHeaderRequest.Trans
+		.Server				= Session("Ingram_Server")
+		.Region				= Session("Ingram_Region")
+		.CustomerNumber		= Session("Ingram_Customer_Number")
+		.CustomerBranch		= Session("Ingram_Branch")
+		.Password			= Session("Ingram_Password")
+		.Country			= Session("Ingram_Country")
+	end with
+	
+	if Session("USESELECTSOURCE") = "1" then
+		OrderHeaderRequest.Trans.SelectSourceBranch = Session("SELECTSOURCEACCT1")
+		OrderHeaderRequest.Trans.SelectSourceNumber = Session("SELECTSOURCEACCT2")
+	end if
+	
+	if str_dropship = "0" then
+		with OrderHeaderRequest
+			.ToIngramPO			= str_ToIngramPO
+			.ToCustomerPO		= str_ToCustomerPO
+			.BackOrderFlag		= str_BackOrderFlag
+			.ShipmentFlag		= str_ShipmentFlag
+			.ShipToAddress1		= ""
+			.ShipToAddress2		= ""
+			.ShipToCity			= ""
+			.ShipToState		= ""
+			.ShipToZip			= ""
+			.ShipToAttention	= ""
+			.CarrierCode		= str_CarrierCode
+		end with
+	else
+		with OrderHeaderRequest
+			.ToIngramPO			= str_ToIngramPO
+			.ToCustomerPO		= str_ToCustomerPO
+			.BackOrderFlag		= str_BackOrderFlag
+			.ShipmentFlag		= str_ShipmentFlag
+						
+			.ShipToAddress1		= str_Addr1		
+			.ShipToAddress2		= str_Addr2
+			.ShipToAddress3		= str_Addr3
+			.ShipToCity			= str_City			
+			.ShipToState		= str_State		
+			.ShipToZip			= str_Zip			
+			.ShipToAttention	= str_Attn
+			.CarrierCode		= str_CarrierCode
+			
+		end with
+	
+	end if
+
+  ' Enter order action
+  OrderHeaderRequest.Transact
+	
+	On Error goto 0
+	
+	if Err then
+		GetOrderHeader = false
+		i_ReturnStatus = -1
+		Set OrderHeaderRequest = Nothing
+		Set trans = Nothing
+		Exit Function
+	else
+		'No Error... Read Response...		
+		oh_OrderBranch = Trim(OrderHeaderRequest.OrderBranch)
+		oh_OrderNumber = Trim(OrderHeaderRequest.OrderNumber)
+		oh_ResponseFlag = Trim(OrderHeaderRequest.ResponseFlag)
+		oh_ErrorType = Trim(OrderHeaderRequest.ErrorType)
+		oh_ShipBranch = Trim(OrderHeaderRequest.ShipBranch)
+		oh_CarrierCode = Trim(OrderHeaderRequest.CarrierCode)
+		oh_ShipVia = Trim(OrderHeaderRequest.ShipVia)
+		oh_TaxFlag = Trim(OrderHeaderRequest.TaxFlag)
+		oh_ThirdPartyFreight = Trim(OrderHeaderRequest.ThirdPartyFreight)
+		oh_ShipToAddress1 = Trim(OrderHeaderRequest.ShipToAddress1)
+		oh_ShipToAddress2 = Trim(OrderHeaderRequest.ShipToAddress2)
+		oh_ShipToAddress3 = Trim(OrderHeaderRequest.ShipToAddress3)
+		oh_ShipToCity = Trim(OrderHeaderRequest.ShipToCity)
+		oh_ShipToState = Trim(OrderHeaderRequest.ShipToState)
+		oh_ShipToZip = Trim(OrderHeaderRequest.ShipToZip)
+		
+		oh_AddressErrType = OrderHeaderRequest.AddrErrorType
+				
+		if oh_ResponseFlag = "" then oh_ResponseFlag = " " end if
+		
+		SELECT CASE UCase(oh_ResponseFlag)
+		CASE " "
+			'Success..
+			GetOrderHeader = true
+			i_ReturnStatus = 0
+			str_StatusMsg = "Order Number #<b>" & oh_OrderNumber & "</b> has been created.<br>"
+			
+			'Save Session Variables...
+			Session("OR_OrderBranch") = oh_OrderBranch
+			Session("OR_OrderNumber") = oh_OrderNumber
+			Session("OR_ToIngramPO") = str_ToIngramPO
+						
+		CASE "W"
+			'Warnings...
+			GetOrderHeader = true
+			i_ReturnStatus = 1
+			
+			'Get Warning MSG
+			str_StatusMsg = GetTransErrorMsg(Session("MasterConnectionString"), oh_ResponseFlag & oh_ErrorType, "LUOH")
+			str_StatusMsg = "Order Number #<b>" & oh_OrderNumber & "</b> has been created.<br>" & "WARNING: " & str_StatusMsg
+			
+			'Save Session Variables...
+			Session("OR_OrderBranch") = oh_OrderBranch
+			Session("OR_OrderNumber") = oh_OrderNumber
+			Session("OR_ToIngramPO") = str_ToIngramPO
+						
+		CASE ELSE 
+			'Errors...
+			Response.Write("GetOrderHeader:" & oh_ResponseFlag & ".." & oh_ErrorType & ".." & oh_OrderNumber & "..")
+			GetOrderHeader = false
+			i_ReturnStatus = 2
+			
+			'Get ERROR MSG
+			str_StatusMsg = GetTransErrorMsg(Session("MasterConnectionString"), oh_ErrorType, "LUOH")
+			str_StatusMsg= "ERROR: " & str_StatusMsg
+			
+			'Save Session Variables...
+			Session("OR_OrderBranch") = ""
+			Session("OR_OrderNumber") = ""
+			Session("OR_ToIngramPO") = ""
+						
+		END SELECT
+		
+		'DB Update if i_ReturnStaus = 0 or 1
+		IF i_ReturnStatus = 0 OR i_ReturnStatus = 1 THEN
+		
+			Set Cnxn = Server.CreateObject("ADODB.Connection")
+			Cnxn.Open Session("ConnectionString")
+			
+			Set rsIMOrder = Server.CreateObject("ADODB.Recordset")
+			with rsIMOrder
+				.ActiveConnection = Cnxn
+				.CursorLocation = adUseClient
+				.CursorType = adOpenKeyset
+				.LockType = adLockOptimistic
+				.Source = Session("StoreID") & "_IM_ORDER"
+				.Open
+				.AddNew
+			end with
+						
+			'Update
+			rsIMOrder("ORDER_NBR") = oh_OrderNumber
+			rsIMOrder("ORDER_BR") = oh_OrderBranch
+			rsIMOrder("CUST_TO_INGRAM_PO") = str_ToIngramPO
+			rsIMOrder("CUST_TO_CUST_PO") = str_ToCustomerPO
+			rsIMOrder("BO_FLAG") = str_BackOrderFlag
+			rsIMOrder("SHIPMENT_FLAG") = str_ShipmentFlag
+			rsIMOrder("SHIP_TO_ADDRESS1") = oh_ShipToAddress1
+			rsIMOrder("SHIP_TO_ADDRESS2") = oh_ShipToAddress2
+			rsIMOrder("SHIP_TO_ADDRESS3") = oh_ShipToAddress3
+			rsIMOrder("SHIP_TO_CITY") = oh_ShipToCity
+			rsIMOrder("SHIP_TO_STATE") = oh_ShipToState
+			rsIMOrder("SHIP_TO_ZIP") = oh_ShipToZip
+			rsIMOrder("SHIP_TO_ATTENTION") = str_Attn
+			rsIMOrder("ADDRESS_ERR_TYPE") = oh_AddressErrType
+			rsIMOrder("DIRECT_SHIP") = " "
+			rsIMOrder("ORDER_ACTION_STATUS") = "IP"
+			rsIMOrder("ENTRY_DATE") = Now()
+			
+			'check for errors
+			If Cnxn.Errors.Count > 0 Then
+				'DB Error occurred.. clean up...
+				str_StatusMsg = "ERROR!!"
+				For Each Err In Cnxn.Errors
+			     Response.Write("Error " & Err.SQLState & ": " & _
+			     Err.Description & " | " & Err.NativeError)
+			  Next
+				Cnxn.Errors.Clear
+				rsIMOrder.CancelUpdate
+				
+				GetOrderHeader = false
+				i_ReturnStatus = 3
+
+			else
+				rsIMOrder.Update
+				
+				'Increment Index.
+				SaveLastIndex Session("ConnectionString"), 1, Mid(str_ToIngramPO,4)
+				'SaveLastIndex Session("ConnectionString"), 2, str_ToCustomerPO
+				
+			End If
+
+			rsIMOrder.Close
+			Cnxn.Close
+						
+		END IF
+		
+		'================================================
+		'LOG
+		'================================================
+		Set fs = CreateObject("Scripting.FileSystemObject")
+		Set a = fs.OpenTextFile("c:\\IMIL.log", 8, True)
+		a.WriteLine("==========" & Session("StoreID") & "-" & Now() &"==============")
+		a.WriteLine("-GetOrderHeader-")
+		a.WriteLine("ToIngramPO: " & str_ToIngramPO)
+		a.WriteLine("ToCustomerPO: " & str_ToCustomerPO)
+		a.WriteLine("BackOrderFlag: " & str_BackOrderFlag)
+		a.WriteLine("ShipmentFlag: " & str_ShipmentFlag)
+		a.WriteLine("ShipToAddress1: " & str_Addr1)
+		a.WriteLine("ShipToAddress2: " & str_Addr2)
+		a.WriteLine("ShipToCity: " & str_City)
+		a.WriteLine("ShipToState: " & str_State)
+		a.WriteLine("ShipToZip: " & str_Zip)
+		a.WriteLine("ShipToAttention: " & str_Attn)
+		a.WriteLine("CarrierCode: " & str_CarrierCode)
+		a.WriteLine("DropShip: " & str_dropship)
+		a.WriteLine("---------------------------------------")
+		a.WriteLine("ResponseFlag: " & oh_ResponseFlag)
+		a.WriteLine("OrderBranch: " & oh_OrderBranch)
+		a.WriteLine("OrderNumber: " & oh_OrderNumber)
+		a.WriteLine("ToIngramPO: " & str_ToIngramPO)
+		a.WriteLine("Error: " & oh_ErrorType)
+		a.WriteLine("========================================")
+		a.Close
+		'================================================
+		'END OF LOG
+		'================================================
+						
+		Set OrderHeaderRequest = Nothing
+		Set trans = Nothing
+	end if
+End Function
+
+Function GetStateCode(ByRef str_State)
+	SELECT CASE str_State
+	CASE "Alberta"
+		GetStateCode = "AB"
+	CASE "British Columbia"
+		GetStateCode = "BC"
+	CASE "Manitoba"
+		GetStateCode = "MB"
+	CASE "New Brunswick"
+		GetStateCode = "NB"
+	CASE "Newfoundland"
+		GetStateCode = "AL"
+	CASE "N.W. Territories"
+		GetStateCode = "NT"
+	CASE "Nova Scotia"
+		GetStateCode = "NS"
+	CASE "Nunavut"
+		GetStateCode = "NU"
+	CASE "Ontario"
+		GetStateCode = "ON"
+	CASE "Prince Edward Island"
+		GetStateCode = "PE"
+	CASE "Quebec"
+		GetStateCode = "QC"
+	CASE "Saskatchewan"
+		GetStateCode = "SK"
+	CASE "Yukon"
+		GetStateCode = "YT"
+	CASE ELSE
+		GetStateCode = str_State
+	END SELECT
+	
+End Function
+
+
+Function GetOrderHeaderXML(ByRef str_ToIngramPO, ByRef str_ToCustomerPO,_
+						ByRef str_BackOrderFlag, ByRef str_ShipmentFlag, _
+						ByRef str_Addr1, ByRef str_Addr2, ByRef str_City, ByRef str_State, ByRef str_Zip,_
+						ByRef str_Attn, ByRef str_CarrierCode,_
+						ByRef str_dropship,_
+						ByRef str_itemFlag,_
+						ByRef i_ReturnStatus, ByRef str_StatusMsg)
+
+	Set Cnxn = Server.CreateObject("ADODB.Connection")
+	Cnxn.Open Session("ConnectionString")
+	
+	dim xmlDoc
+	dim xmlDoc3
+	xmlDoc3 = ""
+
+	xmlDoc = "<OrderRequest>"
+	xmlDoc = xmlDoc & "<Version1.0></Version1.0>"
+	xmlDoc = xmlDoc & "<TransactionHeader>"
+	xmlDoc = xmlDoc & "<CountryCode>FT</CountryCode>"
+	xmlDoc = xmlDoc & "<LoginID>" & Session("IMMustang_UID") & "</LoginID>"
+	xmlDoc = xmlDoc & "<Password>" & Session("IMMustang_PWD") & "</Password> "
+	xmlDoc = xmlDoc & "<TransactionID></TransactionID>"
+	xmlDoc = xmlDoc & "</TransactionHeader>"
+
+	xmlDoc = xmlDoc & "<OrderHeaderInformation>"
+	xmlDoc = xmlDoc & "<AddressingInformation>"
+	xmlDoc = xmlDoc & "<CustomerPO>" & str_ToIngramPO & "</CustomerPO>"
+	xmlDoc = xmlDoc & "<ShipToAttention>" & str_Attn & "</ShipToAttention>"
+	xmlDoc = xmlDoc & "<EndUserPO>" & str_ToCustomerPO & "</EndUserPO>"
+	xmlDoc = xmlDoc & "<ShipTo>"
+	xmlDoc = xmlDoc & "<Address>"
+	xmlDoc = xmlDoc & "<ShipToAddress1>" & str_Addr1 & "</ShipToAddress1>"
+	xmlDoc = xmlDoc & "<ShipToAddress2>" & str_Addr2 & "</ShipToAddress2>"
+	xmlDoc = xmlDoc & "<ShipToCity>" & str_City & "</ShipToCity>"
+	xmlDoc = xmlDoc & "<ShipToProvince>" & GetStateCode(str_State) & "</ShipToProvince>"
+	xmlDoc = xmlDoc & "<ShipToPostalCode>" & Replace(str_Zip, " ", "") & "</ShipToPostalCode>"
+	xmlDoc = xmlDoc & "</Address>"
+	xmlDoc = xmlDoc & "</ShipTo>"
+	xmlDoc = xmlDoc & "</AddressingInformation>"
+	xmlDoc = xmlDoc & "<ProcessingOptions>"
+	xmlDoc = xmlDoc & "<CarrierCode>UG</CarrierCode>"
+	xmlDoc = xmlDoc & "<AutoRelease>0</AutoRelease>"
+	xmlDoc = xmlDoc & "<ShipmentOptions>"
+	xmlDoc = xmlDoc & "<BackOrderFlag>" & str_BackOrderFlag & "</BackOrderFlag>"
+	xmlDoc = xmlDoc & "<SplitShipmentFlag>" & str_ShipmentFlag & "</SplitShipmentFlag>"
+	xmlDoc = xmlDoc & "<SplitLine>Y</SplitLine>"
+	xmlDoc = xmlDoc & "<ShipFromBranches>10,40</ShipFromBranches>"
+	xmlDoc = xmlDoc & "</ShipmentOptions>"
+	xmlDoc = xmlDoc & "</ProcessingOptions>"
+	xmlDoc = xmlDoc & "</OrderHeaderInformation>"
+
+	xmlDoc = xmlDoc & "<OrderLineInformation>"
+	if Session("DemoMode") = "1" then
+		xmlDoc = xmlDoc & "<ProductLine>"
+		xmlDoc = xmlDoc & "<SKU>291918</SKU>"
+		xmlDoc = xmlDoc & "<Quantity>1</Quantity>"
+		xmlDoc = xmlDoc & "<CustomerLineNumber>001</CustomerLineNumber>"
+		xmlDoc = xmlDoc & "</ProductLine>"
+	else
+		'TODO: Get items from DBs...
+		sql = "SELECT item_row, item_dist_part, item_quantity FROM " & Session("StoreID") & "_po_item WHERE po_id=" & strToCustomerPO & " ORDER BY item_row"
+		set rsItems = Cnxn.Execute(sql)
+
+		k = 1
+		j = 0
+		do while not rsItems.EOF
+			qrow = rsItems("item_row")
+
+			if Mid(itemFlag1, j+1, 1) = "1" then
+				if k > 9 then
+					strIngramLineNumber = "0" & CStr(k)
+				else
+					strIngramLineNumber = "00" & CStr(k)
+				end if
+				
+				if qrow > 9 then
+					strCustomerLineNumber = "0" & CStr(qrow)
+				else
+					strCustomerLineNumber = "00" & CStr(qrow)
+				end if
+
+				strIngramPartNumber = Trim(rsItems("item_dist_part"))
+				strQtyOrdered = CStr(rsItems("item_quantity"))
+
+				xmlDoc = xmlDoc & "<ProductLine>"
+				xmlDoc = xmlDoc & "<SKU>" & strIngramPartNumber & "</SKU>"
+				xmlDoc = xmlDoc & "<Quantity>" & strQtyOrdered & "</Quantity>"
+				xmlDoc = xmlDoc & "<CustomerLineNumber>" & strCustomerLineNumber & "</CustomerLineNumber>"
+				xmlDoc = xmlDoc & "</ProductLine>"
+
+				k = k + 1
+
+			end if
+			
+			j = j + 1
+			rsItems.MoveNext
+
+		loop
+		rsItems.Close
+
+	end if 'Session("DemoMode")
+
+	xmlDoc = xmlDoc & "</OrderLineInformation>"
+	xmlDoc = xmlDoc & "</OrderRequest>"
+
+	dim xmlRecv
+	set xmlRecv = Server.CreateObject("Msxml2.ServerXMLHTTP")
+
+	xmlRecv.open "POST", "https://mustang.ingrammicro.ca/receivexml.asp", false
+
+	xmlRecv.setRequestHeader "Content-Type", "text/xml"
+	xmlRecv.setTimeouts 5000, 5000, 15000, 15000
+	xmlRecv.send(xmlDoc)
+
+	tdxmlHeaders = xmlRecv.getAllResponseHeaders()
+	tdxmlStatus = xmlRecv.statusText
+	tdxmlResult = xmlRecv.responseXML.xml
+
+	dim xmlDoc2
+	set xmlDoc2 = Server.CreateObject("Msxml2.DOMDocument")
+	xmlDoc2.async = false
+	xmlDoc2.validateOnParse = false
+	xmlDoc2.LoadXML (tdxmlResult)
+	if (xmlDoc2.parseError.errorCode <> 0) then
+		a = xmlDoc2.parseError.reason
+		GetOrderHeaderXML = false
+		Exit Function
+	else
+		a = "NO ERROR"
+
+		GetOrderHeaderXML = false
+		
+		set objNodeList = xmlDoc2.getElementsByTagName("OrderNumbers")
+
+		For i = 0 To (objNodeList.length - 1)
+
+			set lineInfoNode = objNodeList.Item(i)
+
+			branch_order_number = lineInfoNode.getAttribute("BranchOrderNumber")
+			if Len(branch_order_number) > 0 then
+				str_OrderNumber = Mid(branch_order_number,3)
+				str_OrderBranch = Left(branch_order_number,2)
+
+				'Save Session Variables...
+				Session("OR_OrderBranch") = str_OrderBranch
+				Session("OR_OrderNumber") = str_OrderNumber
+				Session("OR_ToIngramPO") = str_ToIngramPO
+			else
+				'Save Session Variables...
+				Session("OR_OrderBranch") = ""
+				Session("OR_OrderNumber") = ""
+				Session("OR_ToIngramPO") = ""
+			end if
+			
+			if Len(branch_order_number) > 0 then 'ORDER IS OK..
+
+				'TODO: Create _IM_ORDER Entry...
+				Set rsIMOrder = Server.CreateObject("ADODB.Recordset")
+				with rsIMOrder
+					.ActiveConnection = Cnxn
+					.CursorLocation = adUseClient
+					.CursorType = adOpenKeyset
+					.LockType = adLockOptimistic
+					.Source = Session("StoreID") & "_IM_ORDER"
+					.Open
+					.AddNew
+				end with
+							
+				'Update
+				rsIMOrder("ORDER_NBR") = str_OrderNumber
+				rsIMOrder("ORDER_BR") = str_OrderBranch
+				rsIMOrder("CUST_TO_INGRAM_PO") = str_ToIngramPO
+				rsIMOrder("CUST_TO_CUST_PO") = str_ToCustomerPO
+				rsIMOrder("BO_FLAG") = str_BackOrderFlag
+				rsIMOrder("SHIPMENT_FLAG") = str_ShipmentFlag
+				rsIMOrder("SHIP_TO_ADDRESS1") = str_Addr1
+				rsIMOrder("SHIP_TO_ADDRESS2") = str_Addr2
+				rsIMOrder("SHIP_TO_CITY") = str_City
+				rsIMOrder("SHIP_TO_STATE") = GetStateCode(str_State)
+				rsIMOrder("SHIP_TO_ZIP") = str_Zip
+				rsIMOrder("SHIP_TO_ATTENTION") = str_Attn
+				rsIMOrder("ADDRESS_ERR_TYPE") = ""
+				rsIMOrder("DIRECT_SHIP") = " "
+				rsIMOrder("ORDER_ACTION_STATUS") = "IP"
+				rsIMOrder("ENTRY_DATE") = Now()
+
+				rsIMOrder.Update
+				rsIMOrder.Close
+
+				'TODO: Create _IM_ORDER_SUFFIX Entry...
+
+				set suffixNodeList = lineInfoNode.selectNodes("OrderSuffix")
+
+				for ii = 0 to (suffixNodeList.length-1)
+					str_order_suffix = suffixNodeList.Item(ii).getAttribute("Suffix")
+					set ccNodeList = suffixNodeList.Item(ii).selectNodes("Carrier")
+					CARRIER_CODE = ccNodeList.item(0).getAttribute("CarrierCode")
+					CC_DESCRIPTION = ccNodeList.item(0).text
+
+				Next
+
+				GetOrderHeaderXML = true
+
+			else
+				
+				GetOrderHeaderXML = false
+
+				
+				Exit Function
+			end if 'ORDER IS OK
+
+		Next
+
+	end if
+
+	Cnxn.Close
+
+	Set fs = CreateObject("Scripting.FileSystemObject")
+	Set a = fs.OpenTextFile("c:\\IMXML.log", 8, True)
+	a.WriteLine(xmlDoc)
+	a.WriteLine(tdxmlResult)
+	a.WriteLine(str_OrderNumber)
+	a.WriteLine(str_OrderBranch)
+	a.WriteLine(xmlDoc3)
+	a.Close
+	Set fs = Nothing
+
+	'GetOrderHeaderXML = true
+
+End Function
+'---------------------------------------------------------
+' Order Action Request - LUOA... FO and OR
+'---------------------------------------------------------
+
+Function EnterOrderAction(ByRef str_OrderBranch, ByRef str_OrderNumber, ByRef str_ToIngramPO,_
+						ByRef str_ToCustomerPO, ByRef str_OrderAction,_
+						ByRef i_ReturnStatus, ByRef str_StatusMsg)
+	
+	Dim OrderAction, trans
+	dim i,nWarehouse
+	Dim ORA_ResponseFlag, ORA_ErrorType
+	dim ORA_OrderSuffix(10), ORA_WhseAssignedNumber(10), ORA_TotalWeight(10), ORA_CarrierCode(10), ORA_Carrier(10)
+	dim ORA_FreightRate(10), ORA_EstimatedTax(10), ORA_TransitDays(10), ORA_CarrierMode(10)
+	Dim Cnxn, sql, rsIMOrder 
+	
+	if (str_OrderAction = "") then
+		EnterOrderAction = false
+		i_ReturnStatus = -1
+		Exit Function
+	end if
+	
+	'on error resume next
+	
+	Set trans = Server.CreateObject("InsideLine3.Transaction")
+  Set OrderAction = Server.CreateObject("InsideLine3.OrderAction")
+    
+  set OrderAction.Trans = trans
+  
+  with OrderAction.Trans
+		.Server				= Session("Ingram_Server")
+		.Region				= Session("Ingram_Region")
+		.CustomerNumber		= Session("Ingram_Customer_Number")
+		.CustomerBranch		= Session("Ingram_Branch")
+		.Password			= Session("Ingram_Password")
+		.Country			= Session("Ingram_Country")
+	end with
+	
+	if Session("USESELECTSOURCE") = "1" then
+		OrderAction.Trans.SelectSourceBranch = Session("SELECTSOURCEACCT1")
+		OrderAction.Trans.SelectSourceNumber = Session("SELECTSOURCEACCT2")
+	end if
+	  
+  OrderAction.ActionCode = str_OrderAction
+  OrderAction.OrderBranch = str_OrderBranch
+  OrderAction.OrderNumber = str_OrderNumber
+  OrderAction.ToIngramPO = str_ToIngramPO
+    
+  ' Enter order action
+	OrderAction.Transact
+  
+  if Err then
+		EnterOrderAction = false
+		i_ReturnStatus = -1
+		Set OrderAction = Nothing
+		Exit Function
+	else
+		'No Error...
+		Set Cnxn = Server.CreateObject("ADODB.Connection")
+		Cnxn.Open Session("ConnectionString")
+				
+		ORA_ResponseFlag = OrderAction.ResponseFlag
+		ORA_ErrorType = OrderAction.ErrorType
+				
+		str_StatusMsg = str_StatusMsg & "ResponseFlag:.." & ORA_ResponseFlag & ORA_ErrorType & "..<br>"
+		
+		nWarehouse = OrderAction.WarehouseTableOccurs
+		
+		for i=1 to 9
+			if OrderAction.Distributions(i).OrderSuffix <> "  "  then
+				ORA_OrderSuffix(i) = OrderAction.Distributions(i).OrderSuffix
+				ORA_WhseAssignedNumber(i) = OrderAction.Distributions(i).WhseAssignedNumber
+				ORA_TotalWeight(i) = OrderAction.Distributions(i).TotalWeight
+				ORA_CarrierCode(i) = OrderAction.Distributions(i).CarrierCode
+				ORA_Carrier(i) = OrderAction.Distributions(i).Carrier
+				ORA_FreightRate(i) = OrderAction.Distributions(i).FreightRate
+				ORA_TransitDays(i) = OrderAction.Distributions(i).TransitDays
+				ORA_CarrierMode(i) = OrderAction.Distributions(i).CarrierMode
+				ORA_EstimatedTax(i) = OrderAction.Distributions(i).EstimatedTax
+												
+				'Check number
+				if IsNumeric(ORA_FreightRate(i))then
+					ORA_FreightRate(i) = FormatNumber(ORA_FreightRate(i)/100,2)
+				else
+					ORA_FreightRate(i) = "0.00"
+				end if
+				
+				if IsNumeric(ORA_EstimatedTax(i))then
+					ORA_EstimatedTax(i) = FormatNumber(ORA_EstimatedTax(i)/100,2)
+				else
+					ORA_EstimatedTax(i) = "0.00"
+				end if
+				
+				str_StatusMsg = str_StatusMsg & "=========================================================<br>"
+				str_StatusMsg = str_StatusMsg & "Suffix:" & ORA_OrderSuffix(i) & "<br>"
+				str_StatusMsg = str_StatusMsg & "Warehouse:" & ORA_WhseAssignedNumber(i) & "<br>"
+				str_StatusMsg = str_StatusMsg & "Total Weight:" & ORA_TotalWeight(i) & "<br>"
+				str_StatusMsg = str_StatusMsg & "Carrier Code:" & ORA_CarrierCode(i) & "<br>"
+				str_StatusMsg = str_StatusMsg & "Description:" & ORA_Carrier(i) & "<br>"
+				str_StatusMsg = str_StatusMsg & "Rate:" & ORA_FreightRate(i) & "<br>"
+				str_StatusMsg = str_StatusMsg & "Tax:" & ORA_EstimatedTax(i) & "<br>"
+				str_StatusMsg = str_StatusMsg & "=========================================================<br>"
+				
+				'Update Line Items...
+				sql = "UPDATE " & Session("StoreID") & "_ORL SET ORL_INGRAM_SUFFIX = '" & ORA_OrderSuffix(i) & "' "
+				sql = sql & " WHERE ORL_INGRAM_ORDER_NBR='" & str_OrderNumber & "' AND ORL_INGRAM_ORDER_BR='" & str_OrderBranch & "'"
+				sql = sql & " AND ORL_WHSE_ASSIGNED='" & ORA_WhseAssignedNumber(i) & "'"
+				sql = sql & " AND ORL_QTY_BACKORDERED=0"
+				
+				Cnxn.execute(sql)
+				
+				'po_item...			
+				sql = "UPDATE " & Session("StoreID") & "_po_item SET item_IM_order='" & str_OrderBranch & str_OrderNumber & ORA_OrderSuffix(i) & "'"
+				sql = sql & " WHERE po_id=" & str_ToCustomerPO
+				sql = sql & " AND item_row IN ("
+				sql = sql & " SELECT ORL_CUST_LINE_NBR FROM " & Session("StoreID") & "_ORL"
+				sql = sql & " WHERE ORL_INGRAM_ORDER_NBR='" & str_OrderNumber & "' AND ORL_INGRAM_ORDER_BR='" & str_OrderBranch & "'" 
+				sql = sql & " AND ORL_INGRAM_SUFFIX='" & ORA_OrderSuffix(i) & "')"
+				
+				Cnxn.execute(sql)
+				
+			else
+				ORA_OrderSuffix(i) = "  "
+			end if
+		next
+		
+		
+		SELECT CASE UCase(ORA_ResponseFlag)
+		CASE " "
+			EnterOrderAction = true
+			i_ReturnStatus = 0
+		CASE "W"
+			str_StatusMsg = GetTransErrorMsg(Session("MasterConnectionString"), ORA_ResponseFlag & ORA_ErrorType, "LULA")
+			EnterOrderAction = true
+			i_ReturnStatus = 1	
+		CASE ELSE
+			str_StatusMsg = GetTransErrorMsg(Session("MasterConnectionString"), ORA_ResponseFlag & ORA_ErrorType, "LULA")
+			EnterOrderAction = false
+			i_ReturnStatus = 2	
+		END SELECT			
+		
+		if i_ReturnStatus = 0 OR i_ReturnStatus = 1 then
+		
+			'Update Order Action status
+			sql = "UPDATE " & Session("StoreID") & "_IM_ORDER SET ORDER_ACTION_STATUS = '" & str_OrderAction & "', NBR_SUFFIX=" & CStr(nWarehouse)
+			sql = sql & " WHERE ORDER_NBR='" & str_OrderNumber & "' AND ORDER_BR='" & str_OrderBranch & "'"
+			'Cnxn.execute(sql)
+			
+			'Update Line Item..
+			'for i=1 to nWarehouse
+				'sql = "UPDATE " & Session("StoreID") & "_ORL SET ORL_INGRAM_SUFFIX = '" & ORA_OrderSuffix(i) & "' "
+				'sql = sql & " WHERE ORL_INGRAM_ORDER_NBR='" & str_OrderNumber & "' AND ORL_INGRAM_ORDER_BR='" & str_OrderBranch & "'"
+				'sql = sql & " AND ORL_WHSE_ASSIGNED='" & ORA_WhseAssignedNumber(i) & "'"
+				'Cnxn.execute(sql)
+			'Next
+						
+			'Delete previous...
+			sql = "DELETE FROM " & Session("StoreID") & "_IM_ORDER_SUFFIX WHERE ORDER_NBR='" & str_OrderNumber & "' AND ORDER_BR='" & str_OrderBranch & "'"
+			Cnxn.execute(sql)
+			
+			for i=1 to nWarehouse
+				'Update Suffix Table...
+				Set rsIMOrder = Server.CreateObject("ADODB.Recordset")
+				with rsIMOrder
+					.ActiveConnection = Cnxn
+					.CursorLocation = adUseClient
+					.CursorType = adOpenKeyset
+					.LockType = adLockOptimistic
+					.Source = Session("StoreID") & "_IM_ORDER_SUFFIX"
+					.Open
+					.AddNew
+				end with
+			
+				rsIMOrder("ORDER_NBR") = str_OrderNumber
+				rsIMOrder("ORDER_BR") = str_OrderBranch
+				rsIMOrder("ORDER_SUFFIX") = ORA_OrderSuffix(i)
+				rsIMOrder("WHSE_NBR") = ORA_WhseAssignedNumber(i)
+				rsIMOrder("TOTAL_SALE") = 0
+				rsIMOrder("TOTAL_WEIGHT") = ORA_TotalWeight(i)
+				rsIMOrder("CARRIER_CODE") = ORA_CarrierCode(i)
+				rsIMOrder("CC_DESCRIPTION") = ORA_Carrier(i)
+				rsIMOrder("DS_FRT_RATE") = ORA_FreightRate(i)
+				rsIMOrder("DS_TRANSIT_DAYS") = ORA_TransitDays(i)
+				rsIMOrder("CARRIER_MODE") = ORA_CarrierMode(i)
+				rsIMOrder("EST_TAX") = ORA_EstimatedTax(i)
+				
+				SELECT CASE str_OrderAction
+				CASE "FO"
+					rsIMOrder("ORDER_STATUS") = ""
+				CASE "OR"
+					rsIMOrder("ORDER_STATUS") = "R"
+				END SELECT
+				
+				rsIMOrder("ENTRY_DATE") = Now()
+				rsIMOrder("LOCATION_CODE") = "O"
+				
+				rsIMOrder.Update
+				
+			next
+			
+			if Session("DemoMode") = "1" then
+			else
+				if str_OrderAction = "OR" then
+					'update po status...				
+					sql = "SELECT COUNT(item_sku) FROM " & Session("StoreID") & "_po_item WHERE po_id=" & str_ToCustomerPO & " AND (item_IM_order IS NULL)"
+					set rs = Cnxn.Execute(sql)
+					if not rs.EOF then
+						po_item_count = rs(0)
+					else
+						po_item_count = 0
+					end if
+					rs.Close
+					
+					if po_item_count > 0 then
+						sql = "UPDATE " & Session("StoreID") & "_po SET po_status=3 WHERE po_id=" & str_ToCustomerPO
+					else
+						sql = "UPDATE " & Session("StoreID") & "_po SET po_status=4 WHERE po_id=" & str_ToCustomerPO
+					end if
+					
+					Cnxn.execute sql
+					
+				end if
+			end if 'DEMO
+		end if
+		
+		Cnxn.Close
+
+		Set OrderAction = Nothing		
+		Set trans = Nothing
+
+		'================================================
+		'LOG
+		'================================================
+		Set fs = CreateObject("Scripting.FileSystemObject")
+		Set a = fs.OpenTextFile("c:\\IMIL.log", 8, True)
+
+		a.WriteLine("==========" & Session("StoreID") & "-" & Now() & "==============")
+		a.WriteLine("-EnterOrderAction-")
+		a.WriteLine("ActionCode: " & str_OrderAction)
+		a.WriteLine("OrderBranch: " & str_OrderBranch)
+		a.WriteLine("OrderNumber " & str_OrderNumber)
+		a.WriteLine("ToIngramP: " & str_ToIngramPO)
+		a.WriteLine("---------------------------------------")
+		a.WriteLine("ResponseFlag: " & ORL_ResponseFlag)
+		a.WriteLine("Error: " & ORL_ErrorType)
+		for i=1 to 9
+			if ORA_OrderSuffix(i) <> "  "  then
+				
+				a.WriteLine("OrderSuffix: " & ORA_OrderSuffix(i))
+				a.WriteLine("WhseAssignedNumber: " & ORA_WhseAssignedNumber(i))
+				a.WriteLine("TotalWeight: " & ORA_TotalWeight(i))
+				a.WriteLine("CarrierCode: " & ORA_CarrierCode(i))
+				a.WriteLine("Carrier: " & ORA_Carrier(i))
+				a.WriteLine("FreightRate: " & ORA_FreightRate(i))
+				a.WriteLine("TransitDays: " & ORA_TransitDays(i))
+				a.WriteLine("CarrierMode: " & ORA_CarrierMode(i))
+				a.WriteLine("EstimatedTax: " & ORA_EstimatedTax(i))
+
+			end if
+		next
+		a.WriteLine("IngramPartNumber: " & ORL_IngramPartNumber)
+		a.WriteLine("LocalCurrencyPrice: " & ORL_LocalCurrencyPrice)
+		a.WriteLine("QtyOrdered: " & ORL_QtyOrdered)
+		a.WriteLine("QtyAllocated: " & ORL_QtyAllocated)
+		a.WriteLine("QtyBackordered: " & ORL_QtyBackordered)
+		a.WriteLine("OrderSuffix: " & ORL_OrderSuffix)
+
+		a.WriteLine("========================================")
+		a.Close
+		'================================================
+		'END OF LOG
+		'================================================
+
+	end if
+
+End Function
+
+Function EnterOrderActionXML(ByRef str_OrderBranch, ByRef str_OrderNumber, ByRef str_ToIngramPO,_
+						ByRef str_ToCustomerPO, ByRef str_OrderAction,_
+						ByRef i_ReturnStatus, ByRef str_StatusMsg)
+
+
+	dim xmlDoc
+
+	xmlDoc = "<OrderChangeRequest>"
+	xmlDoc = xmlDoc & "<Version1.0/> "
+	xmlDoc = xmlDoc & "<TransactionHeader>"
+	xmlDoc = xmlDoc & "<CountryCode>FT</CountryCode>"
+	xmlDoc = xmlDoc & "<LoginID>" & Session("IMMustang_UID") & "</LoginID>"
+	xmlDoc = xmlDoc & "<Password>" & Session("IMMustang_PWD") & "</Password> "
+	xmlDoc = xmlDoc & "<TransactionID></TransactionID>"
+	xmlDoc = xmlDoc & "</TransactionHeader>"
+	xmlDoc = xmlDoc & "<OrderHeaderInformation>"
+	xmlDoc = xmlDoc & "<BranchOrderNumber>" & Trim(str_OrderBranch) & Trim(str_OrderNumber) & "</BranchOrderNumber>"
+	xmlDoc = xmlDoc & "<OrderActionCode>R</OrderActionCode>"
+	xmlDoc = xmlDoc & "</OrderHeaderInformation>"
+	xmlDoc = xmlDoc & "</OrderChangeRequest>"
+
+	dim xmlRecv
+	set xmlRecv = Server.CreateObject("Msxml2.ServerXMLHTTP")
+
+	xmlRecv.open "POST", "https://mustang.ingrammicro.ca/receivexml.asp", false
+
+	xmlRecv.setRequestHeader "Content-Type", "text/xml"
+	xmlRecv.setTimeouts 5000, 5000, 15000, 15000
+	xmlRecv.send(xmlDoc)
+
+	tdxmlHeaders = xmlRecv.getAllResponseHeaders()
+	tdxmlStatus = xmlRecv.statusText
+	tdxmlResult = xmlRecv.responseXML.xml
+
+	'Set Cnxn = Server.CreateObject("ADODB.Connection")
+	'Cnxn.Open Session("ConnectionString")
+	
+	'sql = "DELETE FROM " & Session("StoreID") & "_IM_ORDER WHERE ORDER_NBR='" & str_OrderNumber & "' AND ORDER_BR='" & str_OrderBranch & "'"
+	'Cnxn.execute sql
+
+	'Cnxn.Close
+
+	'Increment Index.
+	SaveLastIndex Session("ConnectionString"), 1, Mid(str_ToIngramPO)
+
+	Set fs = CreateObject("Scripting.FileSystemObject")
+	Set a = fs.OpenTextFile("c:\\IMXML.log", 8, True)
+	a.WriteLine("==================")
+	a.WriteLine(xmlDoc)
+	a.WriteLine(tdxmlResult)
+	a.WriteLine("==================")
+	a.Close
+
+	EnterOrderActionXML = true
+
+End Function
+'---------------------------------------------------------
+' Order Action Request - LUOA... MA
+'---------------------------------------------------------
+Function SelectIMCarrier(ByRef str_OrderBranch, ByRef str_OrderNumber, ByRef str_ToIngramPO,_
+									ByRef str_OrderSuffix, ByRef str_CarrierCode,_
+									ByRef str_dropship,_
+									ByRef i_ReturnStatus, ByRef str_StatusMsg)
+	
+	Dim OrderAction, trans
+	dim i,nWarehouse
+	Dim ORA_ResponseFlag, ORA_ErrorType
+	dim ORA_OrderSuffix(9), ORA_WhseAssignedNumber(9), ORA_TotalWeight(9), ORA_CarrierCode(9), ORA_Carrier(9)
+	dim ORA_FreightRate(9), ORA_EstimatedTax(9), ORA_TransitDays(9), ORA_CarrierMode(9)
+	Dim Cnxn, sql, rsIMOrder 
+	
+	on error resume next
+	
+	Set Cnxn = Server.CreateObject("ADODB.Connection")
+	Cnxn.Open Session("ConnectionString")
+	
+	'Get shipping address
+	sql = "SELECT * FROM " & Session("StoreID") & "_IM_ORDER WHERE ORDER_NBR='" & str_OrderNumber & "'"
+	set rsSH = Cnxn.Execute(sql)
+	
+	if not rsSH.EOF then
+		strAttn = rsSH("SHIP_TO_ATTENTION")
+		strAddr1 = rsSH("SHIP_TO_ADDRESS1")
+		strAddr2 = rsSH("SHIP_TO_ADDRESS2")
+		strAddr3 = rsSH("SHIP_TO_ADDRESS3")
+		if Len(strAddr3) > 0 then
+			strAddr3 = UCASE(strAddr3)
+		end if
+		strCity = rsSH("SHIP_TO_CITY")
+		strState = rsSH("SHIP_TO_STATE")
+		strZip = rsSH("SHIP_TO_ZIP")
+		
+	else
+		strAttn = ""
+		strAddr1 = ""
+		strAddr2 = ""
+		strCity = ""
+		strState = ""
+		strZip = ""
+	end if
+	
+	rsSH.Close
+	
+	if str_dropship = "0" then
+		strAttn = ""
+		strAddr1 = ""
+		strAddr2 = ""
+		strCity = ""
+		strState = ""
+		strZip = ""
+	end if
+		
+	Set trans = Server.CreateObject("InsideLine3.Transaction")
+  Set OrderAction = Server.CreateObject("InsideLine3.OrderAction")
+    
+  set OrderAction.Trans = trans
+  
+  with OrderAction.Trans
+		.Server				= Session("Ingram_Server")
+		.Region				= Session("Ingram_Region")
+		.CustomerNumber		= Session("Ingram_Customer_Number")
+		.CustomerBranch		= Session("Ingram_Branch")
+		.Password			= Session("Ingram_Password")
+		.Country			= Session("Ingram_Country")
+	end with
+	
+	if Session("USESELECTSOURCE") = "1" then
+		OrderAction.Trans.SelectSourceBranch = Session("SELECTSOURCEACCT1")
+		OrderAction.Trans.SelectSourceNumber = Session("SELECTSOURCEACCT2")
+	end if
+
+	'Set fs = CreateObject("Scripting.FileSystemObject")
+	'Set a = fs.OpenTextFile("c:\\ftiebiz.log", 8, True)
+	'a.WriteLine("=================================================")
+	'a.WriteLine(str_OrderBranch)
+	'a.WriteLine(str_OrderNumber)
+	'a.WriteLine(str_ToIngramPO)
+	'a.WriteLine(str_ToIngramPO)
+	'a.WriteLine(str_CarrierCode)
+	'a.WriteLine(strAddr1)
+	'a.WriteLine(strAddr2)
+	'a.WriteLine(strAddr3)
+	'a.WriteLine(strCity)
+	'a.WriteLine(strState)
+	'a.WriteLine(strZip)
+	'a.Close
+	'Set fs = Nothing
+	  
+  OrderAction.ActionCode = "MA"
+  OrderAction.OrderBranch = str_OrderBranch
+  OrderAction.OrderNumber = str_OrderNumber
+  OrderAction.ToIngramPO = str_ToIngramPO
+  OrderAction.OrderSuffix = str_OrderSuffix
+  OrderAction.ShipViaCarrier = str_CarrierCode
+  OrderAction.CarrierSelected = " "
+  
+  'Shipping Address...
+  'OrderAction.ShipToAttention = strAttn
+  OrderAction.ShipToAddress1 = strAddr1
+  OrderAction.ShipToAddress2 = strAddr2
+  OrderAction.ShipToAddress3 = strAddr3
+  OrderAction.ShipToCity = strCity
+  OrderAction.ShipToState = strState
+  OrderAction.ShipToZip = strZip
+  
+  ' Enter order action
+	OrderAction.Transact
+  
+  if Err then
+		SelectIMCarrier = false
+		i_ReturnStatus = -1
+		str_StatusMsg = Err.Description
+		Set OrderAction = Nothing
+		Exit Function
+	else
+
+		ORA_ResponseFlag = OrderAction.ResponseFlag
+		ORA_ErrorType = OrderAction.ErrorType
+				
+		str_StatusMsg = str_StatusMsg & "ResponseFlag:.." & ORA_ResponseFlag & ORA_ErrorType & "..<br>"
+		
+		nWarehouse = OrderAction.WarehouseTableOccurs
+		
+		for i=1 to 9
+			if OrderAction.Distributions(i).OrderSuffix <> "  "  then
+				ORA_OrderSuffix(i) = OrderAction.Distributions(i).OrderSuffix
+				ORA_WhseAssignedNumber(i) = OrderAction.Distributions(i).WhseAssignedNumber
+				ORA_TotalWeight(i) = OrderAction.Distributions(i).TotalWeight
+				ORA_CarrierCode(i) = OrderAction.Distributions(i).CarrierCode
+				ORA_Carrier(i) = OrderAction.Distributions(i).Carrier
+				ORA_FreightRate(i) = OrderAction.Distributions(i).FreightRate
+				ORA_TransitDays(i) = OrderAction.Distributions(i).TransitDays
+				ORA_CarrierMode(i) = OrderAction.Distributions(i).CarrierMode
+				ORA_EstimatedTax(i) = OrderAction.Distributions(i).EstimatedTax
+												
+				'Check number
+				if IsNumeric(ORA_FreightRate(i))then
+					ORA_FreightRate(i) = FormatNumber(ORA_FreightRate(i)/100,2)
+				else
+					ORA_FreightRate(i) = "0.00"
+				end if
+				
+				if IsNumeric(ORA_EstimatedTax(i))then
+					ORA_EstimatedTax(i) = FormatNumber(ORA_EstimatedTax(i)/100,2)
+				else
+					ORA_EstimatedTax(i) = "0.00"
+				end if
+				
+				str_StatusMsg = str_StatusMsg & "=========================================================<br>"
+				str_StatusMsg = str_StatusMsg & "Suffix:" & ORA_OrderSuffix(i) & "<br>"
+				str_StatusMsg = str_StatusMsg & "Warehouse:" & ORA_WhseAssignedNumber(i) & "<br>"
+				str_StatusMsg = str_StatusMsg & "Total Weight:" & ORA_TotalWeight(i) & "<br>"
+				str_StatusMsg = str_StatusMsg & "Carrier Code:" & ORA_CarrierCode(i) & "<br>"
+				str_StatusMsg = str_StatusMsg & "Description:" & ORA_Carrier(i) & "<br>"
+				str_StatusMsg = str_StatusMsg & "Rate:" & ORA_FreightRate(i) & "<br>"
+				str_StatusMsg = str_StatusMsg & "Tax:" & ORA_EstimatedTax(i) & "<br>"
+				str_StatusMsg = str_StatusMsg & "=========================================================<br>"
+				
+				'Response.Write(".." & ORA_CarrierCode(i) & "..<br>")
+				sql = "SELECT * FROM " & Session("StoreID") & "_IM_ORDER_SUFFIX WHERE ORDER_NBR='" & str_OrderNumber & "' AND ORDER_BR='" & str_OrderBranch & "' AND ORDER_SUFFIX='" & str_OrderSuffix & "'"
+				Set rsIMOrder = Server.CreateObject("ADODB.Recordset")
+				with rsIMOrder
+					.ActiveConnection = Cnxn
+					.CursorLocation = adUseClient
+					.CursorType = adOpenKeyset
+					.LockType = adLockOptimistic
+					.Source = sql
+					.Open
+				End With
+				
+				rsIMOrder("ORDER_NBR") = str_OrderNumber
+				rsIMOrder("ORDER_BR") = str_OrderBranch
+				rsIMOrder("ORDER_SUFFIX") = ORA_OrderSuffix(i)
+				rsIMOrder("WHSE_NBR") = ORA_WhseAssignedNumber(i)
+				rsIMOrder("TOTAL_SALE") = 0
+				rsIMOrder("TOTAL_WEIGHT") = ORA_TotalWeight(i)
+				rsIMOrder("CARRIER_CODE") = ORA_CarrierCode(i)
+				rsIMOrder("CC_DESCRIPTION") = ORA_Carrier(i)
+				rsIMOrder("DS_FRT_RATE") = ORA_FreightRate(i)
+				rsIMOrder("DS_TRANSIT_DAYS") = ORA_TransitDays(i)
+				rsIMOrder("CARRIER_MODE") = ORA_CarrierMode(i)
+				rsIMOrder("EST_TAX") = ORA_EstimatedTax(i)
+				
+				rsIMOrder.Update
+								
+			else
+				ORA_OrderSuffix(i) = "  "
+			end if
+		next
+		
+		SELECT CASE UCase(ORA_ResponseFlag)
+		CASE " "
+			SelectIMCarrier = true
+			i_ReturnStatus = 0
+		CASE "W"
+			str_StatusMsg = GetTransErrorMsg(Session("MasterConnectionString"), ORA_ResponseFlag & ORA_ErrorType, "LULA")
+			SelectIMCarrier = true
+			i_ReturnStatus = 1	
+		CASE ELSE
+			str_StatusMsg = GetTransErrorMsg(Session("MasterConnectionString"), ORA_ResponseFlag & ORA_ErrorType, "LULA")
+			SelectIMCarrier = false
+			i_ReturnStatus = 2	
+		END SELECT
+			
+	end if
+	
+	Cnxn.Close
+	
+	Set OrderAction = Nothing		
+	Set trans = Nothing
+
+End Function
+
+Function SelectIMCarrierXML(ByRef str_OrderBranch, ByRef str_OrderNumber, ByRef str_ToIngramPO,_
+									ByRef str_OrderSuffix, ByRef str_CarrierCode,_
+									ByRef str_dropship,_
+									ByRef i_ReturnStatus, ByRef str_StatusMsg)
+
+	
+	Set Cnxn = Server.CreateObject("ADODB.Connection")
+	Cnxn.Open Session("ConnectionString")
+	
+	'Get shipping address
+	sql = "SELECT * FROM " & Session("StoreID") & "_IM_ORDER WHERE ORDER_NBR='" & str_OrderNumber & "' AND ORDER_BR='" & str_OrderBranch & "'"
+	set rsSH = Cnxn.Execute(sql)
+	
+	if not rsSH.EOF then
+		strAttn = Trim(rsSH("SHIP_TO_ATTENTION"))
+		strAddr1 = Trim(rsSH("SHIP_TO_ADDRESS1"))
+		strAddr2 = Trim(rsSH("SHIP_TO_ADDRESS2"))
+		strCity = Trim(rsSH("SHIP_TO_CITY"))
+		strState = Trim(rsSH("SHIP_TO_STATE"))
+		strZip = Trim(rsSH("SHIP_TO_ZIP"))
+	else
+		strAttn = ""
+		strAddr1 = ""
+		strAddr2 = ""
+		strCity = ""
+		strState = ""
+		strZip = ""
+	end if
+	
+	rsSH.Close
+	Cnxn.Close
+
+	strZip = Replace(strZip, " ", "")
+
+	dim xmlDoc
+
+	xmlDoc = "<OrderChangeRequest>"
+	xmlDoc = xmlDoc & "<Version1.0/> "
+	xmlDoc = xmlDoc & "<TransactionHeader>"
+	xmlDoc = xmlDoc & "<CountryCode>FT</CountryCode>"
+	xmlDoc = xmlDoc & "<LoginID>" & Session("IMMustang_UID") & "</LoginID>"
+	xmlDoc = xmlDoc & "<Password>" & Session("IMMustang_PWD") & "</Password> "
+	xmlDoc = xmlDoc & "<TransactionID></TransactionID>"
+	xmlDoc = xmlDoc & "</TransactionHeader>"
+	xmlDoc = xmlDoc & "<OrderHeaderInformation>"
+	xmlDoc = xmlDoc & "<BranchOrderNumber>" & Trim(str_OrderBranch) & Trim(str_OrderNumber) & "</BranchOrderNumber>"
+	xmlDoc = xmlDoc & "<OrderSuffix>" & Trim(str_OrderSuffix) & "</OrderSuffix>"
+	xmlDoc = xmlDoc & "<ShipmentAddressInformation>"
+	xmlDoc = xmlDoc & "<NewCarrierCode>" & str_CarrierCode & "</NewCarrierCode>"
+	xmlDoc = xmlDoc & "<NewCustomerPO>" & Trim(str_ToIngramPO) & "</NewCustomerPO>"
+	xmlDoc = xmlDoc & "<NewShipToAttention>" & Trim(strAttn) & "</NewShipToAttention>"
+	xmlDoc = xmlDoc & "<NewShipToAddress1>" & Trim(strAddr1) & "</NewShipToAddress1>"
+	xmlDoc = xmlDoc & "<NewShipToAddress2>" & Trim(strAddr2) & "</NewShipToAddress2>"
+	xmlDoc = xmlDoc & "<NewShipToCity>" & Trim(strCity) & "</NewShipToCity>"
+	xmlDoc = xmlDoc & "<NewShipToProvince>" & Trim(strState) & "</NewShipToProvince>"
+	xmlDoc = xmlDoc & "<NewShipToPostalCode>" & Trim(strZip) & "</NewShipToPostalCode>"
+	xmlDoc = xmlDoc & "</ShipmentAddressInformation>"
+	xmlDoc = xmlDoc & "</OrderHeaderInformation>"
+	xmlDoc = xmlDoc & "</OrderChangeRequest>"
+
+	dim xmlRecv
+	set xmlRecv = Server.CreateObject("Msxml2.ServerXMLHTTP")
+
+	xmlRecv.open "POST", "https://mustang.ingrammicro.ca/receivexml.asp", false
+
+	xmlRecv.setRequestHeader "Content-Type", "text/xml"
+	xmlRecv.setTimeouts 5000, 5000, 15000, 15000
+	xmlRecv.send(xmlDoc)
+
+	tdxmlHeaders = xmlRecv.getAllResponseHeaders()
+	tdxmlStatus = xmlRecv.statusText
+	tdxmlResult = xmlRecv.responseXML.xml
+
+	dim xmlDoc2
+	set xmlDoc2 = Server.CreateObject("Msxml2.DOMDocument")
+	xmlDoc2.async = false
+	xmlDoc2.validateOnParse = false
+	xmlDoc2.LoadXML (tdxmlResult)
+	if (xmlDoc2.parseError.errorCode <> 0) then
+		a = xmlDoc2.parseError.reason
+		SelectIMCarrierXML = false
+		Exit Function
+	else
+		
+	end if
+
+	Set fs = CreateObject("Scripting.FileSystemObject")
+	Set a = fs.OpenTextFile("c:\\IMXML.log", 8, True)
+	a.WriteLine("==================")
+	a.WriteLine(xmlDoc)
+	a.WriteLine(tdxmlResult)
+	a.WriteLine("==================")
+	a.Close
+
+
+	SelectIMCarrierXML = true
+
+End Function
+
+'---------------------------------------------------------
+' Order Action Request - LUOA... CC
+'---------------------------------------------------------
+Function CancelIMOrder(ByRef str_OrderBranch, ByRef str_OrderNumber, ByRef str_ToCustomerPO,_
+									ByRef i_ReturnStatus, ByRef str_StatusMsg)
+									
+	Dim OrderAction, trans
+	
+	'on error resume next
+	
+	Set trans = Server.CreateObject("InsideLine3.Transaction")
+  Set OrderAction = Server.CreateObject("InsideLine3.OrderAction")
+    
+  set OrderAction.Trans = trans
+  
+  with OrderAction.Trans
+		.Server				= Session("Ingram_Server")
+		.Region				= Session("Ingram_Region")
+		.CustomerNumber		= Session("Ingram_Customer_Number")
+		.CustomerBranch		= Session("Ingram_Branch")
+		.Password			= Session("Ingram_Password")
+		.Country			= Session("Ingram_Country")
+	end with
+	
+	if Session("USESELECTSOURCE") = "1" then
+		OrderAction.Trans.SelectSourceBranch = Session("SELECTSOURCEACCT1")
+		OrderAction.Trans.SelectSourceNumber = Session("SELECTSOURCEACCT2")
+	end if
+	
+	OrderAction.ActionCode = "CC"
+  OrderAction.OrderBranch = str_OrderBranch
+  OrderAction.OrderNumber = str_OrderNumber
+  
+  ' Enter order action
+	OrderAction.Transact
+  
+  if Err then
+		CancelIMOrder = false
+		i_ReturnStatus = -1
+		Set OrderAction = Nothing
+		Exit Function
+	else
+		Set Cnxn = Server.CreateObject("ADODB.Connection")
+		Cnxn.Open Session("ConnectionString")
+		
+		sql = "DELETE FROM " & Session("StoreID") & "_IM_ORDER_SUFFIX WHERE ORDER_NBR='" & str_OrderNumber & "' AND ORDER_BR='" & str_OrderBranch & "'"
+		Cnxn.execute sql
+		
+		sql = "DELETE FROM " & Session("StoreID") & "_IM_ORDER WHERE ORDER_NBR='" & str_OrderNumber & "' AND ORDER_BR='" & str_OrderBranch & "'"
+		Cnxn.execute sql
+		
+		sql = "DELETE FROM " & Session("StoreID") & "_ORL WHERE ORL_INGRAM_ORDER_NBR='" & str_OrderNumber & "' AND ORL_INGRAM_ORDER_BR='" & str_OrderBranch & "'"
+		Cnxn.execute sql
+			
+		ORA_ResponseFlag = OrderAction.ResponseFlag
+		ORA_ErrorType = OrderAction.ErrorType
+		
+		SELECT CASE UCase(ORA_ResponseFlag)
+		CASE " "
+			CancelIMOrder = true
+			i_ReturnStatus = 0
+		CASE "W"
+			str_StatusMsg = GetTransErrorMsg(Session("MasterConnectionString"), ORA_ResponseFlag & ORA_ErrorType, "LULA")
+			CancelIMOrder = true
+			i_ReturnStatus = 1	
+		CASE ELSE
+			str_StatusMsg = GetTransErrorMsg(Session("MasterConnectionString"), ORA_ResponseFlag & ORA_ErrorType, "LULA")
+			CancelIMOrder = false
+			i_ReturnStatus = 2	
+		END SELECT
+		
+		sql = "UPDATE " & Session("StoreID") & "_po_item SET item_IM_order=null WHERE item_IM_order like '" & str_OrderBranch & str_OrderNumber & "%'"
+		Cnxn.execute sql
+		
+		Cnxn.Close
+	end if
+
+
+End Function
+
+Function CancelIMOrderXML(ByRef str_OrderBranch, ByRef str_OrderNumber, ByRef str_ToCustomerPO,_
+									ByRef i_ReturnStatus, ByRef str_StatusMsg)
+
+	dim xmlDoc
+
+	xmlDoc = "<OrderChangeRequest>"
+	xmlDoc = xmlDoc & "<Version1.0/> "
+	xmlDoc = xmlDoc & "<TransactionHeader>"
+	xmlDoc = xmlDoc & "<CountryCode>FT</CountryCode>"
+	xmlDoc = xmlDoc & "<LoginID>" & Session("IMMustang_UID") & "</LoginID>"
+	xmlDoc = xmlDoc & "<Password>" & Session("IMMustang_PWD") & "</Password> "
+	xmlDoc = xmlDoc & "<TransactionID></TransactionID>"
+	xmlDoc = xmlDoc & "</TransactionHeader>"
+	xmlDoc = xmlDoc & "<OrderHeaderInformation>"
+	xmlDoc = xmlDoc & "<BranchOrderNumber>" & Trim(str_OrderBranch) & Trim(str_OrderNumber) & "</BranchOrderNumber>"
+	xmlDoc = xmlDoc & "<OrderActionCode>C</OrderActionCode>"
+	xmlDoc = xmlDoc & "</OrderHeaderInformation>"
+	xmlDoc = xmlDoc & "</OrderChangeRequest>"
+
+	dim xmlRecv
+	set xmlRecv = Server.CreateObject("Msxml2.ServerXMLHTTP")
+
+	xmlRecv.open "POST", "https://mustang.ingrammicro.ca/receivexml.asp", false
+
+	xmlRecv.setRequestHeader "Content-Type", "text/xml"
+	xmlRecv.setTimeouts 5000, 5000, 15000, 15000
+	xmlRecv.send(xmlDoc)
+
+	tdxmlHeaders = xmlRecv.getAllResponseHeaders()
+	tdxmlStatus = xmlRecv.statusText
+	tdxmlResult = xmlRecv.responseXML.xml
+
+	Set Cnxn = Server.CreateObject("ADODB.Connection")
+	Cnxn.Open Session("ConnectionString")
+	
+	sql = "DELETE FROM " & Session("StoreID") & "_IM_ORDER WHERE ORDER_NBR='" & str_OrderNumber & "' AND ORDER_BR='" & str_OrderBranch & "'"
+	Cnxn.execute sql
+
+	Cnxn.Close
+
+	Set fs = CreateObject("Scripting.FileSystemObject")
+	Set a = fs.OpenTextFile("c:\\IMXML.log", 8, True)
+	a.WriteLine("==================")
+	a.WriteLine(xmlDoc)
+	a.WriteLine(tdxmlResult)
+	a.WriteLine("==================")
+	a.Close
+
+	CancelIMOrderXML = true
+
+
+End Function
+'---------------------------------------------------------
+' ORDER Ship Line Request - LULA
+'---------------------------------------------------------
+Function EnterLine(ByRef str_OrderBranch, ByRef str_OrderNumber, ByRef str_ToIngramPO, ByRef str_ToCustomerPO,_
+								ByRef str_ChangeType, ByRef str_OrderSuffix, ByRef str_CustomerLineNumber,_
+								ByRef str_IngramLineNumber, ByRef str_CustomerPartNumber, ByRef str_IngramPartNumber,_
+								ByRef str_QtyOrdered, ByRef str_NewWarehouseNumber, ByRef str_NewBillToSuffix, ByRef str_OpenWarehouseSeqFlag,_
+								ByRef str_EndUserPrice,_
+								ByRef i_ReturnStatus, ByRef str_StatusMsg)
+	
+	Dim trans, OrderLine
+	Dim ORL_ResponseFlag, ORL_ErrorType, ORL_IngramPartNumber, ORL_LocalCurrencyPrice
+	Dim ORL_IngramLineNumber,ORL_WarehouseAssignede,ORL_QtyOrdered,ORL_QtyAllocated
+	Dim ORL_QtyBackordered,ORL_BackorderedETA,ORL_PriceDerivedFlag, ORL_OrderSuffix
+	Dim ORL_CarrierCode, ORL_FreightRate, ORL_TransitDay, ORL_CarrierMode, ORL_EstimatedTax
+	
+	dim bok
+	
+	Dim Cnxn, rsItem, strSQL
+	
+	'check values...
+	'if Len(str_OrderBranch)>0 AND Len(str_OrderNumber)>0 AND Len(str_ToIngramPO)>0 AND Len(str_ChangeType)>0_
+		'AND Len(str_IngramPartNumber)>0 AND Len(str_QtyOrdered)>0 THEN
+		'bok = true
+	'ELSE
+		'bok = false
+	'END IF
+	
+	'if IsNumeric(str_QtyOrdered) then
+	'else
+		'bok = false
+	'end if
+	
+	'if str_ChangeType = "C" OR str_ChangeType = "D" then
+		'if Len(str_IngramLineNumber)>0 THEN
+		'else
+			'bok = false
+		'end if
+	'end if
+	
+	'if not bok then
+		'EnterLine = false
+		'i_ReturnStatus = 3
+		'exit function
+	'end if
+	
+	'on error resume next
+	
+	Set trans = Server.CreateObject("InsideLine3.Transaction")
+  Set OrderLine = Server.CreateObject("InsideLine3.OrderLine")
+  
+  set OrderLine.Trans = trans
+  
+  with OrderLine.Trans
+		.Server				= Session("Ingram_Server")
+		.Region				= Session("Ingram_Region")
+		.CustomerNumber		= Session("Ingram_Customer_Number")
+		.CustomerBranch		= Session("Ingram_Branch")
+		.Password			= Session("Ingram_Password")
+		.Country			= Session("Ingram_Country")
+	end with
+	
+	if Session("USESELECTSOURCE") = "1" then
+		OrderLine.Trans.SelectSourceBranch = Session("SELECTSOURCEACCT1")
+		OrderLine.Trans.SelectSourceNumber = Session("SELECTSOURCEACCT2")
+	end if
+  
+  OrderLine.OrderBranch=str_OrderBranch
+  OrderLine.OrderNumber=str_OrderNumber
+  OrderLine.ToIngramPO=str_ToIngramPO
+  
+  'Line Item
+  OrderLine.LineParts(1).ChangeType = str_ChangeType
+	OrderLine.LineParts(1).OrderSuffix = str_OrderSuffix
+	OrderLine.LineParts(1).CustomerLineNumber = str_CustomerLineNumber
+	OrderLine.LineParts(1).IngramLineNumber =str_IngramLineNumber
+	OrderLine.LineParts(1).CustomerPartNumber = str_CustomerPartNumber
+	OrderLine.LineParts(1).IngramPartNumber = str_IngramPartNumber
+	OrderLine.LineParts(1).QtyOrdered = str_QtyOrdered
+	OrderLine.LineParts(1).NewWarehouseNumber = str_NewWarehouseNumber
+	OrderLine.LineParts(1).NewBillToSuffix = str_NewBillToSuffix
+	OrderLine.LineParts(1).OpenWarehouseSeqFlag = str_OpenWarehouseSeqFlag
+	if Session("USESELECTSOURCE") = "1" then
+		OrderLine.LineParts(1).EndUserPrice = str_EndUserPrice
+	End if
+	' Call our method
+  OrderLine.Transact
+  
+  if Err then
+		EnterLine = false
+		i_ReturnStatus = -1
+		Set OrderLine = Nothing
+		Set trans = Nothing
+		str_StatusMsg = "ERROR HERE"
+		Exit Function
+	else
+	
+		'No Error...
+		ORL_ResponseFlag = OrderLine.LineParts(1).ResponseFlag
+		ORL_ErrorType = OrderLine.LineParts(1).ErrorType
+		ORL_IngramPartNumber = OrderLine.LineParts(1).IngramPartNumber
+		ORL_LocalCurrencyPrice = OrderLine.LineParts(1).LocalCurrencyPrice
+		ORL_IngramLineNumber = OrderLine.LineParts(1).IngramLineNumber
+		ORL_WarehouseAssignede = OrderLine.LineParts(1).WarehouseAssigned
+		ORL_QtyOrdered = OrderLine.LineParts(1).QtyOrdered
+		ORL_QtyAllocated = OrderLine.LineParts(1).QtyAllocated
+		ORL_QtyBackordered = OrderLine.LineParts(1).QtyBackordered
+		ORL_BackorderedETA = OrderLine.LineParts(1).BackorderedETA
+		ORL_OrderSuffix = OrderLine.LineParts(1).OrderSuffix
+		ORL_PriceDerivedFlag = OrderLine.LineParts(1).PriceDerivedFlag
+		ORL_CarrierCode = OrderLine.LineParts(1).CarrierCode 
+		ORL_FreightRate = OrderLine.LineParts(1).FreightRate 
+		ORL_TransitDay = OrderLine.LineParts(1).TransitDays 
+		ORL_CarrierMode = OrderLine.LineParts(1).CarrierMode 
+		ORL_EstimatedTax = OrderLine.LineParts(1).EstimatedTax
+		
+		'Message...
+		str_StatusMsg = str_StatusMsg & "ResponseFlag:.." & ORL_ResponseFlag & ORL_ErrorType & "..<br>"
+		str_StatusMsg = str_StatusMsg & "IngramPartNumber: " & ORL_IngramPartNumber & "<br>"
+		str_StatusMsg = str_StatusMsg & "LocalCurrencyPrice: " & ORL_LocalCurrencyPrice & "<br>"
+		str_StatusMsg = str_StatusMsg & "OrderSuffix: " & ORL_OrderSuffix & "<br>"
+		str_StatusMsg = str_StatusMsg & "IngramLineNumber: " & ORL_IngramLineNumber & "<br>"
+		str_StatusMsg = str_StatusMsg & "WarehouseAssigned: " & ORL_WarehouseAssignede & "<br>"
+		str_StatusMsg = str_StatusMsg & "QtyOrdered: " & ORL_QtyOrdered & "<br>"
+		str_StatusMsg = str_StatusMsg & "QtyAllocated: " & ORL_QtyAllocated & "<br>"
+		str_StatusMsg = str_StatusMsg & "QtyBackordered: " & ORL_QtyBackordered & "<br>"
+		str_StatusMsg = str_StatusMsg & "BackorderedETA: " & ORL_BackorderedETA & "<br>"
+		str_StatusMsg = str_StatusMsg & "OrderSuffix: " & ORL_OrderSuffix & "<br>"
+		str_StatusMsg = str_StatusMsg & "PriceDerivedFlag: " & ORL_PriceDerivedFlag & "<br>"
+		str_StatusMsg = str_StatusMsg & "CarrierCode: " & ORL_CarrierCode & "<br>"
+		str_StatusMsg = str_StatusMsg & "FreightRate: " & ORL_FreightRate & "<br>"
+		str_StatusMsg = str_StatusMsg & "TransitDay: " & ORL_TransitDay & "<br>"
+		str_StatusMsg = str_StatusMsg & "CarrierMode: " & ORL_CarrierMode & "<br>"
+		str_StatusMsg = str_StatusMsg & "EstimatedTax: " & ORL_EstimatedTax & "<br>"
+		
+		SELECT CASE UCase(ORL_ResponseFlag)
+		CASE " "
+			EnterLine = true
+			i_ReturnStatus = 0
+			bok = true	
+		CASE "W"
+			str_StatusMsg = GetTransErrorMsg(Session("MasterConnectionString"), ORL_ResponseFlag & ORL_ErrorType, "LULA")
+			EnterLine = true
+			i_ReturnStatus = 1	
+		CASE ELSE
+			str_StatusMsg = GetTransErrorMsg(Session("MasterConnectionString"), ORL_ResponseFlag & ORL_ErrorType, "LULA")
+			EnterLine = false
+			i_ReturnStatus = 2	
+		END SELECT		
+		
+		Set OrderLine = Nothing 
+		Set trans = Nothing
+		
+		IF i_ReturnStatus = 0 OR i_ReturnStatus = 1 THEN
+			'Record into database....
+			SELECT CASE str_ChangeType
+			CASE "A"
+				'add item..
+				'Get Description...
+				if Session("DemoMode") = "1" then
+					
+					if ORL_IngramPartNumber = "666910" then
+						str_IngramPartDescription1 = "CD JEWEL CASE FOR CD STO"
+					end if
+					
+					if ORL_IngramPartNumber = "317039" then
+						str_IngramPartDescription1 = "CABELA BIG GAME HUNTER"
+					end if
+					
+				else
+					'Set Cnxn2 = Server.CreateObject("ADODB.Connection")
+					'Cnxn2.Open Session("MasterConnectionString")
+					'sql = "SELECT part_description1 FROM PART_MASTER WHERE part_id='" & ORL_IngramPartNumber & "'"
+					'set rsIM = Cnxn2.Execute(sql)
+					'if not rsIM.EOF then
+						'str_IngramPartDescription1 = Trim(rsIM("part_description1"))
+					'else
+						'str_IngramPartDescription1 = "..."
+					'end if
+					'rsIM.Close
+					'Cnxn2.Close
+
+					Set Cnxn2 = Server.CreateObject("ADODB.Connection")
+					Cnxn2.Open Session("IMFileConnectionString")
+
+					sql = "SELECT INGRAM_PART_DESCRIPTION_LINE1 FROM " & Session("StoreID") & "_IMPRICE WHERE INGRAM_PART_NUMBER='" & ORL_IngramPartNumber & "'"
+
+					set rsIM = Cnxn2.Execute(sql)
+					if not rsIM.EOF then
+						str_IngramPartDescription1 = Trim(rsIM("INGRAM_PART_DESCRIPTION_LINE1"))
+					else
+						str_IngramPartDescription1 = "..."
+					end if
+					rsIM.Close
+					Cnxn2.Close
+
+				end if
+				
+				' open connection
+				Set Cnxn = Server.CreateObject("ADODB.Connection")
+				Cnxn.Open Session("ConnectionString")
+				 
+				Set rsItem = Server.CreateObject("ADODB.Recordset")
+   
+				rsItem.ActiveConnection = Cnxn
+				rsItem.CursorLocation = adUseClient
+				rsItem.CursorType = adOpenKeyset
+				rsItem.LockType = adLockOptimistic
+				rsItem.Source = Session("StoreID") & "_ORL"
+				rsItem.Open
+				
+				rsItem.AddNew
+				
+				rsItem("ORL_INGRAM_ORDER_NBR") = str_OrderNumber
+				rsItem("ORL_INGRAM_ORDER_BR") = str_OrderBranch
+				rsItem("ORL_CUST_TO_INGRAM_PO_NBR") = str_ToIngramPO
+				rsItem("ORL_INGRAM_LINE_NBR") = ORL_IngramLineNumber
+				rsItem("ORL_CUST_LINE_NBR") = CInt(str_CustomerLineNumber)
+				rsItem("ORL_INGRAM_PART_NBR") = str_IngramPartNumber
+				rsItem("ORL_ITEM_DESC") = str_IngramPartDescription1
+				rsItem("ORL_QTY_REQUEST") = str_QtyOrdered
+				rsItem("ORL_QTY_ORDERED") = ORL_QtyOrdered
+				rsItem("ORL_LOCAL_PRICE") = ORL_LocalCurrencyPrice
+				rsItem("ORL_PRICE_FLAG") = ORL_PriceDerivedFlag
+				rsItem("ORL_QTY_ALLOCATED") = ORL_QtyAllocated
+				rsItem("ORL_QTY_BACKORDERED") = ORL_QtyBackordered
+				rsItem("ORL_WHSE_ASSIGNED") = ORL_WarehouseAssignede
+				
+				'ETA
+				if Len(ORL_BackorderedETA) > 0 then
+					ORL_BackorderedETA =  Mid(ORL_BackorderedETA,3,2) + "/" + Mid(ORL_BackorderedETA,5,2) + "/" + Mid(ORL_BackorderedETA,1,2)
+					if IsDate(ORL_BackorderedETA) then
+						rsItem("ORL_ETA") = ORL_BackorderedETA	
+					end if
+				end if
+				
+				'check for errors
+				If Cnxn.Errors.Count > 0 Then
+					'DB Error occurred.. clean up...
+					str_StatusMsg = "ERROR!!"
+					For Each Err In Cnxn.Errors
+				     Response.Write("Error " & Err.SQLState & ": " & _
+				     Err.Description & " | " & Err.NativeError)
+				  Next
+					Cnxn.Errors.Clear
+					rsItem.CancelUpdate
+				else
+					rsItem.Update
+				End If
+
+				rsItem.Close
+
+				Cnxn.Close
+			
+			CASE "C"
+				Set Cnxn = Server.CreateObject("ADODB.Connection")
+				Cnxn.Open Session("ConnectionString")
+				
+				strSQL = "SELECT * FROM " & Session("StoreID") & "_ORL WHERE ORL_INGRAM_ORDER_NBR='" & str_OrderNumber & "' AND ORL_INGRAM_LINE_NBR='" & str_IngramLineNumber & "'"
+				Set rsItem = Server.CreateObject("ADODB.Recordset")
+   
+				rsItem.ActiveConnection = Cnxn
+				rsItem.CursorLocation = adUseClient
+				rsItem.CursorType = adOpenKeyset
+				rsItem.LockType = adLockOptimistic
+				rsItem.Source = strSQL
+				rsItem.Open
+				
+				rsItem("ORL_INGRAM_LINE_NBR") = ORL_IngramLineNumber
+				rsItem("ORL_QTY_REQUEST") = str_QtyOrdered
+				rsItem("ORL_QTY_ORDERED") = ORL_QtyOrdered
+				rsItem("ORL_LOCAL_PRICE") = ORL_LocalCurrencyPrice
+				rsItem("ORL_PRICE_FLAG") = ORL_PriceDerivedFlag
+				rsItem("ORL_QTY_ALLOCATED") = ORL_QtyAllocated
+				rsItem("ORL_QTY_BACKORDERED") = ORL_QtyBackordered
+				rsItem("ORL_WHSE_ASSIGNED") = ORL_WarehouseAssignede
+				
+				If Cnxn.Errors.Count > 0 Then
+					'DB Error occurred.. clean up...
+					str_StatusMsg = "ERROR!!"
+					For Each Err In Cnxn.Errors
+				     Response.Write("Error " & Err.SQLState & ": " & _
+				     Err.Description & " | " & Err.NativeError)
+				  Next
+					Cnxn.Errors.Clear
+					rsItem.CancelUpdate
+				else
+					rsItem.Update
+				End If
+				
+				rsItem.Close
+				Cnxn.Close
+			
+			CASE "D"
+				'Delete Items...
+				Set Cnxn = Server.CreateObject("ADODB.Connection")
+				Cnxn.Open Session("ConnectionString")
+				
+				strSQL = "DELETE FROM " & Session("StoreID") & "_ORL WHERE ORL_INGRAM_ORDER_NBR='" & str_OrderNumber & "' AND ORL_INGRAM_LINE_NBR='" & str_IngramLineNumber & "'"
+				Cnxn.Execute strSQL
+				Cnxn.Close
+				
+			CASE ELSE
+			
+			END SELECT
+		
+		END IF
+
+		'================================================
+		'LOG
+		'================================================
+		Set fs = CreateObject("Scripting.FileSystemObject")
+		Set a = fs.OpenTextFile("c:\\IMIL.log", 8, True)
+
+		a.WriteLine("==========" & Session("StoreID") & "-" & Now() & "==============")
+		a.WriteLine("-EnterLine-")
+		a.WriteLine("OrderBranch: " & str_OrderBranch)
+		a.WriteLine("OrderNumber: " & str_OrderNumber)
+		a.WriteLine("ToIngramPO: " & str_ToIngramPO)
+		a.WriteLine("ChangeType: " & str_ChangeType)
+		a.WriteLine("OrderSuffix: " & str_OrderSuffix)
+		a.WriteLine("CustomerLineNumber: " & str_CustomerLineNumber)
+		a.WriteLine("IngramLineNumber: " & str_IngramLineNumber)
+		a.WriteLine("CustomerPartNumber: " & str_CustomerPartNumber)
+		a.WriteLine("IngramPartNumber: " & str_IngramPartNumber)
+		a.WriteLine("QtyOrdered: " & str_QtyOrdered)
+		a.WriteLine("NewWarehouseNumber: " & str_NewWarehouseNumber)
+		a.WriteLine("NewBillToSuffix: " & str_NewBillToSuffix)
+		a.WriteLine("OpenWarehouseSeqFlag: " & str_OpenWarehouseSeqFlag)
+		a.WriteLine("---------------------------------------")
+		a.WriteLine("ResponseFlag: " & ORL_ResponseFlag)
+		a.WriteLine("Error: " & ORL_ErrorType)
+		a.WriteLine("IngramPartNumber: " & ORL_IngramPartNumber)
+		a.WriteLine("LocalCurrencyPrice: " & ORL_LocalCurrencyPrice)
+		a.WriteLine("QtyOrdered: " & ORL_QtyOrdered)
+		a.WriteLine("QtyAllocated: " & ORL_QtyAllocated)
+		a.WriteLine("QtyBackordered: " & ORL_QtyBackordered)
+		a.WriteLine("OrderSuffix: " & ORL_OrderSuffix)
+
+		a.WriteLine("========================================")
+		a.Close
+		'================================================
+		'END OF LOG
+		'================================================
+
+	end if
+
+End Function
+
+'-----------------------------------------------------------------------------
+' Base Rate Carrier Inquiry - LUBR
+'------------------------------------------------------------------------------
+Function BaseRateInformation(ByRef str_OrderBranch, ByRef str_OrderNumber, ByRef str_OrderSuffix,_
+											ByRef str_CarrierCode, ByRef str_CarrierMode, ByRef str_TransitDays, ByRef str_ShipFromBranch, ByRef str_ShipToZip,_
+											ByRef arr_ErrorType, ByRef arr_OrderSuffix, ByRef arr_Warehouse, ByRef arr_TotalWeight, ByRef arr_Optiontags,_
+											ByRef i_TableOccurs,_
+											ByRef i_ReturnStatus, ByRef str_StatusMsg)
+	
+	Dim BaseRateTransaction
+	Dim trans
+	dim i, ii, m
+	dim str_cc
+	dim Cnxn, sql, rsCarrier
+
+	'on error resume next
+	Set Cnxn = Server.CreateObject("ADODB.Connection")
+	Cnxn.Open Session("ConnectionString")
+	
+	set trans = Server.CreateObject("InsideLine3.Transaction")
+	set BaseRateTransaction = server.CreateObject("InsideLine3.BaseRate")
+
+	set BaseRateTransaction.Trans = trans				
+		
+	BaseRateTransaction.Trans.server = Session("Ingram_Server")
+	BaseRateTransaction.Trans.Region = Session("Ingram_Region")
+	
+	BaseRateTransaction.Trans.CustomerNumber = Session("Ingram_Customer_Number")
+	BaseRateTransaction.Trans.CustomerBranch = Session("Ingram_Branch")
+	BaseRateTransaction.Trans.Password = Session("Ingram_Password")
+	
+	' USA & Test region
+	BaseRateTransaction.Trans.Country = Session("Ingram_Country")
+	
+	if Session("USESELECTSOURCE") = "1" then
+		BaseRateTransaction.Trans.SelectSourceBranch = Session("SELECTSOURCEACCT1")
+		BaseRateTransaction.Trans.SelectSourceNumber = Session("SELECTSOURCEACCT2")
+	end if
+	
+	BaseRateTransaction.OrderBranch = str_OrderBranch
+	BaseRateTransaction.OrderNumber = str_OrderNumber
+	BaseRateTransaction.OrderSuffix = str_OrderSuffix
+	BaseRateTransaction.CarrierCode = str_CarrierCode
+	BaseRateTransaction.CarrierMode = str_CarrierMode
+	BaseRateTransaction.TransitDays = 9
+	BaseRateTransaction.ShipFromBranch = ""
+	BaseRateTransaction.ShipToZip = str_ShipToZip
+		
+	' Call our method
+	BaseRateTransaction.Transact
+	
+	if Err then
+		BaseRateInformation = false
+		set BaseRateTransaction = Nothing
+		exit function
+	end if
+	
+	'Return String....
+	if BaseRateTransaction.TableOccurs <> " " then
+		m = BaseRateTransaction.TableOccurs
+		for i=1 to m
+			arr_ErrorType(i) = BaseRateTransaction.Distributions(i).ErrorType
+			arr_OrderSuffix(i) = BaseRateTransaction.Distributions(i).OrderSuffix
+			arr_Warehouse(i) = BaseRateTransaction.Distributions(i).Warehouse
+			arr_TotalWeight(i) = FormatNumber(BaseRateTransaction.Distributions(i).TotalWeight,2)
+			
+			'get current carrier
+			sql = "SELECT CARRIER_CODE FROM " & Session("StoreID") & "_IM_ORDER_SUFFIX WHERE ORDER_NBR='" & str_OrderNumber & "' AND ORDER_BR='" & str_OrderBranch & "' AND ORDER_SUFFIX='" & arr_OrderSuffix(i) & "'"
+			set rsCarrier = Cnxn.Execute(sql)
+			if not rsCarrier.EOF then
+				str_cc = Trim(rsCarrier(0))
+			else
+				str_cc = ""
+			end if
+			rsCarrier.Close
+			
+			for ii=1 to 20
+				if BaseRateTransaction.Distributions(i).Carriers(ii).CarrierCode <> "  " then
+					if dc.Exists(Trim(BaseRateTransaction.Distributions(i).Carriers(ii).CarrierCode)) then
+						arr_Optiontags(i) = arr_Optiontags(i) & "<option value=""" & Trim(BaseRateTransaction.Distributions(i).Carriers(ii).CarrierCode) & """"
+						if BaseRateTransaction.Distributions(i).Carriers(ii).CarrierCode = str_cc then
+							arr_Optiontags(i) = arr_Optiontags(i) & " selected"
+						end if
+						arr_Optiontags(i) = arr_Optiontags(i) & ">" & dc.Item(Trim(BaseRateTransaction.Distributions(i).Carriers(ii).CarrierCode))
+					else
+						arr_Optiontags(i) = arr_Optiontags(i) & "<option value=""" & Trim(BaseRateTransaction.Distributions(i).Carriers(ii).CarrierCode) & """"
+						if BaseRateTransaction.Distributions(i).Carriers(ii).CarrierCode = str_cc then
+							arr_Optiontags(i) = arr_Optiontags(i) & " selected"
+						end if
+						arr_Optiontags(i) = arr_Optiontags(i) & ">" & Trim(BaseRateTransaction.Distributions(i).Carriers(ii).Carrier)
+					end if
+					arr_Optiontags(i) = arr_Optiontags(i) & " / " & FormatCurrency(BaseRateTransaction.Distributions(i).Carriers(ii).FreightRate/100)
+					arr_Optiontags(i) = arr_Optiontags(i) & " / " & BaseRateTransaction.Distributions(i).Carriers(ii).TransitDays & " day(s)</option>"
+				end if
+			Next
+		Next
+		
+	end if
+	
+	i_TableOccurs = m
+	
+	Cnxn.Close
+	
+	BaseRateInformation = true
+	
+	set BaseRateTransaction.Trans = nothing
+	Set BaseRateTransaction = Nothing
+					
+End Function
+
+Function BaseRateInformationXML(ByRef str_OrderBranch, ByRef str_OrderNumber, ByRef str_OrderSuffix,_
+											ByRef str_CarrierCode, ByRef str_CarrierMode, ByRef str_TransitDays, ByRef str_ShipFromBranch, ByRef str_ShipToZip,_
+											ByRef arr_ErrorType, ByRef arr_OrderSuffix, ByRef arr_Warehouse, ByRef arr_TotalWeight, ByRef arr_Optiontags,_
+											ByRef i_TableOccurs,_
+											ByRef i_ReturnStatus, ByRef str_StatusMsg)
+
+	
+	dim xmlDoc
+
+	xmlDoc = "<BaseRateRequest> "
+	xmlDoc = xmlDoc & "<Version1.0/>"
+	xmlDoc = xmlDoc & "<TransactionHeader> "
+	xmlDoc = xmlDoc & "<CountryCode>FT</CountryCode>"
+	xmlDoc = xmlDoc & "<LoginID>" & Session("IMMustang_UID") & "</LoginID>"
+	xmlDoc = xmlDoc & "<Password>" & Session("IMMustang_PWD") & "</Password> "
+	xmlDoc = xmlDoc & "<TransactionID></TransactionID> "
+	xmlDoc = xmlDoc & "</TransactionHeader> "
+	xmlDoc = xmlDoc & "<BaseRateInformation> "
+	xmlDoc = xmlDoc & "<BranchOrderNumber>" & str_OrderBranch & str_OrderNumber & "</BranchOrderNumber> "
+	xmlDoc = xmlDoc & "<PostalCode>" & str_ShipToZip & "</PostalCode>"
+	xmlDoc = xmlDoc & "<Suffix/>"
+	xmlDoc = xmlDoc & "</BaseRateInformation>"
+	xmlDoc = xmlDoc & "</BaseRateRequest>"
+
+	dim xmlRecv
+	set xmlRecv = Server.CreateObject("Msxml2.ServerXMLHTTP")
+
+	xmlRecv.open "POST", "https://mustang.ingrammicro.ca/receivexml.asp", false
+
+	xmlRecv.setRequestHeader "Content-Type", "text/xml"
+	xmlRecv.setTimeouts 5000, 5000, 15000, 15000
+	xmlRecv.send(xmlDoc)
+
+	tdxmlHeaders = xmlRecv.getAllResponseHeaders()
+	tdxmlStatus = xmlRecv.statusText
+	tdxmlResult = xmlRecv.responseXML.xml
+
+	dim xmlDoc2
+	set xmlDoc2 = Server.CreateObject("Msxml2.DOMDocument")
+	xmlDoc2.async = false
+	xmlDoc2.validateOnParse = false
+	xmlDoc2.LoadXML (tdxmlResult)
+	if (xmlDoc2.parseError.errorCode <> 0) then
+		a = xmlDoc2.parseError.reason
+		BaseRateInformationXML = false
+		Exit Function
+	else
+		a = "NO ERROR"
+		
+		set objNodeList = xmlDoc2.getElementsByTagName("BaseRate")
+
+		For i = 0 To (objNodeList.length - 1)
+			
+			set lineInfoNode = objNodeList.Item(i)
+			order_suffix = lineInfoNode.getAttribute("OrderSuffix")
+
+			if Len(order_suffix) > 0 then
+			else
+				order_suffix = "11"
+			end if
+
+			arr_OrderSuffix(i+1) = order_suffix
+
+			set ccNodeList = lineInfoNode.selectNodes("Carrier")
+
+			for ii = 0 to (ccNodeList.length-1)
+				
+				arr_Optiontags(i+1) = arr_Optiontags(i+1) & "<option value=""" & Trim(ccNodeList.Item(ii).getAttribute("CarrierCode")) & """"
+				if ccNodeList.Item(ii).getAttribute("CarrierCode") = str_cc then
+					arr_Optiontags(i+1) = arr_Optiontags(i+1) & " selected"
+				end if
+				arr_Optiontags(i+1) = arr_Optiontags(i+1) & ">" & Trim(ccNodeList.Item(ii).getAttribute("CarrierName"))
+				arr_Optiontags(i+1) = arr_Optiontags(i+1) & " / " & FormatCurrency(ccNodeList.Item(ii).selectSingleNode("EstimatedFreightCharge").text)
+				arr_Optiontags(i+1) = arr_Optiontags(i+1) & " / " & ccNodeList.Item(ii).selectSingleNode("DaysInTransit").text & " day(s)</option>"
+
+			Next
+
+		Next
+
+		i_TableOccurs = i
+
+	end if
+
+	'Set fs = CreateObject("Scripting.FileSystemObject")
+	'Set a = fs.OpenTextFile("c:\\IMXML.log", 8, True)
+	'a.WriteLine(tdxmlResult)
+	'a.WriteLine(arr_Optiontags(1))
+	'a.Close
+
+	BaseRateInformationXML = true
+
+End Function
+
+</SCRIPT>
+

@@ -1,0 +1,1688 @@
+<SCRIPT LANGUAGE=VBScript RUNAT=Server>
+
+'========================================================================================
+'IM MUSTANG VERSION 2.0
+'========================================================================================
+dim IM_ENABLE_LOG
+IM_ENABLE_LOG = true
+
+function IM_GetRequestURL()
+  Set Cnxn = Server.CreateObject("ADODB.Connection")
+	Cnxn.Open Session("ConnectionString")
+	
+	sql ="SELECT im_mustang_request_URL FROM A_ATTRIBUTES"
+	set rsURL = Cnxn.Execute(sql)
+	if not rsURL.EOF then
+	  im_URL = rsURL(0)
+	else
+	  im_URL = "https://newport.ingrammicro.com/mustang"
+	end if
+	rsURL.Close
+	Cnxn.Close
+	IM_GetRequestURL = im_URL
+end function
+
+function IM_PNARequest(ByRef i_transaction_mode, ByRef str_login_id, ByRef str_password, ByRef str_country_code, ByRef ar_sku)
+	
+	'i_transaction_mode : 0-InsideLine, 1-Mustang
+
+	on error resume next
+	
+	SELECT CASE i_transaction_mode
+	CASE 0
+		'nothing yet...
+	CASE 1
+		
+		if UBound(ar_sku) > 0 then
+
+			dim xmlDoc
+			
+			xmlDoc = "<?xml version=""1.0""?>"
+			xmlDoc = xmlDoc & "<PNARequest>"
+			xmlDoc = xmlDoc & "<Version>2.0</Version>"
+			xmlDoc = xmlDoc & "<TransactionHeader>"
+			xmlDoc = xmlDoc & "<SenderID>FLASHECOM</SenderID>"
+			xmlDoc = xmlDoc & "<ReceiverID>FLASHECOM</ReceiverID>"
+			xmlDoc = xmlDoc & "<CountryCode>" & str_country_code & "</CountryCode>"
+			xmlDoc = xmlDoc & "<LoginID>" & str_login_id & "</LoginID>"
+			xmlDoc = xmlDoc & "<Password>" & str_password & "</Password>"
+			xmlDoc = xmlDoc & "</TransactionHeader>"
+
+			for i=0 to UBOUND(ar_sku)
+				if Len(ar_sku(i)) > 0 then
+					xmlDoc = xmlDoc & "<PNAInformation SKU=""" & ar_sku(i) & """ Quantity=""10"" ReservedInventory=""N""/>"
+				end if
+			next
+			xmlDoc = xmlDoc & "<ShowDetail>1</ShowDetail>"
+			xmlDoc = xmlDoc & "</PNARequest>"
+
+			'response.write Server.HTMLEncode(xmlDoc)
+			
+			
+
+			dim xmlRecv
+			set xmlRecv = Server.CreateObject("Msxml2.ServerXMLHTTP")
+      
+      imRequestURL = IM_GetRequestURL()
+			xmlRecv.open "POST", imRequestURL, false
+
+			xmlRecv.setRequestHeader "Content-Type", "text/xml"
+			xmlRecv.setTimeouts 5000, 5000, 15000, 15000
+			xmlRecv.send(xmlDoc)
+
+			tdxmlHeaders = xmlRecv.getAllResponseHeaders()
+			tdxmlStatus = xmlRecv.statusText
+			tdxmlResult = xmlRecv.responseXML.xml
+
+			'Response.write("<p>" & tdxmlHeaders & "</p>")
+			'Response.write("<p>" & tdxmlStatus & "</p>")
+			'Response.write("<p>" & Server.HTMLEncode(tdxmlResult) & "</p>")
+
+		end if
+
+	END SELECT
+
+
+	IM_PNARequest = true
+
+end function
+
+function IM_PNARequestExt(ByRef i_transaction_mode, ByRef str_login_id, ByRef str_password, ByRef str_country_code, ByRef ar_sku,_
+	ByRef ar_parts, ByRef ar_wh_qty)
+
+	'i_transaction_mode : 0-InsideLine, 1-Mustang
+	'ar_sku - requested sku (10)
+	'ar_parts - return array of part information (10,14) 
+	'           1:description, 2:Price(Cost) 3:Vendor 4:Available..............refer to if_fmim_item.asp for more info.
+	'ar_wh_qty - warehouse information (10,20,5) (skus, max number of warehouse, field)
+	'						1: warehouse, 2:OnOrder, 3: ETA, 4:Available 5:WHNumber
+
+	'on error resume next
+	
+	SELECT CASE i_transaction_mode
+	CASE 0
+		'nothing yet...
+	CASE 1
+		
+		if UBound(ar_sku) > 0 then
+
+			dim xmlDoc
+			
+			xmlDoc = ""
+			xmlDoc = xmlDoc & "<PNARequest>"
+			xmlDoc = xmlDoc & "<Version>2.0</Version>"
+			xmlDoc = xmlDoc & "<TransactionHeader>"
+			xmlDoc = xmlDoc & "<SenderID>FLASHECOM</SenderID>"
+			xmlDoc = xmlDoc & "<ReceiverID>FLASHECOM</ReceiverID>"
+			xmlDoc = xmlDoc & "<CountryCode>" & str_country_code & "</CountryCode>"
+			xmlDoc = xmlDoc & "<LoginID>" & str_login_id & "</LoginID>"
+			xmlDoc = xmlDoc & "<Password>" & str_password & "</Password>"
+			xmlDoc = xmlDoc & "</TransactionHeader>"
+
+			for i=0 to UBOUND(ar_sku)
+				if Len(ar_sku(i)) > 0 then
+					xmlDoc = xmlDoc & "<PNAInformation SKU=""" & ar_sku(i) & """ Quantity=""10"" ReservedInventory=""N""/>"
+				end if
+			next
+			xmlDoc = xmlDoc & "<ShowDetail>1</ShowDetail>"
+			xmlDoc = xmlDoc & "</PNARequest>"
+
+			'response.write Server.HTMLEncode(xmlDoc)
+
+			dim xmlRecv
+			set xmlRecv = Server.CreateObject("Msxml2.ServerXMLHTTP")
+      
+      imRequestURL = IM_GetRequestURL()
+			xmlRecv.open "POST", imRequestURL, false
+
+			xmlRecv.setRequestHeader "Content-Type", "text/xml"
+			xmlRecv.setTimeouts 5000, 5000, 15000, 15000
+			xmlRecv.send(xmlDoc)
+
+			tdxmlHeaders = xmlRecv.getAllResponseHeaders()
+			tdxmlStatus = xmlRecv.statusText
+			tdxmlResult = xmlRecv.responseXML.xml
+
+			'if IM_ENABLE_LOG then
+
+				'Set fs = CreateObject("Scripting.FileSystemObject")
+				'Set a = fs.OpenTextFile("c:\\customers\\IMXML2.log", 8, True)
+				'a.WriteLine("===========================================================================")
+				'a.WriteLine(Now() & ":" & Session("StoreID") & ":PNARequest")
+				'a.WriteLine("---------------------------------------------------------------------------")
+				'a.WriteLine(xmlDoc)
+				'a.WriteLine(tdxmlResult)
+				'a.WriteLine("===========================================================================")
+				'a.Close
+				'Set fs = Nothing
+
+			'end if
+
+			dim xmlDoc2
+			set xmlDoc2 = Server.CreateObject("Msxml2.DOMDocument")
+			xmlDoc2.async = false
+			xmlDoc2.validateOnParse = false
+			xmlDoc2.LoadXML (tdxmlResult)
+			if (xmlDoc2.parseError.errorCode <> 0) then
+				a = xmlDoc2.parseError.reason
+				Response.Write(a)
+			else
+
+				set objNodeList = xmlDoc2.getElementsByTagName("PriceAndAvailability")
+				For i = 0 To (objNodeList.length - 1)
+					
+					ar_Parts(i+1,4) = 0
+
+					set lineInfoNode = objNodeList.Item(i)
+
+					if (lineInfoNode.getAttribute("SKU") = ar_sku(i+1)) then
+						'SKU verified...
+
+						set objPriceNode = lineInfoNode.selectNodes("Price")
+
+						if objPriceNode.length = 0 then
+							
+							ar_Parts(i+1,4) = "0"
+							ar_Parts(i+1,2) = "0.00"
+							ar_Parts(i+1,1) = "<font color=red><b>" & lineInfoNode.selectSingleNode("SKUStatus").text & "</b></font>"
+							ar_Parts(i+1,3) = ""
+
+						else
+
+							ar_Parts(i+1,4) = lineInfoNode.getAttribute("Quantity")
+							ar_Parts(i+1,2) = lineInfoNode.selectSingleNode("Price").text
+							ar_Parts(i+1,1) = lineInfoNode.selectSingleNode("Description").text
+							ar_Parts(i+1,3) = lineInfoNode.selectSingleNode("VendorNumber").text
+
+							ii_total_available = 0
+
+							set branchNodeList = lineInfoNode.selectNodes("Branch")		
+							for ii = 0 to (branchNodeList.length-1)
+
+								ar_wh_qty(i+1,ii+1,5) = branchNodeList.Item(ii).getAttribute("ID")
+								ar_wh_qty(i+1,ii+1,1)= branchNodeList.Item(ii).getAttribute("Name")
+								ar_wh_qty(i+1,ii+1,4) = branchNodeList.Item(ii).selectSingleNode("Availability").text
+
+								if CInt(branchNodeList.Item(ii).selectSingleNode("Availability").text) > 0 then
+									ii_total_available = ii_total_available + CInt(branchNodeList.Item(ii).selectSingleNode("Availability").text)
+								end if
+
+								ar_wh_qty(i+1,ii+1,2)	= branchNodeList.Item(ii).selectSingleNode("OnOrder").text
+								ar_wh_qty(i+1,ii+1,3) = branchNodeList.Item(ii).selectSingleNode("ETADate").text
+							next
+
+							ar_Parts(i+1,4) = ii_total_available
+
+						end if
+
+					end if
+
+
+				Next
+			
+
+			end if
+
+
+		end if
+
+	END SELECT
+
+	IM_PNARequestExt = true
+
+end function
+
+
+function IM_PNARequestExtDebug(ByRef i_transaction_mode, ByRef str_login_id, ByRef str_password, ByRef str_country_code, ByRef ar_sku,_
+	ByRef ar_parts, ByRef ar_wh_qty, ByRef str_debug_msg)
+
+	str_debug_msg = ""
+	
+	on error resume next
+	
+	SELECT CASE i_transaction_mode
+	CASE 0
+		'nothing yet...
+	CASE 1
+		
+		if UBound(ar_sku) > 0 then
+
+			dim xmlDoc
+			
+			xmlDoc = "<?xml version=""1.0""?>"
+			xmlDoc = xmlDoc & "<PNARequest>"
+			xmlDoc = xmlDoc & "<Version>2.0</Version>"
+			xmlDoc = xmlDoc & "<TransactionHeader>"
+			xmlDoc = xmlDoc & "<SenderID>FLASHECOM</SenderID>"
+			xmlDoc = xmlDoc & "<ReceiverID>FLASHECOM</ReceiverID>"
+			xmlDoc = xmlDoc & "<CountryCode>" & str_country_code & "</CountryCode>"
+			xmlDoc = xmlDoc & "<LoginID>" & str_login_id & "</LoginID>"
+			xmlDoc = xmlDoc & "<Password>" & str_password & "</Password>"
+			xmlDoc = xmlDoc & "</TransactionHeader>"
+
+			for i=0 to UBOUND(ar_sku)
+				if Len(ar_sku(i)) > 0 then
+					xmlDoc = xmlDoc & "<PNAInformation SKU=""" & ar_sku(i) & """ Quantity=""10"" ReservedInventory=""N""/>"
+				end if
+			next
+			xmlDoc = xmlDoc & "<ShowDetail>1</ShowDetail>"
+			xmlDoc = xmlDoc & "</PNARequest>"
+			
+			'str_debug_msg = "<p>" & xmlDoc & "</p>"
+
+			dim xmlRecv
+			set xmlRecv = Server.CreateObject("Msxml2.ServerXMLHTTP")
+      
+      imRequestURL = IM_GetRequestURL()
+			xmlRecv.open "POST", imRequestURL, false
+
+			xmlRecv.setRequestHeader "Content-Type", "text/xml"
+			xmlRecv.setTimeouts 5000, 5000, 15000, 15000
+			xmlRecv.send(xmlDoc)
+
+			tdxmlHeaders = xmlRecv.getAllResponseHeaders()
+			tdxmlStatus = xmlRecv.statusText
+			tdxmlResult = xmlRecv.responseXML.xml
+			
+			str_debug_msg = tdxmlResult
+
+			dim xmlDoc2
+			set xmlDoc2 = Server.CreateObject("Msxml2.DOMDocument")
+			xmlDoc2.async = false
+			xmlDoc2.validateOnParse = false
+			xmlDoc2.LoadXML (tdxmlResult)
+			if (xmlDoc2.parseError.errorCode <> 0) then
+				a = xmlDoc2.parseError.reason
+				Response.Write(a)
+			else
+
+				set objNodeList = xmlDoc2.getElementsByTagName("PriceAndAvailability")
+				For i = 0 To (objNodeList.length - 1)
+					
+					ar_Parts(i+1,4) = 0
+
+					set lineInfoNode = objNodeList.Item(i)
+
+					if (lineInfoNode.getAttribute("SKU") = ar_sku(i+1)) then
+						'SKU verified...
+
+						set objPriceNode = lineInfoNode.selectNodes("Price")
+
+						if objPriceNode.length = 0 then
+							
+							ar_Parts(i+1,4) = "0"
+							ar_Parts(i+1,2) = "0.00"
+							ar_Parts(i+1,1) = "<font color=red><b>" & lineInfoNode.selectSingleNode("SKUStatus").text & "</b></font>"
+							ar_Parts(i+1,3) = ""
+
+						else
+
+							ar_Parts(i+1,4) = lineInfoNode.getAttribute("Quantity")
+							ar_Parts(i+1,2) = lineInfoNode.selectSingleNode("Price").text
+							ar_Parts(i+1,1) = lineInfoNode.selectSingleNode("Description").text
+							ar_Parts(i+1,3) = lineInfoNode.selectSingleNode("VendorNumber").text
+
+							ii_total_available = 0
+
+							set branchNodeList = lineInfoNode.selectNodes("Branch")		
+							for ii = 0 to (branchNodeList.length-1)
+
+								ar_wh_qty(i+1,ii+1,5) = branchNodeList.Item(ii).getAttribute("ID")
+								ar_wh_qty(i+1,ii+1,1)= branchNodeList.Item(ii).getAttribute("Name")
+								ar_wh_qty(i+1,ii+1,4) = branchNodeList.Item(ii).selectSingleNode("Availability").text
+
+								if CInt(branchNodeList.Item(ii).selectSingleNode("Availability").text) > 0 then
+									ii_total_available = ii_total_available + CInt(branchNodeList.Item(ii).selectSingleNode("Availability").text)
+								end if
+
+								ar_wh_qty(i+1,ii+1,2)	= branchNodeList.Item(ii).selectSingleNode("OnOrder").text
+								ar_wh_qty(i+1,ii+1,3) = branchNodeList.Item(ii).selectSingleNode("ETADate").text
+							next
+
+							ar_Parts(i+1,4) = ii_total_available
+
+						end if
+
+					end if
+
+
+				Next
+			
+
+			end if
+
+
+		end if
+
+	END SELECT
+
+	IM_PNARequestExtDebug = true
+
+end function
+
+
+Function IM_OrderRequest(ByRef str_ToIngramPO, ByRef str_ToCustomerPO,_
+						ByRef str_BackOrderFlag, ByRef str_ShipmentFlag, _
+						ByRef str_Addr1, ByRef str_Addr2, ByRef str_City, ByRef str_State, ByRef str_Zip,_
+						ByRef str_Attn, ByRef str_CarrierCode,_
+						ByRef str_dropship,_
+						ByRef str_itemFlag,_
+						ByRef str_dfWarehouse,_
+						ByRef i_ReturnStatus, ByRef str_StatusMsg)
+
+	on error resume next
+
+	if Len(str_dfWarehouse) > 0 then
+	else
+		str_dfWarehouse = "10,40"
+	end if
+
+	Set Cnxn = Server.CreateObject("ADODB.Connection")
+	Cnxn.Open Session("ConnectionString")
+
+	dim xmlDoc
+	
+	'PROCESS STRINGS..
+	str_Addr1 = Replace(str_Addr1, "&", "&amp;")
+	str_Attn = Replace(str_Attn, "&", "&amp;")
+	str_Addr2 = Replace(str_Addr2, "&", "&amp;")
+	str_City = Replace(str_City, "&", "&amp;")
+	str_Zip = Replace(str_Zip, "&", "&amp;")
+
+	xmlDoc = "<OrderRequest>"
+	xmlDoc = xmlDoc & "<Version>2.0</Version>"
+	xmlDoc = xmlDoc & "<TransactionHeader>"
+	xmlDoc = xmlDoc & "<SenderID>FLASHECOM</SenderID>"
+	xmlDoc = xmlDoc & "<ReceiverID>FLASHECOM</ReceiverID>"
+	xmlDoc = xmlDoc & "<CountryCode>" & Session("Ingram_Country") & "</CountryCode>"
+	xmlDoc = xmlDoc & "<LoginID>" & Session("IMMustang_UID") & "</LoginID>"
+	xmlDoc = xmlDoc & "<Password>" & Session("IMMustang_PWD") & "</Password>"
+	xmlDoc = xmlDoc & "<TransactionID></TransactionID>"
+	xmlDoc = xmlDoc & "</TransactionHeader>"
+
+	xmlDoc = xmlDoc & "<OrderHeaderInformation>"
+	xmlDoc = xmlDoc & "<BillToSuffix />"
+	xmlDoc = xmlDoc & "<AddressingInformation>"
+	xmlDoc = xmlDoc & "<CustomerPO>" & str_ToIngramPO & "</CustomerPO>"
+	xmlDoc = xmlDoc & "<ShipToAttention>" & str_Attn & "</ShipToAttention>"
+	xmlDoc = xmlDoc & "<EndUserPO>" & str_ToCustomerPO & "</EndUserPO>"
+	xmlDoc = xmlDoc & "<ShipTo>"
+	xmlDoc = xmlDoc & "<Address>"
+	xmlDoc = xmlDoc & "<ShipToAddress1>" & str_Addr1 & "</ShipToAddress1>"
+	xmlDoc = xmlDoc & "<ShipToAddress2>" & str_Addr2 & "</ShipToAddress2>"
+	xmlDoc = xmlDoc & "<ShipToAddress3></ShipToAddress3>"
+	xmlDoc = xmlDoc & "<ShipToCity>" & str_City & "</ShipToCity>"
+	xmlDoc = xmlDoc & "<ShipToProvince>" & GetStateCode(str_State) & "</ShipToProvince>"
+	xmlDoc = xmlDoc & "<ShipToPostalCode>" & str_Zip & "</ShipToPostalCode>"
+	xmlDoc = xmlDoc & "</Address>"
+	xmlDoc = xmlDoc & "</ShipTo>"
+	xmlDoc = xmlDoc & "</AddressingInformation>"
+	xmlDoc = xmlDoc & "<ProcessingOptions>"
+	xmlDoc = xmlDoc & "<CarrierCode></CarrierCode>"
+	xmlDoc = xmlDoc & "<AutoRelease>H</AutoRelease>"
+	xmlDoc = xmlDoc & "<ShipmentOptions>"
+	xmlDoc = xmlDoc & "<BackOrderFlag>" & str_BackOrderFlag & "</BackOrderFlag>"
+	xmlDoc = xmlDoc & "<SplitShipmentFlag>" & str_ShipmentFlag & "</SplitShipmentFlag>"
+	xmlDoc = xmlDoc & "<SplitLine>N</SplitLine>"
+	xmlDoc = xmlDoc & "<ShipFromBranches>" & str_dfWarehouse & "</ShipFromBranches>"
+	xmlDoc = xmlDoc & "</ShipmentOptions>"
+	xmlDoc = xmlDoc & "</ProcessingOptions>"
+	xmlDoc = xmlDoc & "<DynamicMessage>"
+	xmlDoc = xmlDoc & "<MessageLines>"
+	xmlDoc = xmlDoc & ".."
+	xmlDoc = xmlDoc & "</MessageLines>"
+	xmlDoc = xmlDoc & "</DynamicMessage>"
+	xmlDoc = xmlDoc & "</OrderHeaderInformation>"
+
+	xmlDoc = xmlDoc & "<OrderLineInformation>"
+
+	sql = "SELECT item_row, item_dist_part, item_quantity FROM " & Session("StoreID") & "_po_item WHERE po_id=" & str_ToCustomerPO & " ORDER BY item_row"
+
+	set rsItems = Cnxn.Execute(sql)
+
+	k = 1
+	j = 0
+	do while not rsItems.EOF
+		'response.write("item<br>")
+		qrow = rsItems("item_row")
+
+		if Mid(str_itemFlag, j+1, 1) = "1" then
+			if k > 9 then
+				strIngramLineNumber = "0" & CStr(k)
+			else
+				strIngramLineNumber = "00" & CStr(k)
+			end if
+			
+			if qrow > 9 then
+				strCustomerLineNumber = "0" & CStr(qrow)
+			else
+				strCustomerLineNumber = "00" & CStr(qrow)
+			end if
+
+			strIngramPartNumber = Trim(rsItems("item_dist_part"))
+			strQtyOrdered = CStr(rsItems("item_quantity"))
+
+			xmlDoc = xmlDoc & "<ProductLine>"
+			xmlDoc = xmlDoc & "<SKU>" & strIngramPartNumber & "</SKU>"
+			xmlDoc = xmlDoc & "<Quantity>" & strQtyOrdered & "</Quantity>"
+			xmlDoc = xmlDoc & "<CustomerLineNumber>" & strCustomerLineNumber & "</CustomerLineNumber>"
+			xmlDoc = xmlDoc & "</ProductLine>"
+
+			k = k + 1
+
+		end if
+		
+		j = j + 1
+		rsItems.MoveNext
+
+	loop
+	rsItems.Close
+
+	xmlDoc = xmlDoc & "</OrderLineInformation>"
+	xmlDoc = xmlDoc & "<ShowDetail>1</ShowDetail>"
+	xmlDoc = xmlDoc & "</OrderRequest>"
+
+	dim xmlRecv
+	set xmlRecv = Server.CreateObject("Msxml2.ServerXMLHTTP")
+
+	'=================================================================================================
+	imRequestURL = IM_GetRequestURL()
+	xmlRecv.open "POST", imRequestURL, false
+	'=================================================================================================
+
+	xmlRecv.setRequestHeader "Content-Type", "text/xml"
+	xmlRecv.setTimeouts 5000, 5000, 15000, 15000
+	xmlRecv.send(xmlDoc)
+
+	tdxmlHeaders = xmlRecv.getAllResponseHeaders()
+	tdxmlStatus = xmlRecv.statusText
+
+	'=================================================================================================
+		tdxmlResult = xmlRecv.responseXML.xml
+	'=================================================================================================
+	
+	'if IM_ENABLE_LOG then
+
+		Set fs = CreateObject("Scripting.FileSystemObject")
+		Set a = fs.OpenTextFile("c:\\customers\\IMXML2.log", 8, True)
+		a.WriteLine("===========================================================================")
+		a.WriteLine(Now() & ":" & Session("StoreID") & ":OrderRequest")
+		a.WriteLine("---------------------------------------------------------------------------")
+		a.WriteLine(xmlDoc)
+		a.WriteLine(tdxmlResult)
+		a.WriteLine("===========================================================================")
+		a.Close
+		Set fs = Nothing
+
+	'end if
+
+
+	dim xmlDoc2
+	set xmlDoc2 = Server.CreateObject("Msxml2.DOMDocument")
+	xmlDoc2.async = false
+	xmlDoc2.validateOnParse = false
+	xmlDoc2.LoadXML (tdxmlResult)
+	if (xmlDoc2.parseError.errorCode <> 0) then
+		a = xmlDoc2.parseError.reason
+		Response.Write(a)
+	else
+		a = "NO ERROR"
+
+		'================================================================
+		' i: Order Numbers
+		' ii: Order Suffix
+		' iii : Line Information
+		'================================================================
+
+		Set Cnxn = Server.CreateObject("ADODB.Connection")
+		Cnxn.Open Session("ConnectionString")
+
+		set objNodeList = xmlDoc2.getElementsByTagName("OrderNumbers")
+
+		For i = 0 To (objNodeList.length - 1)
+
+			set lineInfoNode = objNodeList.Item(i)
+			xml_BranchOrderNumber = lineInfoNode.selectNodes("BranchOrderNumber").item(0).text
+			xml_OrderNumber = Mid(xml_BranchOrderNumber,3)
+			xml_OrderBranch = Left(xml_BranchOrderNumber,2)
+			xml_ShipToAttention = lineInfoNode.selectNodes("ShipToAttention").item(0).text
+			xml_ShipToAddress1 = lineInfoNode.selectNodes("ShipToAddress1").item(0).text
+			xml_ShipToAddress2 = lineInfoNode.selectNodes("ShipToAddress2").item(0).text
+			xml_ShipToAddress3 = lineInfoNode.selectNodes("ShipToAddress3").item(0).text
+			xml_ShipToCity = lineInfoNode.selectNodes("ShipToCity").item(0).text
+			xml_ShipToProvince = lineInfoNode.selectNodes("ShipToProvince").item(0).text
+			xml_ShipToPostalCode = lineInfoNode.selectNodes("ShipToPostalCode").item(0).text
+			xml_ShipToSuffix = lineInfoNode.selectNodes("ShipToSuffix").item(0).text
+
+			'==================================================================================
+			Set rsIMOrder = Server.CreateObject("ADODB.Recordset")
+			with rsIMOrder
+				.ActiveConnection = Cnxn
+				.CursorLocation = 3'adUseClient
+				.CursorType = 1'adOpenKeyset
+				.LockType = 3'adLockOptimistic
+				.Source = Session("StoreID") & "_IM_ORDER"
+				.Open
+				.AddNew
+			end with
+						
+			'Update
+			rsIMOrder("ORDER_NBR") = xml_OrderNumber
+			rsIMOrder("ORDER_BR") = xml_OrderBranch
+			rsIMOrder("CUST_TO_INGRAM_PO") = str_ToIngramPO
+			rsIMOrder("CUST_TO_CUST_PO") = str_ToCustomerPO
+			rsIMOrder("BO_FLAG") = str_BackOrderFlag
+			rsIMOrder("SHIPMENT_FLAG") = str_ShipmentFlag
+			rsIMOrder("SHIP_TO_ADDRESS1") = xml_ShipToAddress1
+			rsIMOrder("SHIP_TO_ADDRESS2") = xml_ShipToAddress2
+			rsIMOrder("SHIP_TO_ADDRESS3") = xml_ShipToAddress3
+			rsIMOrder("SHIP_TO_CITY") = xml_ShipToCity
+			rsIMOrder("SHIP_TO_STATE") = xml_ShipToProvince
+			rsIMOrder("SHIP_TO_ZIP") = xml_ShipToPostalCode
+			rsIMOrder("SHIP_TO_ATTENTION") = xml_ShipToAttention
+			rsIMOrder("ADDRESS_ERR_TYPE") = ""
+			rsIMOrder("DIRECT_SHIP") = " "
+			rsIMOrder("ORDER_ACTION_STATUS") = "IP"
+			rsIMOrder("ENTRY_DATE") = Now()
+
+
+			rsIMOrder.Update
+			rsIMOrder.Close
+			'==================================================================================
+
+
+		
+			set suffixNodeList = lineInfoNode.selectNodes("OrderSuffix")
+			for ii = 0 to (suffixNodeList.length-1)
+				xml_Suffix = suffixNodeList.Item(ii).getAttribute("Suffix")
+				xml_DistributionWeight = suffixNodeList.Item(ii).selectNodes("DistributionWeight").item(0).text
+				xml_CarrierCode = suffixNodeList.Item(ii).selectNodes("Carrier").item(0).getAttribute("CarrierCode")
+				xml_Carrier = suffixNodeList.Item(ii).selectNodes("Carrier").item(0).text
+
+				'==================================================================================
+				Set rsIMOrderSuffix = Server.CreateObject("ADODB.Recordset")
+				with rsIMOrderSuffix
+					.ActiveConnection = Cnxn
+					.CursorLocation = 3'adUseClient
+					.CursorType = 1'adOpenKeyset
+					.LockType = 3'adLockOptimistic
+					.Source = Session("StoreID") & "_IM_ORDER_SUFFIX"
+					.Open
+					.AddNew
+				end with
+
+				rsIMOrderSuffix("ORDER_NBR") = xml_OrderNumber
+				rsIMOrderSuffix("ORDER_BR") = xml_OrderBranch
+				rsIMOrderSuffix("ORDER_SUFFIX") = xml_Suffix
+				rsIMOrderSuffix("WHSE_NBR") = ""
+				rsIMOrderSuffix("TOTAL_SALE") = 0
+				rsIMOrderSuffix("TOTAL_WEIGHT") = xml_DistributionWeight
+				rsIMOrderSuffix("CARRIER_CODE") = xml_CarrierCode
+				rsIMOrderSuffix("CC_DESCRIPTION") = xml_Carrier
+				rsIMOrderSuffix("DS_FRT_RATE") = 0
+				rsIMOrderSuffix("DS_TRANSIT_DAYS") = 0
+				rsIMOrderSuffix("EST_TAX") = 0
+
+				rsIMOrderSuffix.Update
+				rsIMOrderSuffix.Close
+				'==================================================================================
+
+				set itemNodeList = suffixNodeList.Item(ii).selectNodes("LineInformation")
+				for iii = 0 to (itemNodeList.length-1)
+
+					set ProductLineNode = itemNodeList.Item(ii).selectNodes("ProductLine").item(iii)
+					xml_sku = ProductLineNode.selectNodes("SKU").item(0).text
+					xml_UnitPrice = ProductLineNode.selectNodes("UnitPrice").item(0).text
+					xml_IngramLineNumber = ProductLineNode.selectNodes("IngramLineNumber").item(0).text
+					xml_CustomerLineNumber = ProductLineNode.selectNodes("CustomerLineNumber").item(0).text
+					xml_ShipFromBranch = ProductLineNode.selectNodes("ShipFromBranch").item(0).text
+					xml_OrderQuantity = ProductLineNode.selectNodes("OrderQuantity").item(0).text
+					xml_AllocatedQuantity = ProductLineNode.selectNodes("AllocatedQuantity").item(0).text
+					xml_BackOrderedQuantity = ProductLineNode.selectNodes("BackOrderedQuantity").item(0).text
+					xml_BackOrderETADate = ProductLineNode.selectNodes("BackOrderETADate").item(0).text
+					xml_FreightRate = ProductLineNode.selectNodes("FreightRate").item(0).text
+					xml_TransitDays = ProductLineNode.selectNodes("TransitDays").item(0).text
+					xml_LineBillToSuffix = ProductLineNode.selectNodes("LineBillToSuffix").item(0).text
+					xml_PriceDerivedFlag = ProductLineNode.selectNodes("PriceDerivedFlag").item(0).text
+
+					'==================================================================================
+					Set rsORL = Server.CreateObject("ADODB.Recordset")
+					with rsORL
+						.ActiveConnection = Cnxn
+						.CursorLocation = 3'adUseClient
+						.CursorType = 1'adOpenKeyset
+						.LockType = 3'adLockOptimistic
+						.Source = Session("StoreID") & "_ORL"
+						.Open
+						.AddNew
+					end with
+
+					rsORL("ORL_INGRAM_ORDER_NBR") = xml_OrderNumber
+					rsORL("ORL_INGRAM_ORDER_BR") = xml_OrderBranch
+					rsORL("ORL_CUST_TO_INGRAM_PO_NBR") = str_ToIngramPO
+					rsORL("ORL_INGRAM_SUFFIX") = xml_Suffix
+					rsORL("ORL_INGRAM_LINE_NBR") = xml_IngramLineNumber
+					if IsNumeric(xml_CustomerLineNumber) then
+						rsORL("ORL_CUST_LINE_NBR") = CInt(xml_CustomerLineNumber)
+					end if
+					rsORL("ORL_INGRAM_PART_NBR") = xml_sku
+					rsORL("ORL_ITEM_DESC") = ""
+					rsORL("ORL_QTY_REQUEST") = str_QtyOrdered
+					rsORL("ORL_QTY_ORDERED") = xml_OrderQuantity
+					rsORL("ORL_LOCAL_PRICE") = xml_UnitPrice
+					rsORL("ORL_PRICE_FLAG") = "" 'xml_PriceDerivedFlag
+					rsORL("ORL_QTY_ALLOCATED") = xml_AllocatedQuantity
+					rsORL("ORL_QTY_BACKORDERED") = xml_BackOrderedQuantity
+					if IsDate(xml_BackOrderETADate) then
+						rsORL("ORL_ETA") = xml_BackOrderETADate
+					end if
+					rsORL("ORL_WHSE_ASSIGNED") = xml_ShipFromBranch
+					rsORL("ORL_FREIGHT_RATE") = xml_FreightRate
+					rsORL("ORL_TRANSIT_DAYS") = xml_TransitDays
+
+					rsORL.Update
+					rsORL.Close
+
+					'==================================================================================
+					'Update _po_items..
+					'==================================================================================
+					sql = "UPDATE " & Session("StoreID") & "_po_item SET item_IM_order='" & xml_OrderBranch & xml_OrderNumber & xml_Suffix & "'"
+					sql = sql & " WHERE po_id=" & str_ToCustomerPO
+					sql = sql & " AND item_row=" & CStr(CInt(xml_CustomerLineNumber))
+					Cnxn.Execute sql
+					'==================================================================================
+
+					Set fs = CreateObject("Scripting.FileSystemObject")
+					Set a = fs.OpenTextFile("c:\\customers\\IMXML2.log", 8, True)
+					a.WriteLine("===========================================================================")
+					a.WriteLine(sql)
+					a.WriteLine("===========================================================================")
+					a.Close
+					Set fs = Nothing
+
+				next
+
+			next
+
+		Next
+
+		'Save Session Variables...
+		Session("OR_OrderBranch") = xml_OrderBranch
+		Session("OR_OrderNumber") = xml_OrderNumber
+		Session("OR_ToIngramPO") = str_ToIngramPO
+
+		'TODO:>>>
+		'SaveLastIndex Session("ConnectionString"), 1, Mid(str_ToIngramPO,4)
+
+	end if
+	
+	Cnxn.Close
+
+	IM_OrderRequest = true
+
+End Function
+
+Function IM_OrderRequest_v2(ByRef str_CustomerPO, ByRef str_EndUserPO,_
+						ByRef str_BackOrderFlag, ByRef str_SplitShipmentFlag, _
+						ByRef str_ShipToAddress1, ByRef str_ShipToAddress2, ByRef str_ShipToAddress3, _
+						ByRef str_ShipToCity, ByRef str_ShipToProvince, ByRef str_ShipToPostalCode,_
+						ByRef str_ShipToAttention,_
+						ByRef str_itemFlag,_
+						ByRef str_ShipFromBranches,_
+						ByRef str_DynamicMessage,_
+						ByRef i_ReturnStatus, ByRef str_StatusMsg)
+
+	'on error resume next
+
+	Set Cnxn = Server.CreateObject("ADODB.Connection")
+	Cnxn.Open Session("ConnectionString")
+
+	dim xmlDoc
+	
+	'PROCESS STRINGS..
+	str_ShipToAddress1 = Replace(str_ShipToAddress1, "&", "&amp;")
+	str_ShipToAddress2 = Replace(str_ShipToAddress2, "&", "&amp;")
+	str_ShipToCity = Replace(str_ShipToCity, "&", "&amp;")
+	str_ShipToAttention = Replace(str_ShipToAttention, "&", "&amp;")
+	str_ShipToPostalCode = Replace(str_ShipToPostalCode, "&", "&amp;")
+
+	xmlDoc = "<OrderRequest>"
+	xmlDoc = xmlDoc & "<Version>2.0</Version>"
+	xmlDoc = xmlDoc & "<TransactionHeader>"
+	xmlDoc = xmlDoc & "<SenderID>FLASHECOM</SenderID>"
+	xmlDoc = xmlDoc & "<ReceiverID>FLASHECOM</ReceiverID>"
+	xmlDoc = xmlDoc & "<CountryCode>" & Session("Ingram_Country") & "</CountryCode>"
+	xmlDoc = xmlDoc & "<LoginID>" & Session("IMMustang_UID") & "</LoginID>"
+	xmlDoc = xmlDoc & "<Password>" & Session("IMMustang_PWD") & "</Password>"
+	xmlDoc = xmlDoc & "<TransactionID></TransactionID>"
+	xmlDoc = xmlDoc & "</TransactionHeader>"
+
+	xmlDoc = xmlDoc & "<OrderHeaderInformation>"
+	xmlDoc = xmlDoc & "<BillToSuffix />"
+	xmlDoc = xmlDoc & "<AddressingInformation>"
+	xmlDoc = xmlDoc & "<CustomerPO>" & str_CustomerPO & "</CustomerPO>"
+	xmlDoc = xmlDoc & "<ShipToAttention>" & str_ShipToAttention & "</ShipToAttention>"
+	xmlDoc = xmlDoc & "<EndUserPO>" & str_EndUserPO & "</EndUserPO>"
+	xmlDoc = xmlDoc & "<ShipTo>"
+	xmlDoc = xmlDoc & "<Address>"
+	xmlDoc = xmlDoc & "<ShipToAddress1>" & str_ShipToAddress1 & "</ShipToAddress1>"
+	xmlDoc = xmlDoc & "<ShipToAddress2>" & str_ShipToAddress2 & "</ShipToAddress2>"
+	xmlDoc = xmlDoc & "<ShipToAddress3>" & str_ShipToAddress3 & "</ShipToAddress3>"
+	xmlDoc = xmlDoc & "<ShipToCity>" & str_ShipToCity & "</ShipToCity>"
+	xmlDoc = xmlDoc & "<ShipToProvince>" & GetStateCode(str_ShipToProvince) & "</ShipToProvince>"
+	xmlDoc = xmlDoc & "<ShipToPostalCode>" & str_ShipToPostalCode & "</ShipToPostalCode>"
+	xmlDoc = xmlDoc & "</Address>"
+	xmlDoc = xmlDoc & "</ShipTo>"
+	xmlDoc = xmlDoc & "</AddressingInformation>"
+	xmlDoc = xmlDoc & "<ProcessingOptions>"
+	xmlDoc = xmlDoc & "<CarrierCode></CarrierCode>"
+	xmlDoc = xmlDoc & "<AutoRelease>H</AutoRelease>"
+	xmlDoc = xmlDoc & "<ShipmentOptions>"
+	xmlDoc = xmlDoc & "<BackOrderFlag>" & str_BackOrderFlag & "</BackOrderFlag>"
+	xmlDoc = xmlDoc & "<SplitShipmentFlag>" & str_SplitShipmentFlag & "</SplitShipmentFlag>"
+	xmlDoc = xmlDoc & "<SplitLine>N</SplitLine>"
+	xmlDoc = xmlDoc & "<ShipFromBranches>" & str_ShipFromBranches & "</ShipFromBranches>"
+	xmlDoc = xmlDoc & "</ShipmentOptions>"
+	xmlDoc = xmlDoc & "</ProcessingOptions>"
+	xmlDoc = xmlDoc & "<DynamicMessage>"
+	xmlDoc = xmlDoc & "<MessageLines>"
+	xmlDoc = xmlDoc & str_DynamicMessage
+	xmlDoc = xmlDoc & "</MessageLines>"
+	xmlDoc = xmlDoc & "</DynamicMessage>"
+	xmlDoc = xmlDoc & "</OrderHeaderInformation>"
+
+	xmlDoc = xmlDoc & "<OrderLineInformation>"
+
+	sql = "SELECT item_row, item_dist_part, item_quantity FROM " & Session("StoreID") & "_po_item WHERE po_id=" & str_CustomerPO & " ORDER BY item_row"
+
+	set rsItems = Cnxn.Execute(sql)
+
+	k = 1
+	j = 0
+	do while not rsItems.EOF
+		qrow = rsItems("item_row")
+
+		'if Mid(str_itemFlag, j+1, 1) = "1" then
+		if InStr(str_itemFlag, CStr(j+1)&"|*|") > 0 then
+			if k > 9 then
+				strIngramLineNumber = "0" & CStr(k)
+			else
+				strIngramLineNumber = "00" & CStr(k)
+			end if
+			
+			if qrow > 9 then
+				strCustomerLineNumber = "0" & CStr(qrow)
+			else
+				strCustomerLineNumber = "00" & CStr(qrow)
+			end if
+
+			strIngramPartNumber = Trim(rsItems("item_dist_part"))
+			strQtyOrdered = CStr(rsItems("item_quantity"))
+
+			xmlDoc = xmlDoc & "<ProductLine>"
+			xmlDoc = xmlDoc & "<SKU>" & strIngramPartNumber & "</SKU>"
+			xmlDoc = xmlDoc & "<Quantity>" & strQtyOrdered & "</Quantity>"
+			xmlDoc = xmlDoc & "<CustomerLineNumber>" & strCustomerLineNumber & "</CustomerLineNumber>"
+			xmlDoc = xmlDoc & "</ProductLine>"
+
+			k = k + 1
+
+		end if
+		
+		j = j + 1
+		rsItems.MoveNext
+
+	loop
+	rsItems.Close
+
+	xmlDoc = xmlDoc & "</OrderLineInformation>"
+	xmlDoc = xmlDoc & "<ShowDetail>1</ShowDetail>"
+	xmlDoc = xmlDoc & "</OrderRequest>"
+
+	dim xmlRecv
+	set xmlRecv = Server.CreateObject("Msxml2.ServerXMLHTTP")
+
+	'=================================================================================================
+	imRequestURL = IM_GetRequestURL()
+	xmlRecv.open "POST", imRequestURL, false
+	'=================================================================================================
+
+	xmlRecv.setRequestHeader "Content-Type", "text/xml"
+	xmlRecv.setTimeouts 5000, 5000, 15000, 15000
+	xmlRecv.send(xmlDoc)
+
+	tdxmlHeaders = xmlRecv.getAllResponseHeaders()
+	tdxmlStatus = xmlRecv.statusText
+
+	'=================================================================================================
+	tdxmlResult = xmlRecv.responseXML.xml
+	'=================================================================================================
+
+	Set fs = CreateObject("Scripting.FileSystemObject")
+	Set a = fs.OpenTextFile("c:\\customers\\IMXML2.log", 8, True)
+	a.WriteLine("===========================================================================")
+	a.WriteLine(Now() & ":" & Session("StoreID") & ":OrderRequest")
+	a.WriteLine("---------------------------------------------------------------------------")
+	a.WriteLine(xmlDoc)
+	a.WriteLine(tdxmlResult)
+	a.WriteLine("===========================================================================")
+	a.Close
+	Set fs = Nothing
+
+	dim xmlDoc2
+	set xmlDoc2 = Server.CreateObject("Msxml2.DOMDocument")
+	xmlDoc2.async = false
+	xmlDoc2.validateOnParse = false
+	xmlDoc2.LoadXML (tdxmlResult)
+	if (xmlDoc2.parseError.errorCode <> 0) then
+		a = xmlDoc2.parseError.reason
+		Response.Write(a)
+	else
+		a = "NO ERROR"
+
+		'================================================================
+		' i: Order Numbers
+		' ii: Order Suffix
+		' iii : Line Information
+		'================================================================
+
+		Set Cnxn = Server.CreateObject("ADODB.Connection")
+		Cnxn.Open Session("ConnectionString")
+
+		set objNodeList = xmlDoc2.getElementsByTagName("OrderNumbers")
+
+		For i = 0 To (objNodeList.length - 1)
+
+			set lineInfoNode = objNodeList.Item(i)
+			xml_BranchOrderNumber = lineInfoNode.selectNodes("BranchOrderNumber").item(0).text
+			xml_OrderNumber = Mid(xml_BranchOrderNumber,3)
+			xml_OrderBranch = Left(xml_BranchOrderNumber,2)
+			
+			set objTempNode = lineInfoNode.selectNodes("ShipToAttention")
+			if objTempNode.length > 0 then
+				xml_ShipToAttention = lineInfoNode.selectNodes("ShipToAttention").item(0).text
+			else
+				xml_ShipToAttention = ""
+			end if
+			
+			'xml_ShipToAttention = lineInfoNode.selectNodes("ShipToAttention").item(0).text
+			xml_ShipToAddress1 = lineInfoNode.selectNodes("ShipToAddress1").item(0).text
+
+			set objTempNode = lineInfoNode.selectNodes("ShipToAddress2")
+			if objTempNode.length > 0 then
+				xml_ShipToAddress2 = lineInfoNode.selectNodes("ShipToAddress2").item(0).text
+			else
+				xml_ShipToAddress2 = ""
+			end if
+
+			set objTempNode = lineInfoNode.selectNodes("ShipToAddress3")
+			if objTempNode.length > 0 then
+				xml_ShipToAddress3 = lineInfoNode.selectNodes("ShipToAddress3").item(0).text
+			else
+				xml_ShipToAddress3 = ""
+			end if
+
+
+			xml_ShipToCity = lineInfoNode.selectNodes("ShipToCity").item(0).text
+			xml_ShipToProvince = lineInfoNode.selectNodes("ShipToProvince").item(0).text
+			xml_ShipToPostalCode = lineInfoNode.selectNodes("ShipToPostalCode").item(0).text
+
+			Session("OR_ShipToPostalCode") = xml_ShipToPostalCode
+
+
+			set objTempNode = lineInfoNode.selectNodes("ShipToSuffix")
+			if objTempNode.length > 0 then
+				xml_ShipToAddress3 = lineInfoNode.selectNodes("ShipToSuffix").item(0).text
+			end if
+
+			'==================================================================================
+			Set rsIMOrder = Server.CreateObject("ADODB.Recordset")
+			with rsIMOrder
+				.ActiveConnection = Cnxn
+				.CursorLocation = 3'adUseClient
+				.CursorType = 1'adOpenKeyset
+				.LockType = 3'adLockOptimistic
+				.Source = Session("StoreID") & "_IM_ORDER"
+				.Open
+				.AddNew
+			end with
+						
+			'Update
+			rsIMOrder("ORDER_NBR") = xml_OrderNumber
+			rsIMOrder("ORDER_BR") = xml_OrderBranch
+			rsIMOrder("CUST_TO_INGRAM_PO") = str_CustomerPO
+			rsIMOrder("CUST_TO_CUST_PO") = str_EndUserPO
+			rsIMOrder("BO_FLAG") = str_BackOrderFlag
+			rsIMOrder("SHIPMENT_FLAG") = str_ShipmentFlag
+			rsIMOrder("SHIP_TO_ADDRESS1") = xml_ShipToAddress1
+			rsIMOrder("SHIP_TO_ADDRESS2") = xml_ShipToAddress2
+			rsIMOrder("SHIP_TO_ADDRESS3") = xml_ShipToAddress3
+			rsIMOrder("SHIP_TO_CITY") = xml_ShipToCity
+			rsIMOrder("SHIP_TO_STATE") = xml_ShipToProvince
+			rsIMOrder("SHIP_TO_ZIP") = xml_ShipToPostalCode
+			rsIMOrder("SHIP_TO_ATTENTION") = xml_ShipToAttention
+			rsIMOrder("ADDRESS_ERR_TYPE") = ""
+			rsIMOrder("DIRECT_SHIP") = " "
+			rsIMOrder("ORDER_ACTION_STATUS") = "IP"
+			rsIMOrder("ENTRY_DATE") = Now()
+
+
+			rsIMOrder.Update
+			rsIMOrder.Close
+			'==================================================================================
+
+
+		
+			set suffixNodeList = lineInfoNode.selectNodes("OrderSuffix")
+			for ii = 0 to (suffixNodeList.length-1)
+				xml_Suffix = suffixNodeList.Item(ii).getAttribute("Suffix")
+				xml_DistributionWeight = suffixNodeList.Item(ii).selectNodes("DistributionWeight").item(0).text
+				xml_CarrierCode = suffixNodeList.Item(ii).selectNodes("Carrier").item(0).getAttribute("CarrierCode")
+				xml_Carrier = suffixNodeList.Item(ii).selectNodes("Carrier").item(0).text
+
+				'==================================================================================
+				Set rsIMOrderSuffix = Server.CreateObject("ADODB.Recordset")
+				with rsIMOrderSuffix
+					.ActiveConnection = Cnxn
+					.CursorLocation = 3'adUseClient
+					.CursorType = 1'adOpenKeyset
+					.LockType = 3'adLockOptimistic
+					.Source = Session("StoreID") & "_IM_ORDER_SUFFIX"
+					.Open
+					.AddNew
+				end with
+
+				rsIMOrderSuffix("ORDER_NBR") = xml_OrderNumber
+				rsIMOrderSuffix("ORDER_BR") = xml_OrderBranch
+				rsIMOrderSuffix("ORDER_SUFFIX") = xml_Suffix
+				rsIMOrderSuffix("WHSE_NBR") = ""
+				rsIMOrderSuffix("TOTAL_SALE") = 0
+				rsIMOrderSuffix("TOTAL_WEIGHT") = xml_DistributionWeight
+				rsIMOrderSuffix("CARRIER_CODE") = xml_CarrierCode
+				rsIMOrderSuffix("CC_DESCRIPTION") = xml_Carrier
+				rsIMOrderSuffix("DS_FRT_RATE") = 0
+				rsIMOrderSuffix("DS_TRANSIT_DAYS") = 0
+				rsIMOrderSuffix("EST_TAX") = 0
+
+				rsIMOrderSuffix.Update
+				rsIMOrderSuffix.Close
+				'==================================================================================
+
+				set itemNodeList = suffixNodeList.Item(ii).selectNodes("LineInformation")
+				for iii = 0 to (itemNodeList.length-1)
+
+					set ProductLineNode = itemNodeList.Item(iii).selectNodes("ProductLine")
+
+					for iiii = 0 to (ProductLineNode.length-1)
+
+						xml_sku = ProductLineNode.item(iiii).selectNodes("SKU").item(0).text
+						xml_UnitPrice = ProductLineNode.item(iiii).selectNodes("UnitPrice").item(0).text
+						xml_IngramLineNumber = ProductLineNode.item(iiii).selectNodes("IngramLineNumber").item(0).text
+						xml_CustomerLineNumber = ProductLineNode.item(iiii).selectNodes("CustomerLineNumber").item(0).text
+						xml_ShipFromBranch = ProductLineNode.item(iiii).selectNodes("ShipFromBranch").item(0).text
+						xml_OrderQuantity = ProductLineNode.item(iiii).selectNodes("OrderQuantity").item(0).text
+						xml_AllocatedQuantity = ProductLineNode.item(iiii).selectNodes("AllocatedQuantity").item(0).text
+						xml_BackOrderedQuantity = ProductLineNode.item(iiii).selectNodes("BackOrderedQuantity").item(0).text
+						xml_BackOrderETADate = ProductLineNode.item(iiii).selectNodes("BackOrderETADate").item(0).text
+						xml_FreightRate = ProductLineNode.item(iiii).selectNodes("FreightRate").item(0).text
+						xml_TransitDays = ProductLineNode.item(iiii).selectNodes("TransitDays").item(0).text
+						xml_LineBillToSuffix = ProductLineNode.item(iiii).selectNodes("LineBillToSuffix").item(0).text
+						xml_PriceDerivedFlag = ProductLineNode.item(iiii).selectNodes("PriceDerivedFlag").item(0).text
+
+						'==================================================================================
+						Set rsORL = Server.CreateObject("ADODB.Recordset")
+						with rsORL
+							.ActiveConnection = Cnxn
+							.CursorLocation = 3'adUseClient
+							.CursorType = 1'adOpenKeyset
+							.LockType = 3'adLockOptimistic
+							.Source = Session("StoreID") & "_ORL"
+							.Open
+							.AddNew
+						end with
+
+						rsORL("ORL_INGRAM_ORDER_NBR") = xml_OrderNumber
+						rsORL("ORL_INGRAM_ORDER_BR") = xml_OrderBranch
+						rsORL("ORL_CUST_TO_INGRAM_PO_NBR") = str_ToIngramPO
+						rsORL("ORL_INGRAM_SUFFIX") = xml_Suffix
+						rsORL("ORL_INGRAM_LINE_NBR") = xml_IngramLineNumber
+						if IsNumeric(xml_CustomerLineNumber) then
+							rsORL("ORL_CUST_LINE_NBR") = CInt(xml_CustomerLineNumber)
+						end if
+						rsORL("ORL_INGRAM_PART_NBR") = xml_sku
+						rsORL("ORL_ITEM_DESC") = ""
+						rsORL("ORL_QTY_REQUEST") = xml_OrderQuantity
+						rsORL("ORL_QTY_ORDERED") = xml_OrderQuantity
+						rsORL("ORL_LOCAL_PRICE") = xml_UnitPrice
+						rsORL("ORL_PRICE_FLAG") = "" 'xml_PriceDerivedFlag
+						rsORL("ORL_QTY_ALLOCATED") = xml_AllocatedQuantity
+						rsORL("ORL_QTY_BACKORDERED") = xml_BackOrderedQuantity
+						if IsDate(xml_BackOrderETADate) then
+							rsORL("ORL_ETA") = xml_BackOrderETADate
+						end if
+						rsORL("ORL_WHSE_ASSIGNED") = xml_ShipFromBranch
+						rsORL("ORL_FREIGHT_RATE") = xml_FreightRate
+						rsORL("ORL_TRANSIT_DAYS") = xml_TransitDays
+
+						rsORL.Update
+						rsORL.Close
+
+						'==================================================================================
+						'Update _po_items..
+						'==================================================================================
+						sql = "UPDATE " & Session("StoreID") & "_po_item SET item_IM_order='" & xml_OrderBranch & xml_OrderNumber & xml_Suffix & "'"
+						sql = sql & " WHERE po_id=" & str_CustomerPO
+						sql = sql & " AND item_row=" & CStr(CInt(xml_CustomerLineNumber))
+						Cnxn.Execute sql
+						'==================================================================================
+
+
+
+					Next
+
+					
+
+					
+				next
+
+			next
+
+		Next
+
+		'Save Session Variables...
+		Session("OR_OrderBranch") = xml_OrderBranch
+		Session("OR_OrderNumber") = xml_OrderNumber
+		Session("OR_ToIngramPO") = str_CustomerPO
+
+		'TODO:>>>
+		'SaveLastIndex Session("ConnectionString"), 1, Mid(str_ToIngramPO,4)
+
+	end if
+	
+	Cnxn.Close
+
+	IM_OrderRequest_v2 = true
+
+End Function
+
+Function IM_OrderCancel_V2(ByRef str_OrderBranch, ByRef str_OrderNumber, ByRef str_ToIngramPO, ByRef str_ToCustomerPO)
+
+	Set fs = CreateObject("Scripting.FileSystemObject")
+	Set a = fs.OpenTextFile("c:\\customers\\IMXML2.log", 8, True)
+	a.WriteLine("===========================================================================")
+	a.WriteLine(Now() & ":" & Session("StoreID") & ":OrderChangeRequest-CancelV2")
+	a.WriteLine(Trim(Request.ServerVariables("HTTP_REFERER")))
+	a.WriteLine("===========================================================================")
+	a.Close
+	Set fs = Nothing
+
+	IM_OrderCancel_V2 = true
+
+End Function
+
+Function IM_OrderCancel(ByRef str_OrderBranch, ByRef str_OrderNumber, ByRef str_ToIngramPO, ByRef str_ToCustomerPO)
+
+	if Len(str_OrderNumber) > 0 then
+
+	dim xmlDoc
+
+	xmlDoc = "<OrderChangeRequest>"
+	xmlDoc = xmlDoc & "<Version>2.0</Version>"
+	xmlDoc = xmlDoc & "<TransactionHeader>"
+	xmlDoc = xmlDoc & "<SenderID>FLASHECOM</SenderID>"
+	xmlDoc = xmlDoc & "<ReceiverID>FLASHECOM</ReceiverID>"
+	xmlDoc = xmlDoc & "<CountryCode>" & Session("Ingram_Country") & "</CountryCode>"
+	xmlDoc = xmlDoc & "<LoginID>" & Session("IMMustang_UID") & "</LoginID>"
+	xmlDoc = xmlDoc & "<Password>" & Session("IMMustang_PWD") & "</Password>"
+	xmlDoc = xmlDoc & "<TransactionID></TransactionID>"
+	xmlDoc = xmlDoc & "</TransactionHeader>"
+	xmlDoc = xmlDoc & "<OrderHeaderInformation>"
+	xmlDoc = xmlDoc & "<BranchOrderNumber>" & Trim(str_OrderBranch) & Trim(str_OrderNumber) & "</BranchOrderNumber>"
+	xmlDoc = xmlDoc & "<CustomerPO>" & str_ToIngramPO & "</CustomerPO>"
+	xmlDoc = xmlDoc & "<OrderActionCode>C</OrderActionCode>"
+	xmlDoc = xmlDoc & "</OrderHeaderInformation>"
+	xmlDoc = xmlDoc & "</OrderChangeRequest>"
+
+	dim xmlRecv
+	set xmlRecv = Server.CreateObject("Msxml2.ServerXMLHTTP")
+
+  imRequestURL = IM_GetRequestURL()
+	xmlRecv.open "POST", imRequestURL, false
+
+	xmlRecv.setRequestHeader "Content-Type", "text/xml"
+	xmlRecv.setTimeouts 5000, 5000, 15000, 15000
+	xmlRecv.send(xmlDoc)
+
+	tdxmlHeaders = xmlRecv.getAllResponseHeaders()
+	tdxmlStatus = xmlRecv.statusText
+	tdxmlResult = xmlRecv.responseXML.xml
+
+	'if IM_ENABLE_LOG then
+
+		Set fs = CreateObject("Scripting.FileSystemObject")
+		Set a = fs.OpenTextFile("c:\\customers\\IMXML2.log", 8, True)
+		a.WriteLine("===========================================================================")
+		a.WriteLine(Now() & ":" & Session("StoreID") & ":OrderChangeRequest-Cancel")
+		a.WriteLine("---------------------------------------------------------------------------")
+		a.WriteLine(xmlDoc)
+		a.WriteLine(tdxmlResult)
+		a.WriteLine("===========================================================================")
+		a.Close
+		Set fs = Nothing
+
+	'end if
+
+	'TODO: CHECK possible Error...
+
+	Set Cnxn = Server.CreateObject("ADODB.Connection")
+	Cnxn.Open Session("ConnectionString")
+	
+	sql = "DELETE FROM " & Session("StoreID") & "_IM_ORDER WHERE ORDER_NBR='" & str_OrderNumber & "' AND ORDER_BR='" & str_OrderBranch & "'"
+	Cnxn.execute sql
+
+	Set Cnxn = Server.CreateObject("ADODB.Connection")
+	Cnxn.Open Session("ConnectionString")
+	
+	sql = "DELETE FROM " & Session("StoreID") & "_IM_ORDER_SUFFIX WHERE ORDER_NBR='" & str_OrderNumber & "' AND ORDER_BR='" & str_OrderBranch & "'"
+	Cnxn.execute sql
+	
+	sql = "DELETE FROM " & Session("StoreID") & "_IM_ORDER WHERE ORDER_NBR='" & str_OrderNumber & "' AND ORDER_BR='" & str_OrderBranch & "'"
+	Cnxn.execute sql
+	
+	sql = "DELETE FROM " & Session("StoreID") & "_ORL WHERE ORL_INGRAM_ORDER_NBR='" & str_OrderNumber & "' AND ORL_INGRAM_ORDER_BR='" & str_OrderBranch & "'"
+	Cnxn.execute sql
+
+	'TODO: DELETE ingram order number from _po_item
+
+	sql = "UPDATE " & Session("StoreID") & "_po_item SET item_IM_order=null WHERE item_IM_order like '" & str_OrderBranch & str_OrderNumber & "%'"
+	Cnxn.execute sql
+
+	Cnxn.Close
+
+	end if
+
+
+	IM_OrderCancel = true
+End Function
+
+Function IM_OrderRelease(ByRef str_OrderBranch, ByRef str_OrderNumber, ByRef str_ToIngramPO, ByRef str_ToCustomerPO)
+
+	dim xmlDoc
+
+	xmlDoc = "<OrderChangeRequest>"
+	xmlDoc = xmlDoc & "<Version>2.0</Version>"
+	xmlDoc = xmlDoc & "<TransactionHeader>"
+	xmlDoc = xmlDoc & "<SenderID>FLASHECOM</SenderID>"
+	xmlDoc = xmlDoc & "<ReceiverID>FLASHECOM</ReceiverID>"
+	xmlDoc = xmlDoc & "<CountryCode>" & Session("Ingram_Country") & "</CountryCode>"
+	xmlDoc = xmlDoc & "<LoginID>" & Session("IMMustang_UID") & "</LoginID>"
+	xmlDoc = xmlDoc & "<Password>" & Session("IMMustang_PWD") & "</Password>"
+	xmlDoc = xmlDoc & "<TransactionID></TransactionID>"
+	xmlDoc = xmlDoc & "</TransactionHeader>"
+	xmlDoc = xmlDoc & "<OrderHeaderInformation>"
+	xmlDoc = xmlDoc & "<BranchOrderNumber>" & Trim(str_OrderBranch) & Trim(str_OrderNumber) & "</BranchOrderNumber>"
+	xmlDoc = xmlDoc & "<CustomerPO>" & str_ToIngramPO & "</CustomerPO>"
+	xmlDoc = xmlDoc & "<OrderActionCode>R</OrderActionCode>"
+	xmlDoc = xmlDoc & "</OrderHeaderInformation>"
+	xmlDoc = xmlDoc & "</OrderChangeRequest>"
+
+	dim xmlRecv
+	set xmlRecv = Server.CreateObject("Msxml2.ServerXMLHTTP")
+  
+  imRequestURL = IM_GetRequestURL()
+	xmlRecv.open "POST", imRequestURL, false
+
+	xmlRecv.setRequestHeader "Content-Type", "text/xml"
+	xmlRecv.setTimeouts 5000, 5000, 15000, 15000
+	xmlRecv.send(xmlDoc)
+
+	tdxmlHeaders = xmlRecv.getAllResponseHeaders()
+	tdxmlStatus = xmlRecv.statusText
+	tdxmlResult = xmlRecv.responseXML.xml
+
+	'if IM_ENABLE_LOG then
+
+		Set fs = CreateObject("Scripting.FileSystemObject")
+		Set a = fs.OpenTextFile("c:\\customers\\IMXML2.log", 8, True)
+		a.WriteLine("===========================================================================")
+		a.WriteLine(Now() & ":" & Session("StoreID") & ":OrderChangeRequest-Release")
+		a.WriteLine("---------------------------------------------------------------------------")
+		a.WriteLine(xmlDoc)
+		a.WriteLine(tdxmlResult)
+		a.WriteLine("===========================================================================")
+		a.Close
+		Set fs = Nothing
+
+	'end if
+
+	'TODO: CHECK possible Error..
+
+	'TODO: update po status based on number of item fulfilled.
+	'update po status...
+	Set Cnxn = Server.CreateObject("ADODB.Connection")
+	Cnxn.Open Session("ConnectionString")
+
+	sql = "SELECT COUNT(item_sku) FROM " & Session("StoreID") & "_po_item WHERE po_id=" & str_ToCustomerPO & " AND (item_IM_order IS NULL)"
+	set rs = Cnxn.Execute(sql)
+	if not rs.EOF then
+		po_item_count = rs(0)
+	else
+		po_item_count = 0
+	end if
+	rs.Close
+	
+	if po_item_count > 0 then
+		sql = "UPDATE " & Session("StoreID") & "_po SET po_status=3 WHERE po_id=" & str_ToCustomerPO
+	else
+		sql = "UPDATE " & Session("StoreID") & "_po SET po_status=4 WHERE po_id=" & str_ToCustomerPO
+	end if
+	
+	Cnxn.execute sql
+
+	'Increment Index.
+	SaveLastIndex Session("ConnectionString"), 1, Mid(str_ToIngramPO,4)
+
+	IM_OrderRelease = true
+
+End Function
+
+Function IM_OrderRelease_V2(ByRef str_OrderBranch, ByRef str_OrderNumber, ByRef str_ToIngramPO, ByRef str_ToCustomerPO)
+
+	dim xmlDoc
+
+	xmlDoc = "<OrderChangeRequest>"
+	xmlDoc = xmlDoc & "<Version>2.0</Version>"
+	xmlDoc = xmlDoc & "<TransactionHeader>"
+	xmlDoc = xmlDoc & "<SenderID>FLASHECOM</SenderID>"
+	xmlDoc = xmlDoc & "<ReceiverID>FLASHECOM</ReceiverID>"
+	xmlDoc = xmlDoc & "<CountryCode>" & Session("Ingram_Country") & "</CountryCode>"
+	xmlDoc = xmlDoc & "<LoginID>" & Session("IMMustang_UID") & "</LoginID>"
+	xmlDoc = xmlDoc & "<Password>" & Session("IMMustang_PWD") & "</Password>"
+	xmlDoc = xmlDoc & "<TransactionID></TransactionID>"
+	xmlDoc = xmlDoc & "</TransactionHeader>"
+	xmlDoc = xmlDoc & "<OrderHeaderInformation>"
+	xmlDoc = xmlDoc & "<BranchOrderNumber>" & Trim(str_OrderBranch) & Trim(str_OrderNumber) & "</BranchOrderNumber>"
+	xmlDoc = xmlDoc & "<CustomerPO>" & str_ToIngramPO & "</CustomerPO>"
+	xmlDoc = xmlDoc & "<OrderActionCode>R</OrderActionCode>"
+	xmlDoc = xmlDoc & "</OrderHeaderInformation>"
+	xmlDoc = xmlDoc & "</OrderChangeRequest>"
+
+	dim xmlRecv
+	set xmlRecv = Server.CreateObject("Msxml2.ServerXMLHTTP")
+
+  imRequestURL = IM_GetRequestURL()
+	xmlRecv.open "POST", imRequestURL, false
+
+	xmlRecv.setRequestHeader "Content-Type", "text/xml"
+	xmlRecv.setTimeouts 5000, 5000, 15000, 15000
+	xmlRecv.send(xmlDoc)
+
+	tdxmlHeaders = xmlRecv.getAllResponseHeaders()
+	tdxmlStatus = xmlRecv.statusText
+	tdxmlResult = xmlRecv.responseXML.xml
+
+	'if IM_ENABLE_LOG then
+
+	Set fs = CreateObject("Scripting.FileSystemObject")
+	Set a = fs.OpenTextFile("c:\\customers\\IMXML2.log", 8, True)
+	a.WriteLine("===========================================================================")
+	a.WriteLine(Now() & ":" & Session("StoreID") & ":OrderChangeRequest-Release")
+	a.WriteLine("---------------------------------------------------------------------------")
+	a.WriteLine(xmlDoc)
+	a.WriteLine(tdxmlResult)
+	a.WriteLine("===========================================================================")
+	a.Close
+	Set fs = Nothing
+
+	'end if
+	
+	Set Cnxn = Server.CreateObject("ADODB.Connection")
+	Cnxn.Open Session("ConnectionString")
+
+	'TODO: SAVE INFO ON A_TRANS_STATUS
+	Set rsTransStatus = Server.CreateObject("ADODB.Recordset")
+	with rsTransStatus
+		.ActiveConnection = Cnxn
+		.CursorLocation = 3'adUseClient
+		.CursorType = 1'adOpenKeyset
+		.LockType = 3'adLockOptimistic
+		.Source = "A_TRANS_STATUS"
+		.Open
+		.AddNew
+	end with
+
+	rsTransStatus("store_id") = Session("StoreID")
+	rsTransStatus("distributor") = "IM"
+	rsTransStatus("po_id") = str_ToIngramPO
+	rsTransStatus("transaction_status") = 0
+	
+	rsTransStatus.Update
+	rsTransStatus.Close
+	
+
+	'TODO: update po status based on number of item fulfilled.
+	'update po status...
+	sql = "SELECT COUNT(item_sku) FROM " & Session("StoreID") & "_po_item WHERE po_id=" & str_ToIngramPO & " AND (item_IM_order IS NULL)"
+	set rs = Cnxn.Execute(sql)
+	if not rs.EOF then
+		po_item_count = rs(0)
+	else
+		po_item_count = 0
+	end if
+	rs.Close
+	
+	if po_item_count > 0 then
+		sql = "UPDATE " & Session("StoreID") & "_po SET po_status=3 WHERE po_id=" & str_ToIngramPO
+	else
+		sql = "UPDATE " & Session("StoreID") & "_po SET po_status=4 WHERE po_id=" & str_ToIngramPO
+	end if
+	
+	Cnxn.execute sql
+
+	IM_OrderRelease_V2 = true
+
+End Function
+
+Function IM_SelectCarrier(ByRef str_OrderBranch, ByRef str_OrderNumber, ByRef str_ToIngramPO,_
+									ByRef str_OrderSuffix, ByRef str_CarrierCode)
+
+	Set Cnxn = Server.CreateObject("ADODB.Connection")
+	Cnxn.Open Session("ConnectionString")
+	
+	'Get shipping address
+  sql = "SELECT * FROM " & Session("StoreID") & "_IM_ORDER WHERE ORDER_NBR='" & str_OrderNumber & "' AND ORDER_BR='" & str_OrderBranch & "' AND CUST_TO_INGRAM_PO = '" & str_ToIngramPO & "'"	
+  set rsSH = Cnxn.Execute(sql)
+	
+	if not rsSH.EOF then
+		strAttn = Trim(rsSH("SHIP_TO_ATTENTION"))
+		strAddr1 = Trim(rsSH("SHIP_TO_ADDRESS1"))
+		strAddr2 = Trim(rsSH("SHIP_TO_ADDRESS2"))
+		strAddr3 = Trim(rsSH("SHIP_TO_ADDRESS3"))
+		strCity = Trim(rsSH("SHIP_TO_CITY"))
+		strState = Trim(rsSH("SHIP_TO_STATE"))
+		strZip = Trim(rsSH("SHIP_TO_ZIP"))
+	else
+		strAttn = ""
+		strAddr1 = ""
+		strAddr2 = ""
+		strAddr3 = ""
+		strCity = ""
+		strState = ""
+		strZip = ""
+	end if
+	
+	rsSH.Close
+	Cnxn.Close
+
+	strZip = Replace(strZip, " ", "")
+
+	dim xmlDoc
+
+	xmlDoc = "<OrderChangeRequest>"
+	xmlDoc = xmlDoc & "<Version>2.0</Version>"
+	xmlDoc = xmlDoc & "<TransactionHeader>"
+	xmlDoc = xmlDoc & "<SenderID>FLASHECOM</SenderID>"
+	xmlDoc = xmlDoc & "<ReceiverID>FLASHECOM</ReceiverID>"
+	xmlDoc = xmlDoc & "<CountryCode>" & Session("Ingram_Country") & "</CountryCode>"
+	xmlDoc = xmlDoc & "<LoginID>" & Session("IMMustang_UID") & "</LoginID>"
+	xmlDoc = xmlDoc & "<Password>" & Session("IMMustang_PWD") & "</Password>"
+	xmlDoc = xmlDoc & "<TransactionID></TransactionID>"
+	xmlDoc = xmlDoc & "</TransactionHeader>"
+	xmlDoc = xmlDoc & "<OrderHeaderInformation>"
+	xmlDoc = xmlDoc & "<BranchOrderNumber>" & Trim(str_OrderBranch) & Trim(str_OrderNumber) & "</BranchOrderNumber>"
+	xmlDoc = xmlDoc & "<OrderSuffix>" & Trim(str_OrderSuffix) & "</OrderSuffix>"
+	xmlDoc = xmlDoc & "<CustomerPO>" & str_ToIngramPO & "</CustomerPO>"
+	xmlDoc = xmlDoc & "<OrderActionCode></OrderActionCode>" 
+	xmlDoc = xmlDoc & "<ShipmentAddressInformation>"
+	xmlDoc = xmlDoc & "<NewCarrierCode>" & str_CarrierCode & "</NewCarrierCode>" 
+	xmlDoc = xmlDoc & "<NewCustomerPO>" & str_ToIngramPO & "</NewCustomerPO>" 
+	xmlDoc = xmlDoc & "<NewShipToAttention>" & strAttn & "</NewShipToAttention>"
+	xmlDoc = xmlDoc & "<NewShipToAddress1>" & strAddr1 & "</NewShipToAddress1>" 
+	xmlDoc = xmlDoc & "<NewShipToAddress2>" & strAddr2 & "</NewShipToAddress2>" 
+	xmlDoc = xmlDoc & "<NewShipToAddress3>" & strAddr3 & "</NewShipToAddress3>" 
+	xmlDoc = xmlDoc & "<NewShipToCity>" & strCity & "</NewShipToCity>" 
+	xmlDoc = xmlDoc & "<NewShipToProvince>" & strState & "</NewShipToProvince>" 
+	xmlDoc = xmlDoc & "<NewShipToPostalCode>" & strZip & "</NewShipToPostalCode>" 
+	xmlDoc = xmlDoc & "</ShipmentAddressInformation>"
+	xmlDoc = xmlDoc & "</OrderHeaderInformation>"
+	xmlDoc = xmlDoc & "<ShowDetail>1</ShowDetail>"
+	xmlDoc = xmlDoc & "</OrderChangeRequest>"
+
+	dim xmlRecv
+	set xmlRecv = Server.CreateObject("Msxml2.ServerXMLHTTP")
+  
+  imRequestURL = IM_GetRequestURL()
+	xmlRecv.open "POST", imRequestURL, false
+
+	xmlRecv.setRequestHeader "Content-Type", "text/xml"
+	xmlRecv.setTimeouts 5000, 5000, 15000, 15000
+	xmlRecv.send(xmlDoc)
+
+	tdxmlHeaders = xmlRecv.getAllResponseHeaders()
+	tdxmlStatus = xmlRecv.statusText
+	tdxmlResult = xmlRecv.responseXML.xml
+
+	'if IM_ENABLE_LOG then
+
+		Set fs = CreateObject("Scripting.FileSystemObject")
+		Set a = fs.OpenTextFile("c:\\customers\\IMXML2.log", 8, True)
+		a.WriteLine("===========================================================================")
+		a.WriteLine(Now() & ":" & Session("StoreID") & ":OrderChangeRequest-New Carrier")
+		a.WriteLine("---------------------------------------------------------------------------")
+		a.WriteLine(xmlDoc)
+		a.WriteLine(tdxmlResult)
+		a.WriteLine("===========================================================================")
+		a.Close
+		Set fs = Nothing
+
+	'end if
+
+	IM_SelectCarrier = true
+
+End Function
+
+Function IM_BaseRateInformation(ByRef str_OrderBranch, ByRef str_OrderNumber, ByRef str_PostalCode,_
+							 ByRef arr_OrderSuffix, ByRef arr_Optiontags,_
+							 ByRef i_TableOccurs)
+
+	
+	dim xmlDoc
+
+	xmlDoc = "<BaseRateRequest> "
+	xmlDoc = xmlDoc & "<Version1.0/>"
+	xmlDoc = xmlDoc & "<TransactionHeader> "
+	xmlDoc = xmlDoc & "<CountryCode>" & Session("Ingram_Country") & "</CountryCode>"
+	xmlDoc = xmlDoc & "<LoginID>" & Session("IMMustang_UID") & "</LoginID>"
+	xmlDoc = xmlDoc & "<Password>" & Session("IMMustang_PWD") & "</Password> "
+	xmlDoc = xmlDoc & "<TransactionID></TransactionID> "
+	xmlDoc = xmlDoc & "</TransactionHeader> "
+	xmlDoc = xmlDoc & "<BaseRateInformation> "
+	xmlDoc = xmlDoc & "<BranchOrderNumber>" & str_OrderBranch & str_OrderNumber & "</BranchOrderNumber> "
+	xmlDoc = xmlDoc & "<PostalCode>" & str_PostalCode & "</PostalCode>"
+	xmlDoc = xmlDoc & "<Suffix/>"
+	xmlDoc = xmlDoc & "</BaseRateInformation>"
+	xmlDoc = xmlDoc & "</BaseRateRequest>"
+
+	dim xmlRecv
+	set xmlRecv = Server.CreateObject("Msxml2.ServerXMLHTTP")
+
+  imRequestURL = IM_GetRequestURL()
+	xmlRecv.open "POST", imRequestURL, false
+
+	xmlRecv.setRequestHeader "Content-Type", "text/xml"
+	xmlRecv.setTimeouts 5000, 5000, 15000, 15000
+	xmlRecv.send(xmlDoc)
+
+	tdxmlHeaders = xmlRecv.getAllResponseHeaders()
+	tdxmlStatus = xmlRecv.statusText
+	tdxmlResult = xmlRecv.responseXML.xml
+
+	Set fs = CreateObject("Scripting.FileSystemObject")
+	Set a = fs.OpenTextFile("c:\\customers\\IMXML2.log", 8, True)
+	a.WriteLine("===========================================================================")
+	a.WriteLine(Now() & ":" & Session("StoreID") & ":OrderChangeRequest-New Carrier")
+	a.WriteLine("---------------------------------------------------------------------------")
+	a.WriteLine(xmlDoc)
+	a.WriteLine(tdxmlResult)
+	a.WriteLine("===========================================================================")
+	a.Close
+	Set fs = Nothing
+
+	dim xmlDoc2
+	set xmlDoc2 = Server.CreateObject("Msxml2.DOMDocument")
+	xmlDoc2.async = false
+	xmlDoc2.validateOnParse = false
+	xmlDoc2.LoadXML (tdxmlResult)
+	if (xmlDoc2.parseError.errorCode <> 0) then
+		a = xmlDoc2.parseError.reason
+		BaseRateInformationXML = false
+		Exit Function
+	else
+		a = "NO ERROR"
+		
+		set objNodeList = xmlDoc2.getElementsByTagName("BaseRate")
+
+		For i = 0 To (objNodeList.length - 1)
+			
+			set lineInfoNode = objNodeList.Item(i)
+			order_suffix = lineInfoNode.getAttribute("OrderSuffix")
+
+			if Len(order_suffix) > 0 then
+			else
+				order_suffix = "11"
+			end if
+
+			arr_OrderSuffix(i+1) = order_suffix
+
+			set ccNodeList = lineInfoNode.selectNodes("Carrier")
+
+			for ii = 0 to (ccNodeList.length-1)
+				
+				arr_Optiontags(i+1) = arr_Optiontags(i+1) & "<option value=""" & Trim(ccNodeList.Item(ii).getAttribute("CarrierCode")) & """"
+				if ccNodeList.Item(ii).getAttribute("CarrierCode") = str_cc then
+					arr_Optiontags(i+1) = arr_Optiontags(i+1) & " selected"
+				end if
+				arr_Optiontags(i+1) = arr_Optiontags(i+1) & ">" & IM_CarrierCode(Trim(ccNodeList.Item(ii).getAttribute("CarrierCode")), Trim(ccNodeList.Item(ii).getAttribute("CarrierName")))
+				arr_Optiontags(i+1) = arr_Optiontags(i+1) & " / " & FormatCurrency(ccNodeList.Item(ii).selectSingleNode("EstimatedFreightCharge").text)
+				arr_Optiontags(i+1) = arr_Optiontags(i+1) & " / " & ccNodeList.Item(ii).selectSingleNode("DaysInTransit").text & " day(s)</option>"
+
+			Next
+
+		Next
+
+		i_TableOccurs = i
+
+	end if
+
+	IM_BaseRateInformation = true
+
+End Function
+
+Function IM_CarrierCode(ByRef str_CarrierCode, ByRef str_CarrierName)
+
+if Len(str_CarrierName) > 0 then
+	strCarrierName = str_CarrierName
+else
+
+dim strCarrierName
+
+SELECT CASE str_CarrierCode
+CASE "AB"
+strCarrierName = "ABF"
+CASE "AT"
+strCarrierName = "AIM Transport"
+CASE "AV"
+strCarrierName = "Averitt Express"
+CASE "CA"
+strCarrierName = "Saia"
+CASE "CE"
+strCarrierName = "Central Freight Lines"
+CASE "CT"
+strCarrierName = "Comet"
+CASE "FB"
+strCarrierName = "Fox Brothers"
+CASE "KR"
+strCarrierName = "K&R Express"
+CASE "NP"
+strCarrierName = "New Penn"
+CASE "NO"
+strCarrierName = "Nomad"
+CASE "PT"
+strCarrierName = "Pitt Ohio"
+CASE "R1"
+strCarrierName = "AIT Freight"
+CASE "Z9"
+strCarrierName = "Saia"
+CASE "S1"
+strCarrierName = "WRDS"
+CASE "TR"
+strCarrierName = "USF Reddaway"
+CASE "WK"
+strCarrierName = "Watkins"
+CASE "A1"
+strCarrierName = "Airborne Overnight AM"
+CASE "A2"
+strCarrierName = "Airborne Two Day"
+CASE "AO"
+strCarrierName = "Airborne Overnight PM"
+CASE "AS"
+strCarrierName = "Airborne Saturday 1 Day"
+CASE "F1"
+strCarrierName = "FedEx Priority Overnight"
+CASE "FO"
+strCarrierName = "FedEx Standard Overnight"
+CASE "F2"
+strCarrierName = "FedEx 2 Day"
+CASE "FS"
+strCarrierName = "FedEx Staturday 1 Day"
+CASE "FW"
+strCarrierName = "FedEx Staturday 2 Day"
+CASE "UO"
+strCarrierName = "UPS Overnight"
+CASE "UR"
+strCarrierName = "UPS Red 1 Day"
+CASE "UB"
+strCarrierName = "UPS Blue 2 Day"
+CASE "U3"
+strCarrierName = "UPS 3 Day"
+CASE "US"
+strCarrierName = "UPS Saturday"
+CASE "EP"
+strCarrierName = "Eagle Air Priority One"
+CASE "EN"
+strCarrierName = "Eagle Air Standara Overnight"
+CASE "ET"
+strCarrierName = "Eagle Air Two Day"
+CASE "EE"
+strCarrierName = "Eagle Air Three Day"
+CASE "L1"
+strCarrierName = "Lynden 1 Day"
+CASE "L2"
+strCarrierName = "Lynden 2 Day"
+CASE "L3"
+strCarrierName = "Lynden 3 Day"
+CASE "OA"
+strCarrierName = "AIT Overnight"
+CASE "TA"
+strCarrierName = "AIT 2 Day"
+CASE "H3"
+strCarrierName = "AIT 3 Day"
+CASE "FG"
+strCarrierName = "FedEx Express Saver"
+CASE "RG"
+strCarrierName = "FedEx Ground"
+CASE "UG"
+strCarrierName = "UPS Ground"
+CASE "G2"
+strCarrierName = "UPS Ground + 1 day"
+CASE ELSE
+strCarrierName = str_CarrierCode
+END SELECT
+
+
+end if
+
+
+IM_CarrierCode = strCarrierName
+End Function
+</SCRIPT>

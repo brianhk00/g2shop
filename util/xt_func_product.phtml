@@ -1,0 +1,1008 @@
+<!-- #INCLUDE File="xt_html_statusmsg.phtml" -->
+<SCRIPT LANGUAGE=VBScript RUNAT=Server>
+
+function IsExistingProductID(ByRef str_db,ByRef str_status_msg,_
+						ByRef str_pid)
+						
+	dim sql,rs,bEC
+	sql="SELECT pf_id FROM :9_product WHERE (pf_id='"&str_pid&"')"
+	sql = Replace(sql, ":9", g_storeid)
+	set rs=server.CreateObject("ADODB.Recordset")
+	rs.Open sql,str_db
+	
+	bEC=(not rs.EOF)
+	
+	if(bEC) then
+		AddToHTMLMsgHldr str_status_msg,"Specified product ID is already in use.",true
+	end if
+	
+	IsExistingProductID=bEC
+	rs.Close
+						
+end function
+
+function IsExistingSystemID(ByRef str_db,ByRef str_status_msg,_
+						ByRef str_pid)
+						
+	dim sql,rs,bEC
+	sql="SELECT pf_id FROM :9_system_product WHERE (pf_id='"&str_pid&"')"
+	sql = Replace(sql, ":9", g_storeid)
+	set rs=server.CreateObject("ADODB.Recordset")
+	rs.Open sql,str_db
+	
+	bEC=(not rs.EOF)
+	
+	if(bEC) then
+		AddToHTMLMsgHldr str_status_msg,"Specified product ID is already in use.",true
+	end if
+	
+	IsExistingSystemID=bEC
+	rs.Close
+						
+end function
+
+
+function AddProduct(ByRef str_db,ByRef str_status_msg,_
+						ByRef str_pid, ByRef str_sku, ByRef str_name, ByRef str_desc,_
+						ByRef str_detail,ByRef str_price,ByRef str_dept,ByRef str_weight,_
+						str_use_att1,ByRef str_att1_name, ByRef str_att1_value,_
+						str_use_att2,ByRef str_att2_name, ByRef str_att2_value,_
+						ByRef str_image, ByRef str_thumb,_
+						ByRef str_is_nontaxable, str_is_noship,_
+						ByRef str_vendor_number, ByRef str_vendor_name)
+	'returns true/false
+	
+	dim sql,dbconn,rs
+	
+	if(str_pid="")or(str_db="")or(str_name="")or(str_price="")or(str_dept="") then
+		AddToHTMLMsgHldr str_status_msg,"Insuffiecient info specified to add new product.",true
+ 		AddProduct=false
+		exit function
+	end if
+	
+	'Validate attribute value
+	if(str_use_att1="1") then
+		if(str_att1_name="") or (str_att1_value="") then
+			AddToHTMLMsgHldr str_status_msg,"Attribute name and value is required to use attribute.",true
+ 			AddProduct=false
+			exit function
+		end if
+	else
+		str_use_att1="0"
+	end if
+
+	'Validate attribute value 2
+	if(str_use_att2="1") then
+		if(str_att2_name="") or (str_att2_value="") then
+			AddToHTMLMsgHldr str_status_msg,"Attribute 2 name and value is required to use attribute 2.",true
+ 			AddProduct=false
+			exit function
+		end if
+	else
+		str_use_att2="0"
+	end if
+	
+	Call Numberize(str_weight)
+	Call Numberize(str_price)
+	
+	
+	field_names = "pf_id,"
+	field_values = "'"&str_pid&"',"
+	
+	if(Len(str_name)>0) then
+ 		field_names=field_names&"name"&","
+		field_values=field_values&"'"&CheckString(str_name)&"',"
+ 	end if
+ 	
+	if(Len(str_sku)>0) then
+ 		field_names=field_names&"sku"&","
+		field_values=field_values&"'"&CheckString(str_sku)&"',"
+ 	end if
+
+ 	if(Len(str_desc)>0) then
+ 		field_names=field_names&"description"&","
+		field_values=field_values&"'"&CheckString(str_desc)&"',"
+ 	end if
+ 	
+ 	if(Len(str_detail)>0) then
+ 		field_names=field_names&"details"&","
+		field_values=field_values&"'"&CheckString(str_detail)&"',"
+ 	end if
+ 	
+ 	field_names = field_names & "list_price"&","
+ 	field_values = field_values & str_price & ","
+ 	
+ 	if(Len(str_image)>0) then
+ 		field_names=field_names&"image_file"&","
+		field_values=field_values&"'"&CheckString(str_image)&"',"
+ 	end if
+ 	
+ 	if(Len(str_thumb)>0) then
+ 		field_names=field_names&"thumb_image"&","
+		field_values=field_values&"'"&CheckString(str_thumb)&"',"
+ 	end if
+ 	
+ 	field_names = field_names & "weight"&","
+ 	field_values = field_values & str_weight & ","
+ 	
+ 	field_names = field_names & "use_att1"&","
+ 	field_values = field_values & str_use_att1 & ","
+ 	
+ 	if(Len(str_att1_name)>0) then
+ 		field_names=field_names&"att1_name"&","
+		field_values=field_values&"'"&CheckString(str_att1_name)&"',"
+ 	end if
+ 	
+ 	if(Len(str_att1_value)>0) then
+ 		field_names=field_names&"att1_value"&","
+		field_values=field_values&"'"&CheckString(str_att1_value)&"',"
+ 	end if
+ 	
+	field_names = field_names & "use_att2"&","
+ 	field_values = field_values & str_use_att2 & ","
+ 	
+ 	if(Len(str_att2_name)>0) then
+ 		field_names=field_names&"att2_name"&","
+		field_values=field_values&"'"&CheckString(str_att2_name)&"',"
+ 	end if
+ 	
+ 	if(Len(str_att2_value)>0) then
+ 		field_names=field_names&"att2_value"&","
+		field_values=field_values&"'"&CheckString(str_att2_value)&"',"
+ 	end if
+
+	field_names = field_names & "is_nontaxable"&","
+ 	field_values = field_values & str_is_nontaxable & ","
+
+	field_names = field_names & "is_noship"&","
+ 	field_values = field_values & str_is_noship & ","
+ 	
+ 	if(Len(str_vendor_number)>0) then
+ 		field_names=field_names&"vendor_number"&","
+		field_values=field_values&"'"&CheckString(str_vendor_number)&"',"
+ 	end if
+ 	
+ 	if(Len(str_vendor_name)>0) then
+ 		field_names=field_names&"vendor_name"&","
+		field_values=field_values&"'"&CheckString(str_vendor_name)&"',"
+ 	end if
+
+ 	'strip the trailing commas
+	field_names = Left(field_names,Len(field_names)-1)
+	field_values = Left(field_values,Len(field_values)-1)
+	
+	sql="INSERT INTO :9_product (" & field_names & ") VALUES(" & field_values & ")"
+	sql=Replace(sql, ":9", g_storeid)
+	
+	set dbconn=server.CreateObject("ADODB.Connection")
+	dbconn.Open str_db
+	dbconn.Execute sql
+	
+	'Add product to category list...
+	sql="INSERT INTO :9_dept_prod(dept_id, pf_id) VALUES ('" & str_dept & "', '" & str_pid &"')"
+	sql = Replace(sql, ":9", g_storeid)
+	
+	dbconn.Execute sql
+	dbconn.Close
+		
+	AddProduct=true
+	
+end function
+
+function AddMasterProduct(ByRef str_db,ByRef str_status_msg,_
+						ByRef str_pid, ByRef str_sku, ByRef str_name, ByRef str_desc,_
+						ByRef str_detail,ByRef str_price, ByRef str_retail, ByRef str_dept,ByRef str_weight,_
+						ByRef str_image, ByRef str_thumb,_
+						ByRef str_is_nontaxable, str_is_noship,_
+						ByRef str_vendor_number, ByRef str_vendor_name, ByRef str_dist_flag)
+	'returns true/false
+	
+	dim sql,dbconn,rs
+	
+	if(str_pid="")or(str_db="")or(str_name="")or(str_price="")or(str_dept="") then
+		AddToHTMLMsgHldr str_status_msg,"Insuffiecient info specified to add new product.",true
+ 		AddMasterProduct=false
+		exit function
+	end if
+	
+	if str_dist_flag = "" then
+		str_dist_flag = "1"
+	end if
+	
+	Call Numberize(str_weight)
+	Call Numberize(str_price)
+	Call Numberize(str_retail)
+	
+	field_names = "pf_id,"
+	field_values = "'"&str_pid&"',"
+	
+	if(Len(str_sku)>0) then
+ 		field_names=field_names&"sku"&","
+		field_values=field_values&"'"&CheckString(str_sku)&"',"
+ 	end if
+ 	
+	if(Len(str_name)>0) then
+ 		field_names=field_names&"name"&","
+		field_values=field_values&"'"&CheckString(str_name)&"',"
+ 	end if
+
+ 	if(Len(str_desc)>0) then
+ 		field_names=field_names&"description"&","
+		field_values=field_values&"'"&CheckString(str_desc)&"',"
+ 	end if
+ 	
+ 	if(Len(str_detail)>0) then
+ 		field_names=field_names&"details"&","
+		field_values=field_values&"'"&CheckString(str_detail)&"',"
+ 	end if
+ 	
+ 	field_names = field_names & "list_price"&","
+ 	field_values = field_values & str_price & ","
+ 	
+ 	field_names = field_names & "retail_price"&","
+ 	field_values = field_values & str_retail & ","
+ 	
+ 	if(Len(str_image)>0) then
+ 		field_names=field_names&"image_file"&","
+		field_values=field_values&"'"&CheckString(str_image)&"',"
+ 	end if
+ 	
+ 	if(Len(str_thumb)>0) then
+ 		field_names=field_names&"thumb_image"&","
+		field_values=field_values&"'"&CheckString(str_thumb)&"',"
+ 	end if
+ 	
+ 	field_names = field_names & "weight"&","
+ 	field_values = field_values & str_weight & ","
+ 	
+	field_names = field_names & "is_nontaxable"&","
+ 	field_values = field_values & str_is_nontaxable & ","
+
+	field_names = field_names & "is_noship"&","
+ 	field_values = field_values & str_is_noship & ","
+ 	
+ 	field_names = field_names & "dist_flag"&","
+ 	field_values = field_values & str_dist_flag & ","
+ 	
+ 	if(Len(str_vendor_number)>0) then
+ 		field_names=field_names&"vendor_number"&","
+		field_values=field_values&"'"&CheckString(str_vendor_number)&"',"
+ 	end if
+ 	
+ 	if(Len(str_vendor_name)>0) then
+ 		field_names=field_names&"vendor_name"&","
+		field_values=field_values&"'"&CheckString(str_vendor_name)&"',"
+ 	end if
+
+ 	'strip the trailing commas
+	field_names = Left(field_names,Len(field_names)-1)
+	field_values = Left(field_values,Len(field_values)-1)
+	
+	sql="INSERT INTO :9_product (" & field_names & ") VALUES(" & field_values & ")"
+	sql=Replace(sql, ":9", g_storeid)
+	
+	set dbconn=server.CreateObject("ADODB.Connection")
+	dbconn.Open str_db
+	dbconn.Execute sql
+	
+	'Add product to category list...
+	sql="INSERT INTO :9_dept_prod(dept_id, pf_id) VALUES ('" & str_dept & "', '" & str_pid &"')"
+	sql = Replace(sql, ":9", g_storeid)
+	
+	dbconn.Execute sql
+	dbconn.Close
+		
+	AddMasterProduct=true
+	
+end function
+
+function GetStoreCategoryOptionsTags(ByRef str_db, ByRef str_cat)
+
+	if(str_db="") then
+ 		GetStoreCategoryOptionsTags=""
+		exit function
+	end if
+	
+
+	Set dbconn = Server.CreateObject("ADODB.Connection")
+	dbconn.open str_db
+	strSQL = "SELECT * FROM :9_dept WHERE parent_dept='0'"
+	strSQL = Replace(strSQL, ":9", g_storeid)
+	Set rsDept = dbconn.Execute(strSQL)
+	
+	dim s
+	
+	s="<option></option>"
+	
+	do while not rsDept.EOF 
+		
+		strSQL = "SELECT * FROM :9_dept WHERE parent_dept='" & rsDept("dept_id") & "'"
+		strSQL = Replace(strSQL, ":9", g_storeid)
+		Set rsSub = dbconn.Execute(strSQL)
+		do while not rsSub.EOF 
+			if(str_cat = CStr(rsSub("dept_id"))) then
+				s = s & chr(13)&chr(10)&"<option value="""&rsSub("dept_id")&""" selected>"& rsDept("dept_name") & " -- " & rsSub("dept_name") &"</option>"
+			else
+				s = s & chr(13)&chr(10)&"<option value="""&rsSub("dept_id")&""">"& rsDept("dept_name") & " -- " & rsSub("dept_name") &"</option>"		
+			end if
+		rsSub.MoveNext
+		loop
+		rsSub.Close
+		
+	rsDept.MoveNext
+	loop
+	
+	rsDept.Close
+	dbconn.Close
+	
+	GetStoreCategoryOptionsTags=s
+
+end function
+
+function GetStoreRootCategoryOptionsTags(ByRef str_db, ByRef str_cat)
+
+	if(str_db="") then
+ 		GetStoreRootCategoryOptionsTags=""
+		exit function
+	end if
+	
+
+	Set dbconn = Server.CreateObject("ADODB.Connection")
+	dbconn.open str_db
+	strSQL = "SELECT * FROM :9_dept where parent_dept='0'"
+	strSQL = Replace(strSQL, ":9", g_storeid)
+	Set rsDept = dbconn.Execute(strSQL)
+	
+	dim s
+	
+	s=""
+	
+	do while not rsDept.EOF 
+		
+		if(str_cat = CStr(rsDept("dept_id"))) then
+			s = s & chr(13)&chr(10)&"<option value="""&rsDept("dept_id")&""" selected>"& rsDept("dept_name") &"</option>"
+		else
+			s = s & chr(13)&chr(10)&"<option value="""&rsDept("dept_id")&""">"& rsDept("dept_name") &"</option>"		
+		end if
+	rsDept.MoveNext
+	loop
+	
+	rsDept.Close
+	dbconn.Close
+	
+	GetStoreRootCategoryOptionsTags=s
+
+end function
+
+function GetStoreNoSubCategoryOptionsTags(ByRef str_db, ByRef str_cat)
+
+	if(str_db="") then
+ 		GetStoreNoSubCategoryOptionsTags=""
+		exit function
+	end if
+	
+
+	Set dbconn = Server.CreateObject("ADODB.Connection")
+	dbconn.open str_db
+	strSQL = "SELECT * FROM :9_dept where parent_dept='0' AND is_master <> 1 AND ec_flag <>2 ORDER BY dept_name"
+	strSQL = Replace(strSQL, ":9", g_storeid)
+	Set rsDept = dbconn.Execute(strSQL)
+	
+	dim s
+		
+	do while not rsDept.EOF 
+		
+		if(rsDept("has_sub")) then
+			
+			strSQL = "SELECT * FROM :9_dept where parent_dept='"& rsDept("dept_id") &"' ORDER BY dept_name"
+			strSQL = Replace(strSQL, ":9", g_storeid)
+			Set rsSub = dbconn.Execute(strSQL)
+
+			do while not rsSub.EOF
+				
+				if(rsSub("has_sub")) then
+
+					strSQL = "SELECT * FROM :9_dept where parent_dept='"& rsSub("dept_id") &"' ORDER BY dept_name"
+					strSQL = Replace(strSQL, ":9", g_storeid)
+					Set rsSub2 = dbconn.Execute(strSQL)
+
+					do while not rsSub2.EOF
+						
+						if(str_cat = CStr(rsSub2("dept_id"))) then
+							s = s & chr(13)&chr(10)&"<option value='"&rsSub2("dept_id")&"' selected>"& rsDept("dept_name") & " -> " & rsSub("dept_name") & " -> " & rsSub2("dept_name") &"</option>"
+						else
+							s = s & chr(13)&chr(10)&"<option value='"&rsSub2("dept_id")&"'>"& rsDept("dept_name") & " -> " & rsSub("dept_name") & " -> " & rsSub2("dept_name") &"</option>"		
+						end if
+
+						rsSub2.MoveNext
+					loop
+					rsSub2.Close
+
+				else
+					if(str_cat = CStr(rsSub("dept_id"))) then
+						s = s & chr(13)&chr(10)&"<option value='"&rsSub("dept_id")&"' selected>"& rsDept("dept_name") & " -> " & rsSub("dept_name") &"</option>"
+					else
+						s = s & chr(13)&chr(10)&"<option value='"&rsSub("dept_id")&"'>"& rsDept("dept_name") & " -> " & rsSub("dept_name") &"</option>"		
+					end if
+
+				end if
+				
+				rsSub.MoveNext
+			loop
+			rsSub.Close
+
+		else
+
+			if(str_cat = CStr(rsDept("dept_id"))) then
+				s = s & chr(13)&chr(10)&"<option value='"&rsDept("dept_id")&"' selected>"& rsDept("dept_name") &"</option>"
+			else
+				s = s & chr(13)&chr(10)&"<option value='"&rsDept("dept_id")&"'>"& rsDept("dept_name") &"</option>"		
+			end if
+
+		end if
+
+	rsDept.MoveNext
+	loop
+	
+	rsDept.Close
+	dbconn.Close
+	
+	GetStoreNoSubCategoryOptionsTags=s
+
+end function
+
+function GetSpecLocalNoSubCategoryOptionsTags(ByRef str_db, ByRef str_cat)
+
+	if(str_db="") then
+ 		GetSpecLocalNoSubCategoryOptionsTags=""
+		exit function
+	end if
+	
+
+	Set dbconn = Server.CreateObject("ADODB.Connection")
+	dbconn.open str_db
+	strSQL = "SELECT * FROM :9_ss_dept  ORDER BY dept_id"
+	strSQL = Replace(strSQL, ":9", g_storeid)
+	Set rsDept = dbconn.Execute(strSQL)
+	
+	dim s
+	
+	do while not rsDept.EOF 
+		
+		s_catname = ""
+
+		If Len(rsDept("level1_name")) > 0 Then
+			s_catname = s_catname & rsDept("level1_name") & " > "
+		End If
+		
+		If Len(rsDept("level2_name")) > 0 Then
+			s_catname = s_catname & rsDept("level2_name") & " > "
+		End If
+		
+		If Len(rsDept("level3_name")) > 0 Then
+			s_catname = s_catname & rsDept("level3_name") & " > "
+		End If
+		
+		If Len(rsDept("level4_name")) > 0 Then
+			s_catname = s_catname & rsDept("level4_name") & " > "
+		End If
+
+		If Len(s_catname) > 0 Then
+			s_catname = Left(s_catname, Len(s_catname)-3)
+		End if
+		
+		if(str_cat = CStr(rsDept("dept_id"))) Then
+			s = s & chr(13)&chr(10)&"<option value='" & rsDept("dept_id") & "' selected>" & s_catname &"</option>"
+		else
+			s = s & chr(13)&chr(10)&"<option value='" & rsDept("dept_id")&"'>" & s_catname &"</option>"		
+		end if
+
+		rsDept.MoveNext
+	loop
+	
+	rsDept.Close
+	dbconn.Close
+	
+	GetSpecLocalNoSubCategoryOptionsTags=s
+
+end function
+
+function GetSpecNoSubCategoryOptionsTags(ByRef str_cat)
+
+	Set dbconn = Server.CreateObject("ADODB.Connection")
+	dbconn.open Session("SSPriceConnectionString")
+	
+	strSQL = "SELECT * FROM A_Category where pflag=1 ORDER BY catdescription"
+	Set rsDept = dbconn.Execute(strSQL)
+	
+	dim s
+	s = "<option value=""0"">Not Specified</option>"
+		
+	do while not rsDept.EOF 
+
+	  if(CStr(str_cat) = CStr(rsDept("categoryid"))) then
+		  s = s & chr(13)&chr(10)&"<option value='"&rsDept("categoryid")&"' selected>"& rsDept("catdescription") &"</option>"
+	  else
+		  s = s & chr(13)&chr(10)&"<option value='"&rsDept("categoryid")&"'>"& rsDept("catdescription") &"</option>"		
+	  end if
+
+
+	  rsDept.MoveNext
+	loop
+	
+	rsDept.Close
+	dbconn.Close
+	
+	GetSpecNoSubCategoryOptionsTags=s
+
+end function
+
+function GetPrivateCategoryOptionsTags(ByRef str_db, ByRef str_cat)
+
+	if(str_db="") then
+ 		GetPrivateCategoryOptionsTags=""
+		exit function
+	end if
+	
+
+	Set dbconn = Server.CreateObject("ADODB.Connection")
+	dbconn.open str_db
+	strSQL = "SELECT * FROM :9_dept where parent_dept='0' AND is_master=0 AND ec_flag=0 ORDER BY dept_name"
+	strSQL = Replace(strSQL, ":9", g_storeid)
+	Set rsDept = dbconn.Execute(strSQL)
+	
+	dim s
+		
+	do while not rsDept.EOF 
+		
+		if(rsDept("has_sub")) then
+			
+			strSQL = "SELECT * FROM :9_dept where parent_dept='"& rsDept("dept_id") &"' ORDER BY dept_name"
+			strSQL = Replace(strSQL, ":9", g_storeid)
+			Set rsSub = dbconn.Execute(strSQL)
+
+			do while not rsSub.EOF
+				
+				if(rsSub("has_sub")) then
+
+					strSQL = "SELECT * FROM :9_dept where parent_dept='"& rsSub("dept_id") &"' ORDER BY dept_name"
+					strSQL = Replace(strSQL, ":9", g_storeid)
+					Set rsSub2 = dbconn.Execute(strSQL)
+
+					do while not rsSub2.EOF
+						
+						if(str_cat = CStr(rsSub2("dept_id"))) then
+							s = s & chr(13)&chr(10)&"<option value='"&rsSub2("dept_id")&"' selected>"& rsDept("dept_name") & " -> " & rsSub("dept_name") & " -> " & rsSub2("dept_name") &"</option>"
+						else
+							s = s & chr(13)&chr(10)&"<option value='"&rsSub2("dept_id")&"'>"& rsDept("dept_name") & " -> " & rsSub("dept_name") & " -> " & rsSub2("dept_name") &"</option>"		
+						end if
+
+						rsSub2.MoveNext
+					loop
+					rsSub2.Close
+
+				else
+					if(str_cat = CStr(rsSub("dept_id"))) then
+						s = s & chr(13)&chr(10)&"<option value='"&rsSub("dept_id")&"' selected>"& rsDept("dept_name") & " -> " & rsSub("dept_name") &"</option>"
+					else
+						s = s & chr(13)&chr(10)&"<option value='"&rsSub("dept_id")&"'>"& rsDept("dept_name") & " -> " & rsSub("dept_name") &"</option>"		
+					end if
+
+				end if
+				
+				rsSub.MoveNext
+			loop
+			rsSub.Close
+
+		else
+
+			if(str_cat = CStr(rsDept("dept_id"))) then
+				s = s & chr(13)&chr(10)&"<option value='"&rsDept("dept_id")&"' selected>"& rsDept("dept_name") &"</option>"
+			else
+				s = s & chr(13)&chr(10)&"<option value='"&rsDept("dept_id")&"'>"& rsDept("dept_name") &"</option>"		
+			end if
+
+		end if
+
+	rsDept.MoveNext
+	loop
+	
+	rsDept.Close
+	dbconn.Close
+	
+	GetPrivateCategoryOptionsTags=s
+
+end function
+
+function GetStoreMfgOptionsTags(ByRef str_db, ByRef str_mfg)
+
+	if(str_db="") then
+ 		GetStoreMfgOptionsTags=""
+		exit function
+	end if
+	
+	str_mfg = Trim(str_mfg)
+	
+	Set dbconn = Server.CreateObject("ADODB.Connection")
+	dbconn.open str_db
+	strSQL = "SELECT * FROM :9_mfg ORDER BY mfg_name"
+	strSQL = Replace(strSQL, ":9", g_storeid)
+	Set rsMfg = dbconn.Execute(strSQL)
+	
+	dim s
+	
+	s="<option value=""--"">-Not Specified-</option>"
+	
+	do while not rsMfg.EOF
+	
+		mfg_id = Trim(rsMfg("mfg_id"))
+		mfg_name = Trim(rsMfg("mfg_name"))
+
+		'Edited by Ed Kim on 2/4/16
+		if(str_mfg = mfg_id) then
+'			s = s & chr(13)&chr(10)&"<option value=""" & mfg_id & "~" & mfg_name &""" selected>"& mfg_name &"</option>"
+			s = s & chr(13)&chr(10)&"<option value=""" & mfg_id & """ selected>"& mfg_name &"</option>"
+		else
+'			s = s & chr(13)&chr(10)&"<option value=""" & mfg_id & "~" & mfg_name &""">"& mfg_name &"</option>"
+			s = s & chr(13)&chr(10)&"<option value=""" & mfg_id & """>"& mfg_name &"</option>"
+		end if
+	rsMfg.MoveNext
+	loop
+	
+	rsMfg.Close
+	dbconn.Close
+	
+	GetStoreMfgOptionsTags=s
+
+end function
+
+function UpdateProduct(ByRef str_db,ByRef str_status_msg,_
+						ByRef str_pid, ByRef str_sku,ByRef str_name, ByRef str_desc,_
+						ByRef str_detail,ByRef str_price,ByRef str_dept,ByRef str_weight,_
+						ByRef str_use_att1,ByRef str_att1_name, ByRef str_att1_value,_
+						ByRef str_use_att2,ByRef str_att2_name, ByRef str_att2_value,_
+						ByRef str_image, ByRef str_thumb, ByRef str_on_sale, ByRef str_sale_price,_
+						ByRef str_is_nontaxable, str_is_noship,_
+						ByRef str_vendor_number, ByRef str_vendor_name)
+	'returns true/false
+	
+	dim sql,dbconn
+	
+	if(str_pid="")or(str_db="")or(str_name="")or(str_price="")or(str_dept="") then
+		AddToHTMLMsgHldr str_status_msg,"Insuffiecient info specified to update a product.",true
+ 		UpdateProduct=false
+		exit function
+	end if
+	
+	'Validate attribute value - 1
+	if(str_use_att1="1") then
+		if(str_att1_name="") or (str_att1_value="") then
+			AddToHTMLMsgHldr str_status_msg,"Attribute name and value is required to use attribute.",true
+ 			UpdateProduct=false
+			exit function
+		end if
+	else
+		str_use_att1="0"
+	end if
+	
+	'Validate attribute value - 2
+	if(str_use_att2="1") then
+		if(str_att2_name="") or (str_att2_value="") then
+			AddToHTMLMsgHldr str_status_msg,"Attribute name and value is required to use attribute.",true
+ 			UpdateProduct=false
+			exit function
+		end if
+	else
+		str_use_att2="0"
+	end if
+	
+	if(str_on_sale="1") then
+		if(str_sale_price="") then
+			AddToHTMLMsgHldr str_status_msg,"Sale price is required to use special.",true
+ 			UpdateProduct=false
+			exit function
+		else
+			Call Numberize(str_sale_price)
+		end if
+	else
+		str_on_sale = "0"
+	end if
+	
+	Call Numberize(str_weight)
+	Call Numberize(str_price)
+	
+	sql = "UPDATE :9_product SET name='"& CheckString(str_name) & "'"
+	
+	if(str_sku="")then
+		sql = sql & ",sku=Null"
+	else
+		sql = sql & ",sku='" & CheckString(str_sku) & "'"
+	end if
+
+	if(str_desc="")then
+		sql = sql & ",description=Null"
+	else
+		sql = sql & ",description='" & CheckString(str_desc) & "'"
+	end if
+	
+	if(str_detail="")then
+		sql = sql & ",details=Null"
+	else
+		sql = sql & ",details='" & CheckString(str_detail) & "'"
+	end if
+	
+	sql = sql & ",list_price=" & str_price
+	
+	if(str_image="")then
+		sql = sql & ",image_file='--'"
+	else
+		sql = sql & ",image_file='" & CheckString(str_image) & "'"
+	end if
+	
+	if(str_thumb="")then
+		sql = sql & ",thumb_image='--'"
+	else
+		sql = sql & ",thumb_image='" & CheckString(str_thumb) & "'"
+	end if
+	
+	sql = sql &	",weight=" & str_weight
+	
+	sql = sql & ",use_att1=" & str_use_att1
+	
+	if(str_att1_name="")then
+		sql = sql & ",att1_name=Null"
+	else
+		sql = sql & ",att1_name='" & CheckString(str_att1_name) & "'"
+	end if
+	
+	if(str_att1_value="")then
+		sql = sql & ",att1_value=Null"
+	else
+		sql = sql & ",att1_value='" & CheckString(str_att1_value) & "'"
+	end if
+
+	sql = sql & ",use_att2=" & str_use_att2
+	
+	if(str_att2_name="")then
+		sql = sql & ",att2_name=Null"
+	else
+		sql = sql & ",att2_name='" & CheckString(str_att2_name) & "'"
+	end if
+	
+	if(str_att2_value="")then
+		sql = sql & ",att2_value=Null"
+	else
+		sql = sql & ",att2_value='" & CheckString(str_att2_value) & "'"
+	end if
+
+	if(str_on_sale = "1")then
+		sql = sql & ",on_sale=1"
+		sql = sql & ",sale_price=" & str_sale_price
+	else
+		sql = sql & ",on_sale=0"
+		sql = sql & ",sale_price=0"
+	end if
+
+	sql = sql & ",is_nontaxable=" & str_is_nontaxable
+	sql = sql & ",is_noship=" & str_is_noship
+	
+	if(str_vendor_name="")then
+		sql = sql & ",vendor_name=Null"
+	else
+		sql = sql & ",vendor_name='" & CheckString(str_vendor_name) & "'"
+	end if
+
+	if(str_vendor_number="")then
+		sql = sql & ",vendor_number=Null"
+	else
+		sql = sql & ",vendor_number='" & CheckString(str_vendor_number) & "'"
+	end if
+
+	sql = sql & " WHERE pf_id ='" & str_pid & "'"
+	
+	sql = Replace(sql, ":9", g_storeid)
+	
+	set dbconn=server.CreateObject("ADODB.Connection")
+	dbconn.Open db
+	dbconn.Execute sql
+	
+	'Department Update
+	sql = "UPDATE :9_dept_prod SET dept_id=':1' WHERE pf_id=':2'"
+	sql = Replace(sql, ":9", g_storeid)
+	sql = Replace(sql, ":1", str_dept)
+	sql = Replace(sql, ":2", str_pid)
+	
+	dbconn.Execute sql
+	
+	dbconn.Close
+	
+	UpdateProduct=true
+end function
+
+function UpdateMasterProduct(ByRef str_db,ByRef str_status_msg,_
+						ByRef str_pid, ByRef str_sku,ByRef str_name, ByRef str_desc,_
+						ByRef str_detail,ByRef str_price, ByRef str_retail, ByRef str_dept,ByRef str_weight,_
+						ByRef str_image, ByRef str_thumb, ByRef str_on_sale, ByRef str_sale_price,_
+						ByRef str_is_nontaxable, str_is_noship,_
+						ByRef str_vendor_number, ByRef str_vendor_name)
+	'returns true/false
+	
+	dim sql,dbconn
+	
+	if(str_pid="")or(str_db="")or(str_name="")or(str_price="")or(str_dept="") then
+		AddToHTMLMsgHldr str_status_msg,"Insuffiecient info specified to update a product.",true
+ 		UpdateMasterProduct=false
+		exit function
+	end if
+		
+	if(str_on_sale="1") then
+		if(str_sale_price="") then
+			AddToHTMLMsgHldr str_status_msg,"Sale price is required to use special.",true
+ 			UpdateProduct=false
+			exit function
+		else
+			Call Numberize(str_sale_price)
+		end if
+	else
+		str_on_sale = "0"
+	end if
+	
+	Call Numberize(str_weight)
+	Call Numberize(str_price)
+	Call Numberize(str_retail)
+	
+	sql = "UPDATE :9_product SET name='"& CheckString(str_name) & "'"
+	
+	if(str_sku="")then
+		sql = sql & ",sku=Null"
+	else
+		sql = sql & ",sku='" & CheckString(str_sku) & "'"
+	end if
+
+	if(str_desc="")then
+		sql = sql & ",description=Null"
+	else
+		sql = sql & ",description='" & CheckString(str_desc) & "'"
+	end if
+	
+	if(str_detail="")then
+		sql = sql & ",details=Null"
+	else
+		sql = sql & ",details='" & CheckString(str_detail) & "'"
+	end if
+	
+	sql = sql & ",list_price=" & str_price
+	sql = sql & ",retail_price=" & str_retail
+	
+	if(str_image="")then
+		sql = sql & ",image_file=Null"
+	else
+		sql = sql & ",image_file='" & CheckString(str_image) & "'"
+	end if
+	
+	if(str_thumb="")then
+		sql = sql & ",thumb_image=Null"
+	else
+		sql = sql & ",thumb_image='" & CheckString(str_thumb) & "'"
+	end if
+	
+	sql = sql &	",weight=" & str_weight
+	
+
+	if(str_on_sale = "1")then
+		sql = sql & ",on_sale=1"
+		sql = sql & ",sale_price=" & str_sale_price
+	else
+		sql = sql & ",on_sale=0"
+		sql = sql & ",sale_price=0"
+	end if
+
+	sql = sql & ",is_nontaxable=" & str_is_nontaxable
+	sql = sql & ",is_noship=" & str_is_noship
+	
+	if(str_vendor_number="")then
+		sql = sql & ",vendor_number=Null"
+	else
+		sql = sql & ",vendor_number='" & CheckString(str_vendor_number) & "'"
+	end if
+	
+	if(str_vendor_name="")then
+		sql = sql & ",vendor_name=Null"
+	else
+		sql = sql & ",vendor_name='" & CheckString(str_vendor_name) & "'"
+	end if
+
+
+	sql = sql & " WHERE pf_id ='" & str_pid & "'"
+	
+	sql = Replace(sql, ":9", g_storeid)
+	
+	set dbconn=server.CreateObject("ADODB.Connection")
+	dbconn.Open db
+	dbconn.Execute sql
+	
+	'Department Update
+	sql = "UPDATE :9_dept_prod SET dept_id=':1' WHERE pf_id=':2'"
+	sql = Replace(sql, ":9", g_storeid)
+	sql = Replace(sql, ":1", str_dept)
+	sql = Replace(sql, ":2", str_pid)
+	
+	dbconn.Execute sql
+	
+	dbconn.Close
+	
+	UpdateMasterProduct=true
+end function
+
+function DeleteProduct(ByRef str_db,ByRef str_status_msg,ByRef str_pid)
+	'returns true/false
+	
+	dim sql,dbconn
+	
+	'validate
+	if(str_pid="")or(str_db="")then
+		AddToHTMLMsgHldr str_status_msg,"Insuffiecient info specified to delete product.",true
+ 		DeleteProduct=false
+		exit function
+	end if
+	
+	sql="DELETE FROM :9_product WHERE pf_id='"&str_pid &"'"
+	sql = Replace(sql, ":9", g_storeid)
+	set dbconn=server.CreateObject("ADODB.Connection")
+	dbconn.Open db
+	dbconn.Execute sql
+	
+	sql="DELETE FROM :9_dept_prod WHERE pf_id='"&str_pid & "'"
+	sql = Replace(sql, ":9", g_storeid)
+	dbconn.Execute sql
+	
+	dbconn.Close
+	DeleteProduct=true
+end function
+
+function UpdateProductMM(ByRef str_db,ByRef str_status_msg, ByRef str_pid,_
+						ByRef str_mm_id, ByRef str_mm_link,ByRef str_mm_desc, ByRef str_mm_type)
+	'returns true/false
+	
+	dim sql,dbconn
+	
+	if(str_pid="")or(str_mm_id="")then
+		AddToHTMLMsgHldr str_status_msg,"Insuffiecient info specified to update a product.",true
+ 		UpdateProductMM=false
+		exit function
+	end if
+	
+	'Validate attribute value - 1
+	if(str_mm_type="") then
+		str_mm_type = "0"
+	end if
+	
+	sql = "UPDATE :9_product SET mm_id=" & str_mm_id
+	
+	if(str_mm_link="")then
+		sql = sql & ",mm_link=Null"
+	else
+		sql = sql & ",mm_link='" & CheckString(str_mm_link) & "'"
+	end if
+
+	if(str_mm_desc="")then
+		sql = sql & ",mm_desc=Null"
+	else
+		sql = sql & ",mm_desc='" & CheckString(str_mm_desc) & "'"
+	end if
+		
+	sql = sql &	",mm_type=" & str_mm_type
+	
+	sql = sql & " WHERE pf_id ='" & str_pid & "'"
+	
+	sql = Replace(sql, ":9", g_storeid)
+	
+	set dbconn=server.CreateObject("ADODB.Connection")
+	dbconn.Open db
+	dbconn.Execute sql
+		
+	dbconn.Close
+	
+	UpdateProductMM=true
+end function
+</script>

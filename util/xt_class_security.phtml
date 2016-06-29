@@ -1,0 +1,289 @@
+<%
+'/// <summary>
+'/// Created by DY on 20060605
+'/// 
+'/// Provides encode and decode functions using Base64 algorism.
+'/// 
+'/// </summary>
+Class FESecurity
+
+  Private m_MatchTable(36, 1) 'As String
+  Private m_BasePad 'As String
+  Private m_BaseTable(64) 'As String
+
+  Public Sub Class_Initialize()
+    ' Create matching table
+    m_MatchTable(0, 0) = "0": m_MatchTable(0, 1) = "n"
+    m_MatchTable(1, 0) = "1": m_MatchTable(1, 1) = "b"
+    m_MatchTable(2, 0) = "2": m_MatchTable(2, 1) = " "
+    m_MatchTable(3, 0) = "3": m_MatchTable(3, 1) = "z"
+    m_MatchTable(4, 0) = "4": m_MatchTable(4, 1) = "k"
+    m_MatchTable(5, 0) = "5": m_MatchTable(5, 1) = "1"
+    m_MatchTable(6, 0) = "6": m_MatchTable(6, 1) = "5"
+    m_MatchTable(7, 0) = "7": m_MatchTable(7, 1) = "g"
+    m_MatchTable(8, 0) = "8": m_MatchTable(8, 1) = "j"
+    m_MatchTable(9, 0) = "9": m_MatchTable(9, 1) = "x"
+    m_MatchTable(10, 0) = "a": m_MatchTable(10, 1) = "r"
+    m_MatchTable(11, 0) = "b": m_MatchTable(11, 1) = "l"
+    m_MatchTable(12, 0) = "c": m_MatchTable(12, 1) = "d"
+    m_MatchTable(13, 0) = "d": m_MatchTable(13, 1) = "y"
+    m_MatchTable(14, 0) = "e": m_MatchTable(14, 1) = "m"
+    m_MatchTable(15, 0) = "f": m_MatchTable(15, 1) = "3"
+    m_MatchTable(16, 0) = "g": m_MatchTable(16, 1) = "v"
+    m_MatchTable(17, 0) = "h": m_MatchTable(17, 1) = "i"
+    m_MatchTable(18, 0) = "i": m_MatchTable(18, 1) = "h"
+    m_MatchTable(19, 0) = "j": m_MatchTable(19, 1) = "8"
+    m_MatchTable(20, 0) = "k": m_MatchTable(20, 1) = "4"
+    m_MatchTable(21, 0) = "l": m_MatchTable(21, 1) = "6"
+    m_MatchTable(22, 0) = "m": m_MatchTable(22, 1) = "w"
+    m_MatchTable(23, 0) = "n": m_MatchTable(23, 1) = "0"
+    m_MatchTable(24, 0) = "o": m_MatchTable(24, 1) = "o"
+    m_MatchTable(25, 0) = "p": m_MatchTable(25, 1) = "f"
+    m_MatchTable(26, 0) = "q": m_MatchTable(26, 1) = "t"
+    m_MatchTable(27, 0) = "r": m_MatchTable(27, 1) = "2"
+    m_MatchTable(28, 0) = "s": m_MatchTable(28, 1) = "q"
+    m_MatchTable(29, 0) = "t": m_MatchTable(29, 1) = "c"
+    m_MatchTable(30, 0) = "u": m_MatchTable(30, 1) = "s"
+    m_MatchTable(31, 0) = "v": m_MatchTable(31, 1) = "e"
+    m_MatchTable(32, 0) = "w": m_MatchTable(32, 1) = "7"
+    m_MatchTable(33, 0) = "x": m_MatchTable(33, 1) = "u"
+    m_MatchTable(34, 0) = "y": m_MatchTable(34, 1) = "g"
+    m_MatchTable(35, 0) = "z": m_MatchTable(35, 1) = "a"
+    m_MatchTable(36, 0) = "z": m_MatchTable(36, 1) = "p"
+
+    m_BasePad = "="
+    
+    m_BaseTable(0) = "u": m_BaseTable(1) = "v": m_BaseTable(2) = "2"
+    m_BaseTable(3) = "Q": m_BaseTable(4) = "l": m_BaseTable(5) = "S"
+    m_BaseTable(6) = "T": m_BaseTable(7) = "U": m_BaseTable(8) = "V"
+    m_BaseTable(9) = "R": m_BaseTable(10) = "X": m_BaseTable(11) = "y"
+    m_BaseTable(12) = "Z": m_BaseTable(13) = "B": m_BaseTable(14) = "g"
+    m_BaseTable(15) = "c": m_BaseTable(16) = "D": m_BaseTable(17) = "E"
+    m_BaseTable(18) = "K": m_BaseTable(19) = "G": m_BaseTable(20) = "H"
+    m_BaseTable(21) = "I": m_BaseTable(22) = "J": m_BaseTable(23) = "F"
+    m_BaseTable(24) = "L": m_BaseTable(25) = "M": m_BaseTable(26) = "n"
+    m_BaseTable(27) = "o": m_BaseTable(28) = "p": m_BaseTable(29) = "q"
+    m_BaseTable(30) = "r": m_BaseTable(31) = "s": m_BaseTable(32) = "t"
+    m_BaseTable(33) = "C": m_BaseTable(34) = "O": m_BaseTable(35) = "w"
+    m_BaseTable(36) = "x": m_BaseTable(37) = "Y": m_BaseTable(38) = "z"
+    m_BaseTable(39) = "a": m_BaseTable(40) = "b": m_BaseTable(41) = "N"
+    m_BaseTable(42) = "i": m_BaseTable(43) = "e": m_BaseTable(44) = "f"
+    m_BaseTable(45) = "7": m_BaseTable(46) = "h": m_BaseTable(47) = "d"
+    m_BaseTable(48) = "j": m_BaseTable(49) = "k": m_BaseTable(50) = "W"
+    m_BaseTable(51) = "m": m_BaseTable(52) = "9": m_BaseTable(53) = "8"
+    m_BaseTable(54) = "A": m_BaseTable(55) = "6": m_BaseTable(56) = "1"
+    m_BaseTable(57) = "4": m_BaseTable(58) = "3": m_BaseTable(59) = "P"
+    m_BaseTable(60) = "5": m_BaseTable(61) = "0": m_BaseTable(62) = "+"
+    m_BaseTable(63) = "/": m_BaseTable(64) = "^"
+  End Sub
+
+	Public Sub Class_Terminate()
+	  ' Dummy
+	End Sub
+
+  Private Function GetBase()
+    GetBase = m_BaseTable(51)
+  End Function
+
+  'Private Function GetMultiplierBase2(Number As Integer) As Integer
+  Private Function GetMultiplierBase2(Number)
+    Dim nResult 'As Integer
+    Dim nCount 'As Integer
+    
+    If Number = 0 Then
+        GetMultiplierBase2 = 1
+    Else
+        nResult = 1
+        For nCount = 1 To Number
+            nResult = nResult * 2
+        Next 'nCount
+        GetMultiplierBase2 = nResult
+    End If
+  End Function
+
+  'Private Function GetCharacter(Source As String, Index As Integer) As String
+  Private Function GetCharacter(Source, Index)
+    GetCharacter = Mid(Source, Index, 1)
+  End Function
+
+  'Private Function GetShift(Source As Integer, Count As Integer, IsRight As Boolean) 'As Integer
+  Private Function GetShift(Source, Count, IsRight)
+    Dim nNum 'As Integer
+    
+    nNum = GetMultiplierBase2(Count)
+    
+    If IsRight Then
+        GetShift = Source \ nNum
+    Else
+        GetShift = Source * nNum
+    End If
+  End Function
+
+  'Public Function Encode(ByVal Source As String, ByVal Key As String) 'As String
+  Public Function Encode(ByVal Source, ByVal Key)
+
+    Err.Clear
+    On Error Resume Next
+
+    Dim nCount 'As Integer
+    Dim nIndex 'As Integer
+    Dim nLength 'As Integer
+    Dim arrSource 'As Variant
+    Dim arrResult 'As Variant
+    Dim strResult 'As String
+    
+    nLength = Len(Source) + Len(Key)
+    
+    ReDim arrSource(nLength - 1)
+    For nCount = 0 To Len(Source) - 1
+        arrSource(nCount) = GetCharacter(Source, nCount + 1)
+    Next 'nCount
+    For nCount = 0 To Len(Key) - 1
+        arrSource(Len(Source) + nCount) = GetCharacter(Key, nCount + 1)
+    Next 'nCount
+    
+    ReDim arrResult((nLength + 3 - (nLength Mod 3)) * 4 / 3)
+    
+    nCount = 0
+    nIndex = 0
+    
+    Do While nLength > 2
+        nTemp = GetShift(Asc(arrSource(nIndex)), 2, True)
+        arrResult(nCount) = m_BaseTable(nTemp)
+        nCount = nCount + 1
+        nTemp = GetShift(Asc(arrSource(nIndex)) And &H3, 4, False) + GetShift(Asc(arrSource(nIndex + 1)), 4, True)
+        arrResult(nCount) = m_BaseTable(nTemp)
+        nCount = nCount + 1
+        arrResult(nCount) = m_BaseTable(GetShift(Asc(arrSource(nIndex + 1)) And &HF, 2, False) + GetShift(Asc(arrSource(nIndex + 2)), 6, True))
+        nCount = nCount + 1
+        arrResult(nCount) = m_BaseTable(Asc(arrSource(nIndex + 2)) And &H3F)
+        nCount = nCount + 1
+        
+        nIndex = nIndex + 3
+        nLength = nLength - 3
+    Loop
+    
+    If nLength <> 0 Then
+        arrResult(nCount) = m_BaseTable(GetShift(Asc(arrSource(nIndex)), 2, True))
+        nCount = nCount + 1
+        If nLength > 1 Then
+            arrResult(nCount) = m_BaseTable(GetShift(Asc(arrSource(nIndex)) And &H3, 4, False) + GetShift(Asc(arrSource(nIndex + 1)), 4, True))
+            nCount = nCount + 1
+            arrResult(nCount) = m_BaseTable(GetShift(Asc(arrSource(nIndex + 1)) And &HF, 2, False))
+            nCount = nCount + 1
+            arrResult(nCount) = m_BasePad
+            nCount = nCount + 1
+        Else
+            arrResult(nCount) = m_BaseTable(GetShift(Asc(arrSource(nIndex)) And &H3, 4, False))
+            nCount = nCount + 1
+            arrResult(nCount) = m_BasePad
+            nCount = nCount + 1
+            arrResult(nCount) = m_BasePad
+            nCount = nCount + 1
+        End If
+    End If
+    
+    Encode = RTrim(Join(arrResult, ""))
+    
+    On Error GoTo 0
+  End Function
+        
+  'Public Function Decode(ByVal Source As String, ByVal Key As String) As String
+  Public Function Decode(ByVal Source, ByVal Key)
+    
+    Err.Clear
+    On Error Resume Next
+    
+    Dim arrSource 'As Variant
+    Dim arrResult 'As Variant
+    Dim strResult 'As String
+    Dim nLength 'As Integer
+    Dim nChar 'As Integer
+    Dim strChar 'As String
+    Dim nI 'As Integer
+    Dim nJ 'As Integer
+    
+    
+    nLength = Len(Source)
+    ReDim arrSource(nLength)
+    For nI = 0 To nLength - 1
+        arrSource(nI) = GetCharacter(Source, nI + 1)
+    Next 'nI
+    
+    ReDim arrResult((nLength \ 4) * 3)
+    
+    nI = 0: nJ = 0
+    For nCount = 0 To UBound(arrSource)
+        strChar = arrSource(nCount)
+        If strChar = m_BasePad Then Exit For
+        nChar = InStr(1, Join(m_BaseTable, ""), strChar)
+        If nChar <= 0 Then
+            Decode = ""
+            Exit Function
+        End If
+        nChar = nChar - 1
+        
+        Select Case nI Mod 4
+        Case 0
+            arrResult(nJ) = Chr(GetShift(nChar, 2, False))
+        Case 1
+            arrResult(nJ) = Chr(Asc(arrResult(nJ)) Or GetShift(nChar, 4, True))
+            nJ = nJ + 1
+            arrResult(nJ) = Chr(GetShift(nChar And &HF, 4, False))
+        Case 2
+            arrResult(nJ) = Chr(Asc(arrResult(nJ)) Or GetShift(nChar, 2, True))
+            nJ = nJ + 1
+            arrResult(nJ) = Chr(GetShift(nChar And &H3, 6, False))
+        Case 3
+            arrResult(nJ) = Chr(Asc(arrResult(nJ)) Or nChar)
+            nJ = nJ + 1
+        End Select
+        nI = nI + 1
+    Next 'nCount
+    
+    If strChar = m_BasePad Then
+        Select Case nI Mod 4
+        Case 0, 1
+            Decode = ""
+            Exit Function
+        Case 2
+            nJ = nJ + 1
+            arrResult(nJ) = ""
+            nJ = nJ + 1
+        Case 3
+            arrResult(nJ) = ""
+            nJ = nJ + 1
+        End Select
+    End If
+    Do While nJ <= UBound(arrResult)
+        arrResult(nJ) = ""
+        nJ = nJ + 1
+    Loop
+    
+    strResult = ""
+    For nI = 0 To UBound(arrResult)
+        If arrResult(nI) = "" Then Exit For
+        If Asc(arrResult(nI)) = 0 Then Exit For
+        strResult = strResult & arrResult(nI)
+    Next 'nI
+    
+    If Mid(strResult, Len(strResult) - Len(Key) + 1, Len(Key)) <> Key Then
+        Decode = ""
+    Else
+        Decode = Mid(strResult, 1, Len(strResult) - Len(Key))
+    End If
+    
+    On Error GoTo 0
+  End Function
+
+  ' Version
+  'Public Property Get Version() As String
+  Public Property Get Version()
+    Dim strVer 'As String
+    strVer = "FEWebTools.FESecurity Version 1.0" & vbCrLf & "Copyright (C) 2003 Flashecom, Inc."
+    Version = strVer
+  End Property
+  
+End Class
+
+%>

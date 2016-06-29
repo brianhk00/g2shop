@@ -1,0 +1,288 @@
+<SCRIPT LANGUAGE=VBScript RUNAT=Server>
+
+private Function TrimToDigits(tstring)
+	'removes all chars except of 0-9
+
+	Dim s,ts,x,ch
+
+	  s="" 
+	  ts=tstring
+	  for x=1 to len(ts)
+	    ch=mid(ts,x,1)
+	    if asc(ch)>=48 and asc(ch)<=57 then
+	      s=s & ch
+	    end if
+	  next
+	  trimtodigits=s
+End Function
+
+Function CheckCreditCard(ccnumber,cctype)
+	  'checks credit card number for checksum,length and type 
+	  'ccnumber= credit card number (all useless characters are being removed before check)
+	  '
+	  'cctype:
+	  '       "V" VISA
+	  '       "M" Mastercard/Eurocard
+	  '       "A" American Express
+	  '       "C" Diners Club / Carte Blanche
+	  '       "D" Discover
+	  '       "E" enRoute
+	  '       "J" JCB
+	  'returns:  checkcc=0 (Bit0)  : card valid
+	  '          checkcc=1 (Bit1) : wrong type
+	  '          checkcc=2 (Bit2) : wrong length
+	  '          checkcc=4 (Bit3) : wrong checksum (MOD10-Test)
+	  '          checkcc=8 (Bit4) : cardtype unknown
+
+	Dim cclength,ccprefix, prefixes,length,lengths,number,prefixvalid,lengthvalid,prefix,result,qsum,sum,x
+	dim ch
+	  
+	cctype=UCase(cctype)
+
+	select case cctype
+		case "V"	
+			cclength="13;16"
+			ccprefix="4"
+		case "M"
+			cclength="16"
+			ccprefix="51;52;53;54;55"
+		case "A"
+			cclength="15"
+			ccprefix="34;37"
+		case "C"
+			cclength="14"
+			ccprefix="300;301;302;303;304;305;36;38"
+		case "D"
+			cclength="16"
+			ccprefix="6011"
+		case "E"
+			cclength="15"
+			ccprefix="2014;2149"
+		case "J"
+			cclength="15;16"
+			ccprefix="3;2131;1800"
+		case else
+			cclength=""
+			ccprefix=""
+	end select
+
+	prefixes=split(ccprefix,";",-1)
+	lengths=split(cclength,";",-1)
+	number=trimtodigits(ccnumber)
+	prefixvalid=false
+	lengthvalid=false
+
+	for each prefix in prefixes
+		if instr(number,prefix)=1 then
+			prefixvalid=true
+		end if
+	next  
+	for each length in lengths
+		if cstr(len(number))=length then
+			lengthvalid=true
+		end if
+	next
+	result=0
+	if not prefixvalid then
+		result=result+1
+		CheckCreditCard=result
+		Exit Function
+	end if  
+	if not lengthvalid then
+		result=result+2
+		CheckCreditCard=result
+		Exit Function
+	end if  
+	qsum=0
+	for x=1 to len(number)
+		ch=mid(number,len(number)-x+1,1)
+		if x mod 2=0 then
+			sum=2*cint(ch)
+			qsum=qsum+(sum mod 10)
+			if sum>9 then 
+				qsum=qsum+1
+			end if
+		else
+			qsum=qsum+cint(ch)
+		end if
+	next
+	if qsum mod 10<>0 then
+		result=result+4
+	end if
+	if cclength="" then
+		result=result+8
+	end if
+	CheckCreditCard=result
+end function
+
+Function IsPaymentInfoValid(ByRef str_paymentmethod,ByRef num_ccnum,_
+							ByRef str_cc_exp_month,ByRef str_cc_exp_year,ByRef status_msg_hldr)
+	'returns true/false
+	
+	Dim cc_code,rval
+	
+	if(str_paymentmethod="--" OR str_paymentmethod="")then
+		AddToHTMLMsgHldr status_msg_hldr,"Please select your payment method.",true
+		rval = false
+		IsPaymentInfoValid=rval
+		exit function
+	end if
+	
+	'if(str_paymentmethod="billme" or str_paymentmethod="cod" or str_paymentmethod="willcall")then
+		'rval = true
+		'IsPaymentInfoValid=rval
+		'exit function
+	'end if
+	if NOT (str_paymentmethod="visa" or str_paymentmethod="mc" or str_paymentmethod="discover" or str_paymentmethod="amex")then
+		rval = true
+		IsPaymentInfoValid=rval
+		exit function
+	end if
+	
+	if Len(num_ccnum) > 0 then
+	else
+		AddToHTMLMsgHldr status_msg_hldr,"Invalid Credit Card Number.",true
+		rval = false
+		IsPaymentInfoValid=rval
+		exit function
+	end if
+	
+	if IsNumeric(str_cc_exp_year) then
+	else
+		str_cc_exp_year = "2000"
+	end if
+
+	if IsNumeric(str_cc_exp_month) then
+	else
+		str_cc_exp_month = "1"
+	end if
+
+
+	if(Cint(str_cc_exp_year) = year(date())) and (Cint(str_cc_exp_month) < month(date()))then
+		AddToHTMLMsgHldr status_msg_hldr,"Invalid Credit Card Expiration Month.",true
+		rval = false
+		IsPaymentInfoValid=rval
+		exit function
+	end if
+
+	if(Cint(str_cc_exp_year) < year(date()))then
+		AddToHTMLMsgHldr status_msg_hldr,"Invalid Credit Card Expiration Year.",true
+		rval = false
+		IsPaymentInfoValid=rval
+		exit function
+	end if
+	
+	cc_code=-1	'indicating not a credit card
+	rval=false
+	
+	select case str_paymentmethod
+		case "visa"
+			cc_code=CheckCreditCard(num_ccnum,"V")
+		case "amex"
+			cc_code=CheckCreditCard(num_ccnum,"A")
+		case "mc"
+			cc_code=CheckCreditCard(num_ccnum,"M")
+		case "discover"
+			cc_code=CheckCreditCard(num_ccnum,"D")
+		case "dinersclub"
+			cc_code=CheckCreditCard(num_ccnum,"C")
+	end select
+
+	if(cc_code<>-1) then
+		select case cc_code
+			case 0
+				rval=true
+			case 1
+				AddToHTMLMsgHldr status_msg_hldr,"Invalid credit card type was specified.",true
+			case 2
+				AddToHTMLMsgHldr status_msg_hldr,"Invalid number of digits specified for the credit card number.",true
+			case 4
+				AddToHTMLMsgHldr status_msg_hldr,"Invalid credit card number was specified.",true
+			case 8
+				AddToHTMLMsgHldr status_msg_hldr,"Unknown type of credit card specified.  Unable to process.",true
+			case else
+				AddToHTMLMsgHldr status_msg_hldr,"Invalid credit card info specified.  Make sure the type, number and the exp month and year are typed correctly.",true
+		end select
+	end if
+	
+	if((rval=false)And(cc_code=-1)) then
+		AddToHTMLMsgHldr status_msg_hldr,"Invalid payment info specified.",true
+	end if
+	IsPaymentInfoValid=rval
+End Function
+
+Function IsPaymentInfoValidEx(ByRef str_paymentmethod,ByRef num_ccnum,_
+							ByRef str_cc_exp_month,ByRef str_cc_exp_year)
+							
+	Dim cc_code,rval
+		
+	if(str_paymentmethod="--" OR str_paymentmethod="")then
+		rval = 1
+		IsPaymentInfoValidEx=rval
+		exit function
+	end if
+	
+	if NOT (str_paymentmethod="visa" or str_paymentmethod="mc" or str_paymentmethod="discover" or str_paymentmethod="amex")then
+		rval = 0
+		IsPaymentInfoValidEx=rval
+		exit function
+	end if
+	
+	if Len(num_ccnum) > 0 then
+	else
+		AddToHTMLMsgHldr status_msg_hldr,"Invalid Credit Card Number.",true
+		rval = 4
+		IsPaymentInfoValidEx=rval
+		exit function
+	end if
+	
+	if(Cint(str_cc_exp_year) = year(date())) and (Cint(str_cc_exp_month) < month(date()))then
+		rval = 2
+		IsPaymentInfoValidEx=rval
+		exit function
+	end if
+
+	if(Cint(str_cc_exp_year) < year(date()))then
+		rval = 2
+		IsPaymentInfoValidEx=rval
+		exit function
+	end if
+	
+	cc_code=-1	'indicating not a credit card
+	rval=0
+	
+	select case str_paymentmethod
+		case "visa"
+			cc_code=CheckCreditCard(num_ccnum,"V")
+		case "amex"
+			cc_code=CheckCreditCard(num_ccnum,"A")
+		case "mc"
+			cc_code=CheckCreditCard(num_ccnum,"M")
+		case "discover"
+			cc_code=CheckCreditCard(num_ccnum,"D")
+		case "dinersclub"
+			cc_code=CheckCreditCard(num_ccnum,"C")
+	end select
+
+	if(cc_code<>-1) then
+		select case cc_code
+			case 0
+				rval= 0
+			case 1
+				rval = 3
+			case 2
+				rval = 4
+			case 4
+				rval = 5
+			case 8
+				rval = 6
+			case else
+				rval = 7
+		end select
+	end if
+	
+	IsPaymentInfoValidEx=rval
+	
+End Function
+
+</SCRIPT>

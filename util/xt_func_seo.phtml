@@ -1,0 +1,400 @@
+<Script language="VBScript" RUNAT=SERVER>
+
+function GetProductSeURL(ByVal pid, ByVal sDept, ByVal sProductName)
+
+	if Len(sDept) > 0 then
+		sDept = stripHTML(sDept)
+		sDept = Replace(sDept, " ", "_")
+		sDept = FilterStringSEO(sDept)
+
+		sDept = Replace(sDept, "____", "_")
+		sDept = Replace(sDept, "___", "_")
+		sDept = Replace(sDept, "__", "_")
+	else
+		sDept = "loc"
+	end if
+
+	if Len(sProductName) > 0 then
+		sProductName = stripHTML(sProductName)
+		sProductName = Replace(sProductName, " ", "_")
+		sProductName = FilterStringSEO(sProductName)
+
+		sProductName = Replace(sProductName, "____", "_")
+		sProductName = Replace(sProductName, "___", "_")
+		sProductName = Replace(sProductName, "__", "_")
+
+	else
+		sProductName = "1"
+	end if
+
+	dim sURL
+	if Session("ENABLE_SEO") = 1 then
+		sURL = Session("StoreURL") & "/_e/" & sDept & "/product/" & Server.URLEncode(pid) & "/" & sProductName  & ".htm"
+	else
+		sURL = "product.phtml?pf_id=" & Server.URLEncode(pid)
+	end if
+	
+	sURL = "product.phtml?pf_id=" & Server.URLEncode(pid)
+	GetProductSeURL = sURL
+
+end function
+
+function GetEProductSeURL(ByVal pid, ByVal sDept, ByVal sProductName)
+
+	if Len(sDept) > 0 then
+		sDept = stripHTML(sDept)
+		sDept = Replace(sDept, " ", "_")
+		sDept = FilterStringSEO(sDept)
+
+		sDept = Replace(sDept, "____", "_")
+		sDept = Replace(sDept, "___", "_")
+		sDept = Replace(sDept, "__", "_")
+	else
+		sDept = "loc"
+	end if
+
+	if Len(sProductName) > 0 then
+		sProductName = stripHTML(sProductName)
+		sProductName = Replace(sProductName, " ", "_")
+		sProductName = FilterStringSEO(sProductName)
+
+		sProductName = Replace(sProductName, "____", "_")
+		sProductName = Replace(sProductName, "___", "_")
+		sProductName = Replace(sProductName, "__", "_")
+
+	else
+		sProductName = "1"
+	end if
+
+	dim sURL
+	if Session("ENABLE_SEO") = 1 then
+		sURL = Session("StoreURL") & "/_e/" & sDept & "/eproduct/" & Server.URLEncode(pid) & "/" & sProductName  & ".htm"
+	else
+		sURL = "eproduct.phtml?pf_id=" & Server.URLEncode(pid)
+	end if
+
+	GetEProductSeURL = sURL
+
+end function
+
+function GetSProductSeURL(ByVal pid, ByVal sDept, ByVal sProductName)
+
+	if Len(sDept) > 0 then
+		sDept = stripHTML(sDept)
+		sDept = Replace(sDept, " ", "_")
+		sDept = FilterStringSEO(sDept)
+
+		sDept = Replace(sDept, "____", "_")
+		sDept = Replace(sDept, "___", "_")
+		sDept = Replace(sDept, "__", "_")
+	else
+		sDept = "loc"
+	end if
+
+	if Len(sProductName) > 0 then
+		sProductName = stripHTML(sProductName)
+		sProductName = Replace(sProductName, " ", "_")
+		sProductName = FilterStringSEO(sProductName)
+
+		sProductName = Replace(sProductName, "____", "_")
+		sProductName = Replace(sProductName, "___", "_")
+		sProductName = Replace(sProductName, "__", "_")
+
+	else
+		sProductName = "1"
+	end if
+
+	dim sURL
+	if Session("ENABLE_SEO") = 1 then
+		sURL = Session("StoreURL") & "/_e/" & sDept & "/sproduct/" & Server.URLEncode(pid) & "/" & sProductName  & ".htm"
+	else
+		sURL = "ssproduct.phtml?pf_id=" & Server.URLEncode(pid)
+	end if
+
+	GetSProductSeURL = sURL
+
+end function
+
+function GetSProductDetailSeURL(ByVal pid, ByVal sDept, ByVal sProductName)
+
+	if Len(sDept) > 0 then
+		sDept = stripHTML(sDept)
+		sDept = Replace(sDept, " ", "_")
+		sDept = FilterStringSEO(sDept)
+
+		sDept = Replace(sDept, "____", "_")
+		sDept = Replace(sDept, "___", "_")
+		sDept = Replace(sDept, "__", "_")
+	else
+		sDept = "loc"
+	end if
+
+	if Len(sProductName) > 0 then
+		sProductName = stripHTML(sProductName)
+		sProductName = Replace(sProductName, " ", "_")
+		sProductName = FilterStringSEO(sProductName)
+
+		sProductName = Replace(sProductName, "____", "_")
+		sProductName = Replace(sProductName, "___", "_")
+		sProductName = Replace(sProductName, "__", "_")
+
+	else
+		sProductName = "1"
+	end if
+
+	dim sURL
+	if Session("ENABLE_SEO") = 1 then
+		sURL = Session("StoreURL") & "/_e/" & sDept & "/sproductdetail/" & Server.URLEncode(pid) & "/" & sProductName  & ".htm"
+	else
+		sURL = "ssdetail.phtml?pf_id=" & Server.URLEncode(pid)
+	end if
+
+	GetSProductDetailSeURL = sURL
+
+end function
+
+function GetSProductAccSeURL(ByVal pid, ByVal sDept, ByVal sProductName)
+
+	if Len(sDept) > 0 then
+		sDept = stripHTML(sDept)
+		sDept = Replace(sDept, " ", "_")
+		sDept = FilterStringSEO(sDept)
+
+		sDept = Replace(sDept, "____", "_")
+		sDept = Replace(sDept, "___", "_")
+		sDept = Replace(sDept, "__", "_")
+	else
+		sDept = "loc"
+	end if
+
+	if Len(sProductName) > 0 then
+		sProductName = stripHTML(sProductName)
+		sProductName = Replace(sProductName, " ", "_")
+		sProductName = FilterStringSEO(sProductName)
+
+		sProductName = Replace(sProductName, "____", "_")
+		sProductName = Replace(sProductName, "___", "_")
+		sProductName = Replace(sProductName, "__", "_")
+
+	else
+		sProductName = "1"
+	end if
+
+	dim sURL
+	if Session("ENABLE_SEO") = 1 then
+		sURL = Session("StoreURL") & "/_e/" & sDept & "/sproductacc/" & Server.URLEncode(pid) & "/" & sProductName  & ".htm"
+	else
+		sURL = "ssaccessories.phtml?pf_id=" & Server.URLEncode(pid)
+	end if
+
+	GetSProductAccSeURL = sURL
+
+end function
+
+function GetVProductSeURL(ByVal pid, ByVal sDept, ByVal sProductName, ByVal dtid)
+
+	if Len(sDept) > 0 then
+		sDept = stripHTML(sDept)
+		sDept = Replace(sDept, " ", "_")
+		sDept = FilterStringSEO(sDept)
+
+		sDept = Replace(sDept, "____", "_")
+		sDept = Replace(sDept, "___", "_")
+		sDept = Replace(sDept, "__", "_")
+	else
+		sDept = "loc"
+	end if
+
+	if Len(sProductName) > 0 then
+		sProductName = stripHTML(sProductName)
+		sProductName = Replace(sProductName, " ", "_")
+		sProductName = FilterStringSEO(sProductName)
+
+		sProductName = Replace(sProductName, "____", "_")
+		sProductName = Replace(sProductName, "___", "_")
+		sProductName = Replace(sProductName, "__", "_")
+
+	else
+		sProductName = "1"
+	end if
+
+	dim sURL
+	if Session("ENABLE_SEO") = 1 then
+		sURL = Session("StoreURL") & "/_e/" & sDept & "/vendor_product/" & Server.URLEncode(pid) & "/dtid/" & dtid & "/" & sProductName  & ".htm"
+	else
+		sURL = "vendor_product.phtml?pf_id=" & Server.URLEncode(pid) & "&dtid=" & dtid
+	end if
+
+	GetVProductSeURL = sURL
+
+end function
+
+function GetSDeptSeURL(ByVal did, ByVal sDept)
+	
+	'http://dev1.flashecom.com/ed06/_e/Software/sdept/02
+	if Len(sDept) > 0 then
+		sDept = stripHTML(sDept)
+		sDept = Replace(sDept, " ", "_")
+		sDept = FilterStringSEO(sDept)
+
+		sDept = Replace(sDept, "____", "_")
+		sDept = Replace(sDept, "___", "_")
+		sDept = Replace(sDept, "__", "_")
+	else
+		sDept = "loc"
+	end if
+
+	if Session("ENABLE_SEO") = 1 then
+		sURL = Session("StoreURL") & "/_e/ssdept/" & did & "/" & sDept & ".htm"
+	else
+		sURL = Session("StoreURL") & "/ssdept.phtml?dept_id=" & did
+	end if
+
+	GetSDeptSeURL = sURL
+end function
+
+function GetDeptSeURL(ByVal did, ByVal sDept, ByVal fSub, ByVal fManuf, ByVal fDist, ByVal fEC)
+
+	'http://dev1.flashecom.com/ed06/_e/Software/dept/02
+	if Len(sDept) > 0 then
+		sDept = stripHTML(sDept)
+		sDept = Replace(sDept, " ", "_")
+		sDept = FilterStringSEO(sDept)
+
+		sDept = Replace(sDept, "____", "_")
+		sDept = Replace(sDept, "___", "_")
+		sDept = Replace(sDept, "__", "_")
+	else
+		sDept = "loc"
+	end if
+
+	dim sURL
+
+	if Session("ENABLE_SEO") = 1 then
+		
+		if fSub then
+			sURL = Session("StoreURL") & "/_e/gdept/" & did & "/" & sDept & ".htm"
+		else
+
+			if fManuf then
+				sURL = Session("StoreURL") & "/_e/m_gdept/" & did & "/" & sDept & ".htm"
+			else
+				sURL = Session("StoreURL") & "/_e/dept/" & did & "/" & sDept & ".htm"
+			end if
+
+		end if
+
+
+
+		if fEC = 2 then
+			sURL = Session("StoreURL") & "/_e/edept/" & did & "/" & sDept & ".htm"
+		else
+			if fSub then
+				sURL = Session("StoreURL") & "/_e/gdept/" & did & "/" & sDept & ".htm"
+			else
+
+				if fManuf then
+
+					if fDist = 1 OR fDist = 2 then
+						sURL = Session("StoreURL") & "/_e/vendor_m_gdept/" & did & "/" & sDept & ".htm"
+					else
+						sURL = Session("StoreURL") & "/_e/m_gdept/" & did & "/" & sDept & ".htm"
+					end if
+				else
+					if fDist = 1 OR fDist = 2 then
+						'sURL = Session("StoreURL") & "/vendor_dept.phtml?dept_id=" & dept_id & "&dist_flag=" & rs(2)
+						sURL = Session("StoreURL") & "/_e/vendor_dept/" & did & "/dist_flag/" & fDist & "/" & sDept & ".htm"
+					else
+						sURL = Session("StoreURL") & "/_e/dept/" & did & "/" & sDept & ".htm"
+					end if
+				end if
+
+			end if
+		end if
+
+	else
+
+		if fEC = 2 then
+			sURL = Session("StoreURL") & "/edept.phtml?dept_id=" & did
+		else
+			if fSub then
+				sURL = Session("StoreURL") & "/gdept.phtml?dept_id=" & did
+			else
+
+				if fManuf then
+
+					if fDist = 1 OR fDist = 2 then
+						sURL = Session("StoreURL") & "/vendor_m_gdept.phtml?dept_id=" & did
+					else
+						sURL = Session("StoreURL") & "/m_gdept.phtml?dept_id=" & did
+					end if
+				else
+					if fDist = 1 OR fDist = 2 then
+						sURL = Session("StoreURL") & "/vendor_dept.phtml?dept_id=" & did & "&dist_flag=" & fDist
+					else
+						sURL = Session("StoreURL") & "/dept.phtml?dept_id=" & did
+					end if
+				end if
+
+			end if
+		end if
+
+	end if
+
+	GetDeptSeURL = sURL
+
+end function
+
+function GetDeptSeURLEx(ByVal did, ByVal sDept, ByVal fSub, ByVal fManuf, ByRef fPage, ByRef fSort)
+
+	'http://dev1.flashecom.com/ed06/_e/Software/dept/02
+	if Len(sDept) > 0 then
+		sDept = stripHTML(sDept)
+		sDept = Replace(sDept, " ", "_")
+		sDept = FilterStringSEO(sDept)
+
+		sDept = Replace(sDept, "____", "_")
+		sDept = Replace(sDept, "___", "_")
+		sDept = Replace(sDept, "__", "_")
+	else
+		sDept = "loc"
+	end if
+
+	dim sURL
+	if Session("ENABLE_SEO") = 1 then
+
+		sURL = Session("StoreURL") & "/_e/dept/" & did & "/" & sDept & "-" & fPage & "-" & fSort & ".htm"
+
+		if fSub then
+			sURL = Session("StoreURL") & "/_e/gdept/" & did & "/" & sDept & "-" & fPage & "-" & fSort & ".htm"
+		else
+
+			if fManuf then
+				sURL = Session("StoreURL") & "/_e/m_gdept/" & did & "/" & sDept & "-" & fPage & "-" & fSort & ".htm"
+			else
+				sURL = Session("StoreURL") & "/_e/dept/" & did & "/" & sDept & "-" & fPage & "-" & fSort & ".htm"
+			end if
+
+		end if
+
+	else
+
+		if fSub then
+			sURL = Session("StoreURL") & "/gdept.phtml?dept_id=" & did & "&page=" & fPage & "&so=" & fSort
+		else
+
+			if fManuf then
+				sURL = Session("StoreURL") & "/m_gdept.phtml?dept_id=" & did & "&page=" & fPage & "&so=" & fSort
+			else
+				sURL = Session("StoreURL") & "/dept.phtml?dept_id=" & did & "&page=" & fPage & "&so=" & fSort
+			end if
+
+		end if
+
+	end if
+
+	GetDeptSeURLEx = sURL
+
+end function
+
+</SCRIPT>

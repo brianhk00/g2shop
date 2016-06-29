@@ -1,0 +1,508 @@
+<!-- #INCLUDE File="xt_html_statusmsg.phtml" -->
+<!-- #INCLUDE File="xt_func_util.phtml" -->
+
+<SCRIPT LANGUAGE=VBScript RUNAT=Server>
+function AddNewQuote(ByRef str_db, ByRef str_cid, ByRef status_msg_hldr, _
+						ByRef tax_rate, ByRef tax_rate_gst, ByRef tax_rate_pst,_
+						ByRef num_tax, ByRef num_tax1, ByRef num_tax2,_
+						ByRef num_sh, ByRef num_total, ByRef sh_method, ByRef quote_comment,_
+						ByRef quote_name, ByRef UDF01, ByRef UDF02, ByRef UDF03, ByRef UDF04, ByRef UDF05)
+
+	dim sql,rs
+	Dim field_names,field_values,str_sql
+
+	if((str_db="")Or(str_cid="")) then
+		AddToHTMLMsgHldr status_msg_hldr,"Insuffiecient info specified to add new order.",true
+		AddNewQuote = 0
+		exit function
+	end if
+	
+	Set dbconn=server.CreateObject("ADODB.Connection")
+	dbconn.Open str_db
+	
+	'Get quote ID..
+	sql = "SELECT MAX(quote_id) FROM :9_quotes"
+	sql = Replace(sql, ":9", Session("StoreID"))
+	set rsID = dbconn.Execute(sql)
+	
+	if rsID.EOF then
+		quote_id = 10000
+	else
+	   if IsNumeric(rsID(0)) then
+	     quote_id = rsID(0) + 1
+	   else
+	     quote_id = 10000
+	   end if
+	end if
+	rsID.Close
+	
+	'Getting shopper Information..
+	sql="SELECT * FROM :9_shopper WHERE (shopper_id='"&str_cid&"')"
+	sql = Replace(sql, ":9", Session("StoreID"))
+	set rs=dbconn.Execute(sql)
+		
+	if(rs.EOF) then
+		AddNewQuote = 0
+		exit function
+	end if
+	
+	shopper_email = rs("Email")
+	shopper_firstname = rs("FirstName")
+	shopper_lastname = rs("LastName")
+	shopper_address = rs("Address")
+	shopper_city = rs("City")
+	shopper_state = rs("State")
+	shopper_zip = rs("ZipCode")
+	shopper_country = rs("Country")
+	shopper_phone = rs("Phone")
+	shopper_fax = rs("Fax")
+	shopper_title = rs("Title")
+	'Get Company Information..
+	company_id = rs("company_id")
+	
+	if company_id > 0 then
+		
+		sql = "SELECT *  FROM :9_company WHERE company_id =" & company_id
+		sql = Replace(sql, ":9", Session("StoreID"))
+		set rsCompany=dbconn.Execute(sql)
+		
+		if not rsCompany.EOF then
+		  company_name = rsCompany("company_name")
+		  company_address = rsCompany("company_address")
+		  company_city = rsCompany("company_city")
+	 	  company_state = rsCompany("company_state")
+		  company_zip = rsCompany("company_zip")
+		else
+		  company_id = 0
+		  company_name = rs("Company")
+		  company_address = ""
+		  company_city = ""
+	 	  company_state = ""
+		  company_zip = ""
+		end if
+		
+		rsCompany.Close
+	
+	else
+		company_id = 0
+		company_name = rs("Company")
+		company_address = ""
+		company_city = ""
+		company_state = ""
+		company_zip = ""
+	end if
+	
+	'Assing Billing address..
+	billing_company = company_name
+	billing_address = shopper_address
+	billing_city = shopper_city
+	billing_state = shopper_state
+	billing_zip = shopper_zip
+	billing_country = shopper_country
+	billing_contact = shopper_firstname & " " & shopper_lastname
+	billing_phone = shopper_phone
+	
+	is_same_address = rs("IsSameAddress")
+	
+	if (is_same_address) then
+		shipping_company = company_name
+		shipping_address = shopper_address
+		shipping_city = shopper_city
+		shipping_state = shopper_state
+		shipping_zip = shopper_zip
+		shipping_country = shopper_country
+		shipping_contact = shopper_firstname & " " & shopper_lastname
+		shipping_phone = shopper_phone
+	else
+		shipping_company = company_name
+		shipping_address = Trim(rs("shipping_Address"))
+		shipping_city = Trim(rs("shipping_City"))
+		shipping_state = Trim(rs("shipping_State"))
+		shipping_zip = Trim(rs("shipping_ZipCode"))
+		shipping_country = Trim(rs("shipping_Country"))
+		shipping_contact = Trim(rs("shipping_FirstName")) & " " & Trim(rs("shipping_LastName"))
+		shipping_phone = Trim(rs("shipping_Phone"))
+	end if
+		
+	payment_method = Trim(rs("CC_Type"))
+	payment_number = Trim(rs("CC_Number"))
+	payment_expMonth = Trim(rs("CC_ExpMonth"))
+	payment_expYear = Trim(rs("CC_ExpYear"))
+	payment_name = shopper_firstname & " " & shopper_lastname
+
+	salesrep_id = rs("salesrep_id")
+	if Len(salesrep_id) > 0 then
+	else
+		salesrep_id = "--"
+	end if
+	
+	date_created = Now()
+		
+	rs.Close
+	
+	
+	'Create INSERT SQL statement
+		
+	field_names = "quote_id,"
+	field_values = quote_id &","
+
+	if(Len(salesrep_id)>0) then
+		field_names=field_names & "quote_owner" &","
+		field_values=field_values & "'" & CheckString(salesrep_id) & "',"
+	end if
+	
+	field_names=field_names & "quote_amount" & ","
+	field_values=field_values & num_total & ","
+	
+	if(Len(date_created)>0) then
+		field_names=field_names & "date_created" &","
+		field_values=field_values & "'" & CheckString(date_created) & "',"
+	end if
+	
+	field_names=field_names & "company_id" & ","
+	field_values=field_values & company_id & ","
+	
+	if(Len(company_name)>0) then
+		field_names=field_names & "company_name" &","
+		field_values=field_values & "'" & CheckString(company_name) & "',"
+	end if
+	
+	if(Len(company_address)>0) then
+		field_names=field_names & "company_address" &","
+		field_values=field_values & "'" & CheckString(company_address) & "',"
+	end if
+	
+	if(Len(company_city)>0) then
+		field_names=field_names & "company_city" &","
+		field_values=field_values & "'" & CheckString(company_city) & "',"
+	end if
+	
+	if(Len(company_state)>0) then
+		field_names=field_names & "company_state" &","
+		field_values=field_values & "'" & CheckString(company_state) & "',"
+	end if
+	
+	if(Len(company_zip)>0) then
+		field_names=field_names & "company_zip" &","
+		field_values=field_values & "'" & CheckString(company_zip) & "',"
+	end if
+	
+	'Shopper_
+	field_names=field_names & "shopper_id" & ","
+	field_values=field_values & "'" & str_cid & "',"
+	
+	if(Len(shopper_firstname)>0) then
+		field_names=field_names & "shopper_firstname" &","
+		field_values=field_values & "'" & CheckString(shopper_firstname) & "',"
+	end if
+	
+	if(Len(shopper_lastname)>0) then
+		field_names=field_names & "shopper_lastname" &","
+		field_values=field_values & "'" & CheckString(shopper_lastname) & "',"
+	end if
+	
+	if(Len(shopper_email)>0) then
+		field_names=field_names & "shopper_email" &","
+		field_values=field_values & "'" & CheckString(shopper_email) & "',"
+	end if
+	
+	if(Len(shopper_phone)>0) then
+		field_names=field_names & "shopper_phone" &","
+		field_values=field_values & "'" & CheckString(shopper_phone) & "',"
+	end if
+	
+	if(Len(shopper_fax)>0) then
+		field_names=field_names & "shopper_fax" &","
+		field_values=field_values & "'" & CheckString(shopper_fax) & "',"
+	end if
+	
+	if(Len(shopper_title)>0) then
+		field_names=field_names & "shopper_title" &","
+		field_values=field_values & "'" & CheckString(shopper_title) & "',"
+	end if
+	
+	'Payment_
+	if(Len(payment_method)>0) then
+		field_names=field_names & "payment_method" &","
+		field_values=field_values & "'" & CheckString(payment_method) & "',"
+	end if
+	
+	if(Len(payment_number)>0) then
+		field_names=field_names & "payment_number" &","
+		field_values=field_values & "'" & CheckString(payment_number) & "',"
+	end if
+	
+	if(Len(payment_expYear)>0) then
+		field_names=field_names & "payment_expYear" &","
+		field_values=field_values & "'" & CheckString(payment_expYear) & "',"
+	end if
+	
+	if(Len(payment_expMonth)>0) then
+		field_names=field_names & "payment_expMonth" &","
+		field_values=field_values & "'" & CheckString(payment_expMonth) & "',"
+	end if
+	
+	if(Len(payment_name)>0) then
+		field_names=field_names & "payment_name" &","
+		field_values=field_values & "'" & CheckString(payment_name) & "',"
+	end if
+	
+	'Billing_
+	if(Len(billing_company)>0) then
+		field_names=field_names & "billing_company" &","
+		field_values=field_values & "'" & CheckString(billing_company) & "',"
+	end if
+	
+	if(Len(billing_address)>0) then
+		field_names=field_names & "billing_address" &","
+		field_values=field_values & "'" & CheckString(billing_address) & "',"
+	end if
+	
+	if(Len(billing_city)>0) then
+		field_names=field_names & "billing_city" &","
+		field_values=field_values & "'" & CheckString(billing_city) & "',"
+	end if
+	
+	if(Len(billing_state)>0) then
+		field_names=field_names & "billing_state" &","
+		field_values=field_values & "'" & CheckString(billing_state) & "',"
+	end if
+	
+	if(Len(billing_zip)>0) then
+		field_names=field_names & "billing_zip" &","
+		field_values=field_values & "'" & CheckString(billing_zip) & "',"
+	end if
+	
+	if(Len(billing_country)>0) then
+		field_names=field_names & "billing_country" &","
+		field_values=field_values & "'" & CheckString(billing_country) & "',"
+	end if
+	
+	if(Len(billing_contact)>0) then
+		field_names=field_names & "billing_contact" &","
+		field_values=field_values & "'" & CheckString(billing_contact) & "',"
+	end if
+	
+	if(Len(billing_phone)>0) then
+		field_names=field_names & "billing_phone" &","
+		field_values=field_values & "'" & CheckString(billing_phone) & "',"
+	end if
+	
+	'Shipping_
+	if(Len(shipping_company)>0) then
+		field_names=field_names & "shipping_company" &","
+		field_values=field_values & "'" & CheckString(shipping_company) & "',"
+	end if
+	
+	if(Len(shipping_address)>0) then
+		field_names=field_names & "shipping_address" &","
+		field_values=field_values & "'" & CheckString(shipping_address) & "',"
+	end if
+	
+	if(Len(shipping_city)>0) then
+		field_names=field_names & "shipping_city" &","
+		field_values=field_values & "'" & CheckString(shipping_city) & "',"
+	end if
+	
+	if(Len(shipping_state)>0) then
+		field_names=field_names & "shipping_state" &","
+		field_values=field_values & "'" & CheckString(shipping_state) & "',"
+	end if
+	
+	if(Len(shipping_zip)>0) then
+		field_names=field_names & "shipping_zip" &","
+		field_values=field_values & "'" & CheckString(shipping_zip) & "',"
+	end if
+	
+	if(Len(shipping_country)>0) then
+		field_names=field_names & "shipping_country" &","
+		field_values=field_values & "'" & CheckString(shipping_country) & "',"
+	end if
+	
+	if(Len(shipping_contact)>0) then
+		field_names=field_names & "shipping_contact" &","
+		field_values=field_values & "'" & CheckString(shipping_contact) & "',"
+	end if
+	
+	if(Len(shipping_phone)>0) then
+		field_names=field_names & "shipping_phone" &","
+		field_values=field_values & "'" & CheckString(shipping_phone) & "',"
+	end if
+	
+	'''''''
+	
+	if Session("ENABLEINT") = "2" OR Session("ENABLEINT") = "3" then
+	  
+	  field_names=field_names & "tax_rate" & ","
+	  field_values=field_values & tax_rate_gst & ","	
+	  field_names=field_names & "Tax" & ","
+	  field_values=field_values & num_tax1 & ","
+	  
+	  field_names=field_names & "tax_rate2" & ","
+	  field_values=field_values & tax_rate_pst & ","	
+	  field_names=field_names & "Tax2" & ","
+	  field_values=field_values & num_tax2 & ","	
+	else
+	  field_names=field_names & "tax_rate" & ","
+	  field_values=field_values & tax_rate & ","	
+	  field_names=field_names & "Tax" & ","
+	  field_values=field_values & num_tax & ","
+	end if
+	
+	field_names=field_names & "SH" & ","
+	field_values=field_values & num_sh & ","
+	
+	if(Len(sh_method)>0) then
+		field_names=field_names & "sh_method" & ","
+		field_values=field_values&"'"&CheckString(sh_method)&"',"
+	end if
+
+	if(Len(quote_comment)>0) then
+		field_names=field_names &"remark1" &","
+		field_values=field_values & "'" & CheckString(quote_comment)& "',"
+	end if
+
+	field_names=field_names & "quote_price_group" & ","
+	field_values=field_values & "'" & Session("LOGINGROUP") & "',"
+	
+	if Len(quote_name) > 0 then
+	  field_names=field_names & "quote_name" & ","
+	  field_values=field_values & "'" & CheckString(quote_name) & "',"
+	else
+	  field_names=field_names & "quote_name" & ","
+	  field_values=field_values & "'',"
+	end if
+
+	if(Len(UDF01)>0) then
+		field_names=field_names &"UDF01" &","
+		field_values=field_values & "'" & CheckString(UDF01)& "',"
+	end if
+
+	if(Len(UDF02)>0) then
+		field_names=field_names &"UDF02" &","
+		field_values=field_values & "'" & CheckString(UDF02)& "',"
+	end if
+
+	if(Len(UDF03)>0) then
+		field_names=field_names &"UDF03" &","
+		field_values=field_values & "'" & CheckString(UDF03)& "',"
+	end if
+
+	if(Len(UDF04)>0) then
+		field_names=field_names &"UDF04" &","
+		field_values=field_values & "'" & CheckString(UDF04)& "',"
+	end if
+
+	if(Len(UDF05)>0) then
+		field_names=field_names &"UDF05" &","
+		field_values=field_values & "'" & CheckString(UDF05)& "',"
+	end if
+
+	
+	'strip the trailing commas
+	field_names = Left(field_names,Len(field_names)-1)
+	field_values = Left(field_values,Len(field_values)-1)
+		
+	str_sql="INSERT INTO :9_quotes (" & field_names & ") VALUES(" & field_values & ")"
+
+	str_sql = Replace(str_sql, ":9", Session("StoreID"))
+	
+	dbconn.Execute str_sql
+	dbconn.Close
+	
+	'status_msg_hldr = str_sql
+	'Response.Write(str_sql)
+	AddNewQuote=quote_id
+	'AddNewQuote=0
+	
+end function
+
+function AddQuotedItems(ByRef str_db,ByRef str_quoteid,_
+						ByRef str_rowid,ByRef str_sku, ByRef str_name, ByRef item_quantity,_
+						ByRef item_price, ByRef str_options, ByRef str_mode, ByRef b_taxable,_
+						ByRef item_cost, ByRef str_mfg_part,ByRef str_weight)
+
+	Dim field_names,field_values,str_sql	
+	
+	if((str_quoteid="")Or(str_db="")Or(str_rowid="")) then
+		AddQuotedItems=false
+		exit function
+	end if	
+	
+	'Check length..
+	if Len(str_name) > 100 then
+	  str_name = Left(str_name, 96) & "..."
+	end if
+	
+	Set dbconn=server.CreateObject("ADODB.Connection")
+	dbconn.Open str_db
+		
+	field_names = "quote_id, item_row,"
+	field_values = str_quoteid & "," & str_rowid & ","
+	
+	if(Len(str_sku)>0) THEN
+		field_names=field_names & "item_sku" & ","
+		field_values=field_values & "'" & CheckString(str_sku)& "',"
+	end if
+	if(Len(str_mfg_part)>0) THEN
+		field_names=field_names & "item_mfg_part" & ","
+		field_values=field_values & "'" & CheckString(str_mfg_part)& "',"
+	end if
+	if(Len(str_name)>0) THEN
+		field_names=field_names & "item_description" & ","
+		field_values=field_values & "'" & CheckString(str_name)& "',"
+	end if
+	if(Len(item_quantity)>0) THEN
+		field_names=field_names & "item_quantity" & ","
+		field_values=field_values & item_quantity & ","
+	end if
+	if(Len(item_price)>0) THEN
+	  Call Numberize(item_price)
+		field_names=field_names & "item_price" & ","
+		field_values=field_values&item_price & ","
+	end if
+	if(Len(item_cost)>0) THEN
+		Call Numberize(item_cost)
+		field_names=field_names & "item_cost" & ","
+		field_values=field_values&item_cost & ","
+	end if
+	
+	field_names=field_names & "item_mode" & ","
+	field_values=field_values & str_mode & ","
+	
+	if(b_taxable) then
+	  field_names=field_names & "item_taxable" & ","
+	  field_values=field_values & "0,"
+	else
+	  field_names=field_names & "item_taxable" & ","
+	  field_values=field_values & "1,"
+	end if
+	
+	if IsNumeric(str_weight) then
+	else
+		str_weight = 0
+	end if
+	
+	field_names=field_names & "item_weight" & ","
+	field_values=field_values & str_weight & ","
+	
+	if(Len(str_options)>0) THEN
+		field_names=field_names & "item_options" & ","
+		field_values=field_values&"'"&CheckString(str_options)&"',"
+	end if
+			
+	'strip the trailing commas
+	field_names = Left(field_names,Len(field_names)-1)
+	field_values = Left(field_values,Len(field_values)-1)
+		
+	str_sql="INSERT INTO :9_quote_item (" & field_names & ") VALUES(" & field_values & ")"
+	str_sql = Replace(str_sql, ":9", Session("StoreID"))
+	
+	dbconn.Execute str_sql
+	dbconn.Close
+	AddQuotedItems=true
+	
+	
+end function
+
+</script>

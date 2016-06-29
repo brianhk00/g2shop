@@ -1,0 +1,1196 @@
+<!-- #INCLUDE File="xt_html_statusmsg.phtml" -->
+
+<SCRIPT LANGUAGE=VBScript RUNAT=Server>
+function AddNewOrder(ByRef str_db,ByRef str_cid, ByRef str_orderid,ByRef status_msg_hldr, _
+						ByRef num_tax, ByRef num_sh, ByRef num_total, ByRef sh_method, ByRef str_comment, ByRef po_number,_
+						ByRef coupon_id, ByRef discount,ByRef str_validation_number, ByRef str_ref_number, ByRef str_cvv2,_
+						ByRef num_tax_rate,	ByRef i_tax_on_sh,_
+						ByRef str_UDF01, ByRef str_UDF02, ByRef str_UDF03, ByRef str_UDF04, ByRef str_UDF05,_
+						ByRef str_status)
+
+	dim sql,rs
+	Dim field_names,field_values,str_sql
+
+	if((str_orderid="")Or(str_db="")Or(str_cid="")) then
+		AddToHTMLMsgHldr status_msg_hldr,"Insuffiecient info specified to add new order.",true
+		AddNewOrder=false
+		exit function
+	end if
+	 	
+	sql="SELECT * FROM :9_shopper WHERE (shopper_id='" & str_cid & "')"
+	sql = Replace(sql, ":9", Session("StoreID"))
+	set rs=server.CreateObject("ADODB.Recordset")
+	rs.Open sql,str_db
+		
+	if(rs.EOF) then
+		AddNewOrder = false
+		exit function
+	end if
+	
+	'Get values from shooper table
+	str_shopper_email = rs("Email")
+	str_shopper_firstname = rs("FirstName")
+	str_shopper_lastname = rs("LastName")
+	str_ccname = str_shopper_firstname & " " & str_shopper_lastname
+	str_ccaddress = Trim(rs("Address"))
+	str_cccity = Trim(rs("City"))
+	str_ccstate = Trim(rs("State"))
+	str_cczip = Trim(rs("ZipCode"))
+	str_cccountry = Trim(rs("Country"))
+	str_shopper_phone = Trim(rs("Phone"))
+	str_shopper_fax = Trim(rs("Fax"))
+	str_shopper_title = Trim(rs("Title"))
+	
+	str_shopper_company_id = rs("company_id")
+	str_shopper_company_name = rs("Company")
+	
+	b_isSameAddress = rs("IsSameAddress")
+	
+	str_ship_firstname = Trim(rs("shipping_FirstName"))
+	str_ship_lastname = Trim(rs("shipping_LastName"))
+	str_ship_address = Trim(rs("shipping_Address"))
+	str_ship_city = Trim(rs("shipping_City"))
+	str_ship_zip = Trim(rs("shipping_ZipCode"))
+	str_ship_st = Trim(rs("shipping_State"))
+	str_ship_country = Trim(rs("shipping_Country"))
+	str_ship_phone = Trim(rs("shipping_Phone"))
+	
+	str_paymentmethod = Trim(rs("CC_Type"))
+	str_cctype = Trim(rs("CC_Type"))
+	str_ccnum = Trim(rs("CC_Number"))
+	str_ccexpmonth = Trim(rs("CC_ExpMonth"))
+	str_ccexpyear = Trim(rs("CC_ExpYear"))
+	str_ccauthcode = ""
+	
+	str_ship_company = Trim(rs("shipping_company"))
+	
+	if b_isSameAddress then
+		str_ship_lastname = str_shopper_lastname
+		str_ship_firstname = str_shopper_firstname
+		str_ship_address = str_ccaddress
+		str_ship_city = str_cccity
+		str_ship_st = str_ccstate
+		str_ship_zip = str_cczip
+		str_ship_phone = str_shopper_phone
+		str_ship_country = str_cccountry
+		str_ship_company = str_shopper_company_name
+	end if
+		
+	str_purchasedate = Now()
+
+	shopper_salesrep_id = Trim(rs("salesrep_id"))
+	
+	shopper_master_account_id = Trim(rs("master_account_id"))
+	
+	'Get first name and last name..
+	if Len(shopper_master_account_id) > 0 then
+		sql = "SELECT FirstName, LastName FROM " & Session("StoreID") & "_shopper WHERE shopper_id='" & shopper_master_account_id & "'"
+		set rs1 =server.CreateObject("ADODB.Recordset")
+		rs1.Open sql,str_db
+			
+		if not rs1.EOF then
+			shopper_master_account_first_name = rs1("FirstName")
+			shopper_master_account_last_name = rs1("LastName")
+		end if
+		
+		rs1.Close
+	end if
+
+	rs.Close
+	
+	if Len(str_shopper_company_id) > 0 then
+		sql="SELECT * FROM :9_company WHERE company_id=" & str_shopper_company_id
+		sql = Replace(sql, ":9", Session("StoreID"))
+		set rs=server.CreateObject("ADODB.Recordset")
+		rs.Open sql,str_db
+			
+		if not rs.EOF then
+			str_shopper_company_name = rs("company_name")
+			str_shopper_company_address = rs("company_address")
+			str_shopper_company_city = rs("company_city")
+			str_shopper_company_state = rs("company_state")
+			str_shopper_company_zip = rs("company_zip")
+		end if
+		
+		rs.Close
+	end if
+	
+	if i_tax_on_sh = "1" then
+	else
+		i_tax_on_sh = "0"
+	end if
+	
+	order_dest_country = str_ship_country
+	if order_dest_country = "" OR order_dest_country = "USA" then
+		order_dest_country = "US"
+	end if
+	if Session("ENABLEINT") = "2" OR Session("ENABLEINT") = "3" then
+		order_orig_country = "CA"
+	else
+		order_orig_country = "US"
+	end if
+	
+	sh_method = GetCarrierServiceName(sh_method,order_orig_country,order_dest_country)
+	
+	'Check sh method...
+	SELECT CASE sh_method
+	CASE "U01"
+		if (Session("ENABLEINT") = "2" OR Session("ENABLEINT")="3") then
+			sh_method = "UPS Express"
+		else
+			sh_method = "UPS Next Day Air"
+		end if
+	CASE "U02"
+		if (Session("ENABLEINT") = "2" OR Session("ENABLEINT")="3") then
+			sh_method = "UPS Expedited"
+		else
+			sh_method = "UPS 2nd Day Air"
+		end if
+	CASE "U03"
+		sh_method = "UPS Ground"
+	CASE "U07"
+		sh_method = "UPS Worldwide Express"
+	CASE "U08"
+		sh_method = "UPS Worldwide Expedited"
+	CASE "U11"
+		sh_method = "UPS Standard"
+	CASE "U12"
+		sh_method = "UPS 3-Day Select"
+	CASE "U13"
+		if (Session("ENABLEINT") = "2" OR Session("ENABLEINT")="3") then
+			sh_method = "UPS Express Saver"
+		else
+			sh_method = "UPS Next Day Air Saver"
+		end if
+	CASE "U14"
+		if (Session("ENABLEINT") = "2" OR Session("ENABLEINT")="3") then
+			sh_method = "UPS Express Early"
+		else
+			sh_method = "UPS Next Day Air Early AM"
+		end if
+	CASE "U54"
+		sh_method = "UPS Worldwide Express Plus"
+	CASE "U59"
+		sh_method = "UPS 2nd Day Air AM"
+	CASE "U65"
+		sh_method = "UPS Express Saver"
+	END SELECT
+	
+	
+	Set Cnxn = Server.CreateObject("ADODB.Connection")
+	Cnxn.Open Session("ConnectionString")
+			
+	if Len(Session("PARTNER")) > 0 then
+		'check affiliate setting...
+		sql = "SELECT user_expiration,user_duration,onetime_payment FROM :9_affiliate WHERE affiliate_id='" & Session("PARTNER") & "'"
+		sql = Replace(sql, ":9", Session("StoreID"))
+
+
+		set rsAff = Cnxn.execute(sql)
+		
+			if not rsAff.EOF then
+				user_expiration = rsAff("user_expiration")
+				if user_expiration =  1 then
+					user_duration = rsAff("user_duration")
+				end if
+				onetime_payment = rsAff("onetime_payment")
+			end if
+		
+		rsAff.close
+	end if
+	
+	
+	'===============================================================================
+	'NEED TO OVERRIDE Billing and Shipping Address...
+	sql = "SELECT * FROM " & Session("StoreID") & "_shopper_billing_address WHERE billing_shopper_id = '" & str_cid & "' AND billing_set_default=1"
+	set rsBillingAddress = conn.Execute(sql)
+	if not rsBillingAddress.EOF then
+	
+		alt_billing_address_id = Trim(rsBillingAddress("billing_address_id"))
+		alt_billing_address_name = Trim(rsBillingAddress("billing_address_name"))
+		alt_billing_firstname = Trim(rsBillingAddress("billing_firstname"))
+		alt_billing_lastname = Trim(rsBillingAddress("billing_lastname"))
+		alt_billing_address = Trim(rsBillingAddress("billing_address"))
+		alt_billing_city = Trim(rsBillingAddress("billing_city"))
+		alt_billing_state = Trim(rsBillingAddress("billing_state"))
+		alt_billing_zip = Trim(rsBillingAddress("billing_zip"))
+		alt_billing_country = Trim(rsBillingAddress("billing_country"))
+		alt_billing_phone = Trim(rsBillingAddress("billing_phone"))
+		alt_billing_default = Trim(rsBillingAddress("billing_set_default"))
+		alt_billing_cc_type= Trim(rsBillingAddress("CC_Type"))
+		alt_billing_cc_number = Trim(rsBillingAddress("CC_Number"))
+		alt_billing_cc_expmonth = Trim(rsBillingAddress("CC_ExpMonth"))
+		alt_billing_cc_expyear = Trim(rsBillingAddress("CC_ExpYear"))
+		alt_billing_company = Trim(rsBillingAddress("bill_company"))
+		
+		alt_name_on_card = Trim(rsBillingAddress("NameOnCard"))
+		
+		if IsNumeric(alt_billing_cc_expmonth) then
+		else
+			alt_billing_cc_expmonth = "01"
+		end if
+		
+		if IsNumeric(alt_billing_cc_expyear) then
+		else
+			alt_billing_cc_expyear = "2005"
+		end if
+		
+		if Len(alt_billing_address) > 20 then
+			alt_billing_address1 = Left(alt_billing_address,20)
+		else
+			alt_billing_address1 = alt_billing_address
+		end if
+		
+		if alt_billing_default = 1 then
+			
+			str_shopper_firstname = alt_billing_firstname
+			str_shopper_lastname = alt_billing_lastname
+			
+			str_ccname = alt_billing_firstname & " " & alt_billing_lastname
+			
+			str_paymentmethod = alt_billing_cc_type
+			str_cctype = alt_billing_cc_type
+			str_ccnum = alt_billing_cc_number
+			str_ccexpmonth = alt_billing_cc_expmonth
+			str_ccexpyear = alt_billing_cc_expyear
+			
+			str_ccaddress = alt_billing_address
+			str_cccity = alt_billing_city
+			str_ccstate =alt_billing_state
+			str_cczip =alt_billing_zip
+			str_cccountry = alt_billing_country
+	
+		end if
+		
+	end if
+	
+	rsBillingAddress.Close
+	
+	sql = "SELECT * FROM " & Session("StoreID") & "_shopper_shipping_address WHERE shopper_id = '" & str_cid & "' AND set_default=1"
+	set rsShippingAddress = conn.Execute(sql)
+	if not rsShippingAddress.EOF then
+	
+		alt_shipping_address_id = Trim(rsShippingAddress("address_id"))
+		alt_shipping_address_name = Trim(rsShippingAddress("address_name"))
+		alt_shipping_firstname = Trim(rsShippingAddress("firstname"))
+		alt_shipping_lastname = Trim(rsShippingAddress("lastname"))
+		alt_shipping_address = Trim(rsShippingAddress("address"))
+		alt_shipping_city = Trim(rsShippingAddress("city"))
+		alt_shipping_state = Trim(rsShippingAddress("state"))
+		alt_shipping_zip = Trim(rsShippingAddress("zip"))
+		alt_shipping_country = Trim(rsShippingAddress("country"))
+		alt_shipping_phone = Trim(rsShippingAddress("phone"))
+		alt_shipping_default = Trim(rsShippingAddress("set_default"))
+		alt_shipping_company = Trim(rsShippingAddress("company"))	
+		
+		str_ship_firstname = alt_shipping_firstname
+		str_ship_lastname = alt_shipping_lastname
+		str_ship_address = alt_shipping_address
+		str_ship_city = alt_shipping_city
+		str_ship_st = alt_shipping_state
+		str_ship_zip = alt_shipping_zip
+		str_ship_phone = alt_shipping_phone
+		str_ship_company = alt_shipping_company
+		str_ship_country = alt_shipping_country
+	
+	end if
+	rsShippingAddress.Close
+	
+	'=====================================================================
+	
+	if Len(Session("ALT_SH_FIRSTNAME")) > 0 AND Len(Session("ALT_SH_LASTNAME")) > 0 AND Len(Session("ALT_SH_ADDRESS1")) > 0 AND Len(Session("ALT_SH_CITY")) > 0 AND Len(Session("ALT_SH_STATE")) > 0 AND Len(Session("ALT_SH_ZIP")) > 0 then
+	  
+	  str_ship_firstname = Session("ALT_SH_FIRSTNAME")
+		str_ship_lastname = Session("ALT_SH_LASTNAME")
+		str_ship_address = Session("ALT_SH_ADDRESS1")
+		str_ship_city = Session("ALT_SH_CITY")
+		str_ship_st = Session("ALT_SH_STATE")
+		str_ship_zip = Session("ALT_SH_ZIP")
+		str_ship_phone = Session("ALT_SH_PHONE")
+		str_ship_company = Session("ALT_SH_COMPANYNAME")
+		str_ship_country = Session("ALT_SH_COUNTRY")
+		
+	end if
+	
+	'======================================================================
+	' RC4
+	if Len(str_ccnum) > 0 then
+		if IsRC4Encrypted(str_ccnum) then
+		else
+			str_ccnum = EnDeCrypt(str_ccnum, Session("STORE_OP"))
+		end if
+	end if
+	'=====================================================================
+	'Overwrite Tax for CANADA...
+	if Session("ENABLEINT") = "2" OR Session("ENABLEINT") = "3" then
+	  num_taxable_total = 0
+	  num_taxable_total = num_total - num_tax - num_sh
+  	
+  	num_tax_rate = 0
+  	num_tax_rate_gst = 0
+		num_tax_rate_pst = 0
+  	
+  	n_tax = 0
+	  n_tax1 = 0
+	  n_tax2 = 0
+  	
+	  if GetClientSalesTaxRateCA(Session("ConnectionString"), str_ship_st, str_ship_zip, n_tax1, n_tax2, Session("shopper_id"))then
+  	
+  	  if n_tax1 > 0 then
+			  num_tax_rate_gst = n_tax1
+				num_tax_rate = num_tax_rate + n_tax1
+				n_tax1 = Round((n_tax1/100) * num_taxable_total ,2)
+			end if
+			
+			if n_tax2 > 0 then
+			
+			  num_tax_rate_pst = n_tax2
+				num_tax_rate = num_tax_rate + n_tax2
+				
+				if str_ship_st = "Quebec" OR str_ship_st = "QC" then
+		      n_tax2 = Round((n_tax2/100)*(num_taxable_total+ n_tax1) ,2)
+		    else
+		      n_tax2 = Round((n_tax2/100)*(num_taxable_total) ,2)
+		    end if
+		    				
+			else
+				n_tax2 = 0
+			end if
+			
+    end if
+    
+    num_total = num_taxable_total + n_tax1 + n_tax2 + num_sh
+    
+  end if
+  
+	'===============================================================================
+
+	Set rsNewOrder = Server.CreateObject("ADODB.Recordset")
+	with rsNewOrder
+		.ActiveConnection = Cnxn
+		.CursorLocation = 3 'adUseClient
+		.CursorType = 1 'adOpenKeyset
+		.LockType = 3 'adLockOptimistic
+		.Source = Session("StoreID") & "_order"
+		.Open
+		.AddNew
+	end with
+	
+	'Update
+	rsNewOrder("order_id") = str_orderid
+	rsNewOrder("shopper_id") = str_cid
+	rsNewOrder("po_number") = po_number
+	rsNewOrder("date_entered") = str_purchasedate
+	rsNewOrder("date_changed") = str_purchasedate
+	
+	rsNewOrder("ShipLastName") = str_ship_lastname
+	rsNewOrder("ShipFirstName") = str_ship_firstname
+	rsNewOrder("ShipAddress") = str_ship_address
+	rsNewOrder("ShipCity") = str_ship_city
+	rsNewOrder("ShipState") = str_ship_st
+	rsNewOrder("ShipPhone") = str_ship_phone
+	rsNewOrder("ShipZIP") = str_ship_zip
+	rsNewOrder("ShipCountry") = str_ship_country
+	
+	rsNewOrder("PaymentMethod") = str_paymentmethod
+	rsNewOrder("CardType") = str_cctype
+	
+	if Len(str_ccname) > 1 then
+	  rsNewOrder("CardName") = str_ccname
+	else
+	  rsNewOrder("CardName") = str_ship_firstname & " " & str_ship_lastname
+	end if
+	
+	rsNewOrder("CardNumber") = str_ccnum
+	
+	rsNewOrder("CardExpirationMonth") = str_ccexpmonth
+	rsNewOrder("CardExpirationYear") = str_ccexpyear
+	
+	rsNewOrder("CardAddress") = str_ccaddress
+	rsNewOrder("CardCity") = str_cccity
+	rsNewOrder("CardState") = str_ccstate
+	rsNewOrder("CardZip") = str_cczip
+	rsNewOrder("CardCountry") = str_cccountry
+	
+	rsNewOrder("AuthNumber") = str_validation_number
+	rsNewOrder("RefNumber") = str_ref_number
+	
+	if Session("ENABLEINT") = "2" OR Session("ENABLEINT") = "3" then
+	  rsNewOrder("Tax") = n_tax1
+	  rsNewOrder("Tax2") = n_tax2
+	  rsNewOrder("order_tax_rate") = num_tax_rate_gst
+	  rsNewOrder("order_tax_rate2") = num_tax_rate_pst
+	else
+	  rsNewOrder("Tax") = num_tax
+	  rsNewOrder("order_tax_rate") = num_tax_rate
+	end if
+	
+	rsNewOrder("SH") = num_sh
+	rsNewOrder("SH_Method") = sh_method
+	rsNewOrder("Total") = num_total
+	
+	rsNewOrder("Order_Comments") = str_comment
+	
+	rsNewOrder("coupon_id") = coupon_id
+
+	rsNewOrder("discount_amount") = 0
+		
+	rsNewOrder("bill_company") = str_shopper_company_name
+	rsNewOrder("ship_company") = str_ship_company
+	
+	rsNewOrder("bill_contact") = str_ccname
+	rsNewOrder("ship_contact") = str_ship_firstname & " " & str_ship_lastname
+	
+	rsNewOrder("cvv_info") = str_cvv2
+	rsNewOrder("bill_phone") = str_shopper_phone
+	
+	rsNewOrder("company_id") = str_shopper_company_id
+	rsNewOrder("company_name") = str_shopper_company_name
+	rsNewOrder("company_address") = str_shopper_company_address
+	rsNewOrder("company_city") = str_shopper_company_city
+	rsNewOrder("company_state") = str_shopper_company_state
+	rsNewOrder("company_zip") = str_shopper_company_zip
+	
+	if Len(str_shopper_firstname) > 0 then
+	  rsNewOrder("shopper_firstname") = str_shopper_firstname
+	else
+	  rsNewOrder("shopper_firstname") = str_ship_firstname
+	end if
+	
+	if Len(str_shopper_lastname) > 0 then
+	  rsNewOrder("shopper_lastname") = str_shopper_lastname
+	else
+	  rsNewOrder("shopper_lastname") = str_ship_lastname
+	end if
+	
+	'rsNewOrder("shopper_lastname") = str_shopper_lastname
+	rsNewOrder("shopper_email") = str_shopper_email
+	rsNewOrder("shopper_phone") = str_shopper_phone
+	rsNewOrder("shopper_fax") = str_shopper_fax
+	rsNewOrder("shopper_title") = str_shopper_title
+	
+	rsNewOrder("tax_on_SH") = i_tax_on_sh
+	rsNewOrder("order_ip_addr") = Request.ServerVariables("REMOTE_ADDR")
+
+	rsNewOrder("salesrep_id") = shopper_salesrep_id
+	
+
+	if len(Session("PARTNER")) > 0 then
+		if user_expiration =  1 then
+			if user_duration > DateDiff("d", Session("Expiration"), Now) then
+				rsNewOrder("affiliate_flag") = 0
+				rsNewOrder("affiliate_id") = CStr(Session("PARTNER"))
+			end if
+		else
+			rsNewOrder("affiliate_flag") = 0
+			rsNewOrder("affiliate_id") = CStr(Session("PARTNER"))
+		end if
+
+		if onetime_payment = "1" then
+			rsNewOrder("affiliate_flag") = 0
+			rsNewOrder("affiliate_id") = CStr(Session("PARTNER")) & "-OT"
+			Session("PARTNER") = Session("PARTNER") & "-OT"
+		end if
+		
+	end if
+
+	if Len(quote_id) > 0 then
+	else
+	  if (str_status = "GCheckout") then
+	  else
+		  sREFERER = GetSession(Session("SESSIONKEY"), "sREFERER")
+		  if Len(sREFERER) > 200 then
+			  sREFERER = Left(sREFERER, 195)
+		  end if
+		  rsNewOrder("referer_url") = sREFERER
+		end if
+	end if
+
+	rsNewOrder("order_version") = Session("SYS_VERSION")
+	
+	'Save Master Account Information...
+	rsNewOrder("master_account_id") = shopper_master_account_id
+	rsNewOrder("master_account_first_name") = shopper_master_account_first_name
+	rsNewOrder("master_account_last_name") = shopper_master_account_last_name
+	
+	rsNewOrder("UDF01") = str_UDF01
+	rsNewOrder("UDF02") = str_UDF02
+	rsNewOrder("UDF03") = str_UDF03
+	rsNewOrder("UDF04") = str_UDF04
+	rsNewOrder("UDF05") = str_UDF05
+	
+	rsNewOrder("bill_contact_firstname") = str_shopper_firstname 
+	rsNewOrder("bill_contact_lastname") = str_shopper_lastname
+	rsNewOrder("billing_address_id") = "0"
+	rsNewOrder("shipping_address_id") = "0"
+	
+	If Cnxn.Errors.Count > 0 Then
+		'DB Error occurred.. clean up...
+		Cnxn.Errors.Clear
+		rsNewOrder.CancelUpdate
+				
+		AddNewOrder = false
+	else
+		rsNewOrder.Update
+		
+		AddNewOrder = true
+				
+	End If
+
+	rsNewOrder.Close
+	Cnxn.Close
+	
+end function
+
+' ############################################################################
+' JERRY add at 2009/08/17
+' ############################################################################
+Function AddOrderdItemByGoogleCheckOut(ByRef str_db, ByRef str_orderid,_
+						ByRef str_rowid, ByRef str_sku, ByRef str_name, ByRef item_quantity,_
+						ByRef item_price, ByRef str_options, ByRef str_description)
+
+	if((str_orderid="")Or(str_db="")Or(str_rowid="")) then
+		AddOrderdItemByGoogleCheckOut = false
+		exit function
+	end If
+	
+	Set ConnAddOrderItem = Server.CreateObject("ADODB.Connection")
+	ConnAddOrderItem.open str_db
+
+	strSql = "INSERT INTO " & Session("StoreID") & "_order_item (order_id, row_id, sku, options, quantity, "
+	strSql = strSql & "adjusted_price, item_description) VALUES ('" & str_orderid & "', '" & str_rowid & "', '"
+	strSql = strSql & str_sku & "', '" & str_options & "', '" & item_quantity & "', '" & item_price & "', '"
+	strSql = strSql & str_description & "')"
+	
+	ConnAddOrderItem.Execute(strSql)
+	ConnAddOrderItem.Close
+End function
+
+
+
+function AddOrderedItems(ByRef str_db,ByRef str_orderid,_
+						ByRef str_rowid, ByRef str_sku, ByRef str_name, ByRef item_quantity,_
+						ByRef item_price, ByRef str_options, ByRef str_mode,_
+						ByRef b_item_taxable, ByRef str_item_cost, ByRef str_item_opt_sku,_
+						ByRef str_item_weight, ByRef str_im_sku, ByRef str_td_sku, ByRef str_ec_sku,ByRef str_sn_sku)
+
+	Dim field_names,field_values,str_sql	
+	
+	if((str_orderid="")Or(str_db="")Or(str_rowid="")) then
+		AddOrderedItems=false
+		exit function
+	end if
+
+	call numberize(item_price)
+
+	Set dbconn=server.CreateObject("ADODB.Connection")
+	dbconn.Open str_db
+
+	Set rsNewOrderItem = Server.CreateObject("ADODB.Recordset")
+	with rsNewOrderItem
+		.ActiveConnection = dbconn
+		.CursorLocation = 3 'adUseClient
+		.CursorType = 1 'adOpenKeyset
+		.LockType = 3 'adLockOptimistic
+		.Source = Session("StoreID") & "_order_item WHERE order_id='0'"
+		.Open
+		.AddNew
+	end with
+
+	rsNewOrderItem("order_id") = str_orderid
+	rsNewOrderItem("row_id") = str_rowid
+	rsNewOrderItem("sku") = str_sku
+
+	if Len(str_name) > 100 then
+		str_name = Left(str_name, 96) & "..."
+	end if
+
+	rsNewOrderItem("item_description") = str_name
+	rsNewOrderItem("quantity") = item_quantity
+	rsNewOrderItem("adjusted_price") = item_price
+	rsNewOrderItem("options") = str_options
+	rsNewOrderItem("row_mode") = str_mode
+	if(b_item_taxable) then
+		rsNewOrderItem("item_taxable") = 0
+	else
+		rsNewOrderItem("item_taxable") = 1
+	end if
+
+	if(Len(str_item_cost)>0) then
+		if IsNumeric(str_item_cost) then
+			Call Numberize(str_item_cost)
+			rsNewOrderItem("item_cost") = str_item_cost
+		end if
+	end if
+
+	rsNewOrderItem("item_sku2") = str_item_opt_sku
+	
+	if IsNumeric(str_item_weight) then
+	else
+		str_item_weight = 0
+	end if
+
+	rsNewOrderItem("item_weight") = str_item_weight
+	rsNewOrderItem("item_IM_part_number") = str_im_sku
+	rsNewOrderItem("item_TD_part_number") = str_td_sku
+	rsNewOrderItem("item_eConnect_part_number") = str_ec_sku
+	rsNewOrderItem("item_SN_part_number") = str_sn_sku
+
+	rsNewOrderItem.Update
+	rsNewOrderItem.close		
+
+	if Session("IV_MODE")="2" OR  Session("IV_MODE")="3" then
+
+		sql = "SELECT bundle_flag FROM " & Session("StoreID") & "_product WHERE pf_id='" & str_sku & "'"
+		set rsInv = dbconn.Execute(sql)
+		if not rsInv.EOF then
+			prod_bundle_flag = rsInv(0)
+		else
+			prod_bundle_flag = 0
+		end if
+		rsInv.Close
+
+		if prod_bundle_flag = 1 then
+
+			iisql = "SELECT pf_id2 FROM " & Session("StoreID") & "_prod_cross WHERE pf_id1='" & str_sku & "'"
+			set rsBundle = Conn.Execute(iisql)
+			do while not rsBundle.EOF
+				str_sql = "UPDATE " & Session("StoreID") & "_product SET stock=stock-" & item_quantity & " WHERE pf_id='" & rsBundle(0) & "'"
+				dbconn.Execute str_sql
+				rsBundle.MoveNext
+			loop
+			rsBundle.close
+		else
+			str_sql = "UPDATE " & Session("StoreID") & "_product SET stock=stock-" & item_quantity & " WHERE pf_id='" & str_sku & "' AND stock > 0"
+			dbconn.Execute str_sql
+		end if
+		
+	end if
+
+	dbconn.Close
+	AddOrderedItems=true
+	
+	
+end function
+
+function GetClientShippingCharge(ByRef str_db, ByRef sh_charge, ByRef sh_method, _
+							ByRef total_item, ByRef total_price, ByRef total_weight,_
+							ByRef str_orig_postal, ByRef str_ups_flags)
+
+	dim basis
+	
+	if((str_db="")) then
+		GetClientShippingCharge=false
+		exit function	
+	end if
+
+	Set dbconn = Server.CreateObject("ADODB.Connection")
+	dbconn.open Session("ConnectionString")
+	
+	strSQL = "SELECT sh_method,sh_flatrate,sh_basis,Zip,sh_ups_flags FROM :9_profile"
+	strSQL = Replace(strSQL, ":9", Session("StoreID"))
+
+	Set rsProfile = dbconn.Execute(strSQL)
+	
+	sh_method = rsProfile("sh_method")
+	str_orig_postal = rsProfile("Zip")
+	str_ups_flags = rsProfile("sh_ups_flags")
+	
+	'Flat Rate
+	if rsProfile("sh_method") = 0 then
+		sh_charge = rsProfile("sh_flatrate")
+	end if
+	
+	'Custom Table
+	if rsProfile("sh_method") = 1 then
+	
+		if rsProfile("sh_basis") = 0 then
+			basis = total_price
+		end if
+		
+		if rsProfile("sh_basis") = 1 then
+			basis = total_weight
+		end if
+		
+		if rsProfile("sh_basis") = 2 then
+			basis = total_item
+		end if
+		
+		
+		strSQL = "SELECT * FROM :9_custom_shipping ORDER BY range_from"
+		strSQL = Replace(strSQL, ":9", Session("StoreID"))
+
+		Set rsCustom = Conn.Execute(strSQL)
+		
+		do while not rsCustom.EOF
+		
+			if rsCustom("range_from") <= basis then
+				sh_charge = rsCustom("range_charge")
+			end if
+			
+			rsCustom.MoveNext
+		
+		loop
+		
+		rsCustom.Close
+	
+	end if
+	
+	'UPS Table
+	if rsProfile("sh_method") = 2 then
+		sh_charge = 0
+	end if
+	
+	rsProfile.Close
+	dbconn.Close
+	
+	GetClientShippingCharge = true
+end function
+
+function DeleteOrder(ByRef str_db, ByRef str_order_id)
+
+	Set dbconn=server.CreateObject("ADODB.Connection")
+	dbconn.Open str_db
+	
+	str_sql="DELETE FROM :9_order WHERE order_id='" & str_order_id & "'"
+	str_sql = Replace(str_sql, ":9", Session("StoreID"))
+
+	dbconn.Execute str_sql
+
+	str_sql="DELETE FROM :9_order_item WHERE order_id='" & str_order_id & "'"
+	str_sql = Replace(str_sql, ":9", Session("StoreID"))
+
+	dbconn.Execute str_sql
+
+	DeleteOrder = true
+
+end function
+
+
+function AddShoppingCartItemToOrder(ByRef ar_shoppingcart, ByRef str_orderid, ByRef basket_item_count)
+
+	Set Cnxn = Server.CreateObject("ADODB.Connection")
+	Cnxn.Open Session("ConnectionString")
+
+	'=================================================
+	' ADDED BY BK - for payment specific discount...
+	'=================================================
+	b_need_payment_discount = false
+
+	'GET EXTRA INFO ABOUT ORDER
+	sql = "SELECT CardType FROM " & Session("StoreID") & "_order WHERE order_id='" & str_orderid & "'"
+	set rsOD = Cnxn.Execute(sql)
+	if not rsOD.EOF then
+		od_payment_method = Trim(rsOD(0))
+	end if
+	rsOD.Close
+
+	if NOT (od_payment_method="visa" or od_payment_method="mc" or od_payment_method="discover" or od_payment_method="amex")then
+		'Check profile for extra setting..
+		sql = ""
+
+		SELECT CASE od_payment_method
+		CASE "billme"
+			sql = "SELECT billme_discount FROM " & Session("StoreID") & "_profile"
+		CASE "cod"
+			sql = "SELECT cod_discount FROM " & Session("StoreID") & "_profile"
+		CASE "willcall"
+			sql = "SELECT willcall_discount FROM " & Session("StoreID") & "_profile"
+		CASE ELSE
+
+			xsql = "SELECT payment_option1,payment_option2,payment_option3,payment_option4 FROM " & Session("StoreID") & "_profile"
+			set rsPR = Cnxn.Execute(xsql)
+			if not rsPR.EOF then
+
+				if Len(rsPR(3)) > 0 then
+					if rsPR(3) = od_payment_method then
+						sql = "SELECT payment_option4_discount FROM " & Session("StoreID") & "_profile"
+					end if
+				end if
+
+				if Len(rsPR(2)) > 0 then
+					if rsPR(2) = od_payment_method then
+						sql = "SELECT payment_option3_discount FROM " & Session("StoreID") & "_profile"
+					end if
+				end if
+
+				if Len(rsPR(1)) > 0 then
+					if rsPR(1) = od_payment_method then
+						sql = "SELECT payment_option2_discount FROM " & Session("StoreID") & "_profile"
+					end if
+				end if
+
+				if Len(rsPR(0)) > 0 then
+					if rsPR(0) = od_payment_method then
+						sql = "SELECT payment_option1_discount FROM " & Session("StoreID") & "_profile"
+					end if
+				end if
+
+			end if
+			rsPR.Close
+
+		END SELECT
+
+		if Len(sql) > 0 then
+			
+			set rsPD = Cnxn.Execute(sql)
+			if not rsPD.EOF then
+				od_payment_discount = rsPD(0)
+			end if
+
+			if IsNumeric(od_payment_discount) then
+				b_need_payment_discount = true
+			else
+				od_payment_discount = 0
+			end if
+
+		end if
+
+	end if
+
+	'=================================================
+
+	j = 1
+	od_payment_discount_total = 0
+
+	For i = 1 to basket_item_count
+
+		UnitPrice = ar_shoppingcart(cartProductUnitPrice, i)
+		if IsNumeric(cartProductUnitPrice) then
+			UnitPrice = FormatNumber(UnitPrice, 2)
+			if ar_shoppingcart(cartProductMode, i) = "9" then
+			else
+				if UnitPrice <= 0 then
+					UnitPrice = 0
+				end if
+			end if
+		end if
+
+		UnitNumber = CInt(ar_shoppingcart(cartOrderQuantity, i))
+
+		Set rsNewOrderItem = Server.CreateObject("ADODB.Recordset")
+		with rsNewOrderItem
+			.ActiveConnection = Cnxn
+			.CursorLocation = 3 'adUseClient
+			.CursorType = 1 'adOpenKeyset
+			.LockType = 3 'adLockOptimistic
+			.Source = Session("StoreID") & "_order_item"
+			.Open
+			.AddNew
+		end with
+
+		rsNewOrderItem("order_id") = str_orderid
+		rsNewOrderItem("row_id") = j
+		rsNewOrderItem("sku") = ar_shoppingcart(cartProductID, i)
+
+		if Len(ar_shoppingcart(cartProductName, i)) > 100 then
+			str_name = Left(ar_shoppingcart(cartProductName, i), 96) & "..."
+		else
+			str_name = ar_shoppingcart(cartProductName, i)
+		end if
+		rsNewOrderItem("item_description") = str_name
+
+		rsNewOrderItem("quantity") = UnitNumber
+
+		if b_need_payment_discount then
+			rsNewOrderItem("adjusted_price") = UnitPrice - (UnitPrice * od_payment_discount/100)
+			od_payment_discount_total = od_payment_discount_total + (UnitPrice * od_payment_discount/100)*UnitNumber
+		else
+			rsNewOrderItem("adjusted_price") = UnitPrice
+		end if
+
+
+		rsNewOrderItem("options") = ar_shoppingcart(cartOptions, i)
+		rsNewOrderItem("row_mode") = ar_shoppingcart(cartProductMode, i)
+		if(ar_shoppingcart(cartTaxable, i)) then
+			rsNewOrderItem("item_taxable") = 0
+		else
+			rsNewOrderItem("item_taxable") = 1
+		end if
+
+		str_item_cost = ar_shoppingcart(cartProductUnitCost, i)
+		if(Len(str_item_cost)>0) then
+			if IsNumeric(str_item_cost) then
+				Call Numberize(str_item_cost)
+				rsNewOrderItem("item_cost") = str_item_cost
+			end if
+		end if
+
+		rsNewOrderItem("item_sku2") = ar_shoppingcart(cartProductMfgNumber, i)
+
+		rsNewOrderItem("item_weight") = ar_shoppingcart(cartProductUnitWeight, i)
+		rsNewOrderItem("item_IM_part_number") = ar_shoppingcart(cartIMNumber, i)
+		rsNewOrderItem("item_TD_part_number") = ar_shoppingcart(cartTDNumber, i)
+		rsNewOrderItem("item_eConnect_part_number") = ar_shoppingcart(cartECNumber, i)
+		
+		rsNewOrderItem("item_mfg") = ar_shoppingcart(cartMfg, i)
+		
+		rsNewOrderItem("item_SN_part_number") = ar_shoppingcart(cartSNNumber, i)
+		
+  	'2010/01/05 jerry added code
+		rsNewOrderItem("item_DH_part_number") = ar_shoppingcart(cartDHNumber, i)
+		
+
+		rsNewOrderItem.Update
+		rsNewOrderItem.close
+
+		j = j + 1
+
+		if Session("IV_MODE")="2" OR  Session("IV_MODE")="3" then
+			'str_sql = "UPDATE " & Session("StoreID") & "_product SET stock=stock-" & UnitNumber & " WHERE pf_id='" & ar_shoppingcart(cartProductID, i) & "' AND stock > 0"
+			'Cnxn.Execute str_sql
+
+			sql = "SELECT bundle_flag FROM " & Session("StoreID") & "_product WHERE pf_id='" & ar_shoppingcart(cartProductID, i) & "'"
+			set rsInv = Cnxn.Execute(sql)
+			if not rsInv.EOF then
+				prod_bundle_flag = rsInv(0)
+			else
+				prod_bundle_flag = 0
+			end if
+			rsInv.Close
+
+			if prod_bundle_flag = 1 then
+
+				iisql = "SELECT pf_id2 FROM " & Session("StoreID") & "_prod_cross WHERE pf_id1='" & ar_shoppingcart(cartProductID, i) & "'"
+				set rsBundle = Cnxn.Execute(iisql)
+				do while not rsBundle.EOF
+					str_sql = "UPDATE " & Session("StoreID") & "_product SET stock=stock-" & UnitNumber & " WHERE pf_id='" & rsBundle(0) & "'"
+					Cnxn.Execute str_sql
+					rsBundle.MoveNext
+				loop
+				rsBundle.close
+			else
+				str_sql = "UPDATE " & Session("StoreID") & "_product SET stock=stock-" & UnitNumber & " WHERE pf_id='" & ar_shoppingcart(cartProductID, i) & "' AND stock > 0"
+				Cnxn.Execute str_sql
+			end if
+
+
+
+		end if
+
+
+		od_warranty_total = 0
+
+		if Len(ar_shoppingcart(cartProductWarranty, i)) > 0 then
+		
+		  bWarranty2 = false
+			if Len(ARYShoppingCart(cartProductWarrantySelection, i)) > 2 then
+			
+			  bWarranty2 = true
+		    sql = "SELECT * FROM " & Session("StoreID") & "_warranty2 WHERE warranty_id='" & ARYShoppingCart(cartProductWarrantySelection, i) & "'"
+				set rsWarranty = Conn.Execute(sql)
+				if not rsWarranty.EOF then
+					x_warranty_name = Trim(rsWarranty("warranty_name"))
+				end if
+				rsWarranty.Close
+				
+				warranty_amount = "0.00"
+				
+        sql = "SELECT * FROM " & Session("StoreID") & "_warranty2_param WHERE warranty_id IN "
+        sql = sql & "(SELECT warranty_id FROM " & Session("StoreID") & "_warranty2_group_item WHERE warranty_group_id='" & ARYShoppingCart(cartProductWarranty, i) & "')"
+        set rsWarranty = Conn.Execute(sql)
+        do while not rsWarranty.EOF
+  		    
+          z_wid = rsWarranty("warranty_id")
+          z_value = rsWarranty("warranty_value")
+          z_flag = rsWarranty("warranty_flag")
+          z_min_price = rsWarranty("min_price")
+          z_max_price = rsWarranty("max_price")
+          
+          if rsWarranty("warranty_id") = ARYShoppingCart(cartProductWarrantySelection, i) then
+  		    
+            if z_min_price = 0 AND z_max_price = 0 then
+              z_apply_warranty = true
+            else
+              if CDbl(UnitPrice) >= z_min_price AND CDbl(UnitPrice) <= z_max_price then
+                z_apply_warranty = true
+              else
+                z_apply_warranty = false
+              end if
+            end if
+    		    
+            if z_apply_warranty then
+    		      
+              if z_flag = 1 then
+                z_warranty_amount = FormatNumber(rsWarranty("warranty_value"),2)
+              else
+                z_warranty_amount = UnitPrice * (rsWarranty("warranty_value")/100)
+              end if
+              
+              'z_warranty_amount = z_warranty_amount * UnitNumber
+    		      
+              sql1 = "SELECT warranty_name FROM " &  Session("StoreID") & "_warranty2 WHERE warranty_id='" & z_wid & "'"
+              set rsWarranty1 = Conn.Execute(sql1)
+              if not rsWarranty1.EOF then
+                z_warranty_name = Trim(rsWarranty1(0))
+              else
+                z_warranty_name = "Extended Warranty"
+              end if
+              rsWarranty1.Close
+              
+              warranty_amount =  FormatNumber(z_warranty_amount,2)
+              
+            end if
+            
+          end if
+          rsWarranty.MoveNext
+        loop
+        rsWarranty.Close
+        
+        x_order_item_sku = ARYShoppingCart(cartProductWarrantySelection, i)
+        x_order_item_desc = z_warranty_name
+        
+        'Add to Order Now..
+				Set rsNewOrderItem = Server.CreateObject("ADODB.Recordset")
+				with rsNewOrderItem
+					.ActiveConnection = Cnxn
+					.CursorLocation = 3 'adUseClient
+					.CursorType = 1 'adOpenKeyset
+					.LockType = 3 'adLockOptimistic
+					.Source = Session("StoreID") & "_order_item"
+					.Open
+					.AddNew
+				end with
+
+				rsNewOrderItem("order_id") = str_orderid
+				rsNewOrderItem("row_id") = j
+				rsNewOrderItem("sku") = x_order_item_sku
+				rsNewOrderItem("item_description") = x_order_item_desc
+				rsNewOrderItem("quantity") = UnitNumber
+				rsNewOrderItem("adjusted_price") = warranty_amount
+				rsNewOrderItem("options") = ""
+				rsNewOrderItem("row_mode") = 8
+				if Session("ENABLEINT") = "2" OR Session("ENABLEINT")="3" then
+					rsNewOrderItem("item_taxable") = 1
+				else
+					rsNewOrderItem("item_taxable") = 0
+				end if
+				rsNewOrderItem("item_cost") = 0
+
+				rsNewOrderItem("item_weight") = 0
+				rsNewOrderItem("item_IM_part_number") = ""
+				rsNewOrderItem("item_TD_part_number") = ""
+				rsNewOrderItem("item_eConnect_part_number") = ""
+				rsNewOrderItem("item_mfg") = ""
+				rsNewOrderItem("item_SN_part_number") = ""
+
+				od_warranty_total = od_warranty_total + warranty_amount * UnitNumber
+
+				rsNewOrderItem.Update
+				rsNewOrderItem.close
+
+
+				j = j + 1
+        
+		  end if
+		  
+		  '===========================================================================
+		  'OLD WARRANTY
+		  if bWarranty2 = false then
+		  if IsNumeric(ar_shoppingcart(cartProductWarrantySelection, i)) then
+			if CInt(ar_shoppingcart(cartProductWarrantySelection, i)) > 0 then
+
+				sql = "SELECT * FROM " & Session("StoreID") & "_warranty_item WHERE warranty_id='" & ARYShoppingCart(cartProductWarranty, i) & "' and row_id=" & ARYShoppingCart(cartProductWarrantySelection, i)
+				set rsWarranty = Conn.Execute(sql)
+
+				if not rsWarranty.EOF then
+					
+					if rsWarranty("warranty_item_flag") = 1 then
+						'amount
+						warranty_amount = rsWarranty("warranty_item_value")
+					else
+						warranty_amount = UnitPrice * (rsWarranty("warranty_item_value")/100)
+					end if
+
+					warranty_item_desc = rsWarranty("warranty_item_desc")
+
+					'warranty_amount = warranty_amount * UnitNumber
+
+					s_warranty_amount = FormatNumber(warranty_amount,2)
+
+				end if
+				rsWarranty.Close
+				
+				sql = "SELECT * FROM " & Session("StoreID") & "_warranty WHERE warranty_id='" & ARYShoppingCart(cartProductWarranty, i) & "'"
+				set rsWarranty = Conn.Execute(sql)
+				if not rsWarranty.EOF then
+					x_warranty_name = Trim(rsWarranty("warranty_name"))
+					x_warranty_display_name = Trim(rsWarranty("warranty_display_name"))
+					x_warranty_message = Trim(rsWarranty("warranty_message"))
+				end if
+				rsWarranty.Close
+				
+				x_order_item_sku = ar_shoppingcart(cartProductWarranty, i) & "-" & ar_shoppingcart(cartProductWarrantySelection, i)
+				x_order_item_desc = x_warranty_display_name & "-" & warranty_item_desc
+
+				'Add to Order Now..
+				Set rsNewOrderItem = Server.CreateObject("ADODB.Recordset")
+				with rsNewOrderItem
+					.ActiveConnection = Cnxn
+					.CursorLocation = 3 'adUseClient
+					.CursorType = 1 'adOpenKeyset
+					.LockType = 3 'adLockOptimistic
+					.Source = Session("StoreID") & "_order_item"
+					.Open
+					.AddNew
+				end with
+
+				rsNewOrderItem("order_id") = str_orderid
+				rsNewOrderItem("row_id") = j
+				rsNewOrderItem("sku") = x_order_item_sku
+				rsNewOrderItem("item_description") = x_order_item_desc
+				rsNewOrderItem("quantity") = UnitNumber
+				rsNewOrderItem("adjusted_price") = warranty_amount
+				rsNewOrderItem("options") = ""
+				rsNewOrderItem("row_mode") = 8
+				if Session("ENABLEINT") = "2" OR Session("ENABLEINT")="3" then
+					rsNewOrderItem("item_taxable") = 1
+				else
+					rsNewOrderItem("item_taxable") = 0
+				end if
+				rsNewOrderItem("item_cost") = 0
+
+				rsNewOrderItem("item_weight") = 0
+				rsNewOrderItem("item_IM_part_number") = ""
+				rsNewOrderItem("item_TD_part_number") = ""
+				rsNewOrderItem("item_eConnect_part_number") = ""
+				rsNewOrderItem("item_mfg") = ""
+				rsNewOrderItem("item_SN_part_number") = ""
+
+				od_warranty_total = od_warranty_total + warranty_amount * UnitNumber
+
+				rsNewOrderItem.Update
+				rsNewOrderItem.close
+
+
+				j = j + 1
+
+			end if
+			end if
+			end if
+			
+			'====================================================================================
+
+		end if
+
+	next
+
+	if b_need_payment_discount then
+		if od_payment_discount_total > 0 then
+			'UPDATE ORDER TOTAL...
+			'sql = "UPDATE " & Session("StoreID") & "_order SET Total = Total-" & CStr(od_payment_discount_total) & "+" & CStr(od_warranty_total) & " WHERE order_id='" & str_orderid & "'"
+			'Cnxn.Execute sql
+		end if
+	else
+		if od_warranty_total > 0 then
+			'sql = "UPDATE " & Session("StoreID") & "_order SET Total = Total" & "+" & CStr(od_warranty_total) & " WHERE order_id='" & str_orderid & "'"
+			'Cnxn.Execute sql
+		end if
+	end if
+
+	Cnxn.Close
+
+
+end function
+
+</script>

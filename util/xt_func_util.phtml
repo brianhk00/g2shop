@@ -1,0 +1,388 @@
+<script runat="server" language="vbscript">
+Function CheckEmailAddress(ByRef str_email)
+	' Returns True/False
+	' Checks for existance of @ and at least a "." in str_email.
+	
+	if((IsNull(str_email))or(IsEmpty(str_email))) then
+		CheckEmailAddress=false
+		Exit Function
+	end if
+	if(Len(str_email)<3) then
+		CheckEmailAddress=false
+		Exit Function
+	end if
+	if((InStr(str_email, "@")=0)or(InStr(str_email, ".")=0)) then
+		CheckEmailAddress=false
+		Exit Function
+	end if
+	CheckEmailAddress=true
+End Function
+
+function GetUniqueLongIntegerID()
+	'returns long integer based on system time
+	dim UTIME
+	UTIME=clng(DateDiff("s", "1/1/1970", Date) )
+	UTIME=UTIME + Clng(Hour(NOW)*3600) + Clng(Minute(NOW) * 60) + Clng(Second(NOW))
+	UTIME=UTIME + (3600 * 7)
+	GetUniqueLongIntegerID = CLng(UTIME)
+end function
+
+FUNCTION CheckString (s)
+	pos = InStr(s, "'")
+	While pos > 0
+		s = Mid(s, 1, pos) & "'" & Mid(s, pos + 1)
+		pos = InStr(pos + 2, s, "'")
+	Wend
+   CheckString=s
+END FUNCTION	
+
+sub Numberize(ByRef v)
+	if((not IsNull(v))and(Len(v)>0)) then
+		if IsNumeric(v) then
+			v=CStr(FormatNumber(v,2,-1,0,0))
+		else
+			v="0"
+		end if
+	else
+		v="0"
+	end if
+end sub
+
+function IsNot(ByRef v)
+	'returns true/false
+	IsNot=((IsNull(v))or(Len(v)=0))
+end function
+
+Function ConvertToOptString(ByRef s, ByRef strAtt)
+
+	pos = InStr(s, ";")
+	i = 1
+	
+	While pos > 0
+		att = Mid(s,i,pos-i)
+		s = Mid(s, 1, pos-1) & "'>" & att & Mid(s, pos)
+		
+		i = pos + Len(att) + 3
+		pos = InStr(i, s, ";")
+	Wend
+	
+	s = Left(s,Len(s)-1)									
+	s = Replace(s, ";", "</option><Option value='"& strAtt &":")									
+	s = "<Option value='"& strAtt & ":" & s & "</option>"
+							
+	ConvertToOptString = s
+end function
+
+Function ConvertToOptString2(ByRef s, ByRef p, ByRef strAtt)
+
+	dim x, y, strRet
+	redim x(10)
+	redim y(10)
+	strRet = "-"
+
+	pos = InStr(s, ";")
+	i = 1
+
+	while pos > 0
+		att = Left(s, pos-1)
+		x(i) = att
+		i = i + 1
+		s = Mid(s, pos+1)
+		pos = InStr(s, ";")
+	wend
+
+	pos = InStr(p, ";")
+	j = 1
+
+	while pos > 0
+		att = Left(p, pos-1)
+		y(j) = att
+		j = j + 1
+		p = Mid(p, pos+1)
+		pos = InStr(p, ";")
+	wend
+
+
+	For k = 1 to i-1
+		
+		strRet = strRet & "<option value='" & strAtt & ":" & x(k) & "~" & y(k) & "'>" & x(k) & " ( " & FormatCurrency(y(k)) & " )</option>"
+		
+	Next
+
+	ConvertToOptString2 = strRet
+
+end function
+
+function ReportFileStatus(filespec)
+	
+	Dim fso, bRet
+
+	Set fso = CreateObject("Scripting.FileSystemObject")
+	If (fso.FileExists(filespec)) Then
+		bRet = true
+	Else
+		bRet = false
+
+	End If
+	ReportFileStatus = bRet
+
+	Set fso = nothing
+
+end function
+
+function EncodeString(s)
+
+	dim rStr
+	
+	if Len(s) > 0 then
+		rStr = s
+	else
+		rStr = ""
+	end if
+	
+	'Check " --> &quot;
+	rStr = Replace(rStr, """", "&quot;")
+	
+	EncodeString = rStr
+	
+end function
+
+
+function ConvertToTimeZone (ByVal iDateTime)
+	
+	dim rDateTime
+	
+	if IsDate(iDateTime) then
+		rDateTime = DateAdd("h", CInt(Session("STORETIMEZONE")), iDateTime)
+	else
+		rDateTime = iDateTime
+	end if
+	
+	ConvertToTimeZone = rDateTime
+end function
+
+function getCountryCodeAccessByIP(strIPAddress)
+
+	country_code = ""
+	
+	If InStr(strIPAddress, ".") Then
+
+	arr_str_ip_address = Split(strIPAddress, ".")
+	tmpIPNumber = 16777216 * Trim(arr_str_ip_address(0)) + 65536 * Trim(arr_str_ip_address(1)) + 256 * Trim(arr_str_ip_address(2)) + Trim(arr_str_ip_address(3))
+
+	Set Rs = Server.CreateObject("ADODB.recordSet")
+
+		With Rs
+
+		.Open "SELECT COUNTRYCODE FROM A_COUNTRY_IP WHERE " & tmpIPNumber & " BETWEEN LONGFROM AND LONGTO", Session("ConnectionString")
+
+		If Not(.EOF or .BOF) Then
+			country_code = Trim(.Fields(0))
+		Else
+			country_code = ""
+		End If
+
+		.Close
+
+		End With
+
+		Set Rs = Nothing
+
+	Else
+
+		country_code = ""
+
+	End If
+	
+	Set Rs = Server.CreateObject("ADODB.RecordSet")
+	Rs.Open "SELECT manager_accessible_countries FROM " & Session("StoreID") & "_profile2", Session("ConnectionString")
+		manager_accessible_countries = Trim(Rs(0))
+	Rs.Close
+	Set Rs = Nothing
+		
+	If Len(manager_accessible_countries) > 0 Then
+		If InStr(manager_accessible_countries, ",") > 0 Then
+			bChk = false
+			arr_manager_accessible_countries = Split(manager_accessible_countries, ",")
+			For i = 0 to UBound(arr_manager_accessible_countries)
+				If Trim(arr_manager_accessible_countries(i)) = country_code Then
+					bChk = true
+				End If
+			Next
+			If bChk Then
+				bAccessChk = true
+			Else
+				bAccessChk = false
+			End If
+		Else
+			If country_code = manager_accessible_countries Then
+				bAccessChk = true
+			Else
+				bAccessChk = false
+			End If
+		End If
+	Else
+	  'NO DATA...
+		if country_code = "US" OR country_code = "CA" then
+		  bAccessChk = true
+	  else
+		  bAccessChk = false
+	  end if
+	End If
+	
+	'Response.end
+  If InStr(1, strIPAddress, "216.102.143.") < 1 And strIPAddress <> "127.0.0.1" AND strIPAddress <> "::1" Then
+  else
+	bAccessChk = true
+  end if
+	
+	getCountryCodeAccessByIP = bAccessChk
+
+end function
+
+function FormatCurrencyEx(theBaseAmount)
+  
+  dim result
+  dim exchnageRate
+  dim TargetCurrencyCode
+  
+  result = theBaseAmount
+  TargetCurrencyCode = Session("CURRENT_CURRENCY_CODE")
+  exchageRate = Session("CURRENCY_EXCHANGE_RATE")
+  
+  if Len(Session("CURRNCY_FORMAT")) > 0 then
+  else
+	Session("CURRNCY_FORMAT") = "$,2,1,1,0"
+  end if
+  
+  ar_currency_format = Split(Session("CURRNCY_FORMAT"), ",")
+  
+  if Ubound(ar_currency_format) = 4 then
+	s1 = ar_currency_format(0)
+	s2 = ar_currency_format(1)
+	s3 = ar_currency_format(2)
+	s4 = ar_currency_format(3)
+	s5 = ar_currency_format(4)
+	
+	if s3 = "1" then
+	  s3 = true
+	else
+	  s3 = false
+	end if
+	
+	if s4 = "1" then
+	  s4 = true
+	else
+	  s4 = false
+	end if
+	
+	if s5 = "1" then
+	  s5 = true
+	else
+	  s5 = false
+	end if
+	
+  else
+	s1 = "$"
+	s2 = 2
+	s3 = true
+	s4 = true
+	s5 = true
+  end if
+  
+  
+  if Session("ENABLEINT") = "2" OR Session("ENABLEINT") = "3" then
+		if (result <> 0 AND TargetCurrencyCode <> "CAD") then
+			result = result * exchageRate
+		end if
+	else
+		if (result <> 0 AND TargetCurrencyCode <> "USD") then
+			result = result * exchageRate
+		end if
+	end if
+	
+  FormatCurrencyEx = s1 & FormatNumber(result,s2,s3,s4,s5)
+	
+end function
+
+function GetRandomString(NumChar)
+  dim strRdm
+  strRdm = ""
+  Do Until Count = NumChar
+	Count = Count + 1
+	intRdm = GetRdm
+	strRdm = strRdm & Chr(intRdm)
+  Loop
+  GetRandomString = strRdm
+end function
+
+function GetRdm
+  intRdm = Int((122 - 49) * Rnd + 48)
+  If intRdm > 57 And intRdm < 65 Or intRdm > 90 And intRdm < 97 Then GetRdm
+  GetRdm = intRdm
+end function
+
+Function createGuid()
+  Set TypeLib = Server.CreateObject("Scriptlet.TypeLib")
+  tg = TypeLib.Guid
+  createGuid = left(tg, len(tg)-2)
+  Set TypeLib = Nothing
+End Function
+
+function GetSettingValue(strKey, strDefault)
+  
+  sReturnValue = ""
+  
+  set db2=server.CreateObject("ADODB.Connection")
+	db2.Open Session("ConnectionString")
+	
+	sql = "SELECT setting_values FROM " & Session("StoreID") & "_setting WHERE setting_type='"& strKey & "'"
+	set rsSetting1 = db2.Execute(sql)
+	if not rsSetting1.EOF then
+	  sReturnValue = rsSetting1(0)
+	else
+	  sReturnValue = strDefault
+	end if
+	rsSetting1.Close
+	db2.Close
+	GetSettingValue = sReturnValue
+	
+end function
+
+function GetSettingText(strKey, strDefault)
+  
+  sReturnValue = ""
+  
+  set db2=server.CreateObject("ADODB.Connection")
+	db2.Open Session("ConnectionString")
+	
+	sql = "SELECT setting_text FROM " & Session("StoreID") & "_setting WHERE setting_type='"& strKey & "'"
+	set rsSetting1 = db2.Execute(sql)
+	if not rsSetting1.EOF then
+	  sReturnValue = rsSetting1(0)
+	else
+	  sReturnValue = strDefault
+	end if
+	rsSetting1.Close
+	db2.Close
+	GetSettingText = sReturnValue
+	
+end function
+
+function SetSettingText(strKey, strValue)
+	
+	c_usql = "UPDATE " & g_storeid & "_setting SET setting_text='" & strValue & "' WHERE setting_type='"& strKey & "'"
+	c_isql = "INSERT INTO " & g_storeid & "_setting(setting_type, setting_names, setting_values, setting_text)VALUES('" & strKey & "','', '', '" & strValue & "')"
+	c_sql = "IF EXISTS(SELECT setting_id FROM " & g_storeid & "_setting WHERE setting_type='" & strKey & "')" & VbCrLf
+	c_sql = c_sql & c_usql & VbCrLf
+	c_sql = c_sql & "ELSE" & VbCrLf
+	c_sql = c_sql & c_isql  & VbCrLf
+	
+	Response.Write(c_sql)
+	
+	dbconn.Execute c_sql
+	
+	SetSettingText = true
+	
+end function
+</script>

@@ -1,0 +1,772 @@
+<SCRIPT LANGUAGE=VBScript RUNAT=Server>
+Function FilterString(strng)
+	Dim regEx, patrn
+	
+	if Len(strng) > 0 then
+		patrn = "[^0-9a-zA-Z_]"
+	
+		Set regEx = New RegExp
+		regEx.Pattern = patrn
+		regEx.IgnoreCase = False
+		regEx.Global = True
+		FilterString = regEx.Replace(strng, "")
+	else
+		FilterString = strng
+	end if
+
+End Function
+
+Function FilterStringSP(strng)
+	Dim regEx, patrn
+	
+	if Len(strng) > 0 then
+		patrn = "[^0-9a-zA-Z _]"
+	
+		Set regEx = New RegExp
+		regEx.Pattern = patrn
+		regEx.IgnoreCase = False
+		regEx.Global = True
+		FilterStringSP = regEx.Replace(strng, "")
+	else
+		FilterStringSP = strng
+	end if
+
+End Function
+
+Function FilterEmailString(strng)
+	Dim regEx, patrn
+	
+	if Len(strng) > 0 then
+		patrn = "[^0-9a-zA-Z_@,.-]"
+	
+		Set regEx = New RegExp
+		regEx.Pattern = patrn
+		regEx.IgnoreCase = False
+		regEx.Global = True
+		FilterEmailString = regEx.Replace(strng, "")
+	else
+		FilterEmailString = strng
+	end if
+
+End Function
+
+Function FilterPassword(strng)
+	Dim regEx, patrn
+	
+	if Len(strng) > 0 then
+		patrn = "[^0-9a-zA-Z!@#$*-+_,.><]"
+	
+		Set regEx = New RegExp
+		regEx.Pattern = patrn
+		regEx.IgnoreCase = False
+		regEx.Global = True
+		FilterPassword = regEx.Replace(strng, "")
+	else
+		FilterPassword = strng
+	end if
+
+End Function
+
+Function FilterSKUString(strng)
+	Dim regEx, patrn
+	
+	if Len(strng) > 0 then
+		patrn = "[^0-9a-zA-Z +_,.#/-]"
+	
+		Set regEx = New RegExp
+		regEx.Pattern = patrn
+		regEx.IgnoreCase = False
+		regEx.Global = True
+		FilterSKUString = regEx.Replace(strng, "")
+	else
+		FilterSKUString = strng
+	end if
+
+End Function
+
+Function FilterSessionString(strng)
+	Dim regEx, patrn
+	
+	if Len(strng) > 0 then
+		patrn = "[^0-9a-zA-Z-{}]"
+	
+		Set regEx = New RegExp
+		regEx.Pattern = patrn
+		regEx.IgnoreCase = False
+		regEx.Global = True
+		FilterSessionString = regEx.Replace(strng, "")
+	else
+		FilterSessionString = strng
+	end if
+
+End Function
+
+
+Function FilterStringEx(strng, patrn)
+	Dim regEx
+	
+	if Len(strng) > 0 AND Len(patrn) > 0 then	
+		Set regEx = New RegExp
+		regEx.Pattern = patrn
+		regEx.IgnoreCase = False
+		regEx.Global = True
+		FilterStringEx = regEx.Replace(strng, "")
+	else
+		FilterStringEx = strng
+	end if
+
+End Function
+
+Function FilterStringSEO(strng)
+	Dim regEx, patrn
+	
+	if Len(strng) > 0 then
+		patrn = "[^0-9a-zA-Z_]"
+	
+		Set regEx = New RegExp
+		regEx.Pattern = patrn
+		regEx.IgnoreCase = False
+		regEx.Global = True
+		FilterStringSEO = regEx.Replace(strng, "_")
+	else
+		FilterStringSEO = strng
+	end if
+
+End Function
+
+
+Function stripHTML(strHTML)
+'Strips the HTML tags from strHTML
+
+  Dim objRegExp, strOutput
+  Set objRegExp = New Regexp
+
+  objRegExp.IgnoreCase = True
+  objRegExp.Global = True
+  objRegExp.Pattern = "<(.|\n)+?>"
+
+  'Replace all HTML tag matches with the empty string
+  strOutput = objRegExp.Replace(strHTML, "")
+  
+  'Replace all < and > with &lt; and &gt;
+  strOutput = Replace(strOutput, "<", "&lt;")
+  strOutput = Replace(strOutput, ">", "&gt;")
+  
+  stripHTML = strOutput    'Return the value of strOutput
+
+  Set objRegExp = Nothing
+End Function
+
+Function FilterXSS(strng)
+
+  dim strOutput
+  strOutput = Replace(strng, "<", "&lt;")
+  strOutput = Replace(strOutput, ">", "&gt;")
+  strOutput = Replace(strOutput, "(", "&#40;")
+  strOutput = Replace(strOutput, ")", "&#41;")
+  strOutput = Replace(strOutput, "#", "&#35;")
+  
+  FilterXSS = strOutput
+
+End Function
+
+
+</SCRIPT>
+
+<%
+	Function ProcessFETags(strContent)
+	
+		dim tHTML, dHTML
+		
+		'Session String Replace
+		strContent = Replace(strContent, "<!--FE:SESSION-->", Session("SESSIONKEY"))
+		
+		tHTML = strContent
+		
+		pos = 0
+		dHTML = ""
+
+		pos1 = InStr(tHTML, "<!--FE:")
+
+		pElement = ""
+		pType = ""
+
+		do while (pos1 > 0)
+
+			dHTML = dHTML & Left(tHTML, pos1-1)
+
+			pos2 = Instr(pos1, tHTML, "-->")
+			str = Mid(tHTML, pos1+4, pos2-(pos1+4))
+
+			str = UCASE(str)
+			str = Replace(str, "  ", " ")
+
+			ar = Split(str, " ")
+			
+			pElement = ar(0)
+			pClass = ""
+			for i = 0 to UBOUND(ar)
+			  
+			  'Initialize
+			  'pClass = ""
+			  
+				if InStr(ar(i), "TYPE=") > 0 then
+					pType = ar(i)
+					pType = Replace(pType, "TYPE=", "")
+					pType = Replace(pType, """", "")
+				end if
+
+				if InStr(ar(i), "ID=") > 0 then
+					pID = ar(i)
+					pID = Replace(pID, "ID=", "")
+					pID = Replace(pID, """", "")
+				end if
+
+					if InStr(ar(i), "BUTTON=") > 0 then
+					pButton = ar(i)
+					pButton = Replace(pButton, "BUTTON=", "")
+					pButton = Replace(pButton, """", "")
+				end if
+
+				if InStr(ar(i), "TEXTBOXWIDTH=") > 0 then
+					pTextboxWidth = ar(i)
+					pTextboxWidth = Replace(pTextboxWidth, "TEXTBOXWIDTH=", "")
+					pTextboxWidth = Replace(pTextboxWidth, """", "")
+				end if
+
+				if InStr(ar(i), "SHOWCATEGORY=") > 0 then
+					pShowCategory = ar(i)
+					pShowCategory = Replace(pShowCategory, "SHOWCATEGORY=", "")
+					pShowCategory = Replace(pShowCategory, """", "")
+				end if
+
+				if InStr(ar(i), "SHOWTEXT=") > 0 then
+					pShowText = ar(i)
+					pShowText = Replace(pShowText, "SHOWTEXT=", "")
+					pShowText = Replace(pShowText, """", "")
+				end if
+
+				if InStr(ar(i), "TEXTCOLOR=") > 0 then
+					pTextColor = ar(i)
+					pTextColor = Replace(pTextColor, "TEXTCOLOR=", "")
+					pTextColor = Replace(pTextColor, """", "")
+				end if
+
+				if InStr(ar(i), "CLASS=") > 0 then
+					pClass = ar(i)
+					pClass = Replace(pClass, "CLASS=", "")
+					pClass = Replace(pClass, """", "")
+				end if
+				
+				if InStr(ar(i), "IMAGE1=") > 0 then
+					pImage1 = ar(i)
+					pImage1 = Replace(pImage1, "IMAGE1=", "")
+					pImage1 = Replace(pImage1, """", "")
+				end if
+				
+				if InStr(ar(i), "IMAGE2=") > 0 then
+					pImage2 = ar(i)
+					pImage2 = Replace(pImage2, "IMAGE2=", "")
+					pImage2 = Replace(pImage2, """", "")
+				end if
+				
+				if InStr(ar(i), "VALUE=") > 0 then
+					pFormValue = ar(i)
+					pFormValue = Replace(pFormValue, "VALUE=", "")
+					pFormValue = Replace(pFormValue, """", "")
+				end if
+        
+        
+        'Response.Write("====" & pType & "====" & pClass & "=========" & ar(i) & "<br>")
+
+			next
+
+			'Response.Write(pElement & ":" & pType & "..<br>")
+			'Response.Write("------" & pClass & "-----<br>")
+
+			'TODO: PROCESS DESIGN...
+			SELECT CASE pElement
+			CASE "FE:HYPERLINK"
+
+				SELECT CASE pType
+				CASE "SHOPPING_CART"
+					
+					link_shopping_cart = Session("SecureURL") & "/basket.asp?sessionID=" & Session("SESSIONKEY")
+
+					dHTML = dHTML & link_shopping_cart
+
+				CASE "CHECK_OUT"
+					
+					link_shopping_cart = Session("SecureURL") & "/checkout.asp?sessionID=" & Session("SESSIONKEY")
+
+					dHTML = dHTML & link_shopping_cart
+
+				CASE "STORE_INDEX"
+					
+					link_store_index = Session("StoreURL") & "/index.asp"
+
+					dHTML = dHTML & link_store_index
+
+				CASE "CONTACT_US"
+					
+					link_contact_us = Session("StoreURL") & "/contact.asp"
+
+					dHTML = dHTML & link_contact_us
+
+				CASE "ABOUT_US"
+					
+					link_about_us = Session("StoreURL") & "/aboutus.asp"
+
+					dHTML = dHTML & link_about_us
+
+				CASE "CATEGORY"
+					
+					link_category = Session("StoreURL") & "/cdept.asp?dept_id=" & pID
+
+					dHTML = dHTML & link_category
+
+				CASE "MY_ACCOUNT"
+					
+					link_shopping_cart = Session("SecureURL") & "/account_profile.asp?sessionID=" & Session("SESSIONKEY")
+
+					dHTML = dHTML & link_shopping_cart
+					
+				CASE "STORE_LOGIN"
+					
+					link_store_login = Session("SecureURL") & "/login.asp?sessionID=" & Session("SESSIONKEY")
+
+					dHTML = dHTML & link_store_login
+					
+
+				END SELECT
+
+			CASE "FE:LABEL"
+
+				SELECT CASE pType
+				CASE "SHOPPING_CART_ITEMS"
+					xCartItem = GetSession(Session("SESSIONKEY"), "sCartItem")
+					label_shopping_cart_items = xCartItem
+					dHTML = dHTML & label_shopping_cart_items
+				
+				CASE "SHOPPING_CART_TOTAL"
+					xCartTotal = GetSession(Session("SESSIONKEY"), "sCartTotal")
+					label_shopping_cart_items = "$" & FormatNumber(xCartTotal,2)
+					dHTML = dHTML & label_shopping_cart_items
+					
+				CASE "SHOPPER_NAME"
+				  label_shopper_name = Session("Shopper_Name")
+				  dHTML = dHTML & label_shopper_name
+				  
+				END SELECT
+
+			CASE "FE:IMAGE"
+
+				SELECT CASE pType
+				CASE "STORE_LOGO"
+					image_store_logo = "<A HREF=""" & Session("StoreURL") & "/index.asp""><img src=""logo_img/" & Session("LogoImage") & """ border=0 alt=""" & Session("Logo_alt") & """></a>"
+
+					dHTML = dHTML & image_store_logo
+
+				CASE "STORE_BANNER"
+					image_store_banner = GetBannerHTML()
+					dHTML = dHTML & image_store_banner
+
+				END SELECT
+
+			CASE "FE:FORM"
+
+				SELECT CASE pType
+				CASE "SEARCH_BOX":
+					
+					form_search = "<table width=100% border=0 cellpadding=0 cellspacing=0>"
+					form_search = form_search & "<tr>"
+					form_search = form_search & "<form method='get' action='" & Session("StoreURL") & "/search.asp' name='searchForm' id='searchForm'>"
+					form_search = form_search & "<td nowrap>"
+
+					if pShowText = "NO" then
+					else
+						if pTextColor = "" then
+							form_search = form_search & "<font color='#000000'><b>" & g_search & ":</b></font>"
+						else
+							form_search = form_search & "<font color='" & pTextColor & "'><b>" & g_search & ":</b></font>"
+						end if
+					end if
+          
+          pShowCategory = "NO"
+          
+					if pShowCategory = "NO" then
+					else
+
+						strSQL = "SELECT dept_id, dept_name FROM " & Session("StoreID") & "_dept WHERE parent_dept='0' AND is_hidden=0 ORDER BY dept_row"
+						dept_select = ""
+						
+						Set rsDept = Conn.Execute(strSQL)
+						do while not rsDept.EOF
+							if rsDept("dept_id") = si then
+								dept_select = dept_select & "<option value='" & rsDept("dept_id") & "' selected>" & rsDept("dept_name") & "</option>"
+							else
+								dept_select = dept_select & "<option value='" & rsDept("dept_id") & "'>" & rsDept("dept_name") & "</option>"
+							end if
+							rsDept.MoveNext
+						loop
+						rsDept.Close
+
+						form_search = form_search & "<select name=si>"
+						form_search = form_search & "<option value='**'>" & G_ENTRIE_SITE & "</option>"
+						form_search = form_search & dept_select
+						form_search = form_search & "</select>&nbsp;"
+
+					end if
+					
+					if Len(pClass) > 0 then
+					  sBoxClass = pClass
+					else
+					  sBoxClass = "inputtext"
+					end if
+					
+					if Len(sp1) > 0 then
+						if IsNumeric(pTextboxWidth) then
+							form_search = form_search & "<input type='text' name='sp' size='" & pTextboxWidth & "' class='" & sBoxClass & "' value='" & sp1 & "'>"
+						else
+							form_search = form_search & "<input type='text' name='sp' size='10' class='" & sBoxClass & "' value='" & sp1 & "'>"
+						end if
+					else
+						if IsNumeric(pTextboxWidth) then
+							form_search = form_search & "<input type='text' name='sp' size='" & pTextboxWidth & "' class='" & sBoxClass & "' value='" & pFormValue & "' onfocus=""this.value=''"">"
+						else
+							form_search = form_search & "<input type='text' name='sp' size='10' class='" & sBoxClass & "' value='" & pFormValue & "'  onfocus=""this.value=''"">"
+						end if
+					end if
+					
+					if Len(pButton) > 0 then
+						form_search = form_search & "<input type=image name='Go' src='" & pButton & "' border=0 align=absmiddle>"
+					else
+						form_search = form_search & "<input type=image name='Go' src='site_img/go_button2_" & Session("TEMPLATEID") & ".gif' border=0 align=absmiddle>"
+					end if
+					
+					form_search = form_search & "</td>"
+					form_search = form_search & "</form>"
+					form_search = form_search & "</tr></table>"
+
+					dHTML = dHTML & form_search
+
+
+				CASE "TOP_SUBMENU"
+					
+					form_topsubmenu = "<table width=100% border=0 cellpadding=0 cellspacing=0 class=""topSubmenuTable"">"
+					form_topsubmenu = form_topsubmenu & "<tr>"
+					form_topsubmenu = form_topsubmenu & "<td nowrap><div align='right'>"
+
+					if Len(pTextColor) > 0 then
+					else
+						pTextColor = "#FFFFFF"
+					end if
+
+					if Len(pClass) > 0 then
+					else
+						pClass = "topmenu"
+					end if
+
+					strSQL = "SELECT submenu_title, submenu_link FROM " & Session("StoreID") & "_submenu WHERE submenu_mode=0 AND submenu_show <> 0 ORDER BY submenu_row"
+
+					set rsPages = Conn.Execute(strSQL)
+					dim iVar
+					iVar = 0
+					do while not rsPages.EOF 
+						iVar = iVar + 1
+						submenu_link = rsPages("submenu_link")
+						
+						if InStr(submenu_link, "http://") OR InStr(submenu_link, "ftp://") OR InStr(submenu_link, "mailto:") OR InStr(submenu_link, "https://") then
+						
+						else
+							submenu_link = Session("StoreURL") & "/" & submenu_link
+						end if
+						'edited by AIG to remove deprecated FONT tag and add class for separator
+						form_topsubmenu = form_topsubmenu & "&nbsp;<span class='menuDelimiter'>|</span>&nbsp;<a id='topSubmenuLink" & iVar & "'" & " href='" & submenu_link & "' class='" & pClass & "'>" & rsPages("submenu_title") & "</a>"
+						'form_topsubmenu = form_topsubmenu & "&nbsp;<font color='" & pTextColor & "'>|</font>&nbsp;&nbsp;<A HREF='" & submenu_link & "' class='" & pClass & "'>" & rsPages("submenu_title") & "</A>"
+
+						rsPages.MoveNext
+						if rsPages.EOF then
+							form_topsubmenu = form_topsubmenu & "&nbsp;<span class='menuDelimiter'>|</span>&nbsp;"
+						end if
+					loop
+					rsPages.Close
+
+					form_topsubmenu = form_topsubmenu & "</div></td>"
+					form_topsubmenu = form_topsubmenu & "</tr></table>"
+
+					dHTML = dHTML & form_topsubmenu
+
+				CASE "FOOTER_SUBMENU"
+					
+					form_topsubmenu = "<table width=100% border=0 cellpadding=0 cellspacing=0>"
+					form_topsubmenu = form_topsubmenu & "<tr>"
+					form_topsubmenu = form_topsubmenu & "<td nowrap><div align='right'>"
+
+					if Len(pTextColor) > 0 then
+					else
+						pTextColor = "#FFFFFF"
+					end if
+
+					if Len(pClass) > 0 then
+					else
+						pClass = "topmenu"
+					end if
+
+					strSQL = "SELECT submenu_title, submenu_link FROM " & Session("StoreID") & "_submenu WHERE submenu_mode=1 AND submenu_show <> 0 ORDER BY submenu_row"
+
+					set rsPages = Conn.Execute(strSQL)
+					do while not rsPages.EOF 
+						submenu_link = rsPages("submenu_link")
+						
+						if InStr(submenu_link, "http://") OR InStr(submenu_link, "ftp://") OR InStr(submenu_link, "mailto:") OR InStr(submenu_link, "https://") then
+						
+						else
+							submenu_link = Session("StoreURL") & "/" & submenu_link
+						end if
+
+						form_topsubmenu = form_topsubmenu & "&nbsp;<font color='" & pTextColor & "'>|</font>&nbsp;&nbsp;<A HREF='" & submenu_link & "' class='" & pClass & "'>" & rsPages("submenu_title") & "</A>"
+
+						rsPages.MoveNext
+						if rsPages.EOF then
+							form_topsubmenu = form_topsubmenu & "&nbsp;<font color='" & pTextColor & "'>|</font>&nbsp;"
+						end if
+					loop
+					rsPages.Close
+
+					form_topsubmenu = form_topsubmenu & "</div></td>"
+					form_topsubmenu = form_topsubmenu & "</tr></table>"
+
+					dHTML = dHTML & form_topsubmenu
+					
+				CASE "LOGIN"
+				
+				  if pShowText = "YES" then
+				    form_logout = "Welcome " & Session("Shopper_Name")
+				  else
+				    form_logout = ""
+				  end if
+				  'Response.Write("========" & pClass & "===============")
+				  
+					if Len(pClass) > 0 then
+						form_login = "<a href=""" & Session("SecureURL") & "/login.asp?sessionID=" & Session("SESSIONKEY") & """ class='" & pClass & "'>"
+						form_logout = form_logout & "<a href=""" & Session("SecureURL") & "/tp_login.asp?op=logout&sessionID=" & Session("SESSIONKEY") & """ class='" & pClass & "'>"
+					else
+						form_login = "<a href=""" & Session("SecureURL") & "/login.asp?sessionID=" & Session("SESSIONKEY") & """>"
+						form_logout = form_logout & "<a href=""" & Session("SecureURL") & "/tp_login.asp?op=logout&sessionID=" & Session("SESSIONKEY") & """>"
+					end if
+					
+					if Len(pImage1) > 0 then
+						form_login = form_login & "<img src=""" & pImage1 & """ border=0></a>"
+					else
+						form_login = form_login & "| Log In / Register |</a>"
+					end if
+					
+					if Len(pImage2) > 0 then
+						form_logout = form_logout & "<img src=""" & pImage2 & """ border=0></a>"
+					else
+						form_logout = form_logout & "| Log Out |</a>"
+					end if					
+					
+					if Session("shopper_id") <> "" AND Session("Shopper_Name") <> "--" then
+						dHTML = dHTML & form_logout
+					else
+						dHTML = dHTML & form_login
+					end if
+					
+				CASE "CURRENCY"
+				
+				  form_currency = "<table width=100% border=0 cellpadding=0 cellspacing=0>"
+					form_currency = form_currency & "<tr>"
+					form_currency = form_currency & "<form method='get' action='" & Session("StoreURL") & "/setcurrency.asp' name='searchForm' id='searchForm'>"
+					form_currency = form_currency & "<td nowrap>"
+					
+					if Len(pClass) > 0 then
+					  form_currency = form_currency & "<select name=""currency"" class='" & pClass & "' onChange=""this.form.submit();"">"
+					else
+					  form_currency = form_currency & "<select name=""currency"" style=""font-size:11px"" onChange=""this.form.submit();"">"
+					end if
+					
+					strSQL = "SELECT * FROM " & Session("StoreID") & "_currency WHERE Published=1 ORDER BY DisplayOrder"
+				  currency_select = ""
+  				
+				  Set rsCurrency = Conn.Execute(strSQL)
+				  do while not rsCurrency.EOF
+				    if rsCurrency("CurrencyCode") = Session("CURRENT_CURRENCY_CODE") then
+					    currency_select = currency_select & "<option value='" & rsCurrency("CurrencyCode") & "' selected>" & rsCurrency("Name") & "</option>"
+				    else
+					    currency_select = currency_select & "<option value='" & rsCurrency("CurrencyCode") & "'>" & rsCurrency("Name") & "</option>"
+				    end if
+				    rsCurrency.MoveNext
+				  loop
+				  rsCurrency.Close
+				  
+				  if Session("ENABLEINT") = "2" OR Session("ENABLEINT") = "3" then
+					form_currency = form_currency & "<option value=""CAD"">Canadian Dollar</option>"
+					else
+				  form_currency = form_currency & "<option value=""USD"">US Dollar</option>"
+					end if
+					form_currency = form_currency & currency_select
+					form_currency = form_currency & "</select>"
+					
+					form_currency = form_currency & "</td>"
+					form_currency = form_currency & "</form>"
+					form_currency = form_currency & "</tr></table>"
+
+					dHTML = dHTML & form_currency
+
+				END SELECT
+				
+
+			END SELECT
+
+			tHTML = Mid(tHTML, pos2+3)
+			pElement = ""
+			pType = ""
+			pos1 = InStr(tHTML, "<!--FE:")
+
+		loop
+
+		dHTML = dHTML & tHTML
+		'============================================================================================================
+
+		'Response.Write(dHTML)
+		ProcessFETags = dHTML
+	End Function
+	
+'Added by Jihoon
+Function replaceCharacterEntity(strValue)
+  
+  If Len(strValue) > 0 Then
+		
+		'Convert basic 5 entity for xml documents
+    strValue = Replace(strValue, "&", "&amp;")
+    strValue = Replace(strValue, "'", "&apos;")
+    strValue = Replace(strValue, """", "&quot;")
+    strValue = Replace(strValue, "<", "&lt;")
+    strValue = Replace(strValue, ">", "&gt;")
+
+		'For Flashecom clients
+    strValue = Replace(strValue, "’", "&apos;")
+		strValue = Replace(strValue, "…", "&#8230;")
+		strValue = Replace(strValue, "“", "&apos;")
+		strValue = Replace(strValue, "”", "&apos;")
+		strValue = Replace(strValue, "–", "&#8211;")
+		strValue = Replace(strValue, "•", "&#8226;")
+		strValue = Replace(strValue, "/", "&#8260;")
+		strValue = Replace(strValue, "™", "&#8482;")
+		strValue = Replace(strValue, "~", "&#8764;")
+		strValue = Replace(strValue, "~", "&#8764;")
+		strValue = Replace(strValue, "˜", "&#8776;")
+		strValue = Replace(strValue, "ß", "&#946;")
+		strValue = Replace(strValue, "ˆ", "&#710;")
+		strValue = Replace(strValue, "—", "&#710;")
+		strValue = Replace(strValue, "‘", "&#8216;")
+		strValue = Replace(strValue, "†", "&#8224;")
+		strValue = Replace(strValue, "‡", "&#8225;")
+		strValue = Replace(strValue, "‰", "&#8240;")
+		strValue = Replace(strValue, "€", "&#8364;")
+
+		'List of special characters(ISO 8859-1) from http://www.evolt.org/article/ala/17/21234/
+		strValue = Replace(strValue, "¡", "&#161;")
+		strValue = Replace(strValue, "¢", "&#162;")
+		strValue = Replace(strValue, "£", "&#163;")
+		strValue = Replace(strValue, "¤", "&#164;")
+		strValue = Replace(strValue, "¥", "&#165;")
+		strValue = Replace(strValue, "¦", "&#166;")
+		strValue = Replace(strValue, "§", "&#167;")
+		strValue = Replace(strValue, "¨", "&#168;")
+		strValue = Replace(strValue, "©", "&#169;")
+		strValue = Replace(strValue, "ª", "&#170;")
+		strValue = Replace(strValue, "«", "&#171;")
+		strValue = Replace(strValue, "¬", "&#172;")
+		strValue = Replace(strValue, "­", "&#173;")
+		strValue = Replace(strValue, "®", "&#174;")
+		strValue = Replace(strValue, "¯", "&#175;")
+		strValue = Replace(strValue, "°", "&#176;")
+		strValue = Replace(strValue, "±", "&#177;")
+		strValue = Replace(strValue, "²", "&#178;")
+		strValue = Replace(strValue, "³", "&#179;")
+		strValue = Replace(strValue, "´", "&#180;")
+		strValue = Replace(strValue, "µ", "&#181;")
+		strValue = Replace(strValue, "¶", "&#182;")
+		strValue = Replace(strValue, "·", "&#183;")
+		strValue = Replace(strValue, "¸", "&#184;")
+		strValue = Replace(strValue, "¹", "&#185;")
+		strValue = Replace(strValue, "º", "&#186;")
+		strValue = Replace(strValue, "»", "&#187;")
+		strValue = Replace(strValue, "¼", "&#188;")
+		strValue = Replace(strValue, "½", "&#189;")
+		strValue = Replace(strValue, "¾", "&#190;")
+		strValue = Replace(strValue, "¿", "&#191;")
+		strValue = Replace(strValue, "À", "&#192;")
+		strValue = Replace(strValue, "Á", "&#193;")
+		strValue = Replace(strValue, "Â", "&#194;")
+		strValue = Replace(strValue, "Ã", "&#195;")
+		strValue = Replace(strValue, "Ä", "&#196;")
+		strValue = Replace(strValue, "Å", "&#197;")
+		strValue = Replace(strValue, "Æ", "&#198;")
+		strValue = Replace(strValue, "Ç", "&#199;")
+		strValue = Replace(strValue, "È", "&#200;")
+		strValue = Replace(strValue, "É", "&#201;")
+		strValue = Replace(strValue, "Ê", "&#202;")
+		strValue = Replace(strValue, "Ë", "&#203;")
+		strValue = Replace(strValue, "Ì", "&#204;")
+		strValue = Replace(strValue, "Í", "&#205;")
+		strValue = Replace(strValue, "Î", "&#206;")
+		strValue = Replace(strValue, "Ï", "&#207;")
+		strValue = Replace(strValue, "Ð", "&#208;")
+		strValue = Replace(strValue, "Ñ", "&#209;")
+		strValue = Replace(strValue, "Ò", "&#210;")
+		strValue = Replace(strValue, "Ó", "&#211;")
+		strValue = Replace(strValue, "Ô", "&#212;")
+		strValue = Replace(strValue, "Õ", "&#213;")
+		strValue = Replace(strValue, "Ö", "&#214;")
+		strValue = Replace(strValue, "×", "&#215;")
+		strValue = Replace(strValue, "Ø", "&#216;")
+		strValue = Replace(strValue, "Ù", "&#217;")
+		strValue = Replace(strValue, "Ú", "&#218;")
+		strValue = Replace(strValue, "Û", "&#219;")
+		strValue = Replace(strValue, "Ü", "&#220;")
+		strValue = Replace(strValue, "Ý", "&#221;")
+		strValue = Replace(strValue, "Þ", "&#222;")
+		strValue = Replace(strValue, "ß", "&#223;")
+		strValue = Replace(strValue, "à", "&#224;")
+		strValue = Replace(strValue, "á", "&#225;")
+		strValue = Replace(strValue, "â", "&#226;")
+		strValue = Replace(strValue, "ã", "&#227;")
+		strValue = Replace(strValue, "ä", "&#228;")
+		strValue = Replace(strValue, "å", "&#229;")
+		strValue = Replace(strValue, "æ", "&#230;")
+		strValue = Replace(strValue, "ç", "&#231;")
+		strValue = Replace(strValue, "è", "&#232;")
+		strValue = Replace(strValue, "é", "&#233;")
+		strValue = Replace(strValue, "ê", "&#234;")
+		strValue = Replace(strValue, "ë", "&#235;")
+		strValue = Replace(strValue, "ì", "&#236;")
+		strValue = Replace(strValue, "í", "&#237;")
+		strValue = Replace(strValue, "î", "&#238;")
+		strValue = Replace(strValue, "ï", "&#239;")
+		strValue = Replace(strValue, "ð", "&#240;")
+		strValue = Replace(strValue, "ñ", "&#241;")
+		strValue = Replace(strValue, "ò", "&#242;")
+		strValue = Replace(strValue, "ó", "&#243;")
+		strValue = Replace(strValue, "ô", "&#244;")
+		strValue = Replace(strValue, "õ", "&#245;")
+		strValue = Replace(strValue, "ö", "&#246;")
+		strValue = Replace(strValue, "÷", "&#247;")
+		strValue = Replace(strValue, "ø", "&#248;")
+		strValue = Replace(strValue, "ù", "&#249;")
+		strValue = Replace(strValue, "ú", "&#250;")
+		strValue = Replace(strValue, "û", "&#251;")
+		strValue = Replace(strValue, "ü", "&#252;")
+		strValue = Replace(strValue, "ý", "&#253;")
+		strValue = Replace(strValue, "þ", "&#254;")
+		strValue = Replace(strValue, "ÿ", "&#255;")
+
+  End If
+  
+  replaceCharacterEntity = strValue
+  
+End Function
+	%>

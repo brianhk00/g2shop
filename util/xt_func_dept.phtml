@@ -1,0 +1,844 @@
+ <!-- #INCLUDE File="xt_html_statusmsg.asp" -->
+<SCRIPT LANGUAGE=VBScript RUNAT=Server>
+
+function IsExistingDepartmentID(ByRef str_db,ByRef str_status_msg,_
+						ByRef str_cid)
+						
+	dim sql,rs,bEC
+	
+	sql="SELECT dept_id FROM :9_dept WHERE (dept_id='"&str_cid&"')"
+	sql = Replace(sql, ":9", Session("StoreID"))
+	set rs=server.CreateObject("ADODB.Recordset")
+	rs.Open sql,str_db
+	
+	bEC=(not rs.EOF)
+	
+	if(bEC) then
+		AddToHTMLMsgHldr str_status_msg,"Specified category code is already in use.",false
+	end if
+	
+	IsExistingDepartmentID=bEC
+	rs.Close
+			
+end function
+
+function IsExistingMasterDeptID(ByRef str_db,ByRef str_status_msg,_
+						ByRef str_cid)
+						
+	dim sql,rs,bEC
+	
+	sql="SELECT dept_id FROM :9_dept WHERE (master_id='"&str_cid&"')"
+	sql = Replace(sql, ":9", Session("StoreID"))
+	set rs=server.CreateObject("ADODB.Recordset")
+	rs.Open sql,str_db
+	
+	bEC=(not rs.EOF)
+	
+	if(bEC) then
+		AddToHTMLMsgHldr str_status_msg,"Specified category is already in use.",false
+	end if
+	
+	IsExistingMasterDeptID=bEC
+	rs.Close
+			
+end function
+
+function IsExistingTechdataDeptID(ByRef str_db,ByRef str_status_msg,_
+						ByRef str_cid)
+						
+	dim sql,rs,bEC
+	
+	sql="SELECT dept_id FROM :9_dept WHERE (master_id='"&str_cid&"')"
+	sql = Replace(sql, ":9", Session("StoreID"))
+	set rs=server.CreateObject("ADODB.Recordset")
+	rs.Open sql,str_db
+	
+	bEC=(not rs.EOF)
+	
+	if(bEC) then
+		AddToHTMLMsgHldr str_status_msg,"Specified category is already in use.",false
+	end if
+	
+	IsExistingTechdataDeptID=bEC
+	rs.Close
+			
+end function
+
+function AddDepartment(ByRef str_db,ByRef str_status_msg,_
+						ByRef str_name,ByRef str_desc,_
+						ByRef str_sub)
+	'returns true/false
+	
+	dim sql,dbconn
+	dim new_row
+	
+	if(str_db="")or(str_name="")or(str_desc="") then
+		AddToHTMLMsgHldr str_status_msg,"Insuffiecient info specified to add new department.",true
+ 		AddDepartment=false
+		exit function
+	end if
+	
+	set dbconn=server.CreateObject("ADODB.Connection")
+	dbconn.Open str_db
+
+	'Get new department ID...
+	if str_sub = "0" then
+	
+		sql = "SELECT * FROM :9_dept WHERE parent_dept='0' ORDER BY dept_id"
+		sql = Replace(sql, ":9", Session("StoreID"))
+		set rs = dbconn.Execute(sql)
+	
+		bok = false
+		i = 1
+	
+		do while not ( bok or rs.EOF)
+			
+			currentID = rs("dept_id")
+			if(i <> CInt(currentID)) then
+				bok = true
+			end if
+			
+			i = i + 1
+			rs.MoveNext
+			
+		loop
+		rs.Close
+	
+		if(bok) then
+			i = i - 1
+		end if
+	
+		if(i > 9) then
+			new_deptid = CStr(i)
+		else
+			new_deptid = "0" + CStr(i)
+		end if
+		
+		str_cid = new_deptid
+	else
+	
+		sql = "SELECT * FROM :9_dept WHERE parent_dept='" & str_sub & "' ORDER BY dept_id"
+		sql = Replace(sql, ":9", Session("StoreID"))
+		set rs = dbconn.Execute(sql)
+	
+		bok = false
+		i = 1
+	
+		do while not ( bok or rs.EOF)
+			
+			currentID = Right(rs("dept_id"),3)
+			if(i <> CInt(currentID)) then
+				bok = true
+			end if
+			
+			i = i + 1
+			rs.MoveNext
+			
+		loop
+		rs.Close
+	
+		if bok then
+			i = i - 1
+		end if
+		if(i > 9) then
+			new_deptid = "0" + CStr(i)
+		else
+			new_deptid = "00" + CStr(i)
+		end if
+	
+		new_deptid = str_sub & "-" & new_deptid
+		str_cid = new_deptid
+	
+	end if
+	
+	if str_sub = "0" then
+		
+		'Get row..
+		sql = "SELECT MAX(dept_row) FROM :9_dept WHERE parent_dept='0' AND is_master=0"
+		sql = Replace(sql, ":9", Session("StoreID"))
+		set rs = dbconn.Execute(sql)
+		
+		if(not rs.EOF) then
+			if rs(0) > 0 then
+				new_row = rs(0) + 1
+			else
+				new_row = 1
+			end if
+		else
+			new_row = 1
+		end if
+
+		rs.Close
+
+		sql="INSERT INTO :9_dept (dept_id,dept_name,dept_description,parent_dept, dept_row) VALUES ('"&_
+			str_cid&"','"&CheckString(str_name)&"','"&CheckString(str_desc)&"','" & str_sub & "'," & CStr(new_row) & ")"
+
+		sql = Replace(sql, ":9", Session("StoreID"))
+		dbconn.Execute sql
+	
+	else
+		
+		sql="INSERT INTO :9_dept (dept_id,dept_name,dept_description,parent_dept) VALUES ('"&_
+			str_cid&"','"&CheckString(str_name)&"','"&CheckString(str_desc)&"','" & str_sub & "')"
+
+		sql = Replace(sql, ":9", Session("StoreID"))
+		dbconn.Execute sql
+
+	end if
+	
+	if(not str_sub = "0") then
+		'Update parent dept for has_sub value...
+		sql = "UPDATE :9_dept SET has_sub=1 WHERE dept_id='"& str_sub & "'"
+		sql = Replace(sql, ":9", Session("StoreID"))
+		dbconn.Execute sql
+	end if
+	
+	dbconn.Close
+		
+	AddDepartment=true
+	
+end function
+
+function AddMasterDepartment(ByRef str_db,ByRef str_status_msg,_
+						ByRef str_cid)
+	'returns true/false
+	
+	dim bok, sql, dbconn
+	dim new_row
+	
+	if(str_cid="")or(str_db="")then
+		AddToHTMLMsgHldr str_status_msg,"Insuffiecient info specified to add new department.",true
+ 		AddMasterDepartment=false
+		exit function
+	end if
+	
+	set dbconn=server.CreateObject("ADODB.Connection")
+	dbconn.Open str_db
+	
+	set dbconn2=server.CreateObject("ADODB.Connection")
+	dbconn2.Open Session("MasterConnectionString")
+	
+	'Get Master Department Information
+	sql = "SELECT * FROM DEPT_MASTER WHERE dept_id='" & str_cid & "'"
+	set rsMaster = dbconn2.Execute(sql)
+	
+	if rsMaster.EOF then
+		AddToHTMLMsgHldr str_status_msg,"Unexpected Error.",true
+ 		AddMasterDepartment=false 
+		exit function
+	end if
+	
+	master_dept_name = rsMaster("dept_name")
+	
+	rsMaster.Close
+		
+	'Find ID for it
+	sql = "SELECT * FROM :9_dept WHERE parent_dept='0' ORDER BY dept_id"
+	sql = Replace(sql, ":9", Session("StoreID"))
+	set rs = dbconn.Execute(sql)
+	
+	bok = false
+	i = 1
+	
+	do while not ( bok or rs.EOF)
+		
+		currentID = rs("dept_id")
+		if(i <> CInt(currentID)) then
+			bok = true
+		end if
+		
+		i = i + 1
+		rs.MoveNext
+		
+	loop
+	rs.Close
+	
+	if(bok) then
+		i = i - 1
+	end if
+	
+	if(i > 9) then
+		new_deptid = CStr(i)
+	else
+		new_deptid = "0" + CStr(i)
+	end if
+	
+	'Get row...
+	sql = "SELECT MAX(dept_row) FROM :9_dept WHERE parent_dept='0' AND is_master=1"
+	sql = Replace(sql, ":9", Session("StoreID"))
+	set rs = dbconn.Execute(sql)
+		
+	if(not rs.EOF) then
+		if rs(0) > 0 then
+			new_row = rs(0) + 1
+		else
+			new_row = 1
+		end if
+	else
+		new_row = 1
+	end if
+
+	rs.Close
+	
+	'Insert master main category
+	sql="INSERT INTO :9_dept (dept_id,dept_name,dept_description,dept_row, has_sub, dept_sort_order, dept_show_mfg, dept_use_mfg,is_master, master_id, dist_flag) VALUES ('"&_
+			new_deptid&"','"&CheckString(master_dept_name)&"','"& "N/A" & "'," & CStr(new_row) & _
+			"," & "1,4,1,1" & "," & "1" & ",'" & str_cid & "', 1)"
+	sql = Replace(sql, ":9", Session("StoreID"))
+	
+	dbconn.Execute sql
+	
+	'Need to update subcategory as well..
+	str_deptid_array = ""
+	str_deptname_array = ""
+	
+	sql = "SELECT * FROM DEPT_MASTER WHERE parent_dept='" & str_cid & "'"
+	set rs = dbconn2.Execute(sql)
+	
+	if not rs.EOF then
+		do while not rs.EOF
+			str_deptid_array = str_deptid_array & rs("dept_id") & ","
+			str_deptname_array = str_deptname_array & rs("dept_name") & ","
+			rs.MoveNext
+		loop
+	
+		'Trim last comma
+		str_deptid_array = Left(str_deptid_array, Len(str_deptid_array)-1)
+		str_deptname_array = Left(str_deptname_array, Len(str_deptname_array)-1)
+		
+		deptid_array = split(str_deptid_array, ",")
+		deptname_array = split(str_deptname_array, ",")
+		
+		for i = 0 to UBound(deptid_array)
+		
+			if i > 8 then
+				sub_deptid = new_deptid & "-0" & CStr(i+1)
+			else
+				sub_deptid = new_deptid & "-00" & CStr(i+1)
+			end if
+			
+			sql="INSERT INTO :9_dept (dept_id,dept_name,dept_description, parent_dept, dept_sort_order, dept_show_mfg, dept_use_mfg, is_master, master_id, dist_flag) VALUES ('"&_
+				sub_deptid &"','"&CheckString(deptname_array(i))&"','"& "N/A" & "','"& _
+				new_deptid & "'," & "4,1,1,1" & ",'" & CStr(deptid_array(i)) & "', 1)"
+			sql = Replace(sql, ":9", Session("StoreID"))
+	
+			dbconn.Execute sql
+		
+		next
+		
+		for i = 0 to UBound(deptid_array)
+		
+			sql = "SELECT DISTINCT vendor_name, vendor_number FROM DEPT_PART_MASTER INNER JOIN PART_MASTER ON DEPT_PART_MASTER.part_id = PART_MASTER.part_id WHERE DEPT_PART_MASTER.dept_id='" & CStr(deptid_array(i)) & "' ORDER BY VENDOR_NAME"
+			set rs1 = dbconn2.Execute(sql)
+			
+			do while not rs1.EOF
+				sql = "INSERT INTO :9_vendor_mfg(dept_id, main_dept, vendor_number, vendor_name) VALUES('" &_
+						CStr(deptid_array(i)) & "','" & _
+						str_cid & "','" &_
+						rs1("vendor_number") & "','" & _
+						CheckString(rs1("vendor_name")) & "')"
+				sql = Replace(sql, ":9", Session("StoreID"))
+				dbconn.Execute sql
+						
+				rs1.MoveNext
+			loop
+			
+			rs1.Close
+		Next
+		
+	end if
+	
+	rs.Close
+	
+	dbconn.Close
+	dbconn2.Close
+		
+	AddMasterDepartment=true
+	
+end function
+
+function AddTechdataDepartment(ByRef str_db,ByRef str_status_msg,_
+						ByRef str_cid)
+	'returns true/false
+	
+	dim bok, sql, dbconn
+	dim new_row
+	
+	if(str_cid="")or(str_db="")then
+		AddToHTMLMsgHldr str_status_msg,"Insuffiecient info specified to add new department.",true
+ 		AddTechdataDepartment=false
+		exit function
+	end if
+	
+	set dbconn=server.CreateObject("ADODB.Connection")
+	dbconn.Open str_db
+	
+	set dbconn2=server.CreateObject("ADODB.Connection")
+	dbconn2.Open Session("MasterConnectionString")
+	
+	'Get Master Department Information
+	sql = "SELECT * FROM comgrp WHERE GRP='" & str_cid & "'"
+	set rsMaster = dbconn2.Execute(sql)
+	
+	if rsMaster.EOF then
+		AddToHTMLMsgHldr str_status_msg,"Unexpected Error.",true
+ 		AddTechdataDepartment=false 
+		exit function
+	end if
+	
+	master_dept_name = rsMaster("DESCR")
+	
+	rsMaster.Close
+		
+	'Find ID for it
+	sql = "SELECT * FROM :9_dept WHERE parent_dept='0' ORDER BY dept_id"
+	sql = Replace(sql, ":9", Session("StoreID"))
+	set rs = dbconn.Execute(sql)
+	
+	bok = false
+	i = 1
+	
+	do while not ( bok or rs.EOF)
+		
+		currentID = rs("dept_id")
+		if(i <> CInt(currentID)) then
+			bok = true
+		end if
+		
+		i = i + 1
+		rs.MoveNext
+		
+	loop
+	rs.Close
+	
+	if(bok) then
+		i = i - 1
+	end if
+	
+	if(i > 9) then
+		new_deptid = CStr(i)
+	else
+		new_deptid = "0" + CStr(i)
+	end if
+	
+	'Get row...
+	sql = "SELECT MAX(dept_row) FROM :9_dept WHERE parent_dept='0' AND is_master=1"
+	sql = Replace(sql, ":9", Session("StoreID"))
+	set rs = dbconn.Execute(sql)
+		
+	if(not rs.EOF) then
+		if rs(0) > 0 then
+			new_row = rs(0) + 1
+		else
+			new_row = 1
+		end if
+	else
+		new_row = 1
+	end if
+
+	rs.Close
+	
+	'Insert master main category
+	sql="INSERT INTO :9_dept (dept_id,dept_name,dept_description,dept_row, has_sub, dept_sort_order, dept_show_mfg, dept_use_mfg, is_master, master_id, dist_flag) VALUES ('"&_
+			new_deptid&"','"&CheckString(master_dept_name)&"','"& "N/A" & "'," & CStr(new_row) & _
+			"," & "1,4,1,1" & "," & "1" & ",'" & str_cid & "',2)"
+	sql = Replace(sql, ":9", Session("StoreID"))
+	
+	dbconn.Execute sql
+	
+	
+	'Need to update subcategory 1 as well..
+	str_deptid_array = ""
+	str_deptname_array = ""
+	
+	sql = "SELECT * FROM comcat WHERE GRP='" & str_cid & "'"
+	set rs = dbconn2.Execute(sql)
+	
+	if not rs.EOF then
+		do while not rs.EOF
+			str_deptid_array = str_deptid_array & rs("CAT") & ","
+			str_deptname_array = str_deptname_array & rs("DESCR") & ","
+			rs.MoveNext
+		loop
+	
+		'Trim last comma
+		str_deptid_array = Left(str_deptid_array, Len(str_deptid_array)-1)
+		str_deptname_array = Left(str_deptname_array, Len(str_deptname_array)-1)
+		
+		deptid_array = split(str_deptid_array, ",")
+		deptname_array = split(str_deptname_array, ",")
+		
+		for i = 0 to UBound(deptid_array)
+		
+			if i > 8 then
+				sub_deptid = new_deptid & "-0" & CStr(i+1)
+			else
+				sub_deptid = new_deptid & "-00" & CStr(i+1)
+			end if
+			
+			sql="INSERT INTO :9_dept (dept_id,dept_name,dept_description, parent_dept, has_sub, dept_sort_order, dept_show_mfg, dept_use_mfg, is_master, master_id, dist_flag) VALUES ('"&_
+				sub_deptid &"','"&CheckString(deptname_array(i))&"','"& "N/A" & "','"& _
+				new_deptid & "'," & "1,4,1,1,1" & ",'" & str_cid & CStr(deptid_array(i)) & "',2)"
+			sql = Replace(sql, ":9", Session("StoreID"))
+	
+			dbconn.Execute sql
+		
+		next
+		
+		'Need to update subcategory 2 as well..
+		for i = 0 to UBound(deptid_array)
+			
+			if i > 8 then
+				sub_deptid = new_deptid & "-0" & CStr(i+1)
+			else
+				sub_deptid = new_deptid & "-00" & CStr(i+1)
+			end if
+			
+			str_subid_array = ""
+			str_subname_array = ""
+			
+			sql = "SELECT * FROM comsub WHERE GRP='" & str_cid & "' AND CAT='" & deptid_array(i) & "'"
+			set rs2 = dbconn2.Execute(sql)
+			
+			if not rs2.EOF then
+				do while not rs2.EOF
+					str_subid_array = str_subid_array & rs2("SUB") & ","
+					str_subname_array = str_subname_array & rs2("DESCR") & ","
+					rs2.MoveNext
+				loop	
+			end if
+			'Trim last comma
+			str_subid_array = Left(str_subid_array, Len(str_subid_array)-1)
+			str_subname_array = Left(str_subname_array, Len(str_subname_array)-1)
+		
+			subid_array = split(str_subid_array, ",")
+			subname_array = split(str_subname_array, ",")
+			
+			for j = 0 to UBound(subid_array)
+		
+				if j > 8 then
+					sub2_deptid = sub_deptid & "-0" & CStr(j+1)
+				else
+					sub2_deptid = sub_deptid & "-00" & CStr(j+1)
+				end if
+				
+				sql="INSERT INTO :9_dept (dept_id,dept_name,dept_description, parent_dept, dept_sort_order, dept_show_mfg, dept_use_mfg, is_master, master_id, dist_flag) VALUES ('"&_
+					sub2_deptid &"','"&CheckString(subname_array(j))&"','"& "N/A" & "','"& _
+					sub_deptid & "'," & "4,1,1,1" & ",'" & str_cid & CStr(deptid_array(i)) & CStr(subid_array(j)) & "',2)"
+				sql = Replace(sql, ":9", Session("StoreID"))
+	
+				dbconn.Execute sql
+		
+			next
+			
+			'Vendor Information.....
+			for j = 0 to UBound(subid_array)
+				
+				sql = "SELECT DISTINCT VEND_CODE FROM products WHERE GRP='" & str_cid & "' AND CAT='" & CStr(deptid_array(i)) & "' AND SUB='" & CStr(subid_array(j)) & "'"
+				set rs1 = dbconn2.Execute(sql)
+					do while not rs1.EOF
+						
+						sql = "INSERT INTO :9_vendor_mfg(dept_id, main_dept, vendor_number, vendor_name) VALUES('" &_
+								 str_cid & CStr(deptid_array(i)) & CStr(subid_array(j)) & "','" & _
+								str_cid & "','" &_
+								rs1("VEND_CODE") & "','" & _
+								CheckString("AAAAAAA") & "')"
+						sql = Replace(sql, ":9", Session("StoreID"))
+						dbconn.Execute sql
+				
+						rs1.MoveNext
+					loop
+				rs1.Close
+			next
+						
+		next
+		
+	end if
+	
+	rs.Close
+		
+	dbconn.Close
+	dbconn2.Close
+		
+	AddTechdataDepartment=true
+	
+end function
+
+
+function UpdateDepartment(ByRef str_db,ByRef str_status_msg,_
+						ByRef str_cid, ByRef str_name,ByRef str_desc,_
+						ByRef str_sub, ByRef str_is_hidden)
+	'returns true/false
+	
+	dim sql,dbconn
+	
+	if(str_cid="")or(str_db="")or(str_name="")or(str_desc="")then
+		AddToHTMLMsgHldr str_status_msg,"Insuffiecient info specified to update category information.",false
+ 		UpdateDepartment=false
+		exit function
+	end if
+	
+	sql = "UPDATE :9_dept SET dept_name='"& CheckString(str_name) &_
+		"',dept_description='" & CheckString(str_desc) & "'," &_
+		"parent_dept='" & str_sub & "'," &_
+		"is_hidden=" & str_is_hidden &_
+		" WHERE dept_id ='" & str_cid & "'"
+	
+	sql = Replace(sql, ":9", Session("StoreID"))
+	set dbconn=server.CreateObject("ADODB.Connection")
+	dbconn.Open db
+	dbconn.Execute sql
+
+	dbconn.Close
+	
+	UpdateDepartment=true
+	
+end function
+
+function DeleteDepartment(ByRef str_db, ByRef str_mode, ByRef str_status_msg,ByRef str_cid)
+	'returns true/false
+	
+	dim sql,dbconn,str_subid, str_rowid, is_master, dist_flag
+	
+	'validate
+	if(str_cid="")or(str_db="") or (str_mode="") then
+		AddToHTMLMsgHldr str_status_msg,"Insuffiecient info specified to delete department.",false
+ 		DeleteDepartment=false
+		exit function
+	end if
+	
+	set rs=Server.CreateObject("ADODB.RecordSet")
+	'Error checking..
+	
+	'See if it is valid id and get parent id
+	sql="SELECT * FROM :9_dept WHERE dept_id='"&str_cid & "'"
+	sql = Replace(sql, ":9", Session("StoreID"))
+	rs.Open sql,str_db
+	
+	if(not rs.EOF) then
+		str_subid = rs("parent_dept")
+		str_rowid = rs("dept_row")
+		is_master = rs("is_master")
+		str_master_id = rs("master_id")
+		dist_flag = rs("dist_flag")
+	end if
+	
+	rs.Close
+	
+	'See if there are product(s) belong to this category
+	sql="SELECT * FROM :9_dept_prod WHERE dept_id='"&str_cid & "'"
+	sql = Replace(sql, ":9", Session("StoreID"))
+	rs.Open sql,str_db
+	
+	bEC=(not rs.EOF)
+	rs.Close
+	
+	if(bEC) then
+		AddToHTMLMsgHldr str_status_msg,"There are products in this category. Please remove the products from this category.",false
+		DeleteDepartment=false
+		exit function
+	end if
+	
+	'check for sub category
+	sql="SELECT * FROM :9_dept WHERE parent_dept='"&str_cid & "' AND is_master=0"
+	sql = Replace(sql, ":9", Session("StoreID"))
+	rs.Open sql,str_db
+	
+	bEC=(not rs.EOF)
+
+	rs.Close
+	
+	if(bEC) then
+		AddToHTMLMsgHldr str_status_msg,"There are sub categories in this category. Please remove the sub categories from this category.",false
+		DeleteDepartment=false
+		exit function
+	end if
+	
+	
+	'Reset has_sub
+	sql="SELECT * FROM :9_dept WHERE parent_dept='"& str_subid & "'"
+	sql = Replace(sql, ":9", Session("StoreID"))
+	rs.Open sql,str_db,1,1
+	
+	dim bok
+	bok = false
+	
+	if(rs.RecordCount < 2) then
+		bok = true
+	end if
+	
+	rs.Close
+	
+	set dbconn=server.CreateObject("ADODB.Connection")
+	dbconn.Open str_db
+	
+	sql="DELETE FROM :9_dept WHERE dept_id='"& str_cid &"'"
+	sql = Replace(sql, ":9", Session("StoreID"))
+	dbconn.Execute sql
+	
+	if is_master then
+	
+		Select case dist_flag
+		
+		case 1
+			sql="DELETE FROM :9_dept WHERE parent_dept='"& str_cid &"'"
+			sql = Replace(sql, ":9", Session("StoreID"))
+			dbconn.Execute sql
+		
+			sql="DELETE FROM :9_vendor_mfg WHERE main_dept='"& str_master_id &"'"
+			sql = Replace(sql, ":9", Session("StoreID"))
+			dbconn.Execute sql
+		
+		case 2
+		
+			sql="DELETE FROM :9_dept WHERE master_id like '"& Trim(str_master_id) &"%'"
+			sql = Replace(sql, ":9", Session("StoreID"))
+			dbconn.Execute sql
+			
+			sql="DELETE FROM :9_vendor_mfg WHERE main_dept='"& Trim(str_master_id) &"'"
+			sql = Replace(sql, ":9", Session("StoreID"))
+			dbconn.Execute sql
+		
+		case else
+		
+		end select
+		
+	end if
+	
+	if(bok) then
+		sql = "UPDATE :9_dept SET has_sub=0 WHERE dept_id='" & str_subid & "'"
+		sql = Replace(sql, ":9", Session("StoreID"))
+		dbconn.Execute sql
+	end if
+		
+	'Update row
+
+	if not str_rowid = "0" then
+
+		sql = "UPDATE :9_dept SET dept_row = dept_row-1 WHERE parent_dept='0' AND (dept_row > " & str_rowid & ") AND is_master=" & str_mode
+		sql = Replace(sql, ":9", Session("StoreID"))
+		dbconn.execute sql
+		
+	end if
+
+	dbconn.Close
+	
+	DeleteDepartment=true
+	
+end function
+
+function ResetMasterCategory(ByRef str_db,ByRef str_status_msg,ByRef str_cid)
+	'returns true/false
+	
+	dim sql,dbconn
+	
+	'validate
+	if(str_cid="")or(str_db="")then
+		AddToHTMLMsgHldr str_status_msg,"Insuffiecient info specified to reset department.",false
+ 		ResetMasterCategory=false
+		exit function
+	end if
+	
+	set dbconn=server.CreateObject("ADODB.Connection")
+	dbconn.Open str_db
+	set dbconn2=server.CreateObject("ADODB.Connection")
+	dbconn2.Open Session("MasterConnectionString")
+	
+	sql = "SELECT master_id FROM :9_dept WHERE dept_id='" & str_cid & "'"
+	sql = Replace(sql, ":9", Session("StoreID"))
+	set rs = dbconn.Execute(sql)
+	master_id = rs("master_id")
+	rs.Close
+	
+	sql = "SELECT * FROM DEPT_MASTER WHERE dept_id='" & master_id & "'"
+	set rsMaster = dbconn2.Execute(sql)
+	
+	if rsMaster.EOF then
+		AddToHTMLMsgHldr str_status_msg,"Unexpected Error",false
+ 		ResetMasterCategory=false
+		exit function
+	end if
+	
+	master_name = rsMaster("dept_name")
+	rsMaster.Close
+	dbconn2.close
+	
+	sql = "UPDATE :9_dept SET dept_name='"& CheckString(master_name) & "'," &_
+		  "is_hidden=0"&_
+		  " WHERE dept_id ='" & str_cid & "'"	
+	sql = Replace(sql, ":9", Session("StoreID"))
+	
+	dbconn.Execute sql
+	
+	dbconn.Close
+		
+	ResetMasterCategory = true
+	
+end function
+
+function GetShopzillaCategoryTags(ByRef str_shopzilla)
+	
+	str_shopzilla = Trim(str_shopzilla)
+	
+	Set dbconn = Server.CreateObject("ADODB.Connection")
+	dbconn.open Session("ConnectionString")
+	strSQL = "SELECT * FROM A_shopzilla_category ORDER BY category"
+	Set rsShopzilla = dbconn.Execute(strSQL)
+	
+	dim s
+	
+	s="<option value=""--"">-Not Specified-</option>"
+	
+	do while not rsShopzilla.EOF
+	
+		category = Trim(rsShopzilla("category"))
+		category_id = Trim(rsShopzilla("CategoryID"))
+		
+		if(str_shopzilla = category_id) then
+			s = s & chr(13)&chr(10)&"<option value=""" & category_id &""" selected>" & category & "</option>"
+		else
+			s = s & chr(13)&chr(10)&"<option value=""" & category_id &""">"& category &"</option>"		
+		end if
+	  rsShopzilla.MoveNext
+	loop
+	
+	rsShopzilla.Close
+	dbconn.Close
+	
+	GetShopzillaCategoryTags=s
+
+end function
+
+function GetNexTagCategoryTags(ByRef str_nextag)
+	
+	str_shopzilla = Trim(str_shopzilla)
+	
+	Set dbconn = Server.CreateObject("ADODB.Connection")
+	dbconn.open Session("ConnectionString")
+	strSQL = "SELECT * FROM A_nextag_category ORDER BY CategoryDescription"
+	Set rsShopzilla = dbconn.Execute(strSQL)
+	
+	dim s
+	
+	s="<option value=""--"">-Not Specified-</option>"
+	
+	do while not rsShopzilla.EOF
+	
+		category = Trim(rsShopzilla("CategoryDescription"))
+		category_id = Trim(rsShopzilla("CategoryID"))
+		
+		if(str_shopzilla = category_id) then
+			s = s & chr(13)&chr(10)&"<option value=""" & category_id &""" selected>" & category & "</option>"
+		else
+			s = s & chr(13)&chr(10)&"<option value=""" & category_id &""">"& category &"</option>"		
+		end if
+	  rsShopzilla.MoveNext
+	loop
+	
+	rsShopzilla.Close
+	dbconn.Close
+	
+	GetNexTagCategoryTags=s
+
+end function
+</script>

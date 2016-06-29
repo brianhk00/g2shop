@@ -1,0 +1,61 @@
+<SCRIPT LANGUAGE=VBScript RUNAT=Server>
+Function GetUserAccessVariables(ByRef str_ref_index)
+
+	if Session("AdminID")="SA" OR Session("AdminID")=".." then
+		GetUserAccessVariables = "1"
+		exit function
+	end if
+
+	Set dbconn = Server.CreateObject("ADODB.Connection")
+	dbconn.open Session("ConnectionString")
+
+	sql = "SELECT access_flag FROM " & Session("StoreID") & "_users WHERE user_id='" & Session("AdminID")& "'"
+	Set rsUser = dbconn.Execute(sql)
+	
+	if not rsUser.EOF then
+		access_flag = Trim(rsUser("access_flag"))
+	else
+		GetUserAccessVariables = "0"
+		exit function
+	end if
+	rsUser.close
+
+	if Len(access_flag) > 0 then
+
+		ar_usf = Split(access_flag, chr(1))
+
+		SELECT CASE str_ref_index
+
+		CASE "VIEW_ALL_QUOTES"
+			ii_index = 0
+			ii_default = "1"
+
+		CASE "VIEW_STORE_STATS"
+			ii_index = 1
+			ii_default = "1"
+			
+		CASE "VIEW_ALL_ORDERS"
+			ii_index = 2
+			ii_default = "1"
+		
+		CASE "VIEW_ALL_CUSTOMERS"
+			ii_index = 3
+			ii_default = "1"
+
+		END SELECT
+
+		if UBound(ar_usf) >= ii_index then
+			GetUserAccessVariables = ar_usf(ii_index)
+		else
+			GetUserAccessVariables = ii_default
+		end if
+
+	else
+		GetUserAccessVariables = "1"
+		exit function
+	end if
+
+	dbconn.close
+
+End Function
+</SCRIPT>

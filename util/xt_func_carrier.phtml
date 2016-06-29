@@ -1,0 +1,503 @@
+<Script language="VBScript" RUNAT=SERVER>
+function UPS_Rate_Service_Selection(_
+							ByRef str_shipto_city, ByRef str_shipto_statecode,_
+							ByRef str_shipto_postalcode, ByRef str_shipto_country,_
+							ByRef str_weight,_
+							ByRef str_sh_markup, ByRef str_sh_handling,_
+							ByRef str_default_selection,_
+							ByRef str_option_text, ByRef i_ReturnCode)
+	
+	'Initialize
+	str_option_text = ""
+	
+	'country supported
+	
+	SELECT CASE LCASE(str_shipto_country)
+	CASE "argentina"
+		str_shipto_countrycode = "AR"
+	CASE "australia"
+		str_shipto_countrycode = "AU"
+	CASE "austria"
+		str_shipto_countrycode = "AT"
+	CASE "belgium"
+		str_shipto_countrycode = "BE"
+	CASE "brazil"
+		str_shipto_countrycode = "BR"
+	CASE "canada"
+		str_shipto_countrycode = "CA"
+	CASE "chile"
+		str_shipto_countrycode = "CL"
+	CASE "costa rica"
+		str_shipto_countrycode = "CR"
+	CASE "denmark"
+		str_shipto_countrycode = "DK"
+	CASE "dominican republic"
+		str_shipto_countrycode = "DO"
+	CASE "finland"
+		str_shipto_countrycode = "FI"
+	CASE "france"
+		str_shipto_countrycode = "FR"
+	CASE "germany"
+		str_shipto_countrycode = "DE"
+	CASE "greece"
+		str_shipto_countrycode = "GR"
+	CASE "guatemala"
+		str_shipto_countrycode = "GT"
+	CASE "hong kong"
+		str_shipto_countrycode = "HK"
+	CASE "ireland"
+		str_shipto_countrycode = "IE"
+	CASE "israel"
+		str_shipto_countrycode = "IL"
+	CASE "italy"
+		str_shipto_countrycode = "IT"
+	CASE "malaysia"
+		str_shipto_countrycode = "MY"
+	CASE "mexico"
+		str_shipto_countrycode = "MX"
+	CASE "netherlands"
+		str_shipto_countrycode = "NL"
+	CASE "new zealand"
+		str_shipto_countrycode = "NZ"
+	CASE "norway"
+		str_shipto_countrycode = "NO"
+	CASE "panama"
+		str_shipto_countrycode = "PA"
+	CASE "portugal"
+		str_shipto_countrycode = "PT"
+	CASE "puerto rico"
+		str_shipto_countrycode = "PR"
+	CASE "singapore"
+		str_shipto_countrycode = "SG"
+	CASE "spain"
+		str_shipto_countrycode = "ES"
+	CASE "sweden"
+		str_shipto_countrycode = "SE"
+	CASE "switzerland"
+		str_shipto_countrycode = "CH"
+	CASE "taiwan"
+		str_shipto_countrycode = "TW"
+	CASE "thailand"
+		str_shipto_countrycode = "TH"
+	CASE "united kingdom"
+		str_shipto_countrycode = "GB"
+	CASE "usa"
+		str_shipto_countrycode = "US"
+	CASE "us"
+		str_shipto_countrycode = "US"
+	CASE ELSE
+		str_shipto_countrycode = ""
+	END SELECT
+	
+	if str_shipto_countrycode = "" then
+		'Country not supported
+		UPS_Rate_Service_Selection = false
+		i_ReturnCode = 1
+		exit function
+	end if
+	
+	if Not IsNumeric(str_weight) then
+		UPS_Rate_Service_Selection = false
+		i_ReturnCode = 2
+		exit function
+	else
+		str_weight = FormatNumber(str_weight,1,,,0)
+	end if
+	
+	'Get Value from DB
+	set xmlconn= Server.CreateObject("ADODB.Connection")
+	xmlconn.open Session("ConnectionString")
+	
+	sql = "SELECT City, State, Zip, Country, ups_xml_userid, ups_xml_password, ups_xml_key, ups_xml_flag FROM " & Session("StoreID") & "_profile"
+	set rs = xmlconn.Execute(sql)
+	if not rs.EOF then
+		SH1 = Trim(rs("City"))
+		SH2 = Trim(rs("State"))
+		SH3 = Trim(rs("Zip"))
+		SH4 = Trim(rs("Country"))
+		
+		A1 = Trim(rs("ups_xml_userid"))
+		A2 = Trim(rs("ups_xml_password"))
+		A3 = Trim(rs("ups_xml_key"))
+		ups_flags = Trim(rs("ups_xml_flag"))
+		
+		if Len(SH4) > 0 then
+			if SH4 = "USA" then
+				SH4="US"
+			end if
+		else
+			SH4= "US"
+		end if
+	end if
+	rs.Close
+	xmlconn.Close
+	
+	'Get UPS Flags From DB...
+	'ups_flags = "01*02*03*07*08*11*12*13*14*54*59*65"
+	
+	if IsNumeric(str_sh_markup) then
+		x_sh_markup = CDbl(str_sh_markup)
+	else
+		x_sh_markup = 1
+	end if
+	
+	if IsNumeric(str_sh_handling) then
+		x_sh_handling = CDbl(str_sh_handling)
+	else
+		x_sh_handling = 0
+	end if
+	
+	dim xmlHttp, xmlRecv
+	set xmlHttp = Server.CreateObject("Msxml2.ServerXMLHTTP")
+	set xmlRecv = Server.CreateObject("Msxml2.ServerXMLHTTP")
+	
+	dim xmlURL
+	xmlURL = Session("SecureURL") & "/ups_xml_request.asp?"
+	xmlURL = xmlURL & "W=" & str_weight
+	xmlURL = xmlURL & "&ST1=" & str_shipto_city
+	xmlURL = xmlURL & "&ST2=" & str_shipto_statecode
+	xmlURL = xmlURL & "&ST3=" & str_shipto_postalcode
+	xmlURL = xmlURL & "&ST4=" & str_shipto_country
+	xmlURL = xmlURL & "&A1=" & A1
+	xmlURL = xmlURL & "&A2=" & A2
+	xmlURL = xmlURL & "&A3=" & A3
+	xmlURL = xmlURL & "&SH1=" & SH1
+	xmlURL = xmlURL & "&SH2=" & SH2
+	xmlURL = xmlURL & "&SH3=" & SH3
+	xmlURL = xmlURL & "&SH4=" & SH4
+	 
+	xmlHttp.Open "GET", xmlURL, false 
+	xmlHttp.Send()
+	
+	xmlDoc = xmlHttp.responseText
+	
+	xmlRecv.open "POST", "https://wwwcie.ups.com/ups.app/xml/Rate", false
+	xmlRecv.setRequestHeader "Content-Type", "application/x-www-form-urlencoded"
+	xmlRecv.send(xmlDoc)
+	
+	tdxmlHeaders = xmlRecv.getAllResponseHeaders()
+	tdxmlStatus = xmlRecv.statusText
+	tdxmlResult = xmlRecv.responseXML.xml
+	
+	dim xmlDoc2
+	set xmlDoc2 = Server.CreateObject("Msxml2.DOMDocument")
+	xmlDoc2.async = false
+	xmlDoc2.LoadXML (tdxmlResult)
+	
+	if (xmlDoc2.parseError.errorCode <> 0) then
+		a = xmlDoc2.parseError.reason
+		UPS_Rate_Service_Selection = false
+		exit function
+	else
+	
+		set objNodeList = xmlDoc2.getElementsByTagName("RatedShipment")
+		
+		For i = 0 To (objNodeList.length - 1)
+			set lineInfoNode = objNodeList.Item(i)
+			
+			'Service
+			set serviceNodeList = lineInfoNode.selectNodes("Service")
+			textServiceCode = serviceNodeList(0).selectSingleNode("Code").text
+			
+			SELECT CASE textServiceCode
+			CASE "01"
+				textServiceDescription = "Next Day Air"
+			CASE "02"
+				textServiceDescription = "2nd Day Air"
+			CASE "03"
+				textServiceDescription = "Ground"
+			CASE "07"
+				textServiceDescription = "Worldwide Express"
+			CASE "08"
+				textServiceDescription = "Worldwide Expedited"
+			CASE "11"
+				textServiceDescription = "Standard"
+			CASE "12"
+				textServiceDescription = "3-Day Select"
+			CASE "13"
+				textServiceDescription = "Next Day Air Saver"
+			CASE "14"
+				textServiceDescription = "Next Day Air Early AM"	
+			CASE "54"
+				textServiceDescription = "Worldwide Express Plus"
+			CASE "59"
+				textServiceDescription = "2nd Day Air AM"
+			CASE "65"
+				textServiceDescription = "Express Saver"
+			END SELECT
+			
+			'Rate Charge
+			set totalchargeNodeList = lineInfoNode.selectNodes("TotalCharges")
+			totalcharge_currencydode = totalchargeNodeList(0).selectSingleNode("CurrencyCode").text
+			totalcharge_value = totalchargeNodeList(0).selectSingleNode("MonetaryValue").text
+			
+			'Apply markup and additional handling charge...
+			if IsNumeric(totalcharge_value) then
+				x_totalcharge_value = CDbl(totalcharge_value)
+				x_totalcharge_value = (x_totalcharge_value * x_sh_markup) + x_sh_handling
+			else
+				x_totalcharge_value = 0
+			end if
+			
+			if InStr(ups_flags, textServiceCode) > 0 then
+				if str_default_selection = "U" & textServiceCode then
+					str_option_text = str_option_text & "<option value=""U" & textServiceCode & "~" & FormatNumber(x_totalcharge_value,2,0,0,0) & """ selected>" & textServiceDescription & " ($" & FormatNumber(x_totalcharge_value,2) & ")</option>"
+				else
+					str_option_text = str_option_text & "<option value=""U" & textServiceCode & "~" & FormatNumber(x_totalcharge_value,2,0,0,0) & """>" & textServiceDescription & " ($" & FormatNumber(x_totalcharge_value,2) & ")</option>"
+				end if
+			end if
+			
+		Next
+		
+	end if
+	
+	UPS_Rate_Service_Selection = true
+	
+end function
+
+function GetCarrierCountryCode(ByRef str_countryname)
+	dim country_code
+	
+	set dbconn=server.CreateObject("ADODB.Connection")
+	dbconn.Open Session("ConnectionString")
+	
+	sql = "SELECT Country_Code FROM A_COUNTRY_LIST WHERE Country_Name='" & str_countryname & "' OR "
+	sql = sql & "Country_Name2='" & str_countryname & "' OR "
+	sql = sql & "Country_Name3='" & str_countryname & "'"
+	
+	set rsCountry = dbconn.Execute(sql)
+	
+	if not rsCountry.EOF then
+		country_code = Trim(rsCountry(0))
+	else
+		country_code = ""
+	end if
+	
+	rsCountry.Close
+	
+	GetCarrierCountryCode = country_code
+end function
+
+function GetCarrierServiceCode(ByRef str_servicename)
+	dim service_code
+	service_code = ""
+	
+	SELECT CASE str_servicename
+	CASE "UPS Next Day Air"
+		service_code = "U01"
+	CASE "UPS Express"
+		service_code = "U01"
+	CASE "UPS 2nd Day Air"
+		service_code = "U02"
+	CASE "UPS Expedited"
+		service_code = "U02"
+	CASE "UPS Ground"
+		service_code = "U03"
+	CASE "UPS Worldwide Express"
+		service_code = "U07"
+	CASE "UPS Worldwide Expedited"
+		service_code = "U08"
+	CASE "UPS Standard"
+		service_code = "U11"
+	CASE "UPS 3 Day Select"
+		service_code = "U12"
+	CASE "UPS 3-Day Select"
+		service_code = "U12"
+	CASE "UPS Next Day Air Saver"
+		service_code = "U13"
+	CASE "UPS Express Saver"
+		service_code = "U13"
+	CASE "UPS Next Day Air Early AM"
+		service_code = "U14"
+	CASE "UPS Express Early"
+		service_code = "U14"
+	CASE "UPS Worldwide Express Plus"
+		service_code = "U54"
+	CASE "UPS 2nd Day Air AM"
+		service_code = "U59"
+	CASE "UPS Express Saver"
+		service_code = "U65"
+	
+	CASE "FedEx Priority Overnight"
+		service_code = "F01"
+	CASE "FedEx Priority"
+		service_code = "F01"
+	CASE "FedEx 2Day"
+		service_code = "F03"
+	CASE "FedEx Standard Overnight"
+		service_code = "F05"
+	CASE "FedEx First Overnight"
+		service_code = "F06"
+	CASE "FedEx Extra Hours"
+		service_code = "F07"
+	CASE "FedEx Express Saver"
+		service_code = "F20"
+	CASE "FedEx Overnight Freight"
+		service_code = "F70"
+	CASE "FedEx 2Day Freight"
+		service_code = "F80"
+	CASE "FedEx Express Saver Freight"
+		service_code = "F83"
+	CASE "FedEx International Priority"
+		service_code = "F01"
+	CASE "FedEx International Economy"
+		service_code = "F03"
+	CASE "FedEx International First"
+		service_code = "F06"
+	CASE "FedEx International Priority Freight"
+		service_code = "F70"
+	CASE "FedEx International Economy Freight"
+		service_code = "F86"
+	
+	CASE "FedEx Home Delivery"
+		service_code = "F90"
+	CASE "FedEx Ground"
+		service_code = "F92"
+	
+	CASE "USPS PARCEL"
+		service_code = "S01"
+	CASE "USPS PRIORITY"
+		service_code = "S02"	
+	CASE "USPS EXPRESS"
+		service_code = "S03"
+	CASE "USPS GLOBAL EXPRESS MAIL (EMS)"
+		service_code = "S04"
+	CASE "USPS AIRMAIL PARCEL POST"
+		service_code = "S05"
+	CASE "USPS ECONOMY (SURFACE) PARCEL POST"
+		service_code = "S06"
+	CASE ELSE
+		service_code = str_servicename
+	END SELECT
+			
+	GetCarrierServiceCode = service_code
+end function
+
+function GetCarrierServiceName(ByRef str_servicecode, ByRef str_orig_country, ByRef ste_dest_country)
+	
+	dim b_international
+	
+	if str_orig_country = ste_dest_country then
+		b_international = false
+	else
+		b_international = true
+	end if
+	
+	SELECT CASE str_servicecode
+	CASE "U01"
+		if Session("ENABLEINT") = "2"  OR Session("ENABLEINT") = "3" then
+			service_name = "UPS Express"
+		else
+			service_name = "UPS Next Day Air"
+		end if
+		
+	CASE "U02"
+		if Session("ENABLEINT") = "2"  OR Session("ENABLEINT") = "3" then
+			service_name = "UPS Expedited"
+		else
+			service_name = "UPS 2nd Day Air"
+		end if
+	
+	CASE "U03"
+		service_name = "UPS Ground"
+	CASE "U07"
+		service_name = "UPS Worldwide Express"
+	CASE "U08"
+		service_name = "UPS Worldwide Expedited"
+	CASE "U11"
+		service_name = "UPS Standard"
+	CASE "U12"
+		service_name = "UPS 3-Day Select"
+		
+	CASE "U13"
+		if Session("ENABLEINT") = "2"  OR Session("ENABLEINT") = "3" then
+			service_name = "UPS Express Saver"
+		else
+			service_name = "UPS Next Day Air Saver"
+		end if
+	
+	CASE "U14"
+		if Session("ENABLEINT") = "2"  OR Session("ENABLEINT") = "3" then
+			service_name = "UPS Express Early"
+		else
+			service_name = "UPS Next Day Air Early AM"
+		end if
+		
+	CASE "U54"
+		service_name = "UPS Worldwide Express Plus"
+	CASE "U59"
+		service_name = "UPS 2nd Day Air AM"
+	CASE "U65"
+		service_name = "UPS Express Saver"
+		
+	CASE "UPS Express Saver"
+
+		If b_international then
+		service_name = "UPS Worldwide Saver"
+		Else
+		service_name = "UPS Express Saver"
+		End if
+		
+	
+	CASE "F01"
+		if b_international then
+			service_name = "FedEx International Priority"
+		else
+			service_name = "FedEx Priority Overnight"
+		end if
+	CASE "F03"
+		if b_international then
+			service_name = "FedEx International Economy"
+		else
+			service_name = "FedEx 2Day"
+		end if
+	CASE "F05"
+		service_name = "FedEx Standard Overnight"
+	CASE "F06"
+		if b_international then
+			service_name = "FedEx International First"
+		else
+			service_name = "FedEx First Overnight"
+		end if
+	CASE "F07"
+		service_name = "FedEx Extra Hours"
+	CASE "F20"
+		service_name = "FedEx Express Saver"
+	CASE "F70"
+		if b_international then
+			service_name = "FedEx International Priority Freight"
+		else
+			service_name = "FedEx Overnight Freight"
+		end if
+	CASE "F80"
+		service_name = "FedEx 2Day Freight"
+	CASE "F83"
+		service_name = "FedEx Express Saver Freight"
+	CASE "F86"
+		service_name = "FedEx International Economy Freight"
+	CASE "F90"
+		service_name = "FedEx Home Delivery"
+	CASE "F92"
+		service_name = "FedEx Ground"
+		
+	CASE "S01"
+		service_name = "USPS PARCEL"
+	CASE "S02"
+		service_name = "USPS PRIORITY"
+	CASE "S03"
+		service_name = "USPS EXPRESS"
+	CASE "S04"
+		service_name = "USPS GLOBAL EXPRESS MAIL (EMS)"
+	CASE "S05"
+		service_name = "USPS AIRMAIL PARCEL POST"
+	CASE "S06"
+		service_name = "USPS ECONOMY (SURFACE) PARCEL POST"
+		
+	CASE ELSE
+		service_name = str_servicecode
+	END SELECT
+	
+	GetCarrierServiceName = service_name
+	
+End Function
+</script>

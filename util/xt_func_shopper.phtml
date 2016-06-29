@@ -1,0 +1,1242 @@
+<!-- #INCLUDE File="xt_html_statusmsg.phtml" -->
+
+<SCRIPT LANGUAGE=VBScript RUNAT=Server>
+
+function IsValidShopperLogin(str_db,str_email,str_password, ByRef str_cid, ByRef str_login_group, ByRef str_full_name,_
+												ByRef str_state, ByRef str_zip, ByRef str_country)
+	'returns true/false
+	'fills str_cid if customer found to exist
+	if((str_db="")) then
+		AddToHTMLMsgHldr status_msg_hldr,"Insuffiecient info specified to add new customer.",true
+ 		IsValidShopperLogin=false
+ 		exit function
+ 	end if
+ 	
+ 	if((str_email="")Or(str_password="")) then
+ 		IsValidShopperLogin=false
+ 		exit function
+ 	end if
+ 	
+	dim sql,rs,bEC
+	sql="SELECT * FROM :9_shopper WHERE (Email='"&str_email&"' AND Password='"&str_password&"')"
+	sql=Replace(sql, ":9", Session("StoreID"))
+	
+	set rs=server.CreateObject("ADODB.Recordset")
+	rs.Open sql,str_db
+	bEC=(not rs.EOF)
+	if(bEC) then
+		str_cid=rs("shopper_id")
+		str_login_group = rs("member_group")
+		str_full_name = ""
+		if Len(rs("FirstName")) > 0 then
+			str_full_name = UCase(rs("FirstName"))& " "
+		end if
+		if Len(rs("LastName")) > 0 then
+			str_full_name = str_full_name & UCase(rs("LastName"))
+		end if
+		
+		x_state = rs("State")
+		x_zip = rs("ZipCode")
+		x_country = rs("Country")
+		
+		str_state = rs("shipping_State")
+		str_zip = rs("shipping_ZipCode")
+		str_country = rs("shipping_Country")
+		
+		custom_catalog_id = Trim(rs("custom_catalog_id"))
+					
+		if Len(custom_catalog_id) > 1 then
+		  'TO DO :.....
+		  custom_catalog_id_flag = 1
+		  Session("CUSTOM_CATALOG_ID_FLAG") = Cstr(custom_catalog_id_flag)
+		end if
+					
+		
+		Set x1Conn = Server.CreateObject("ADODB.Connection")
+		x1Conn.open Session("ConnectionString")
+		
+		if Len(rs("affiliate_id")) > 0 then
+			Session("PARTNER") = rs("affiliate_id")
+			Session("Expiration") = rs("DateEntered")
+
+			if InStr(Session("PARTNER"), "OT") > 0 then
+				Session("PARTNER") = ""
+				Session("Expiration") = ""
+			end if
+
+			sql="SELECT disable FROM :9_affiliate WHERE affiliate_id='"& rs("affiliate_id") &"'"
+			sql = Replace(sql, ":9", Session("StoreID"))
+
+			set rsAff = x1Conn.execute(sql)
+				if not rsAff.EOF then
+					status = rsAff("disable")
+				end if
+			rsAff.close
+			
+			if status = 1 or status = 2 then
+				Session("PARTNER") = ""
+				Session("Expiration") = ""
+			end if
+
+		end if
+		
+		if Session("IMPRICE") = "1" then
+			imftp_id = rs("imftp_id")
+			
+			if Len(imftp_id) > 0 then
+				
+				sql = "SELECT IMFTP_TableID FROM A_IMFTP WHERE IMFTP_ID=" & imftp_id
+				set rsx = x1Conn.Execute(sql)
+				if not rsx.EOF then
+					Session("IMFILEID") = Trim(rsx(0))
+				else
+					Session("IMFILEID") = Session("StoreID")
+				end if
+				rsx.Close
+			else
+				Session("IMFILEID") = Session("StoreID")
+			end if
+								
+		end if
+
+		x1Conn.Close
+		
+		if(rs("IsSameAddress")) then
+			str_state = x_state
+			str_zip = x_zip
+			str_country = x_country
+		end if
+		
+	end if
+	IsValidShopperLogin=bEC
+	rs.Close
+end function
+
+Function IsBillToInfoValid(ByRef str_status_msg,ByRef str_firstname,ByRef str_lastname,ByRef str_company,ByRef str_address,_
+							ByRef str_city,ByRef str_st,ByRef str_country,_
+							ByRef str_zip,ByRef str_phone)
+							
+	'================================================================================
+	sql = "SELECT setting_values FROM " & Session("StoreID") & "_setting WHERE setting_type = 'M_NEW_CUSTOMER_REG_REQ'"
+  set rsSetting=server.CreateObject("ADODB.Recordset")
+	rsSetting.Open sql,Session("ConnectionString")
+	
+  if not rsSetting.EOF then
+    req_setting = rsSetting(0)
+  else
+    req_setting = "1;1;0;1;1;1;1;1;1;1;1;0;1;1;1;1;1;1;"
+  end if
+  rsSetting.Close
+  	
+	if Len(req_setting) = 36 then
+	else
+	  req_setting = "1;1;0;1;1;1;1;1;1;1;1;0;1;1;1;1;1;1;"
+	end if
+	
+	ar_req_setting = Split(req_setting, ";")
+	
+	'0: First Name
+	'1: Last Name
+	'2: Company
+	'3: Address
+	'4: City
+	'5: State
+	'6: Zip
+	'7: Country
+	'8: Phone
+		
+	bBillToInfoValid = true
+	if ar_req_setting(0) = "1" then
+	  if str_firstname = "" then
+	    bBillToInfoValid = false
+	  end if
+	end if
+	if ar_req_setting(1) = "1" then
+	  if str_lastname = "" then
+	    bBillToInfoValid = false
+	  end if
+	end if
+	if ar_req_setting(2) = "1" then
+	  if str_company = "" then
+	    bBillToInfoValid = false
+	  end if
+	end if
+	if ar_req_setting(3) = "1" then
+	  if str_address = "" then
+	    bBillToInfoValid = false
+	  end if
+	end if
+	if ar_req_setting(4) = "1" then
+	  if str_city = "" then
+	    bBillToInfoValid = false
+	  end if
+	end if
+	if ar_req_setting(5) = "1" then
+	  if str_st = "" OR str_st = "--" then
+	    bBillToInfoValid = false
+	  end if
+	end if
+	
+	if str_country = "LC" then
+	  if ar_req_setting(6) = "1" then
+	    if str_zip = "" then
+	      bBillToInfoValid = false
+	    end if
+	  end if
+	end if
+	if ar_req_setting(7) = "1" then
+	  if str_country = "" then
+	    bBillToInfoValid = false
+	  end if
+	end if
+	if ar_req_setting(8) = "1" then
+	  if str_phone = "" then
+	    bBillToInfoValid = false
+	  end if
+	end if
+	
+	'Response.Write(bBillToInfoValid)
+	'Response.end
+	
+	if bBillToInfoValid then
+	  IsBillToInfoValid=true
+	else
+	  AddToHTMLMsgHldr status_msg,"Incomplete billing information.  Please fill out all required fields.",true
+	  IsBillToInfoValid=false
+	end if
+	
+	'Response.Write(IsBillToInfoValid)
+	'Response.end
+	
+	'================================================================================
+	
+	'if((str_firstname="")Or(str_lastname="")Or(str_address="")_
+		'Or(str_city="")Or((str_st="")or(str_st="--"))Or(str_country="")Or(str_zip="")Or(str_phone="")) then
+		'AddToHTMLMsgHldr status_msg,"Incomplete billing information.  Please fill out all required fields.",true
+		'IsBillToInfoValid=false
+		'Exit Function
+	'end if
+	'IsBillToInfoValid=true
+	
+End Function
+
+Function IsShipToInfoValid(ByRef str_status_msg,ByRef str_firstname,ByRef str_lastname, ByRef str_address,_
+							ByRef str_city,ByRef str_st,ByRef str_country,_
+							ByRef str_zip,ByRef str_phone, ByRef str_same_address, ByRef str_company)
+	
+	if(str_same_address = "1") then
+		IsShipToInfoValid=true
+		Exit Function
+	end if
+	
+	'================================================================================
+	sql = "SELECT setting_values FROM " & Session("StoreID") & "_setting WHERE setting_type = 'M_NEW_CUSTOMER_REG_REQ'"
+  set rsSetting=server.CreateObject("ADODB.Recordset")
+	rsSetting.Open sql,Session("ConnectionString")
+	
+  if not rsSetting.EOF then
+    req_setting = rsSetting(0)
+  else
+    req_setting = "1;1;0;1;1;1;1;1;1;1;1;0;1;1;1;1;1;1;"
+  end if
+  rsSetting.Close
+  	
+	if Len(req_setting) = 36 then
+	else
+	  req_setting = "1;1;0;1;1;1;1;1;1;1;1;0;1;1;1;1;1;1;"
+	end if
+	
+	ar_req_setting = Split(req_setting, ";")
+	'9: First Name
+	'10: Last Name
+	'11: Company
+	'12: Address
+	'13: City
+	'14: State
+	'15: Zip
+	'16: Country
+	'17: Phone
+	
+	bShipToInfoValid = true
+	if ar_req_setting(9) = "1" then
+	  if str_firstname = "" then
+	    bShipToInfoValid = false
+	  end if
+	end if
+	if ar_req_setting(10) = "1" then
+	  if str_lastname = "" then
+	    bShipToInfoValid = false
+	  end if
+	end if
+	if ar_req_setting(11) = "1" then
+	  if str_company = "" then
+	    bShipToInfoValid = false
+	  end if
+	end if
+	if ar_req_setting(12) = "1" then
+	  if str_address = "" then
+	    bShipToInfoValid = false
+	  end if
+	end if
+	if ar_req_setting(13) = "1" then
+	  if str_city = "" then
+	    bShipToInfoValid = false
+	  end if
+	end if
+	if ar_req_setting(14) = "1" then
+	  if str_st = "" OR str_st = "--" then
+	    bShipToInfoValid = false
+	  end if
+	end if
+	if str_country = "LC" then
+	else
+	if ar_req_setting(15) = "1" then
+	  if str_zip = "" then
+	    bShipToInfoValid = false
+	  end if
+	end if
+	end if
+	if ar_req_setting(16) = "1" then
+	  if str_country = "" then
+	    bShipToInfoValid = false
+	  end if
+	end if
+	if ar_req_setting(17) = "1" then
+	  if str_phone = "" then
+	    bShipToInfoValid = false
+	  end if
+	end if
+	
+	if bShipToInfoValid then
+	  IsShipToInfoValid=true
+		Exit Function
+	else
+	  AddToHTMLMsgHldr status_msg,"Incomplete shipping information.  Please fill out all required fields.",true
+	  IsShipToInfoValid=false
+		Exit Function
+	end if
+	
+	'================================================================================
+	
+	'if((str_firstname="")Or(str_lastname="")Or(str_address="")_
+		'Or(str_city="")Or((str_st="")or(str_st="--"))Or(str_country="")Or(str_zip="")) then
+		'AddToHTMLMsgHldr status_msg,"Incomplete shipping information.  Please fill out all required fields.",true
+		'IsShipToInfoValid=false
+		'Exit Function
+	'end if
+	'IsShipToInfoValid=true
+	
+End Function
+
+function IsShopperInfoValid(ByRef str_email, ByRef str_password1, ByRef str_password2, ByRef status_msg_hldr)
+	'returns true/false	
+	if((CheckEmailAddress(str_email))= false)then
+		AddToHTMLMsgHldr status_msg,"Valid e-mail address is required.",true
+		IsShopperInfoValid=false
+		exit function
+	end if
+	
+	if(str_password1="") then
+		AddToHTMLMsgHldr status_msg,"A password is required to continue.",true
+		IsShopperInfoValid=false
+	else
+		if(str_password1 = str_password2) then
+			IsShopperInfoValid=true
+		else
+			AddToHTMLMsgHldr status_msg,"please use same password to proceed.",true
+			IsShopperInfoValid=false
+		end if
+	end if
+end function
+
+function AddNewShopper(ByRef str_db,ByRef str_cid,ByRef status_msg_hldr,_
+						ByRef str_firstname,ByRef str_lastname,_
+						ByRef str_company,ByRef str_address,ByRef str_city,ByRef str_st,ByRef str_zip,_
+						ByRef str_country,ByRef str_phone,ByRef str_email,str_is_same_address,ByRef str_password,_
+						cc_type,cc_number,cc_exp_month,cc_exp_year)
+
+	Dim field_names,field_values,str_sql,rs,dbconn
+ 	
+ 	if((str_db="")Or(str_cid="")) then
+		AddToHTMLMsgHldr status_msg_hldr,"Insuffiecient info specified to add new customer.",true
+ 		AddNewShopper=false
+ 		exit function
+ 	end if
+ 	
+ 	'verify email and password are together unique
+	str_sql="SELECT * FROM :9_shopper WHERE (EMail='"&str_email&"')"
+	str_sql=Replace(str_sql, ":9", Session("StoreID"))
+	Set rs=server.CreateObject("ADODB.RecordSet")
+	rs.Open str_sql,str_db
+	if(Not rs.EOF) then
+		'non-unique e-mail address
+		rs.Close
+		AddToHTMLMsgHldr status_msg_hldr,"Specified E-mail address is already used.  Please specify a different e-mail address.",true
+ 		AddNewShopper=false
+ 		exit function
+	end if
+	rs.Close
+	set rs=nothing
+ 	
+ 	field_names = "shopper_id,"
+	field_values = "'"&str_cid&"',"
+	
+	if(Len(str_firstname)>0) THEN
+ 		field_names=field_names&"FirstName"&","
+		field_values=field_values&"'"&CheckString(str_firstname)&"',"
+ 	end if
+	if(Len(str_lastname)>0) THEN
+ 		field_names=field_names&"LastName"&","
+		field_values=field_values&"'"&CheckString(str_lastname)&"',"
+ 	end if
+ 	if(Len(str_company)>0) then
+ 		field_names=field_names&"Company"&","
+		field_values=field_values&"'"&CheckString(str_company)&"',"
+ 	end if
+ 	if(Len(str_address)>0) then
+ 		field_names=field_names&"Address"&","
+		field_values=field_values&"'"&CheckString(str_address)&"',"
+ 	end if
+ 	if(Len(str_city)>0) then
+ 		field_names=field_names&"City"&","
+		field_values=field_values&"'"&CheckString(str_city)&"',"
+ 	end if
+ 	if(Len(str_st)>0) then
+ 		field_names=field_names&"State"&","
+		field_values=field_values&"'"&CheckString(str_st)&"',"
+ 	end if
+ 	if(Len(str_zip)>0) then
+ 		field_names=field_names&"ZipCode"&","
+		field_values=field_values&"'"&CheckString(str_zip)&"',"
+ 	end if
+ 	if(Len(str_country)>0) then
+ 		field_names=field_names&"Country"&","
+		field_values=field_values&"'"&CheckString(str_country)&"',"
+ 	end if
+ 	if(Len(str_phone)>0) then
+ 		field_names=field_names&"Phone"&","
+		field_values=field_values&"'"&CheckString(str_phone)&"',"
+ 	end if
+ 	if(Len(str_email)>0) then
+ 		field_names=field_names&"EMail"&","
+		field_values=field_values&"'"&CheckString(str_email)&"',"
+ 	end if
+ 	field_names = field_names & "IsSameAddress,"
+ 	if(Len(str_is_same_address)>0) then
+		field_values = field_values & str_is_same_address & ","
+	else
+		field_values = field_values & "0,"
+	end if
+ 	if(Len(str_password)>0) then
+ 		field_names=field_names&"Password"&","
+		field_values=field_values&"'"&CheckString(str_password)&"',"
+ 	end if
+ 	
+ 	if(Len(cc_type)>0) then
+ 		field_names=field_names&"CC_Type"&","
+		field_values=field_values&"'"&CheckString(cc_type)&"',"
+ 	end if
+ 	
+ 	if(Len(cc_number)>0) then
+ 		field_names=field_names&"CC_Number"&","
+		field_values=field_values&"'"&CheckString(cc_number)&"',"
+ 	end if
+ 	
+ 	if(Len(cc_exp_month)>0) then
+ 		field_names=field_names&"CC_ExpMonth"&","
+		field_values=field_values&"'"&CheckString(cc_exp_month)&"',"
+ 	end if
+ 	
+ 	if(Len(cc_exp_year)>0) then
+ 		field_names=field_names&"CC_ExpYear"&","
+		field_values=field_values&"'"&CheckString(cc_exp_year)&"',"
+ 	end if
+
+	'strip the trailing commas
+	field_names = Left(field_names,Len(field_names)-1)
+	field_values = Left(field_values,Len(field_values)-1)
+	
+	str_sql="INSERT INTO :9_shopper (" & field_names & ") VALUES(" & field_values & ")"
+	str_sql=Replace(str_sql, ":9", Session("StoreID"))
+	
+	Set dbconn=server.CreateObject("ADODB.Connection")
+	dbconn.Open str_db
+	dbconn.Execute str_sql
+	dbconn.Close
+	AddNewShopper=true
+	
+End Function
+
+function AddNewShopperBasic(ByRef str_db,ByRef str_cid,ByRef status_msg_hldr,_
+						ByRef str_email,ByRef str_password)
+
+	Dim field_names,field_values,str_sql,rs,dbconn
+ 	
+ 	if((str_db="")Or(str_cid="")) then
+		AddToHTMLMsgHldr status_msg_hldr,"Insuffiecient info specified to add new customer.",true
+ 		AddNewShopperBasic=false
+ 		exit function
+ 	end if
+ 	
+ 	'verify email and password are together unique
+	str_sql="SELECT * FROM :9_shopper WHERE (EMail='"&str_email&"')"
+	str_sql=Replace(str_sql, ":9", Session("StoreID"))
+	Set rs=server.CreateObject("ADODB.RecordSet")
+	rs.Open str_sql,str_db
+	if(Not rs.EOF) then
+		'non-unique e-mail address
+		rs.Close
+		AddToHTMLMsgHldr status_msg_hldr,"Specified E-mail address is already used.  Please specify a different e-mail address.",true
+ 		AddNewShopperBasic=false
+ 		exit function
+	end if
+	rs.Close
+	set rs=nothing
+ 	
+ 	field_names = "shopper_id,"
+	field_values = "'"&str_cid&"',"
+	
+ 	if(Len(str_email)>0) then
+ 		field_names=field_names&"EMail"&","
+		field_values=field_values&"'"&CheckString(str_email)&"',"
+ 	end if
+ 	if(Len(str_password)>0) then
+ 		field_names=field_names&"Password"&","
+		field_values=field_values&"'"&CheckString(str_password)&"',"
+ 	end if
+
+	'ADDED BY BK 6/21/2004
+	if Len(Session("REFERER_URL")) > 0 then
+		sxREFERER = Trim(Session("REFERER_URL"))
+		if Len(sxREFERER) > 200 then
+			sxREFERER = Left(sxREFERER, 195)
+		end if
+		field_names=field_names&"referer_url"&","
+		field_values=field_values&"'"& CheckString(sxREFERER) & "',"
+	end if
+
+	'ADDED BY ED 2/23/2005
+	if Session("LoginFilter") = 1 then
+		field_names=field_names&"new_customer"&","
+		field_values=field_values&"1,"
+	else
+		field_names=field_names&"new_customer"&","
+		field_values=field_values&"0,"
+	end if
+
+	'strip the trailing commas
+	field_names = Left(field_names,Len(field_names)-1)
+	field_values = Left(field_values,Len(field_values)-1)
+	
+	str_sql="INSERT INTO :9_shopper (" & field_names & ") VALUES(" & field_values & ")"
+	str_sql=Replace(str_sql, ":9", Session("StoreID"))
+	
+	Set dbconn=server.CreateObject("ADODB.Connection")
+	dbconn.Open str_db
+	dbconn.Execute str_sql
+	dbconn.Close
+	AddNewShopperBasic=true
+	
+End Function
+
+function AddNewShopperBasicEx(ByRef str_db,ByRef str_cid,ByRef status_msg_hldr,_
+						ByRef str_email,ByRef str_password, ByRef str_firstname, ByRef str_lastname)
+
+	Dim field_names,field_values,str_sql,rs,dbconn
+ 	
+ 	if((str_db="")Or(str_cid="")) then
+		AddToHTMLMsgHldr status_msg_hldr,"Insuffiecient info specified to add new customer.",true
+ 		AddNewShopperBasicEx=false
+ 		exit function
+ 	end if
+ 	
+ 	'verify email and password are together unique
+	str_sql="SELECT * FROM :9_shopper WHERE (EMail='"&str_email&"')"
+	str_sql=Replace(str_sql, ":9", Session("StoreID"))
+	Set rs=server.CreateObject("ADODB.RecordSet")
+	rs.Open str_sql,str_db
+	if(Not rs.EOF) then
+		'non-unique e-mail address
+		rs.Close
+		AddToHTMLMsgHldr status_msg_hldr,"Specified E-mail address is already used.  Please specify a different e-mail address.",true
+ 		AddNewShopperBasicEx=false
+ 		exit function
+	end if
+	rs.Close
+	set rs=nothing
+ 	
+ 	field_names = "shopper_id,"
+	field_values = "'"&str_cid&"',"
+	
+ 	if(Len(str_email)>0) then
+ 		field_names=field_names&"EMail"&","
+		field_values=field_values&"'"&CheckString(str_email)&"',"
+ 	end if
+ 	if(Len(str_password)>0) then
+ 		field_names=field_names&"Password"&","
+		field_values=field_values&"'"&CheckString(str_password)&"',"
+ 	end if
+ 	if(Len(str_firstname)>0) then
+ 		field_names=field_names&"FirstName"&","
+		field_values=field_values&"'"&CheckString(str_firstname)&"',"
+ 	end if
+ 	if(Len(str_lastname)>0) then
+ 		field_names=field_names&"LastName"&","
+		field_values=field_values&"'"&CheckString(str_lastname)&"',"
+ 	end if
+
+	'strip the trailing commas
+	field_names = Left(field_names,Len(field_names)-1)
+	field_values = Left(field_values,Len(field_values)-1)
+	
+	str_sql="INSERT INTO :9_shopper (" & field_names & ") VALUES(" & field_values & ")"
+	str_sql=Replace(str_sql, ":9", Session("StoreID"))
+	
+	Set dbconn=server.CreateObject("ADODB.Connection")
+	dbconn.Open str_db
+	dbconn.Execute str_sql
+	dbconn.Close
+	AddNewShopperBasicEx=true
+	
+End Function
+
+function UpdateShopperShippingInfo(ByRef str_db,ByRef str_cid,ByRef status_msg_hldr,_
+									ByRef str_firstname,ByRef str_lastname, ByRef str_company,_
+									ByRef str_address,ByRef str_city,ByRef str_st,ByRef str_zip,_
+									ByRef str_country,ByRef str_phone,ByRef str_same_address,_
+									ByRef str_address_type)
+									
+
+	if((str_db="")Or(str_cid="")) then
+		AddToHTMLMsgHldr status_msg_hldr,"Insuffiecient info specified to add new customer.",true
+ 		UpdateShooperShippingInfo=false
+ 		exit function
+ 	end if
+ 	
+ 	if(Len(str_same_address)>0) then
+		
+	else
+		str_same_address = "0"
+	end if
+	
+	if str_address_type = "" then
+	  str_address_type = "0"
+	else
+	end if
+	
+	if(str_same_address = "1") then
+	
+		str_sql = "UPDATE :9_shopper SET "
+ 	
+ 		str_sql = str_sql & "IsSameAddress=1"
+ 		str_sql = str_sql & " WHERE ((shopper_id='" & str_cid & "'))"
+ 		
+ 		str_sql=Replace(str_sql, ":9", Session("StoreID"))
+ 		
+	else
+		str_sql = "UPDATE :9_shopper SET "
+ 	
+ 		str_sql = str_sql & "shipping_FirstName='"
+ 		str_sql = str_sql & CheckString(str_firstname) & "',"
+ 	
+ 		str_sql = str_sql & "shipping_LastName='"
+ 		str_sql = str_sql & CheckString(str_lastname) & "',"
+ 	
+ 		str_sql = str_sql & "shipping_Address='"
+ 		str_sql = str_sql & CheckString(str_address) & "',"
+ 	
+ 		str_sql = str_sql & "shipping_City='"
+ 		str_sql = str_sql & CheckString(str_city) & "',"
+ 	
+ 		str_sql = str_sql & "shipping_State='"
+ 		str_sql = str_sql & CheckString(str_st) & "',"
+ 	
+ 		str_sql = str_sql & "shipping_ZipCode='"
+ 		str_sql = str_sql & CheckString(str_zip) & "',"
+ 	
+ 		str_sql = str_sql & "shipping_Country='"
+ 		str_sql = str_sql & CheckString(str_country) & "',"
+ 		
+ 		str_sql = str_sql & "shipping_company='"
+ 		str_sql = str_sql & CheckString(str_company) & "',"
+	
+		str_sql = str_sql & "IsSameAddress=0,"
+		
+		str_sql = str_sql & "shipping_address_type="
+ 		str_sql = str_sql & str_address_type & ","
+		
+ 		str_sql = str_sql & "shipping_Phone='"
+ 		str_sql = str_sql & CheckString(str_phone) & "' "
+ 		str_sql = str_sql & "WHERE ((shopper_id='" & str_cid & "'))"
+ 		
+ 		'Response.Write(str_sql)
+ 		'Response.end
+	
+		str_sql=Replace(str_sql, ":9", Session("StoreID"))
+ 	end if
+	
+	Set dbconn=server.CreateObject("ADODB.Connection")
+	dbconn.Open str_db
+	dbconn.Execute str_sql
+	dbconn.Close
+	UpdateShopperShippingInfo=true
+	
+end function
+
+function UpdateShopper(ByRef str_db,ByRef str_cid,ByRef status_msg_hldr,_
+						ByRef str_firstname,ByRef str_lastname,_
+						ByRef str_company,ByRef str_address,ByRef str_city,ByRef str_st,ByRef str_zip,_
+						ByRef str_country,ByRef str_phone,str_is_same_address,_
+						cc_type,cc_number,cc_exp_month,cc_exp_year)
+
+
+	'returns true/false
+	'NOTE: the field value parameters update the corresponding fields whether or not the values are null or non-null
+
+	Dim str_sql,dbconn,rs, company_name
+ 	
+ 	if((str_db="")Or(str_cid="")) then
+		AddToHTMLMsgHldr status_msg_hldr,"Insuffiecient info specified to update your information.",true
+ 		UpdateShooper=false
+ 		exit function
+ 	end if
+ 	
+ 	Set dbconn=server.CreateObject("ADODB.Connection")
+	dbconn.Open str_db
+	
+	'======================================================================
+	' RC4
+	if Len(cc_number) > 0 then
+		if IsRC4Encrypted(cc_number) then
+		else
+			if Len(cc_number) > 0 then
+				cc_number= trimtodigits(cc_number)
+			end if
+			cc_number = EnDeCrypt(cc_number, Session("STORE_OP"))
+		end if
+	end if
+	'=====================================================================
+	
+	Set rsUpdateShopper = Server.CreateObject("ADODB.Recordset")
+ 	with rsUpdateShopper
+		.ActiveConnection = dbconn
+		.CursorLocation = 3 'adUseClient
+		.CursorType = 1 'adOpenKeyset
+		.LockType = 3 'adLockOptimistic
+		.Source = Session("StoreID") & "_shopper WHERE shopper_id='" & str_cid & "'"
+		.Open
+	end with
+	
+	rsUpdateShopper("FirstName") = str_firstname
+	rsUpdateShopper("LastName") = str_lastname
+	rsUpdateShopper("Address") = str_address
+	rsUpdateShopper("City") = str_city
+	rsUpdateShopper("State") = str_st
+	rsUpdateShopper("Country") = str_country
+	rsUpdateShopper("ZipCode") = str_zip
+	rsUpdateShopper("Phone") = str_phone
+	
+	rsUpdateShopper("CC_Type") = cc_type
+	rsUpdateShopper("CC_Number") = cc_number
+	rsUpdateShopper("CC_ExpMonth") = cc_exp_month
+	rsUpdateShopper("CC_ExpYear") = cc_exp_year
+	
+	rsUpdateShopper("Company") = str_company
+	rsUpdateShopper("IsSameAddress") = 0
+ 	
+ 	rsUpdateShopper.Update
+	rsUpdateShopper.Close
+	
+	dbconn.Close
+	UpdateShopper=true
+
+end function
+
+function ValidateRequiredShopperInfo(ByRef str_db, str_cid, ByRef err_code)
+	
+	'===============================================
+	'0: No error
+	'1: Billing Information (Missing)
+	'2: Shipping Information (Missing)
+	'3: Invalid payment error
+	'===============================================
+	if((str_db="")Or(str_cid="")) then
+ 		ValidateRequiredShopperInfo=false
+ 		exit function
+ 	end if
+ 	
+ 	dim sql,rs,bEC, bok
+	sql="SELECT * FROM " & Session("StoreID") & "_shopper WHERE (shopper_id='" & str_cid & "')"
+	
+	set rs=server.CreateObject("ADODB.Recordset")
+	rs.Open sql,str_db
+	bEC=(not rs.EOF)
+	
+	bok = false
+	
+	if (bEC) then
+	
+		FirstName = rs("FirstName")
+		LastName = rs("LastName")
+		Address = rs("Address")
+		City = rs("City")
+		State = rs("State")
+		ZipCode = rs("ZipCode")
+		Phone = rs("Phone")
+		Company = Trim(rs("Company"))
+		Country = Trim(rs("Country"))
+		CC_Type = rs("CC_Type")
+		CC_Number = rs("CC_Number")
+		CC_ExpMonth = Trim(rs("CC_ExpMonth"))
+		CC_ExpYear = Trim(rs("CC_ExpYear"))
+		
+		IsSameAddress = rs("IsSameAddress")
+		
+		'===============================================================================
+		alt_billing_address_id = ""
+		alt_shipping_address_id = ""
+		
+		'NEED TO OVERRIDE Billing and Shipping Address...
+		sql = "SELECT * FROM " & Session("StoreID") & "_shopper_billing_address WHERE billing_shopper_id = '" & Session("shopper_id") & "' AND billing_set_default=1"
+		set rsBillingAddress = conn.Execute(sql)
+		if not rsBillingAddress.EOF then
+		
+			alt_billing_address_id = Trim(rsBillingAddress("billing_address_id"))
+			alt_billing_address_name = Trim(rsBillingAddress("billing_address_name"))
+			alt_billing_firstname = Trim(rsBillingAddress("billing_firstname"))
+			alt_billing_lastname = Trim(rsBillingAddress("billing_lastname"))
+			alt_billing_address = Trim(rsBillingAddress("billing_address"))
+			alt_billing_city = Trim(rsBillingAddress("billing_city"))
+			alt_billing_state = Trim(rsBillingAddress("billing_state"))
+			alt_billing_zip = Trim(rsBillingAddress("billing_zip"))
+			alt_billing_country = Trim(rsBillingAddress("billing_country"))
+			alt_billing_phone = Trim(rsBillingAddress("billing_phone"))
+			alt_billing_default = Trim(rsBillingAddress("billing_set_default"))
+			alt_billing_cc_type= Trim(rsBillingAddress("CC_Type"))
+			alt_billing_cc_number = Trim(rsBillingAddress("CC_Number"))
+			alt_billing_cc_expmonth = Trim(rsBillingAddress("CC_ExpMonth"))
+			alt_billing_cc_expyear = Trim(rsBillingAddress("CC_ExpYear"))
+			alt_billing_company = Trim(rsBillingAddress("bill_company"))
+			
+			alt_name_on_card = Trim(rsBillingAddress("NameOnCard"))
+			
+			if IsNumeric(alt_billing_cc_expmonth) then
+			else
+				alt_billing_cc_expmonth = "01"
+			end if
+			
+			if IsNumeric(alt_billing_cc_expyear) then
+			else
+				alt_billing_cc_expyear = "2005"
+			end if
+			
+			if Len(alt_billing_address) > 20 then
+				alt_billing_address1 = Left(alt_billing_address,20)
+			else
+				alt_billing_address1 = alt_billing_address
+			end if
+			
+			if alt_billing_default = 1 then
+				
+				FirstName = alt_billing_firstname
+				LastName = alt_billing_lastname
+				
+				CC_Type = alt_billing_cc_type
+				CC_Number = alt_billing_cc_number
+				CC_ExpMonth = alt_billing_cc_expmonth
+				CC_ExpYear = alt_billing_cc_expyear
+									
+				Address = alt_billing_address
+				City = alt_billing_city
+				State =alt_billing_state
+				ZipCode =alt_billing_zip
+				Phone = alt_billing_phone
+		    Company = alt_billing_company
+				Country = alt_billing_country
+				
+				Phone = alt_billing_phone
+		
+			end if
+			
+		end if
+		
+		rsBillingAddress.Close
+		
+		'======================================================================
+		' RC4
+		if Len(CC_Number) > 0 then
+			if IsRC4Encrypted(CC_Number) then
+				CC_Number = EnDeCrypt(CC_Number, Session("STORE_OP"))
+			end if
+		end if
+		'=====================================================================
+		
+		S_FirstName = rs("shipping_FirstName")
+		S_LastName = rs("shipping_LastName")
+		S_Address = rs("shipping_Address")
+		S_City = rs("shipping_City")
+		S_ZipCode = rs("shipping_ZipCode")
+		S_State = rs("shipping_State")
+		S_Phone = rs("shipping_Phone")
+		S_Country = rs("shipping_Country")
+		S_Company = rs("shipping_Company")
+		
+		if(IsBillToInfoValid(status_msg,FirstName,LastName,Company,Address,City,State,Country,ZipCode,Phone)) then
+		  if(IsPaymentInfoValid(CC_Type,CC_Number,CC_ExpMonth,CC_ExpYear,status_msg)) then
+			  bok = true
+				err_code = 0
+		  else
+			  bok = false
+				err_code = 3
+		  end if
+		else
+			bok = false
+			err_code = 1
+		end if
+		
+		if bok then
+		  if (IsShipToInfoValid(status_msg,S_FirstName,S_LastName,S_Address,_
+								S_City,S_State,S_Country,_
+								S_ZipCode,S_Phone,0, S_Company))then
+				bEC=true
+			else
+				bEC=false
+				err_code = 2	
+			end if
+		else
+		  bEC = false
+		end if
+		
+		
+	end if
+	
+	rs.Close
+	ValidateRequiredShopperInfo=bEC
+ 	
+end function
+
+function SendMailToNewRegistrant(ByRef str_db,ByRef str_status_msg, ByRef str_email, ByRef str_password)
+
+	if((str_db="")or(str_email=""))then
+ 		SendMailToNewRegistrant=false
+		str_status_msg = ""
+		exit function
+	end if
+
+	set dbconn=server.CreateObject("ADODB.Connection")
+	dbconn.Open str_db
+	
+	str_sql="SELECT * FROM :9_profile"
+	str_sql = Replace(str_sql, ":9", Session("StoreID"))
+	set rs = dbconn.Execute(str_sql)
+	
+	if not rs.EOF then
+		strDBAName = rs("Company")
+		strAddress = rs("Email")
+		order_email = rs("order_email")	
+	end if
+
+
+	strSQL = "SELECT * FROM " & Session("StoreID") & "_store_email WHERE mail_id=1006"
+	strSQL = Replace(strSQL, ":9", Session("StoreID"))
+
+	set rsEmail = dbconn.Execute(strSQL)
+	
+	if not rsEmail.EOF then
+		subject = rsEmail("subject")
+		send_address = rsEmail("send_address")
+		send_name = rsEmail("send_name")
+		content = rsEmail("content")
+	end if 
+
+	if len(send_name) > 0 then
+	else
+		send_name = strDBAName
+	end if
+	
+	if len(send_address) > 0 then
+	else
+		send_address = strAddress
+	end if
+	
+	if len(subject) > 0 then
+	else
+		subject = "Welcome to " & strDBAName & "!"
+	end if
+	
+	if len(content) > 0 then
+	else
+		content = "Hello [~FN~]. Welcome to our Store.<br>"
+		content = content & "We greatly appreciate your business and hope your shopping experience at "&strDBAName&" is a easy and enjoyable.<br><br>"
+		content = content & "Here is the information we received from you.<br><br>"
+		content = content & "Name: [~FN~] [~LN~]<BR>"
+		content = content & "Address:[~ADD~]<BR>"
+		content = content & "City, State, Zip: [~CITY~] [~ST~] [~ZIP~]<BR>"
+		content = content & "Phone: [~PN~]<BR><BR>"
+		content = content & "email: [~EM~]<BR><BR>"
+		content = content & "<BR>"
+		content = content & "Again, Thank you for shopping at "&strDBAName&".<BR>"
+	end if
+
+	rsEmail.close
+
+	strSQL = "SELECT * FROM " & Session("StoreID") & "_shopper WHERE email='" & str_email & "'"
+	strSQL = Replace(strSQL, ":9", Session("StoreID"))
+
+	set rsShopper = dbconn.Execute(strSQL)
+	
+	if not rsShopper.EOF then
+		FirstName = rsShopper("FirstName")
+		LastName = rsShopper("LastName")
+		Company = rsShopper("Company")
+		Password = rsShopper("Password")
+
+		billing_address = rsShopper("Address")
+		billing_city = rsShopper("City")
+		billing_state = rsShopper("State")
+		billing_zip = rsShopper("ZipCode")
+		billing_country = rsShopper("Country")
+		billing_phone = rsShopper("Phone")
+
+		shipping_address = rsShopper("shipping_Address")
+		shipping_city = rsShopper("shipping_City")
+		shipping_state = rsShopper("shipping_State")
+		shipping_zip = rsShopper("shipping_ZipCode")
+		shipping_country = rsShopper("shipping_Country")
+		shipping_phone = rsShopper("shipping_Phone")
+
+		cc_type = rsShopper("CC_Type")
+	end if 
+
+	content = Replace(content, "[~LN~]", LastName)
+	content = Replace(content, "[~FN~]", FirstName)
+	content = Replace(content, "[~CMPY~]", Company)
+	content = Replace(content, "[~ADD~]", shipping_address)
+	content = Replace(content, "[~CITY~]", shipping_city)
+	content = Replace(content, "[~ST~]", shipping_state)
+	content = Replace(content, "[~ZIP~]", shipping_zip)
+	content = Replace(content, "[~PN~]", shipping_phone)
+	content = Replace(content, "[~STNM~]", Session("StoreFullName"))
+	content = Replace(content, "[~ON~]", str_order_id)
+	content = Replace(content, "[~PMT~]", cc_type)
+	content = Replace(content, "[~SHIP~]", SH_Method)
+	content = Replace(content, "[~OD~]", date_entered)
+	content = Replace(content, "[~PWD~]", Password)
+	content = Replace(content, "[~EM~]", str_email)
+
+	content = Replace(content, "[~BCMPY~]", billing_company)
+	content = Replace(content, "[~BADD~]", billing_address)
+	content = Replace(content, "[~BCITY~]", billing_city)
+	content = Replace(content, "[~BST~]", billing_state)
+	content = Replace(content, "[~BZIP~]", billing_zip)
+	content = Replace(content, "[~BPN~]", billing_phone)
+
+	content = Replace(content, "[~BLN~]", LastName)
+	content = Replace(content, "[~BFN~]", FirstName)
+
+	content = replace(content, chr(13), "<br>")
+
+	Dim myCDONTSMail
+  Dim strFrom
+  Dim strTo
+  Dim strSubject
+  	
+	if SystemSendMailEx(send_address, send_name, str_email, subject, content, "") then
+	
+	end if
+	
+	'if SystemSendMailEx(send_address, send_name, send_address, "You have a new Registrant.", content, "") then
+	'end if
+	  
+	rs.close
+	dbconn.close
+	SendMailToNewRegistrant = true
+	
+end function
+
+'=================================================================
+'OCENTURE ONLY
+function LoginShopperViaWebService(ByRef theMemberID)
+  
+  if Len(theMemberID) = 9 then
+    theMemberID = "1" & theMemberID
+  end if
+  
+  if Len(theMemberID) = 10 then
+  
+    'Check existing member
+    Set dbconn=server.CreateObject("ADODB.Connection")
+    dbconn.Open Session("ConnectionString")
+    
+    sql = "SELECT * FROM " & Session("StoreID") & "_shopper WHERE shopper_id='" & theMemberID & "'"
+    
+    set rs11 = dbconn.Execute(sql)
+    
+    if not rs11.EOF then
+    
+      'Log in
+      Shopper_Name = ""
+			if Len(rs11("FirstName")) > 0 then
+				Shopper_Name = UCase(rs11("FirstName"))& " "
+			end if
+			if Len(rs11("LastName")) > 0 then
+				Shopper_Name = Shopper_Name & UCase(rs11("LastName"))
+			end if
+					
+      Session("shopper_id") = rs11("shopper_id")
+      Session("Shopper_Name") = Shopper_Name
+			Session("Shopper_State") = rs11("shipping_State")
+			Session("Shopper_Zip") = rs11("shipping_ZipCode")
+			Session("shopper_country") = rs11("shipping_Country")
+      
+      UpdateSession Session("SESSIONKEY"), "sCID", Session("shopper_id")
+	    UpdateSession Session("SESSIONKEY"), "sCName", Session("Shopper_Name")
+	    UpdateSession Session("SESSIONKEY"), "sCGroup", "D"
+	    'UpdateSession Session("SESSIONKEY"), "sAffID", CStr(Session("PARTNER"))
+	    'UpdateSession Session("SESSIONKEY"), "sCIM", Session("IMFILEID")
+	    
+    else
+      'Create Customer and Login
+      'GET Information From Web Service
+      
+      dim aim_request
+      aim_request = "aid=" & Right(theMemberID,9)
+      'aim_request = "aid=212552990"
+            
+      dim xmlHttp
+	    set xmlHttp = Server.CreateObject("Msxml2.ServerXMLHTTP")
+	    xmlHttp.open "GET", "http://gateway.flashecom.com/ocenture.web/GetAccount.aspx?" & aim_request, false
+	    xmlHttp.send()
+
+	    httpHeaders = xmlHttp.getAllResponseHeaders()
+	    httpStatus = xmlHttp.statusText
+	    httpResult = xmlHttp.responseText
+	    	    	    
+	    if Len(httpResult) > 0 then
+	      ar_requestresult = Split(httpResult, chr(1))
+	      for iix = 0 to UBound(ar_requestresult)-1
+	        'Response.Write(ar_requestresult(iix) & "<br>")
+	        if Len(ar_requestresult(iix)) > 1 then
+	          ar_requestline = Split(ar_requestresult(iix), chr(2))
+	          if Len(ar_requestline(0)) > 0 then
+	            'Response.Write(".." & ar_requestline(0) & "..:.." & ar_requestline(1) & "..<br>")
+	            SELECT CASE ar_requestline(0)
+	            CASE "Address"
+	              sAddress = ar_requestline(1)
+	            CASE "Address2"
+	              sAddress2 = ar_requestline(1)
+	            CASE "City"
+	              sCity= ar_requestline(1)
+	            CASE "CompanyID"
+	            CASE "Country"
+	              sCountry = ar_requestline(1)
+	            CASE "CustomerId"
+	            CASE "DayPhone"
+	              sDayPhone = ar_requestline(1)
+	            CASE "Email"
+	              sEmail = ar_requestline(1)
+	            CASE "EvePhone"
+	              sEvePhone = ar_requestline(1)
+	            CASE "FirstName"
+	              sFirstName = ar_requestline(1)
+	            CASE "LastName"
+	              sLastName = ar_requestline(1)	              
+	            CASE "MiddleInitial"
+	            CASE "ServiceExpireDate"
+	              sServiceExpireDate = ar_requestline(1)
+	            CASE "State"
+	              sState = ar_requestline(1)
+	            CASE "Suffix"
+	            CASE "Zip"
+	              sZip = ar_requestline(1)
+	            END SELECT
+	          end if
+	        end if
+	      next
+	      
+	      Shopper_Name = sFirstName & " " & sLastName
+	      
+	      if AddNewShopperByWebService(theMemberID, sAddress, sCity, sState, sZip, sCountry, sEmail, sFirstName, sLastName, sDayPhone) then
+	        Session("shopper_id") = theMemberID
+          Session("Shopper_Name") = Shopper_Name
+			    Session("Shopper_State") = sState
+			    Session("Shopper_Zip") = sZip
+			    Session("shopper_country") = sCountry
+          
+          UpdateSession Session("SESSIONKEY"), "sCID", Session("shopper_id")
+	        UpdateSession Session("SESSIONKEY"), "sCName", Session("Shopper_Name")
+	        UpdateSession Session("SESSIONKEY"), "sCGroup", "D"
+	      end if
+	      
+	    else
+	      'NO CLIENT EXIST.. DO NOTHING
+	    end if
+      
+    end if
+    
+    rs11.Close
+    
+    dbconn.Close
+  
+  else
+    LoginShopperViaWebService = false
+  end if
+
+end function
+
+function AddNewShopperByWebService(ByRef str_shopper_id, ByRef str_address, ByRef str_city,_
+        ByRef str_state, ByRef str_zip, ByRef str_country, ByRef str_email,_
+        ByRef str_firstname, ByRef str_lastname, ByRef str_phone)
+
+  Set Cnxn = Server.CreateObject("ADODB.Connection")
+	Cnxn.Open Session("ConnectionString")
+	
+  Set rsNewShopper = Server.CreateObject("ADODB.Recordset")
+	with rsNewShopper
+		.ActiveConnection = Cnxn
+		.CursorLocation = 3 'adUseClient
+		.CursorType = 1 'adOpenKeyset
+		.LockType = 3 'adLockOptimistic
+		.Source = Session("StoreID") & "_shopper"
+		.Open
+		.AddNew
+	end with 
+	
+	rsNewShopper("shopper_id") = str_shopper_id
+	rsNewShopper("Email") = str_email
+	rsNewShopper("Password") = ""
+	rsNewShopper("FirstName") = str_firstname
+	rsNewShopper("LastName") = str_lastname
+	rsNewShopper("Address") = str_address
+	rsNewShopper("City") = str_city
+	rsNewShopper("State") = str_state
+	rsNewShopper("ZipCode") = str_zip
+	rsNewShopper("Country") = str_country
+	rsNewShopper("Phone") = str_phone
+	
+	rsNewShopper("shipping_FirstName") = str_firstname
+	rsNewShopper("shipping_LastName") = str_lastname
+	rsNewShopper("shipping_Address") = str_address
+	rsNewShopper("shipping_City") = str_city
+	rsNewShopper("shipping_State") = str_state
+	rsNewShopper("shipping_ZipCode") = str_zip
+	rsNewShopper("shipping_Country") = str_country
+	rsNewShopper("shipping_Phone") = str_phone
+	
+	rsNewShopper("CC_Number") = ""
+	rsNewShopper("CC_ExpMonth") = "01"
+	rsNewShopper("CC_ExpYear") = "2008"
+	rsNewShopper("member_group") = "D"
+	rsNewShopper("DateEntered") = date()
+	rsNewShopper("DateRegistered") = date()
+	
+	rsNewShopper.Update
+	rsNewShopper.close
+	     
+  Cnxn.Close
+  
+  AddNewShopperByWebService = true
+     
+end function 
+'=================================================================
+</script>
