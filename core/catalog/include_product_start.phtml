@@ -1,12 +1,12 @@
 <!--#INCLUDE FILE="../../local/local.phtml"-->
+<!--#INCLUDE FILE="../i_adoopen.phtml"-->
 <!--#INCLUDE FILE="../../language_pack.phtml"-->
 <!--#INCLUDE FILE="../../util/xt_func_session.phtml"-->
 <!--#INCLUDE File="../../util/xt_func_util.phtml" -->
 <!--#INCLUDE FILE="../../util/xt_func_string.phtml"-->
 <!--#INCLUDE FILE="../../util/xt_func_seo.phtml"-->
-<!--#INCLUDE FILE="../../i_adodb.phtml"-->
 <!--#INCLUDE FILE="../../i_initsession.phtml"-->
-<!--#INCLUDE FILE="../../i_login.phtml"-->
+<!--#INCLUDE FILE="../i_login.phtml"-->
 <%
 	pf_id = Trim(Request("pf_id"))
 	dept_ID = Trim(Request("dept_id"))
@@ -14,11 +14,11 @@
 	dept_ID = FilterStringEx(dept_ID, "[^0-9-]")
 	
 	'----------------------------------------------------------
-	If Session("StoreID") = "nlesystem" then
+	If g_storeid = "nlesystem" then
 		'NLE ONLY
 		If Len(Session("shopper_id")) > 0 Then
-			sql = "SELECT apple_authorized FROM " & Session("StoreID") & "_shopper WHERE shopper_id='" & Session("shopper_id") & "'"
-			Set rsAuthorized = conn.Execute(sql)
+			sql = "SELECT apple_authorized FROM " & g_storeid & "_shopper WHERE shopper_id='" & Session("shopper_id") & "'"
+			Set rsAuthorized = dbconn.Execute(sql)
 			If Not rsAuthorized.EOF Then
 				apple_authorized = rsAuthorized(0)
 			Else
@@ -39,7 +39,7 @@
 		url_key = Replace(url_key, "/", "")
 		
 		sql = "SELECT * FROM " & g_storeid & "_rewrite WHERE rewrite_request_path='" & url_key & "'"
-		set rsRewrite = conn.Execute(sql)
+		set rsRewrite = dbconn.Execute(sql)
 		if not rsRewrite.EOF then
 			rewrite_type = rsRewrite("rewrite_type")
 			rewrite_system_type = rsRewrite("rewrite_system_type")
@@ -61,8 +61,8 @@
 	
 	'=================================================================================================
 	'check dept_id dept_ID if blank...
-	sql = "SELECT * FROM " &  Session("StoreID") & "_dept_prod WHERE pf_id='"& pf_id & "'"
-	Set rsDeptName = Conn.Execute(sql)
+	sql = "SELECT * FROM " &  g_storeid & "_dept_prod WHERE pf_id='"& pf_id & "'"
+	Set rsDeptName = dbconn.Execute(sql)
 	if not rsDeptName.EOF then
 		dept_ID = rsDeptName("dept_id")
 	else
@@ -75,24 +75,24 @@
 	
 	if Request("delete_action") = "DeleteReview" then
 		rating_id = request("ratingID")  
-		delete_sql = "DELETE FROM " & SESSION("StoreID") & "_Rating WHERE RatingID = '" & rating_id & "'"
-		Conn.Execute(delete_sql)
+		delete_sql = "DELETE FROM " & g_storeid & "_Rating WHERE RatingID = '" & rating_id & "'"
+		dbconn.Execute(delete_sql)
 	end if
 
 	if Request("vote_action") = "Vote_Yes" then
 		rating_id = request("ratingID")  
-		delete_sql = "UPDATE " & SESSION("StoreID") & "_Rating set FoundHelpful = FoundHelpful + 1 WHERE RatingID = '" & rating_id & "'"
-		Conn.Execute(delete_sql)
+		delete_sql = "UPDATE " & g_storeid & "_Rating set FoundHelpful = FoundHelpful + 1 WHERE RatingID = '" & rating_id & "'"
+		dbconn.Execute(delete_sql)
 	end if
 	
 	if Request("vote_action") = "Vote_No" then
 		rating_id = request("ratingID")  
-		delete_sql = "UPDATE " & SESSION("StoreID") & "_Rating set FoundNotHelpful = FoundNotHelpful + 1 WHERE RatingID = '" & rating_id & "'"
-		Conn.Execute(delete_sql)
+		delete_sql = "UPDATE " & g_storeid & "_Rating set FoundNotHelpful = FoundNotHelpful + 1 WHERE RatingID = '" & rating_id & "'"
+		dbconn.Execute(delete_sql)
 	end if
 
 	sql = "SELECT * FROM " & g_storeid & "_product WHERE pf_id = '" & pf_id & "'"
-	Set rsProd = Conn.Execute(sql)			
+	Set rsProd = dbconn.Execute(sql)			
 	if not rsProd.EOF then	
 		prod_name = rsProd("name")
 		prod_desc = rsProd("description")
@@ -150,25 +150,27 @@
 	rsProd.Close
 	
 	Set conn_ss2 = Server.CreateObject("ADODB.Connection")
-	conn_ss2.open Session("SSPriceConnectionString")
+	conn_ss2.open g_connection_icecat_catalog
 	
 	'====================================================================================================
 	'USE ICECAT IMAGE
 	'====================================================================================================
 	icecat_id = 0
-	if Session("ENABLEINT") = "2" OR Session("ENABLEINT") = "3" then
-		sql = "SELECT * FROM A_ssprice_CA WHERE sku='" & prod_espec_sku & "'"
-	else
-		sql = "SELECT * FROM A_ssprice_main WHERE sku='" & prod_espec_sku & "'"
-	end If
+	if Len(prod_espec_sku) > 0 then
+		if Session("ENABLEINT") = "2" OR Session("ENABLEINT") = "3" then
+			sql = "SELECT * FROM A_ssprice_CA WHERE sku='" & prod_espec_sku & "'"
+		else
+			sql = "SELECT * FROM A_ssprice_main WHERE sku='" & prod_espec_sku & "'"
+		end If
 
-	set rsPA = conn_ss2.Execute(sql)
-	if not rsPA.EOF then
-		icecat_image_published = rsPA("image_published")
-		icecat_icategoryid = Trim(rsPA("CATEGORY"))
-		icecat_id = rsPA("icecat_id")
+		set rsPA = conn_ss2.Execute(sql)
+		if not rsPA.EOF then
+			icecat_image_published = rsPA("image_published")
+			icecat_icategoryid = Trim(rsPA("CATEGORY"))
+			icecat_id = rsPA("icecat_id")
+		end if
+		rsPA.Close
 	end if
-	rsPA.Close
 	
 	'====================================================================================================
 	'Images
@@ -192,7 +194,7 @@
 					cloudImg = Trim(rsCloudImage("cloudinary_url"))
 				Else
 					sql = "SELECT * FROM " & g_storeid & "_product_image WHERE image_name = '" & prod_image_file & "'"
-					Set rsCloudImage2 = conn.Execute(sql)
+					Set rsCloudImage2 = dbconn.Execute(sql)
 					If Not rsCloudImage2.EOF Then
 						cloudImg = Trim(rsCloudImage2("cloud_url"))
 					Else
@@ -208,7 +210,7 @@
 				ssImg2 = Replace(cloudImg, "upload/", ssZoomSize)
 			else
 				sql = "SELECT * FROM " & g_storeid & "_product_image WHERE image_name = '" & prod_image_file & "'"
-				Set rsCloudImage2 = conn.Execute(sql)
+				Set rsCloudImage2 = dbconn.Execute(sql)
 				If Not rsCloudImage2.EOF Then
 					cloudImg = Trim(rsCloudImage2("cloud_url"))
 				Else
@@ -239,9 +241,9 @@
 	dim pf_tab_show(5)
 	dim pf_tab_name(5)
 	dim pf_tab_type(5)	
-	sql = "SELECT * FROM " & Session("StoreID") & "_product_tabs WHERE pf_id = '" & pf_id & "'"
+	sql = "SELECT * FROM " & g_storeid & "_product_tabs WHERE pf_id = '" & pf_id & "'"
 	tab_count = 0
-	set rsTabs = Conn.Execute(sql)
+	set rsTabs = dbconn.Execute(sql)
 	if not rsTabs.EOF then
 		tab1_show = rsTabs("tab1_show")
 		tab1_name = Trim(rsTabs("tab1_name"))
@@ -337,8 +339,8 @@
 	end If
 	
 	If Len(Session("shopper_id")) > 0 Then
-		sql = "SELECT apple_authorized FROM " & Session("StoreID") & "_shopper WHERE shopper_id='" & Session("shopper_id") & "'"
-		Set rsAuthorized = conn.Execute(sql)
+		sql = "SELECT apple_authorized FROM " & g_storeid & "_shopper WHERE shopper_id='" & Session("shopper_id") & "'"
+		Set rsAuthorized = dbconn.Execute(sql)
 		If Not rsAuthorized.EOF Then
 			apple_authorized = rsAuthorized(0)
 		Else
