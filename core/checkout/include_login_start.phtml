@@ -1,4 +1,5 @@
 <!--#INCLUDE FILE="../../local/local.phtml"-->
+<!--#INCLUDE FILE="../i_adoopen.phtml"-->
 <!--#INCLUDE FILE="../../language_pack.phtml"-->
 <!--#INCLUDE FILE="../../util/xt_func_session.phtml"-->
 <!--#INCLUDE FILE="../../util/xt_func_string.phtml"-->
@@ -16,16 +17,12 @@
 			Response.Redirect Session("StoreURL") & "/index.phtml"
 		end if
 	end if
-%>
 
-<%
 	Session("shopper_id") = GetSession(Session("SESSIONKEY"), "sCID")
 	Session("Shopper_Name") = GetSession(Session("SESSIONKEY"), "sCName")
 	Session("PARTNER") = GetSession(Session("SESSIONKEY"), "sAffID")
-%>
-<!--#INCLUDE FILE="../../i_adodb.phtml"-->
-<%
-  returnPage = Trim(Request("returnPage"))
-  returnPage = FilterXSS(returnPage)
-  st = Trim(Request("st"))
+
+	returnPage = Trim(Request("returnPage"))
+	returnPage = FilterXSS(returnPage)
+	st = Trim(Request("st"))
 %>
