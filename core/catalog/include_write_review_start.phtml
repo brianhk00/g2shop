@@ -1,0 +1,122 @@
+<!--#INCLUDE FILE="../../language_pack.asp"-->
+<!--#INCLUDE FILE="../../util/xt_func_session.asp"-->
+<!--#INCLUDE FILE="../../i_initsession.asp"-->
+<!--#INCLUDE FILE="../../i_login.asp"-->
+<!--#INCLUDE FILE="../../i_adodb.asp"-->
+<!-- #INCLUDE File="../../util/xt_func_util.asp" -->
+<!--#INCLUDE FILE="../../util/xt_func_string.asp"-->
+<!--#INCLUDE FILE="../../util/xt_func_seo.asp"-->
+
+<%
+  pf_id = Trim(Request("pf_id"))
+  action = Trim(Request("action"))
+  
+  edit_mode = trim(Request("edit_mode"))
+  ratingID = trim(Request("ratingID"))
+
+  if (Session("shopper_id") = "") then
+    response.Redirect("login.asp?returnPage=write_review.asp?pf_id=" & pf_id)
+  end if
+  
+  if (Session("shopper_id") = "GUEST") then
+    response.Redirect("login.asp?returnPage=write_review.asp?pf_id=" & pf_id)
+  end if
+	
+	pf_id = FilterSKUString(pf_id)
+
+	strSQL = "SELECT * FROM " & Session("StoreID") & "_product WHERE pf_id = '" & pf_id & "'"
+			
+	Set rsProd = Conn.Execute(strSQL)
+				
+	if not rsProd.EOF then	
+		prod_name = rsProd("name")
+		prod_image_file = rsProd("image_file")
+		prod_dist_flag = rsProd("dist_flag")
+		espec_sku = Trim(rsProd("espec_sku"))
+		prod_desc = rsProd("description")
+	end if
+			
+	rsProd.Close
+
+	if Len(prod_image_file) > 0 then
+	else
+		prod_image_file = "--"
+	end if
+	
+	if prod_dist_flag = 11 AND Len(espec_sku) > 0 then
+	  if prod_image_file = "--" then
+		  if image_published = 1 then
+			  'image_display_src = Session("SPECSOURCEIMGURL") & "Thumbnail/" & espec_sku & ".jpg"
+			  image_display_src = "http://content.etilize.com/Thumbnail/" & espec_sku & ".jpg"
+		  else
+			  image_display_src = "site_img/snopic_" & Session("TEMPLATEID") & ".gif"
+		  end if
+	  else
+		  image_display_src = Session("IMGURL") & "/prod_img/" & Server.URLEncode(prod_image_file)
+	  end if
+	else
+		if prod_image_file = "--" then
+			image_display_src = "site_img/snopic_" & Session("TEMPLATEID") & ".gif"
+		else
+			image_display_src = Session("IMGURL") & "/prod_img/" & Server.URLEncode(prod_image_file)
+		end if
+	end if
+	
+	if action = "write_review" then
+	  customer_id = Session("shopper_id")
+	  Rating = Request("Rating")
+	  ReviewTitle = Request("title")
+	  Comments = Request("review")
+	
+	  szSql = "INSERT INTO " & Session("StoreID") & "_Rating (productID, customerID, Rating, ReviewTitle, Comments) VALUES ('" 
+	  szSql = szSql & pf_id & "', '" & customer_id & "', '" & Rating & "', '" & CheckString(ReviewTitle) & "', '" & CheckString(Comments) & "')"
+	  
+	  Conn.Execute szSql
+	  
+	  Response.Redirect("product.asp?pf_id=" & pf_id) 
+	end if
+	
+	if action = "modify_review" then
+
+	  ratingID = Request("ratingID")
+	  Rating = Request("Rating")
+	  ReviewTitle = Request("title")
+	  Comments = Request("review")
+	
+	  szSql = "UPDATE " & Session("StoreID") & "_Rating SET Rating = '" & Rating & "', ReviewTitle = '" & ReviewTitle & "', Comments = '" 
+	  szSql = szSql & Comments & "' WHERE RatingID = '" & ratingID & "'"
+	  
+	  Conn.Execute szSql
+	  
+	  Response.Redirect("product.asp?pf_id=" & pf_id) 
+	end if
+	
+	
+	if (edit_mode = "true") then
+	  szSql = "SELECT * FROM " & Session("StoreID") & "_Rating WHERE RatingID = '" & ratingID & "'"
+	  set rating = Conn.Execute(szSql)
+	  Review = rating("Comments")
+	  rate = rating("rating")
+	  title = rating("ReviewTitle")
+	  rating.Close
+	end if
+%>
+
+<script language="javascript">
+function OnSaveReview()
+{
+  if (document.write_review.title.value == "")
+  {
+    alert('Input Title');
+    return;
+  }
+  
+  if (document.write_review.review.value == "")
+  {
+    alert('Input Review');
+    return;
+  }
+  
+  document.write_review.submit();
+}
+</script>

@@ -1,0 +1,31 @@
+<!--#INCLUDE FILE="../../local/local.phtml"-->
+<!--#INCLUDE FILE="../../language_pack.phtml"-->
+<!--#INCLUDE FILE="../../util/xt_func_session.phtml"-->
+<!--#INCLUDE FILE="../../util/xt_func_string.phtml"-->
+<!--#INCLUDE FILE="../../util/xt_func_util.phtml"-->
+<%
+	sessionID = Request("sessionID")
+	sessionID = FilterSessionString(sessionID)
+	if Len(sessionID) > 0 then
+		Session("SESSIONKEY") = sessionID
+	else
+		if Len(Session("SESSIONKEY")) > 0 then
+			'session key exist
+		else
+			'no key information...
+			Response.Redirect Session("StoreURL") & "/index.phtml"
+		end if
+	end if
+%>
+
+<%
+	Session("shopper_id") = GetSession(Session("SESSIONKEY"), "sCID")
+	Session("Shopper_Name") = GetSession(Session("SESSIONKEY"), "sCName")
+	Session("PARTNER") = GetSession(Session("SESSIONKEY"), "sAffID")
+%>
+<!--#INCLUDE FILE="../../i_adodb.phtml"-->
+<%
+  returnPage = Trim(Request("returnPage"))
+  returnPage = FilterXSS(returnPage)
+  st = Trim(Request("st"))
+%>

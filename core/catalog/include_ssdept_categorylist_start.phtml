@@ -1,0 +1,236 @@
+<%
+	sql = "SELECT * FROM " & Session("StoreID") & "_ss_dept WHERE " 
+	sql = sql & "specsource_categoryid_1 = " & dept_specsource_categoryid_1 & " AND "
+	if dept_specsource_categoryid_2 > 0 then
+		sql = sql & "specsource_categoryid_2 = " & dept_specsource_categoryid_2 & " AND "
+	end if
+	if dept_specsource_categoryid_3 > 0 then
+		sql = sql & "specsource_categoryid_3 = " & dept_specsource_categoryid_3 & " AND "
+	end if
+	if dept_specsource_categoryid_4 > 0 then
+		sql = sql & "specsource_categoryid_4 = " & dept_specsource_categoryid_4 & " AND "
+	end if
+	
+	sql = Left(sql, Len(sql)-4)
+	
+	ss_cat = ""
+	
+	set rsSS = Conn.Execute(sql)
+	do while not rsSS.EOF
+		ss_cat = ss_cat & rsSS("specsource_categoryid") & ","
+		rsSS.MoveNext
+	loop
+	rsSS.Close
+	
+	if Len(ss_cat) > 0 then
+		ss_cat = Left(ss_cat, Len(ss_cat)-1)
+	end if
+	
+
+	'TOP FEATURED ITEM QUERY
+	skus = ""
+	iSkus = 0
+
+	Dim featured_top_name(4)
+	Dim featured_top_link(4)
+	Dim featured_top_price(4)
+	Dim featured_top_image(4)
+
+	featured_top_name(0) = ""
+	featured_top_name(1) = ""
+	featured_top_name(2) = ""
+	featured_top_name(3) = ""
+
+	featured_top_link(0) = ""
+	featured_top_link(1) = ""
+	featured_top_link(2) = ""
+	featured_top_link(3) = ""
+
+	featured_top_price(0) = ""
+	featured_top_price(1) = ""
+	featured_top_price(2) = ""
+	featured_top_price(3) = ""
+
+	featured_top_image(0) = ""
+	featured_top_image(1) = ""
+	featured_top_image(2) = ""
+	featured_top_image(3) = ""
+
+	sql = "SELECT * FROM " & Session("StoreID") & "_espec_featured_items WHERE item_type=1 AND espec_catid=" & dept_specsource_categoryid & " ORDER BY display_order"
+	set rsSS = Conn.Execute(sql)
+	do while not rsSS.EOF
+		sku1 = Trim(rsSS("espec_id"))
+		
+		sqlx = "SELECT * FROM " & g_storeid & "_ssprice WHERE sku=" & sku1
+		set rsSSx = conn_ss1.Execute(sqlx)
+		if not rsSSx.EOF AND iSku < 4 then
+			sku = Trim(rsSSx("sku"))
+			skus = skus & sku & ","
+			ssDescr = Trim(rsSSx("DESCR"))
+			adjusted_price = rsSSx("price_" & Session("LOGINGROUP"))
+			'ssImg = Session("SPECSOURCEIMGURL") & "x120/" & sku & ".jpg"
+			ssImg = "http://content.etilize.com/images/170/" & sku & ".jpg"
+			ssLink = GetSProductSeURL(sku, dept_name, ssDescr)
+
+			featured_top_name(iSkus) = ssDescr
+			featured_top_link(iSkus) = ssLink
+			featured_top_price(iSkus) = adjusted_price
+			featured_top_image(iSkus) = ssImg
+
+			iSkus = iSkus + 1
+		end if
+		rsSSx.Close
+		
+		rsSS.MoveNext
+	loop
+	rsSS.Close
+
+	iiSkus = 4 - iSkus
+    
+	if iSkus = 4 then
+	else
+		'DEFAULT FEATURED ITEMS I
+		sql = "SELECT TOP " & iiSkus & " * FROM " & g_storeid & "_ssprice WHERE CATEGORY IN (" & ss_cat & ") AND image_published=1 AND AVAIL=1 AND hide_flag=0 "
+		
+		if Len(Session("CUSTOM_CATALOG_ID_FLAG")) > 0 then
+			sql = sql & " AND MD" & Session("CUSTOM_CATALOG_ID_FLAG") & "_ID='1'"
+		Else
+			sql = sql & " AND (IM_AVAIL>50 OR TD_AVAIL>50 OR SN_AVAIL > 20 OR DH_AVAIL > 20 OR DBL_AVAIL > 20 OR SPR_AVAIL > 20)"
+		end if
+		
+		sql = sql & " ORDER BY sku DESC"
+
+		set rsSS = conn_ss1.Execute(sql)
+		do while not rsSS.EOF
+			sku = Trim(rsSS("sku"))
+			
+			skus = skus & sku & ","
+				
+			ssDescr = Trim(rsSS("DESCR"))
+			adjusted_price = rsSS("price_" & Session("LOGINGROUP"))
+			ssImg = "http://content.etilize.com/images/170/" & sku & ".jpg"
+			
+			ssLink = GetSProductSeURL(sku, dept_name, ssDescr)
+
+			featured_top_name(iSkus) = ssDescr
+			featured_top_link(iSkus) = ssLink
+			featured_top_price(iSkus) = adjusted_price
+			featured_top_image(iSkus) = ssImg
+
+			iSkus = iSkus + 1
+
+			rsSS.MoveNext
+		loop
+		rsSS.Close			
+	end if 'iSkus = 4
+
+	'---------------------------------------------------------------------------------------------------------
+	'FEAUTRED ITEM RIGHT QUERY
+	Dim featured_right_name(5)
+	Dim featured_right_link(5)
+	Dim featured_right_price(5)
+	Dim featured_right_image(5)
+
+
+	featured_right_name(0) = ""
+	featured_right_name(1) = ""
+	featured_right_name(2) = ""
+	featured_right_name(3) = ""
+	featured_right_name(4) = ""
+
+	featured_right_link(0) = ""
+	featured_right_link(1) = ""
+	featured_right_link(2) = ""
+	featured_right_link(3) = ""
+	featured_right_link(4) = ""
+
+	featured_right_price(0) = ""
+	featured_right_price(1) = ""
+	featured_right_price(2) = ""
+	featured_right_price(3) = ""
+	featured_right_link(4) = ""
+
+	featured_right_image(0) = ""
+	featured_right_image(1) = ""
+	featured_right_image(2) = ""
+	featured_right_image(3) = ""
+	featured_right_link(4) = ""
+
+	iSkus = 0
+	sql = "SELECT * FROM " & Session("StoreID") & "_espec_featured_items WHERE item_type=2 AND espec_catid=" & dept_specsource_categoryid & " ORDER BY display_order"
+	set rsSS = Conn.Execute(sql)
+	do while not rsSS.EOF
+		sku1 = Trim(rsSS("espec_id"))
+
+		sqlx = "SELECT * FROM " & g_storeid & "_ssprice WHERE sku=" & sku1
+		set rsSSx = conn_ss1.Execute(sqlx)
+		if not rsSSx.EOF AND iSku < 5 Then
+		
+			sku = Trim(rsSSx("sku"))
+			skus = skus & sku & ","
+			ssDescr = Trim(rsSSx("DESCR"))
+			adjusted_price = rsSSx("price_" & Session("LOGINGROUP"))
+			ssImg = "http://content.etilize.com/images/80/" & sku & ".jpg"
+			manu_id = rsSSx("VEND_ID")
+			manu_name = rsSSx("VEND_NAME")
+			ssDescr2 = Trim(rsSSx("DESCR2"))
+			ssLink = GetSProductSeURL(sku, dept_name, ssDescr)
+
+			featured_right_name(iSkus) = ssDescr
+			featured_right_link(iSkus) = ssLink
+			featured_right_price(iSkus) = adjusted_price
+			featured_right_image(iSkus) = ssImg
+
+			iSkus = iSkus + 1
+
+		end if
+		rsSSx.Close
+
+		rsSS.MoveNext
+	loop
+	rsSS.Close
+
+	iiSkus = 5 - iSkus
+    
+	if iSkus = 5 then
+	else
+		if Len(skus) > 0 then
+			skus = Left(skus, Len(skus)-1)
+		else
+			skus = "0"
+		end if
+					
+		sql = "SELECT TOP " & iiSkus & " * FROM " & g_storeid & "_ssprice WHERE sku NOT IN (" & skus & ") AND CATEGORY IN (" & ss_cat & ") AND image_published=1 AND AVAIL=1 AND hide_flag=0 "
+		if Len(Session("CUSTOM_CATALOG_ID_FLAG")) > 0 then
+			sql = sql & " AND MD" & Session("CUSTOM_CATALOG_ID_FLAG") & "_ID='1'"
+		Else
+			sql = sql & " AND (IM_AVAIL>50 OR TD_AVAIL>50 OR SN_AVAIL > 20 OR DH_AVAIL > 20 OR DBL_AVAIL > 20 OR SPR_AVAIL > 20) "
+		end if
+		sql = sql & "ORDER BY sku DESC"
+		
+		set rsSS = conn_ss1.Execute(sql)
+		do while not rsSS.EOF
+			sku = Trim(rsSS("sku"))
+			ssDescr = Trim(rsSS("DESCR"))
+			adjusted_price = rsSS("price_" & Session("LOGINGROUP"))
+			ssImg = "http://content.etilize.com/images/80/" & sku & ".jpg"
+			manu_id = rsSS("VEND_ID")
+			manu_name = rsSS("VEND_NAME")
+			ssDescr2 = Trim(rsSS("DESCR2"))
+			ssLink = GetSProductSeURL(sku, dept_name, ssDescr)
+
+			featured_right_name(iSkus) = ssDescr
+			featured_right_link(iSkus) = ssLink
+			featured_right_price(iSkus) = adjusted_price
+			featured_right_image(iSkus) = ssImg
+
+			iSkus = iSkus + 1
+
+			rsSS.MoveNext
+		loop
+		rsSS.Close
+	end If
+	
+	'---------------------------------------------------------------------------------------------------------
+
+%>

@@ -1,0 +1,50 @@
+<%
+	Set d = CreateObject("Scripting.Dictionary")
+	
+	sql = "SELECT Left(S_CATEGORY," & Len(dept_id)+4 & "), COUNT(sku) FROM " & g_storeid & "_ssprice WHERE S_CATEGORY like '" & dept_ID & "-%' "
+	sql = sql & "AND hide_flag=0 "
+	
+	if Session("PROD_AVAIL") = "4" then
+		sql = sql & " AND AVAIL=1 "
+	end If
+	
+	if Len(Session("CUSTOM_CATALOG_ID_FLAG")) > 0 then
+		sql = sql & " AND MD" & Session("CUSTOM_CATALOG_ID_FLAG") & "_ID='1'"
+	end if
+	sql = sql & " GROUP BY Left(S_CATEGORY," & Len(dept_id)+4 & ")"
+	
+	Set rsProdCount = conn_ss1.Execute(sql)
+	do while not rsProdCount.EOF
+		d.Add Trim(rsProdCount(0)), CStr(rsProdCount(1))
+		rsProdCount.MoveNext
+	loop
+	rsProdCount.Close
+												
+	sql = "SELECT * FROM " & Session("StoreID") & "_ss_dept WHERE parent_dept='" & dept_ID & "' AND is_hidden=0 ORDER BY dept_row, dept_name"
+	Set rsSub = Conn.Execute(sql)
+	do while not rsSub.EOF
+
+		prod_count1 = 0
+		sub_count = 0
+		
+		sql = "SELECT COUNT(dept_id) FROM " & Session("StoreID") & "_ss_dept WHERE parent_dept='" & rsSub("dept_id") & "'"
+		set rsCount=conn.Execute(sql)
+		If Not rsCount.EOF Then
+			sub_count = rsCount(0)
+		Else
+			sub_count = 0
+		End If
+		rsCount.Close												
+
+		sub_dept_id = Trim(rsSub("dept_id"))
+		if d.Exists(sub_dept_id) then
+			prod_count1 = d.Item(sub_dept_id)
+		else
+			prod_count1 = 0
+		end if
+
+		If prod_count1 > 0 OR sub_count > 0 Then
+			sub_link = GetSDeptSeURL(rsSub("dept_id"), rsSub("dept_name"))
+			sub_name = Trim(rsSub("dept_name"))
+
+%>

@@ -1,0 +1,18 @@
+<%
+	do while not rsAttributes.EOF
+		headername = Trim(rsAttributes(0))
+		attname = Trim(rsAttributes(1))
+		attValue = Trim(rsAttributes(2))
+
+		if attname = x_attname then
+			bDisplay = false
+		else
+			bDisplay = true
+		end if
+		
+		if Len(x_attname) > 0 then
+			
+		else
+			bDisplay = false
+		end if
+%>

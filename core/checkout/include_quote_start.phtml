@@ -1,0 +1,286 @@
+<!--#INCLUDE FILE="../../language_pack.asp"-->
+<!--#INCLUDE FILE="../../util/xt_func_session.asp"-->
+<!--#INCLUDE FILE="../../util/xt_func_util.asp" -->
+<!--#INCLUDE FILE="../../util/xt_func_string.asp"-->
+<%
+	sessionID = Request("sessionID")
+	sessionID = FilterSessionString(sessionID)
+	if Len(sessionID) > 0 then
+		Session("SESSIONKEY") = sessionID
+	else
+		if Len(Session("SESSIONKEY")) > 0 then
+			'session key exist
+		else
+			'no key information...
+			Response.Redirect Session("StoreURL") & "/index.asp"
+		end if
+	end if
+		
+%>
+<!--#INCLUDE FILE="../../i_login.asp"-->
+<!-- #INCLUDE File="../../util/xt_func_client.asp" -->
+<!-- #INCLUDE File="../../util/xt_func_quote.asp" -->
+<!--#INCLUDE FILE="../../i_adodb.asp"-->
+<!--#include FILE="../../cart.inc"-->
+<% 
+  if Session("shopper_id") = "" OR Session("shopper_id") = "GUEST" then
+    Response.Redirect "login.asp?returnPage=quote"
+  end if
+%>
+<%
+	iCount = Session("ItemCount")
+	if( iCount < 1 )then
+		Response.Redirect Session("StoreURL") & "/basket.asp"
+	end if
+
+	ARYShoppingCart = Session("MyShoppingCart")
+	
+	dim db
+	db = Session("ConnectionString")
+	
+	if Request.Form("|CONTINUE|.x").Count > 0 then
+		QUOTE_ACTION = "S"
+	else
+		if Request.Form("|CANCEL|.x").Count > 0 then
+			QUOTE_ACTION = "C"
+		end if
+	end If
+	
+	if QUOTE_ACTION = "" then
+			QUOTE_ACTION = Request("QUOTE_ACTION")
+			QUOTE_ACTION = Left(QUOTE_ACTION, 3)
+	end if
+	
+	quote_comment=Trim(Request("quote_comment"))
+	quote_name = Trim(Request("quote_name"))
+		
+	UDF01 = Trim(Request("UDF01"))
+	UDF02 = Trim(Request("UDF02"))
+	UDF03 = Trim(Request("UDF03"))
+	UDF04 = Trim(Request("UDF04"))
+	UDF05 = Trim(Request("UDF05"))
+	
+	apply_tax_rate = Trim(Request("apply_tax_rate"))
+	if IsNumeric(apply_tax_rate) then
+	else
+	  apply_tax_rate = 0
+	end if
+	
+	apply_tax_rate_gst = Trim(Request("apply_tax_rate_gst"))
+	if IsNumeric(apply_tax_rate_gst) then
+	else
+	  apply_tax_rate_gst = 0
+	end if
+	
+	apply_tax_rate_pst = Trim(Request("apply_tax_rate_pst"))
+	if IsNumeric(apply_tax_rate_pst) then
+	else
+	  apply_tax_rate_pst = 0
+	end if
+	
+	tax1 = Trim(Request("tax1"))
+	if IsNumeric(tax1) then
+	else
+	  tax1 = 0
+	end if
+	
+	tax2 = Trim(Request("tax2"))
+	if IsNumeric(tax2) then
+	else
+	  tax2 = 0
+	end if
+	
+	tax = Trim(Request("tax"))
+	if IsNumeric(tax) then
+	else
+	  tax = 0
+	end if
+	
+
+	select case QUOTE_ACTION
+
+	case "S" 'Process Quote...
+	
+		sh_detail = ""
+		
+		total=Session("TotalPrice") + Session("shopper_tax")
+		    
+		quote_id = AddNewQuote(db,Session("shopper_id"),status_msg,_
+					apply_tax_rate, apply_tax_rate_gst, apply_tax_rate_pst,_
+					tax, tax1, tax2,_
+					0,total,sh_detail,quote_comment,quote_name,_
+					UDF01,UDF02,UDF03,UDF04,UDF05)
+					
+		if quote_id > 0 then
+		  
+		  For i = 1 to iCount
+				if AddQuotedItems(db,quote_id, i, ARYShoppingCart(cartProductID, i), ARYShoppingCart(cartProductName, i),_
+						ARYShoppingCart(cartOrderQuantity, i), ARYShoppingCart(cartProductUnitPrice, i),_
+						ARYShoppingCart(cartOptions, i), ARYShoppingCart(cartProductMode, i),_
+						ARYShoppingCart(cartTaxable, i), ARYShoppingCart(cartProductUnitCost, i),_
+						ARYShoppingCart(cartProductMfgNumber, i), ARYShoppingCart(cartProductUnitWeight, i)) then						
+						
+				end if
+			Next
+			
+			'redirect
+			Response.Redirect Session("SecureURL") & "/quote_confirm.asp?qid=" & quote_id
+			
+		end if
+	
+	case "C" 'Process Quote...
+		Session("quote_id") = ""
+		Session("shopper_tax") = 0
+		Session("shopper_shipping") = 0
+
+		'redirect
+		Response.Redirect Session("StoreURL") & "/index.asp"	
+	
+	case else 'Process Quote...
+	
+	end select
+%>
+
+<%
+	strSQL = "SELECT * FROM :9_shopper WHERE shopper_id=':1'"
+	strSQL = replace(strSQL, ":9", Session("StoreID"))
+	strSQL = replace(strSQL, ":1", Session("shopper_id"))
+
+	Set rsShopper = Conn.Execute(strSQL)
+	
+	if not rsShopper.EOF then
+		shopper_firstname = rsShopper("FirstName")
+		shopper_lastname = rsShopper("LastName")
+		shopper_address = rsShopper("Address")
+		shopper_city = rsShopper("City")
+		shopper_state = rsShopper("State")
+		shopper_zip = rsShopper("ZipCode")
+		shopper_phone = rsShopper("Phone")
+		shopper_company = rsShopper("Company")
+																
+		shopper_same_address = rsShopper("IsSameAddress")
+																
+		shipping_firstname = rsShopper("shipping_FirstName")
+		shipping_lastname = rsShopper("shipping_LastName")
+		shipping_address = rsShopper("shipping_Address")
+		shipping_city = rsShopper("shipping_City")
+		shipping_state = rsShopper("shipping_State")
+		shipping_zip = rsShopper("shipping_ZipCode")
+		shipping_phone = rsShopper("shipping_Phone")
+																
+		shopper_cc_type = rsShopper("CC_Type")
+		shopper_cc_number = rsShopper("CC_Number")
+		shopper_cc_expMonth = rsShopper("CC_ExpMonth")
+		shopper_cc_expYear = rsShopper("CC_ExpYear")
+																
+		shipping_company = rsShopper("shipping_company")
+
+	end if
+	
+	if shopper_same_address then
+		shipping_firstname = shopper_firstname
+		shipping_lastname = shopper_lastname
+		shipping_address = shopper_address
+		shipping_city = shopper_city
+		shipping_state = shopper_state
+		shipping_zip = shopper_zip
+		shipping_phone = shopper_phone
+		shipping_company = shopper_company	
+	end if
+	
+	rsShopper.Close
+	
+	'For UPS calculation .. based on shipping address zip code...
+	dest_postal = shipping_zip
+	st_st = shipping_state
+	'Used for card verification...
+	payment_type = shopper_cc_type
+	
+	'Get tax..and save it to Session...
+	'if GetClientSalesTaxRate(db,st_st,dest_postal,tax, Session("shopper_id"), 0)then
+		'Session("TaxRate") = tax
+		'tax=Round((tax/100)*Session("TotalTaxable") ,2)
+	'else
+		'Session("TaxRate") = 0
+		'tax = 0.0
+	'end if
+	'Session("shopper_tax")=tax
+
+	'Get tax..and save it to Session...
+
+	dest_postal = shipping_zip
+	st_st = shipping_state
+	dest_state =shipping_state
+	'Used for card verification
+	dest_country = shipping_country
+	if dest_country = "" OR dest_country = "USA" then
+		dest_country = "US"
+	end If
+	
+	apply_tax_rate = 0
+	apply_tax_rate_gst = 0
+	apply_tax_rate_pst = 0
+	apply_tax_on_sh = 0
+	
+	tax = 0
+	tax1 = 0
+	tax2 = 0
+		
+	if Session("ENABLEINT") = "2" OR Session("ENABLEINT")="3" then
+		
+		if GetClientSalesTaxRateCA(Session("ConnectionString"),dest_state,shipping_zip,tax1, tax2, Session("shopper_id"))then		
+		else
+			tax = 0
+			tax1 = 0
+			tax2 = 0
+			apply_tax = false
+		end if
+	else
+	  
+		if GetClientSalesTaxRate(Session("ConnectionString"),dest_state,shipping_zip,tax, Session("shopper_id"), apply_tax_on_sh)then
+		else
+			tax = 0
+			apply_tax = false
+			apply_tax_rate = 0
+		end if
+	end if
+
+	'GET USER DEFINED FIELD SETTINGS...
+	b_UDF01 = 0
+	b_UDF02 = 0
+	b_UDF03 = 0
+	b_UDF04 = 0
+	b_UDF05 = 0
+	
+	s_UDF01 = ""
+	s_UDF02 = ""
+	s_UDF03 = ""
+	s_UDF04 = ""
+	s_UDF05 = ""
+	
+	sql = "SELECT * FROM " & Session("StoreID") & "_UserField"
+	set rsUDF = conn.Execute(sql)
+	do while not rsUDF.EOF
+		
+		SELECT CASE rsUDF("UserField_ID")
+		CASE "UDF01"
+			b_UDF01 = rsUDF("UserField_Quote")
+			s_UDF01 = Trim(rsUDF("UserField_Name"))
+		CASE "UDF02"
+			b_UDF02 = rsUDF("UserField_Quote")
+			s_UDF02 = Trim(rsUDF("UserField_Name"))
+		CASE "UDF03"
+			b_UDF03 = rsUDF("UserField_Quote")
+			s_UDF03 = Trim(rsUDF("UserField_Name"))
+		CASE "UDF04"
+			b_UDF04 = rsUDF("UserField_Quote")
+			s_UDF04 = Trim(rsUDF("UserField_Name"))
+		CASE "UDF05"
+			b_UDF05 = rsUDF("UserField_Quote")
+			s_UDF05 = Trim(rsUDF("UserField_Name"))
+		END SELECT
+		
+		rsUDF.MoveNext
+	loop
+	rsUDF.Close
+%>

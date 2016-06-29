@@ -1,0 +1,233 @@
+<%
+	grid_items_per_row = 3
+
+	'----------------------------------------------------------
+	If Session("StoreID") = "nlesystem" then
+		'NLE ONLY
+		If Len(Session("shopper_id")) > 0 Then
+			sql = "SELECT apple_authorized FROM " & Session("StoreID") & "_shopper WHERE shopper_id='" & Session("shopper_id") & "'"
+			Set rsAuthorized = conn.Execute(sql)
+			If Not rsAuthorized.EOF Then
+				apple_authorized = rsAuthorized(0)
+			Else
+				apple_authorized = 0
+			End If
+			rsAuthorized.Close
+		Else
+			apple_authorized = 0
+		End If
+	End if
+	'----------------------------------------------------------
+
+	enable_buy = true
+	iii = 0
+
+	do while not rsDept.EOF and RowCount < rsDept.PageSize
+		if Len(icecat_category) > 0 then
+			'==============================================================================
+			' start of icecat catalog
+			'==============================================================================
+			pf_id = Trim(rsDept("sku"))
+			prod_name =rsDept("DESCR")
+			manu_id = rsDept("VEND_ID")
+			manu_name = rsDept("VEND_NAME")
+			manu_part = rsDept("VEND_PART")
+			icecat_id = rsDept("icecat_id")
+			prod_description =rsDept("DESCR2")
+			
+			'ICECAT/CLOUDINARY
+			if rsDept("image_published") = 1 Then	
+				sql = "SELECT cloudinary_url FROM [192.168.5.134].[icecat].dbo.cloudinary_images WHERE product_id = " & icecat_id
+				Set rsCloudImage = conn_ss1.Execute(sql)
+				If Not rsCloudImage.EOF Then
+					cloudImg = Trim(rsCloudImage("cloudinary_url"))
+				End If
+				rsCloudImage.Close
+				Set rsCloudImage = Nothing
+			Else
+				cloudImg = g_noimage_url
+				ssImg = "site_img/snopicsm_" & Session("TEMPLATEID") & ".gif"
+			end If
+
+			ssImgSize = "upload/w_" & EC_imageListWidth & ",h_" & EC_imageListWidth & ",c_pad,bo_35px_solid_white/"
+
+			If Len(cloudImg) > 0 then
+				ssImg = Replace(cloudImg, "upload/", ssImgSize)
+			Else
+				ssImg = "site_img/snopicsm_" & Session("TEMPLATEID") & ".gif"
+			End if
+			
+			adjusted_price = rsDept("price_" & Session("LOGINGROUP"))
+			P_AVAIL = rsDept("AVAIL")
+			prod_url_key = rsDept("url_key")
+			
+			'===================================================
+			'SEO URLs
+			if Len(prod_url_key) > 0 then
+				g_product_link = g_store_url & prod_url_key & ".htm"
+			else
+				g_product_link = g_store_url & "ssproduct.phtml?pf_id=" & pf_id
+			end if
+			'===================================================
+			
+			'==============================================================================
+			thumb_image_link = ssImg
+			'==============================================================================
+			' end of icecat catalog
+			'==============================================================================
+		else
+			'==============================================================================
+			' start of private catalog
+			'==============================================================================
+			pf_id = rsDept("pf_id")
+			prod_name = rsDept("name")
+			prod_description = rsDept("description")
+			list_price = rsDept("list_price")
+			prod_thumb_image = rsDept("image_file")
+			prod_on_sale = rsDept("on_sale")
+			prod_sale_price = rsDept("sale_price")
+			prod_dist_flag = rsDept("dist_flag")
+			prod_manu_part_num = rsDept("manu_part_num")
+			prod_vendor_name = rsDept("vendor_name")
+			prod_vendor_number = rsDept("vendor_number")
+			prod_group_price = rsDept("price_"& Session("LOGINGROUP"))
+			prod_use_price = rsDept("use_price")
+			prod_retail_price = rsDept("retail_price")
+			prod_url_key = rsDept("url_key")
+			prod_mm_type = rsDept("mm_type")
+			prod_espec_sku = Trim(rsDept("espec_sku"))
+			prod_use_icecat_images = rsDept("use_icecat_images")
+							
+			product_mode = 0
+		
+			list_price = prod_group_price
+		
+			'sale..			  
+			if prod_on_sale then
+				adjusted_price = prod_sale_price
+			Else
+			If prod_retail_price > 0 Then
+				adjusted_price = prod_retail_price
+			Else
+				adjusted_price = FormatNumber(list_price,2)
+			End if
+				
+			end if
+		
+			if Len(Session("CUSTOM_CATALOG_ID_FLAG")) > 0 then
+
+				md_adjusted_price = 0
+				if Len(cc_catalog_id)> 1 then
+					sql = "SELECT adjusted_price FROM " & Session("StoreID") & "_custom_catalog_rule_item WHERE custom_catalog_id='" & cc_catalog_id & "' AND pf_id='" & pf_id & "'"
+					set rsCatalog = Conn.Execute(sql)
+					if not rsCatalog.EOF then
+						md_adjusted_price = rsCatalog(0)
+					end if
+					rsCatalog.Close
+				end if
+
+				if md_adjusted_price > 0 then
+					adjusted_price = md_adjusted_price
+				end if
+			
+			end if
+
+			prod_stock = rsDept("stock")
+
+			if IsNumeric(prod_stock) then
+			else
+				prod_stock = 1
+			end if
+		
+			prod_map_flag = rsDept("map_price_flag")
+			prod_discontinued = rsDept("discontinued")
+			item_status = rsDept("item_status")
+
+			espec_sku = rsDept("espec_sku")
+		
+			buynow_link = Trim(rsDept("buynow_link"))
+			
+			'===================================================
+			'SEO URLs
+			if Len(prod_url_key) > 0 then
+				g_product_link = g_store_url & prod_url_key & ".html"
+			else
+				g_product_link = g_store_url & "product.phtml?pf_id=" & pf_id
+			end if
+			'===================================================
+			
+			'ssImgSize = "upload/w_" & "200" & ",h_" & "200" & ",c_pad,bo_35px_solid_white/"
+			ssImgSize = "upload/w_" & EC_imageListWidth & ",h_" & EC_imageListWidth & ",c_pad,bo_35px_solid_white/"
+			
+			if prod_thumb_image = "--" then
+				cloudImg = g_noimage_url
+				ssImg = Replace(cloudImg, "upload/", ssImgSize)
+			else
+				if prod_mm_type = 1 then
+					if Len(prod_espec_sku) > 0 AND prod_use_icecat_images = 1 then
+						'USE ICECAT IMAGE
+						icecat_id = 0
+						if Session("ENABLEINT") = "2" OR Session("ENABLEINT") = "3" then
+							sql = "SELECT * FROM A_ssprice_CA WHERE sku='" & prod_espec_sku & "'"
+						else
+							sql = "SELECT * FROM A_ssprice_main WHERE sku='" & prod_espec_sku & "'"
+						end If
+
+						set rsPA = conn_ss1.Execute(sql)
+						if not rsPA.EOF then
+							image_published = rsPA("image_published")
+							categoryid = Trim(rsPA("CATEGORY"))
+							icecat_id = rsPA("icecat_id")
+						end if
+						rsPA.Close
+
+						sql = "SELECT cloudinary_url FROM [192.168.5.134].[icecat].dbo.cloudinary_images WHERE product_id = " & icecat_id
+						Set rsCloudImage = conn_ss1.Execute(sql)
+						If Not rsCloudImage.EOF Then
+							cloudImg = Trim(rsCloudImage("cloudinary_url"))
+						Else
+							sql = "SELECT * FROM " & g_storeid & "_product_image WHERE image_name = '" & prod_thumb_image & "'"
+							Set rsCloudImage2 = conn.Execute(sql)
+							If Not rsCloudImage2.EOF Then
+								cloudImg = Trim(rsCloudImage2("cloud_url"))
+							Else
+								cloudImg = g_noimage_url
+							End If
+							rsCloudImage2.Close
+							Set rsCloudImage2 = Nothing
+						End If
+						rsCloudImage.Close
+						Set rsCloudImage = Nothing
+						ssImg = Replace(cloudImg, "upload/", ssImgSize)
+					else
+						sql = "SELECT * FROM " & g_storeid & "_product_image WHERE image_name = '" & prod_thumb_image & "'"
+						Set rsCloudImage2 = conn.Execute(sql)
+						If Not rsCloudImage2.EOF Then
+							cloudImg = Trim(rsCloudImage2("cloud_url"))
+						Else
+							cloudImg = g_noimage_url
+						End If
+						rsCloudImage2.Close
+						Set rsCloudImage2 = Nothing
+						ssImg = Replace(cloudImg, "upload/", ssImgSize)
+					end if
+				else
+					ssImg = "http://a4.res.cloudinary.com/dd3llssvr/image/fetch/" & "w_" & "200" & ",h_" & "200" & ",c_pad,c_fill/" & g_store_url & "assets/pmedia/prod_img/" & Server.URLEncode(prod_thumb_image)
+				end if
+			end if
+			
+			thumb_image_link = ssImg
+			'==============================================================================
+			' end of private catalog
+			'==============================================================================
+		end if
+		
+		iii = iii + 1
+		grid_item_class = ""
+		If iii Mod grid_items_per_row = 1 Then
+			grid_item_class = "first"
+		End If
+		If iii Mod grid_items_per_row = 0 Then
+			grid_item_class = "last"
+		End If
+%>

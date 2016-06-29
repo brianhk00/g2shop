@@ -1,0 +1,325 @@
+<!--#INCLUDE FILE="../../local/local.phtml"-->
+<!--#INCLUDE FILE="../../language_pack.phtml"-->
+<!--#INCLUDE FILE="../../util/xt_func_session.phtml"-->
+<!--#INCLUDE FILE="../../util/xt_func_string.phtml"-->
+<%
+	sessionID = Request("sessionID")
+	sessionID = FilterSessionString(sessionID)
+	if Len(sessionID) > 0 then
+		Session("SESSIONKEY") = sessionID
+	else
+		if Len(Session("SESSIONKEY")) > 0 then
+			'session key exist
+		else
+			'no key information...
+			Response.Redirect Session("StoreURL") & "/index.phtml"
+		end if
+	end if
+%>
+<!--#INCLUDE FILE="../../i_login.phtml"-->
+<!-- #INCLUDE File="../../util/xt_func_util.phtml" -->
+<!-- #INCLUDE File="../../util/xt_func_shopper.phtml" -->
+<!-- #INCLUDE File="../../util/xt_func_payment.phtml" -->
+<!-- #INCLUDE File="../../util/xt_func_misc_option.phtml" -->
+<!-- #INCLUDE File="../../util/xt_func_rc4.phtml" -->
+<!--#INCLUDE FILE="../../i_adodb.phtml"-->
+<%
+	If InStr(Request.ServerVariables("HTTP_REFERER"), "?") > 0 Then
+		sp_http_referer = Split(Request.ServerVariables("HTTP_REFERER"), "?")
+		http_referer = sp_http_referer(0)
+	Else
+		http_referer = Request.ServerVariables("HTTP_REFERER")
+	End If
+%>
+<!--#INCLUDE FILE="../../shipping_include_form.phtml"-->
+<%
+  pageMode = ""
+  if Trim(http_referer) = Session("SecureURL") & "/order_summary.phtml" then
+    pageMode = ""
+  end if
+  
+  if Trim(http_referer) = Session("SecureURL") & "/shipping_list.phtml" Then
+    
+    SELECT CASE Trim(Request.Form("chk_form"))
+    CASE "edit"
+      pageMode = "S_EDIT"
+    CASE "shopper"
+      pageMode = "S_SHOPPER"
+    CASE "add"
+      pageMode = "S_ADD"
+    CASE "delete"
+      pageMode = "S_DELETE"
+    CASE "default"
+      pageMode = "S_DEFAULT"
+    END SELECT
+  
+  end if
+  
+    
+  if Request.Form("|CANCEL|.x").Count > 0 then
+	  if Len(Trim(Request("referer"))) > 0 then
+	    Response.Redirect (Trim(Request("referer")))
+	  else
+	    Response.Redirect(Session("SecureURL") & "/shipping_list.phtml")
+	  end if
+	  Response.End
+  end if
+  
+  '====================================================================================
+  if pageMode = "S_EDIT" then
+  
+    address_id = Trim(Request.Form("address_id"))
+    address_id = FilterStringEx(address_id, "[^0-9]")
+    
+    address_name = Trim(Request.Form("address_name"))
+	  firstname = Trim(Request.Form("firstname"))
+	  lastname = Trim(Request.Form("lastname"))
+	  address = Trim(Request.Form("address"))
+	  city = Trim(Request.Form("city"))
+	  state = Trim(Request.Form("ship_state"))
+	  zip = Trim(Request.Form("zip"))
+	  phone = Trim(Request.Form("phone"))
+	  sh_country = Trim(Request.Form("ship_country"))
+	  
+	  if Len(sh_country) > 0 then
+	  else
+	    sh_country = "US"
+	  end if
+	  
+	  company = Trim(Request.Form("company"))
+	  
+	  address_type = Trim(Request.Form("address_type"))
+	  
+	  if Trim(Request.Form("sh_update_mode")) = "1" then
+	  
+	    Session("ALT_SH_FIRSTNAME") = firstname
+      Session("ALT_SH_LASTNAME") = lastname
+      Session("ALT_SH_COMPANYNAME") = ""
+      Session("ALT_SH_ADDRESS1") = address
+      Session("ALT_SH_CITY") = city
+      Session("ALT_SH_STATE") = state
+      Session("ALT_SH_ZIP") = zip
+      Session("ALT_SH_COUNTRY") = sh_country
+      Session("ALT_SH_PHONE") = phone
+      
+	  else
+
+    Set rsShippingInfo = Server.CreateObject("ADODB.Recordset")
+	  with rsShippingInfo
+		  .ActiveConnection = Conn
+		  .CursorLocation = 3 'adUseClient
+		  .CursorType = 1 'adOpenKeyset
+		  .LockType = 3 'adLockOptimistic
+		  .Source = Session("StoreID") & "_shopper_shipping_address WHERE address_id = '" & address_id & "' AND shopper_id = '" & Session("shopper_id") & "'"
+		  .Open
+	  end with
+	  
+	  rsShippingInfo("address_name") = address_name
+		rsShippingInfo("firstname") = firstname
+		rsShippingInfo("lastname") = lastname
+		rsShippingInfo("address") = address
+		rsShippingInfo("city") = city
+		rsShippingInfo("state") = state
+		rsShippingInfo("zip") = zip
+		
+		If Len(company) > 0 Then
+		  rsShippingInfo("company") = company
+		End If
+		
+		rsShippingInfo("country") = sh_country
+		
+		rsShippingInfo("phone") = phone
+		
+		rsShippingInfo("address_type") = address_type
+		
+		rsShippingInfo.Update
+    rsShippingInfo.Close
+    
+    end if
+    
+    Response.Write("<script language=""javascript"">location.replace(""" & Trim(Request.Form("referer")) & """);</script>")
+    Response.End
+		
+  end if
+  '====================================================================================
+  
+  '====================================================================================
+  if pageMode = "S_SHOPPER" then
+  
+	  firstname = Trim(Request.Form("firstname"))
+	  lastname = Trim(Request.Form("lastname"))
+	  address = Trim(Request.Form("address"))
+	  city = Trim(Request.Form("city"))
+	  state = Trim(Request.Form("ship_state"))
+	  zip = Trim(Request.Form("zip"))
+	  phone = Trim(Request.Form("phone"))
+	  sh_country = Trim(Request.Form("ship_country"))
+	  
+	  address_type = Trim(Request.Form("address_type"))
+	  	  
+	  if Len(sh_country) > 0 then
+	  else
+	    sh_country = "US"
+	  end if
+	  
+	  company = Trim(Request.Form("company"))
+	  
+	  if Trim(Request.Form("sh_update_mode")) = "1" then
+	  
+	    Session("ALT_SH_FIRSTNAME") = firstname
+      Session("ALT_SH_LASTNAME") = lastname
+      Session("ALT_SH_COMPANYNAME") = ""
+      Session("ALT_SH_ADDRESS1") = address
+      Session("ALT_SH_CITY") = city
+      Session("ALT_SH_STATE") = state
+      Session("ALT_SH_ZIP") = zip
+      Session("ALT_SH_COUNTRY") = sh_country
+      Session("ALT_SH_PHONE") = phone
+      
+	  else
+	  
+	  Set rsShippingInfo = Server.CreateObject("ADODB.Recordset")
+	  with rsShippingInfo
+		  .ActiveConnection = Conn
+		  .CursorLocation = 3 'adUseClient
+		  .CursorType = 1 'adOpenKeyset
+		  .LockType = 3 'adLockOptimistic
+		  .Source = Session("StoreID") & "_shopper WHERE shopper_id = '" & Trim(Session("shopper_id")) & "'"
+		  .Open
+	  end with
+	  
+	  rsShippingInfo("shipping_firstname") = firstname
+		rsShippingInfo("shipping_lastname") = lastname
+		rsShippingInfo("shipping_address") = address
+		rsShippingInfo("shipping_city") = city
+		rsShippingInfo("shipping_state") = state
+		rsShippingInfo("shipping_zipcode") = zip
+		rsShippingInfo("shipping_country") = sh_country
+		rsShippingInfo("shipping_phone") = phone
+		
+		rsShippingInfo("shipping_company") = company
+		
+		rsShippingInfo("shipping_address_type") = address_type
+		
+		rsShippingInfo.Update
+    rsShippingInfo.Close
+    
+    end if
+    
+		Response.Write("<script language=""javascript"">location.replace(""" & Trim(Request.Form("referer")) & """);</script>")
+    Response.End
+  
+  end if
+  '====================================================================================
+  
+  '====================================================================================
+  if pageMode = "S_ADD" then
+    
+    address_id = GetUniqueLongIntegerID()
+    
+    address_name = Trim(Request.Form("address_name"))
+	  firstname = Trim(Request.Form("firstname"))
+	  lastname = Trim(Request.Form("lastname"))
+	  address = Trim(Request.Form("address"))
+	  city = Trim(Request.Form("city"))
+	  state = Trim(Request.Form("ship_state"))
+	  zip = Trim(Request.Form("zip"))
+	  phone = Trim(Request.Form("phone"))
+	  sh_country = Trim(Request.Form("ship_country"))
+	  address_type = Trim(Request.Form("address_type"))
+	  
+	  if Len(sh_country) > 0 then
+	  else
+	    sh_country = "US"
+	  end if
+	  
+	  if Trim(Request.Form("sh_update_mode")) = "1" then
+	  
+	    Session("ALT_SH_FIRSTNAME") = firstname
+      Session("ALT_SH_LASTNAME") = lastname
+      Session("ALT_SH_COMPANYNAME") = ""
+      Session("ALT_SH_ADDRESS1") = address
+      Session("ALT_SH_CITY") = city
+      Session("ALT_SH_STATE") = state
+      Session("ALT_SH_ZIP") = zip
+      Session("ALT_SH_COUNTRY") = sh_country
+      Session("ALT_SH_PHONE") = phone
+      
+	  else
+	  
+	  Set rsShippingInfo = Server.CreateObject("ADODB.Recordset")
+	  with rsShippingInfo
+		  .ActiveConnection = Conn
+		  .CursorLocation = 3 'adUseClient
+		  .CursorType = 1 'adOpenKeyset
+		  .LockType = 3 'adLockOptimistic
+		  .Source = Session("StoreID") & "_shopper_shipping_address WHERE address_id = '" & address_id & "' AND shopper_id = '" & Session("shopper_id") & "'"
+		  .Open
+		  .AddNew
+	  end with
+	  
+	  rsShippingInfo("address_id") = address_id
+	  rsShippingInfo("shopper_id") = Session("shopper_id")
+	  
+	  rsShippingInfo("address_name") = address_name
+		rsShippingInfo("firstname") = firstname
+		rsShippingInfo("lastname") = lastname
+		rsShippingInfo("address") = address
+		rsShippingInfo("city") = city
+		rsShippingInfo("state") = state
+		rsShippingInfo("zip") = zip
+		
+		If Len(company) > 0 Then
+		  rsShippingInfo("company") = company
+		End If
+		
+		rsShippingInfo("country") = sh_country
+		
+		rsShippingInfo("phone") = phone
+		
+		rsShippingInfo("address_type") = address_type
+		
+		rsShippingInfo.Update
+    rsShippingInfo.Close
+    
+    end if
+    
+    Response.Write("<script language=""javascript"">location.replace(""shipping_list.phtml"");</script>")
+    Response.End
+  
+  end if
+  '====================================================================================
+  
+  '====================================================================================
+  if pageMode = "S_DELETE" then
+  
+    address_id = Trim(Request.Form("address_id"))
+    address_id = FilterStringEx(address_id, "[^0-9]")
+    
+    sql = "DELETE FROM " & Session("StoreID") & "_shopper_shipping_address WHERE address_id = '" & address_id & "' AND shopper_id = '" & Trim(Session("shopper_id")) & "'"
+    Conn.Execute(sql)
+    
+    Response.Write("<script language=""javascript"">location.replace(""shipping_list.phtml"");</script>")
+    Response.End
+    
+  end if
+  '====================================================================================
+  
+  '====================================================================================
+  if pageMode = "S_DEFAULT" then
+    
+    address_id = Trim(Request.Form("default"))
+    address_id = FilterStringEx(address_id, "[^0-9]")
+    
+    sql = "UPDATE " & Session("StoreID") & "_shopper_shipping_address SET set_default=0 WHERE shopper_id = '" & Trim(Session("shopper_id")) & "'"
+    Conn.Execute(sql)
+    
+    sql = "UPDATE " & Session("StoreID") & "_shopper_shipping_address SET set_default=1 WHERE address_id = '" & address_id & "' AND shopper_id = '" & Trim(Session("shopper_id")) & "'"
+    Conn.Execute(sql)
+    
+    Response.Write("<script language=""javascript"">location.replace(""shipping_list.phtml"");</script>")
+    Response.End
+  
+  end if
+  '====================================================================================
+%>

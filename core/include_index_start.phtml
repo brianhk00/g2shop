@@ -1,0 +1,176 @@
+<!--#INCLUDE FILE="../local/local.phtml"-->
+<!--#INCLUDE FILE="../core/i_initsession.phtml"-->
+<!--#INCLUDE FILE="../core/i_login.phtml"-->
+<!--#INCLUDE FILE="../core/i_adodb.phtml"-->
+<!--#INCLUDE FILE="../util/xt_func_session.phtml"-->
+<!--#INCLUDE FILE="../util/xt_func_util.phtml" -->
+<!--#INCLUDE FILE="../util/xt_func_string.phtml"-->
+<!--#INCLUDE FILE="../util/xt_func_seo.phtml"-->
+<!--#INCLUDE FILE="../util/xt_func_shopper.phtml"-->
+<%	
+
+	if Len(Request("DEBUGMODE")) > 0 then
+		Session("DEBUGMODE") = Request("DEBUGMODE")
+		if Session("DEBUGMODE") <> "1" then
+			Session("DEBUGMODE") = "0"
+		end if
+	end if
+	
+	Session("CRPIDS") = ""
+	Session("CRNUM") = 0
+	Session("CRFLAG") = ""
+	Session("CRCAT") = ""
+
+
+	sql = "SELECT index_text, index_bottom, text_flags, show_special, special_row, event_id FROM :9_profile"
+	sql = Replace(sql, ":9", Session("StoreID"))
+	set rsText = Conn.Execute(sql)
+										
+	welcome_text = rsText("index_text")
+	welcome_bottom = rsText("index_bottom")
+	text_flags = rsText("text_flags")
+	show_special = rsText("show_special")
+	special_row = rsText("special_row")
+	event_id = rsText("event_id")
+										
+	rsText.Close
+	welcome_flag = Mid(text_flags,4,1)
+
+	b_show_event = false
+
+	if IsNumeric(event_id) then
+		if event_id > 999 then
+			EVNsql = "SELECT * FROM :9_event WHERE event_id=" & event_id
+			EVNsql = Replace(EVNsql, ":9", Session("StoreID"))
+			
+			set rsEvent = Conn.Execute(EVNsql)
+			if not rsEvent.EOF then
+				event_width = rsEvent("event_width")
+				event_height = rsEvent("event_height")
+				event_date_start = rsEvent("event_date_start")
+				event_date_end = rsEvent("event_date_end")
+
+				b_show_event = true
+			end if
+			rsEvent.close
+		end if
+	end if
+
+	
+	if Session("DEMOVERSION") = "1" then
+		g_storeid = "bk01"
+	else
+		g_storeid = Session("StoreID")
+		if Len(Session("IMFILEID")) > 3 then
+			g_storeid = Session("IMFILEID")
+		end if
+	end if
+	
+	'=======================================================
+	if len(Session("HomeLink")) > 0 then
+		if InSTR(home_link, "http://") then
+			home_link = Session("HomeLink")
+		else
+			home_link = "http://" & Session("HomeLink")
+		end if
+	else
+		home_link = Session("StoreURL") & "/index.asp"
+	end if
+	'=======================================================
+	
+	'=======================================================
+	'NOTE : OCENTURE ONLY
+	if Session("StoreID") = "ocenture" OR Session("StoreID") = "Ingram" then
+		
+		g_memberid = Trim(Request("sid"))
+		if Len(g_memberid) > 0 then
+		 
+			if LoginShopperViaWebService(g_memberid) then
+			
+			end if
+		
+		end if
+	
+	end if
+	'=======================================================
+	
+	'=================================================================================
+	'OCI (OPEN CATALOG INTERFACE)
+	hook_url = Trim(Request("HOOK_URL"))
+	oci_target = Trim(Request("~TARGET"))
+	oci_caller = Trim(Request("~CALLER"))
+
+	if Len(hook_url) > 0 then
+		Session("ENABLE_OCI") = 1
+		Session("HOOK_URL") = hook_url
+		Session("OCI_TARGET") = oci_target
+		Session("OCI_CALLER") = oci_caller
+	end if  
+	'=================================================================================
+	
+	'=================================================================================
+
+	catalogid = Trim(Request("cid"))
+	catalogid = FilterStringEx(catalogid, "[^0-9]")
+
+	if Len(catalogid) > 0 then
+		Response.cookies(Session("StoreID"))("CATALOGID") = catalogid
+		Response.cookies(Session("StoreID")).Expires = DateAdd("d", 7, date())
+		Response.cookies(Session("StoreID")&"**").Expires = DateAdd("m", 7, date())
+	else
+		catalogid = Request.cookies(Session("StoreID"))("CATALOGID")
+	end if
+
+	if Len(catalogid) > 0 then
+
+		if catalogid = "0" then
+			Session("CATALOGID") = ""
+			Session("CATALOGPV") = 1
+			Session("CATALOGES")  = 1
+			Session("CATALOGSY")  = 1
+			Response.cookies(Session("StoreID"))("CATALOGID") = ""
+			Response.cookies(Session("StoreID")).Expires = DateAdd("d", 7, date())
+			Response.cookies(Session("StoreID")&"**").Expires = DateAdd("m", 7, date())
+			Response.Redirect Session("StoreURL") & "/index2.asp"
+		else
+			sql = "SELECT * FROM " & Session("StoreID") & "_custom_catalog where catalog_id ='" & catalogid & "'" 
+			Set rsCatalog = Conn.Execute(sql)
+			if not rsCatalog.EOF then
+				Session("CATALOGID") = catalogid
+				Session("CATALOGPV") = rsCatalog("show_private_catalog")
+				Session("CATALOGES")  = rsCatalog("show_espec_catalog")
+				Session("CATALOGSY")  = rsCatalog("show_system_catalog")
+
+				if Len(rsCatalog("custom_top_design")) > 0 then
+					Session("DESIGN_ENABLE_TOP") = 1
+					Session("DESIGN_TOP_CONTENT") = rsCatalog("custom_top_design")
+				end if
+
+				if Len(rsCatalog("custom_footer_design")) > 0 then
+					Session("DESIGN_ENABLE_FOOTER") = 1
+					Session("DESIGN_FOOTER_CONTENT") = rsCatalog("custom_footer_design")
+				end if
+
+				if Len(rsCatalog("custom_index")) > 0 then
+					Session("DESIGN_CUSTOM_INDEX") = rsCatalog("custom_index")
+				else
+					Session("DESIGN_CUSTOM_INDEX") = ""
+				end if
+			end if
+
+		end if
+
+	else
+
+		Session("CATALOGID") = ""
+		Session("CATALOGPV") = 1
+		Session("CATALOGES")  = 1
+		Session("CATALOGSY")  = 1
+
+		Response.cookies(Session("StoreID"))("CATALOGID") = ""
+		Response.cookies(Session("StoreID")).Expires = DateAdd("d", 7, date())
+		Response.cookies(Session("StoreID")&"**").Expires = DateAdd("m", 7, date())
+
+	end if
+	'=====================================================================================
+%>

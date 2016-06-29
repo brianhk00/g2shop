@@ -1,0 +1,175 @@
+<!--#INCLUDE FILE="../../language_pack.asp"-->
+<!--#INCLUDE FILE="../../util/xt_func_session.asp"-->
+<!--#INCLUDE FILE="../../i_initsession.asp"-->
+<!--#INCLUDE FILE="../../i_login.asp"-->
+<!--#INCLUDE FILE="../../i_adodb.asp"-->
+
+<!--#INCLUDE FILE="../../util/xt_func_util.asp" -->
+<!--#INCLUDE FILE="../../util/xt_func_string.asp"-->
+<!--#INCLUDE FILE="../../util/xt_func_seo.asp"-->
+
+<script language="VBScript" RUNAT=SERVER>
+function GetParentCategoryLink(ByRef str_db, ByRef str_dept_id)
+
+	'Get Category Names...
+	dim str_dept_link
+	
+	Set dbconn = Server.CreateObject("ADODB.Connection")
+	dbconn.open str_db
+	
+	str_dept_link = ""
+	dept_id_len = Len(str_dept_id)
+	
+	select case dept_id_len
+	case 2 'Main category
+		'no parent directory...					
+	case 6 'Sub 1
+		sql = "SELECT dept_id, dept_name FROM :9_ss_dept WHERE dept_id IN ('" & Left(str_dept_id, InStr(str_dept_id, "-")-1) & "') ORDER BY dept_id"
+		sql = Replace(sql, ":9", Session("StoreID"))
+		set rsDept=dbconn.Execute(sql)
+		
+		do while not rsDept.EOF
+			str_dept_link = str_dept_link & "<a href=""gdept.asp?dept_id=" & rsDept("dept_id") & """>" & rsDept("dept_name") & "</a> > "
+			rsDept.MoveNext
+		loop
+					
+		rsDept.Close
+
+	case 10 'Sub 2
+		sql = "SELECT dept_id, dept_name FROM :9_ss_dept WHERE dept_id IN ('" & Left(str_dept_id,3) & "', '" & Left(str_dept_id, 7) & "') ORDER BY dept_id"
+		sql = Replace(sql, ":9", Session("StoreID"))
+		set rsDept=conn.Execute(sql)
+		
+		i = dept_level
+		do while not rsDept.EOF
+			str_dept_link = str_dept_link & "<a href=""gdept.asp?dept_id=" & rsDept("dept_id") & """>" & rsDept("dept_name") & "</a> > "
+			rsDept.MoveNext
+		loop
+					
+		rsDept.Close
+			
+	case else
+		
+	end select
+	
+	dbconn.close
+	
+	GetParentCategoryLink = str_dept_link
+	
+end function
+</script>
+<%
+
+	if Session("ENABLESSCATALOG") = 1 OR Session("ENABLESSCATALOG") = 2 then
+	else
+		Response.Redirect("index.asp")
+	end if
+
+	dept_id = Request("dept_id")
+	dept_ID = FilterStringEx(dept_ID, "[^0-9-]")
+
+	sortby = Request("sortby")
+	prcn = Request("prcn")
+	compareedcs = Trim(Request("compareids"))
+	himg = Request("himg")
+	
+	sortby = FilterStringEx(sortby, "[^0-9]")
+	prcn = FilterStringEx(prcn, "[^0-9-]")
+	himg = FilterStringEx(himg, "[^0-9-]")
+	compareedcs = FilterStringEx(compareedcs, "[^0-9|]")
+
+	if Session("DEMOVERSION") = "1" then
+		g_storeid = "bk01"
+	else
+		g_storeid = Session("StoreID")
+	end if
+	
+	if Len(Session("IMFILEID")) > 3 then
+	  g_storeid = Session("IMFILEID")
+	else
+	end if
+
+	sql = "SELECT * FROM " & Session("StoreID") & "_ss_dept WHERE dept_id='" & dept_ID & "'"
+
+	Set rsDeptName = Conn.Execute(sql)
+	
+	if not rsDeptName.EOF then
+		dept_name = rsDeptName("dept_name")
+		parent_dept = rsDeptName("parent_dept")
+		dept_list_view = rsDeptName("dept_list_view")
+		dept_list_num = rsDeptName("dept_list_num")
+
+		dept_show_mfg = rsDeptName("dept_show_mfg")
+		dept_markup = rsDeptName("markup_" & Session("LOGINGROUP"))
+		dept_use_markup = rsDeptName("use_markup")
+		dept_detail = rsDeptName("dept_detail")
+
+		dept_specsource_categoryid = rsDeptName("specsource_categoryid")
+		dept_specsource_categoryid_1 = rsDeptName("specsource_categoryid_1")
+		dept_specsource_categoryid_2 = rsDeptName("specsource_categoryid_2")
+		dept_specsource_categoryid_3 = rsDeptName("specsource_categoryid_3")
+		dept_specsource_categoryid_4 = rsDeptName("specsource_categoryid_4")
+		
+		map_price_flag = rsDeptName("map_price_flag")
+		
+		dept_title_name = rsDeptName("dept_title_name")
+		map_price_dept_id = rsDeptName("map_price_dept_id")
+
+		cont_ok = true
+	else
+	  map_price_flag = 0
+		cont_ok = false
+	end if
+				
+	rsDeptName.Close
+
+	'SUB ?
+	sql = "SELECT * FROM " & Session("StoreID") & "_ss_dept WHERE parent_dept='" & dept_ID & "'"
+	set rsSubDept = Conn.Execute(sql)
+	if not rsSubDept.EOF then
+		bSubCategory = true
+	else
+		bSubCategory = false
+	end if
+	rsSubDept.Close
+	
+	if cont_ok then
+		str_parent_dept = ""
+		str_parent_dept = GetParentCategoryLink(Session("ConnectionString"),dept_ID)
+	end if
+	
+	sql = "SELECT * FROM " & Session("StoreID") & "_profile"
+	Set rsProfile = Conn.Execute(sql)
+	if (not rsProfile.EOF) then
+		espec_part_number_mode = rsProfile("espec_part_number_mode")
+	end if
+	rsProfile.Close
+	
+	'============================================================
+	'MAP PRICING..
+	x1_manuf_filter = ""
+
+	if map_price_flag = 2 then
+		
+		sql = "SELECT manuf_filter FROM " & Session("StoreID") & "_map_manuf WHERE dept_id='" & map_price_dept_id & "'"
+		set rs1 = Conn.Execute(sql)
+		do while not rs1.EOF
+			x1_manuf_filter = x1_manuf_filter & Trim(rs1(0)) & ","
+			rs1.MoveNext
+		loop
+		rs1.Close
+	end if
+	
+	If Len(dept_title_name) > 0 Then
+    dept_page_title = stripHTML(dept_title_name)
+  Else
+    dept_page_title = Session("StoreTitle")
+	End If
+
+	Set conn_ss = Server.CreateObject("ADODB.Connection")
+	conn_ss.open Session("SSCatalogConnectionString")
+
+	Set conn_ss1 = Server.CreateObject("ADODB.Connection")
+	conn_ss1.open Session("SSPriceConnectionString")
+
+%>

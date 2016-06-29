@@ -1,0 +1,55 @@
+<!--#INCLUDE FILE="../../local/local.phtml"-->
+<!--#INCLUDE FILE="../../language_pack.phtml"-->
+<!--#INCLUDE FILE="../../util/xt_func_session.phtml"-->
+<!--#INCLUDE FILE="../../util/xt_func_string.phtml"-->
+<!--#INCLUDE FILE="../../util/xt_func_util.phtml"-->
+<%
+	sessionID = Request("sessionID")
+	sessionID = FilterSessionString(sessionID)
+	if Len(sessionID) > 0 then
+		Session("SESSIONKEY") = sessionID
+	else
+		if Len(Session("SESSIONKEY")) > 0 then
+			'session key exist
+		else
+			'no key information...
+			Response.Redirect Session("StoreURL") & "/index.phtml"
+		end if
+	end if
+%>
+<!--#INCLUDE FILE="../../i_login.phtml"-->
+<!--#INCLUDE FILE="../../i_adodb.phtml"-->
+<% 
+  if Session("shopper_id") = "" OR Session("shopper_id") = "GUEST" then
+    Response.Redirect "login.phtml?returnPage=quote_status_list"
+  end if
+%>
+<%
+	ss_quote_filter = Request("ss_quote_filter")
+
+	select case ss_quote_filter
+
+		case "recent_quotes"
+			quote_filter = ""
+			recent_quotes = "TOP 10"
+			Title_filter = "Recent quotes(10)"
+		case "all_quotes"
+			quote_filter = ""
+			Title_filter = "All quotes"
+		case "pen_quotes"
+			quote_filter = "AND quote_status = 0"
+			Title_filter = "Open quotes"
+		case else
+			quote_filter = ""
+			Title_filter = "--All quotes--"
+	end select
+
+	page_size = 10
+  block_size = 10
+	
+  if Len(Request("page")) > 0 then
+	page = CInt(Request("page"))
+  else
+	page =1
+  end if
+%>

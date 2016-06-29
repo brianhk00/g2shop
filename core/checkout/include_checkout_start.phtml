@@ -1,0 +1,143 @@
+<!--#INCLUDE FILE="../../local/local.phtml"-->
+<!--#INCLUDE FILE="../../language_pack.phtml"-->
+<!--#INCLUDE FILE="../../util/xt_func_session.phtml"-->
+<%
+	sessionID = Request("sessionID")
+	sessionID = FilterSessionString(sessionID)
+	if Len(sessionID) > 0 then
+		Session("SESSIONKEY") = sessionID
+	else
+		if Len(Session("SESSIONKEY")) > 0 then
+			'session key exist
+		else
+			'no key information...
+			Response.Redirect Session("StoreURL") & "/index.phtml"
+		end if
+	end if
+%>
+<!--#INCLUDE FILE="../../i_login.phtml"-->
+<!-- #INCLUDE File="../../util/xt_func_payment.phtml" -->
+<!-- #INCLUDE File="../../util/xt_func_shopper.phtml" -->
+<!-- #INCLUDE File="../../util/xt_func_string.phtml" -->
+<!-- #INCLUDE File="../../util/xt_func_util.phtml" -->
+<!-- #INCLUDE File="../../util/xt_func_rc4.phtml" -->
+<!--#INCLUDE FILE="../../i_adodb.phtml"-->
+<%
+	iCount = Session("ItemCount")
+	if( iCount < 1 )then
+		Response.Redirect Session("SecureURL")&"/basket.phtml"
+	end if
+%>
+
+<%
+	dim shopper_id
+	dim db, status_msg
+
+	db = Session("ConnectionString")
+
+	method=Request.Form("method")
+	status_msg= ""
+	
+	select case method
+		case "S"
+		
+			agreeterms = Request.Form("agreeterms")
+			login_email = FilterEmailString(Trim(Request.Form("login_email")))
+			login_password = FilterPassword(Trim(Request.Form("login_password")))
+
+			if agreeterms = "1" then
+
+				if IsValidShopperLogin(db, login_email, login_password, shopper_id, login_group, shopper_name, sh_state, sh_zip, sh_country) then
+					Session("shopper_id")=shopper_id
+					Session("LOGINGROUP") = login_group
+					Session("Shopper_Name") = shopper_name
+					
+					Session("Shopper_State") = sh_state
+					Session("Shopper_Zip") = sh_zip
+					Session("shopper_country") = sh_country
+					
+					UpdateSession Session("SESSIONKEY"), "sCID", Session("shopper_id")
+					UpdateSession Session("SESSIONKEY"), "sCName", Session("Shopper_Name")
+					UpdateSession Session("SESSIONKEY"), "sCGroup", Session("LOGINGROUP")
+					UpdateSession Session("SESSIONKEY"), "sAffID", CStr(Session("PARTNER"))
+					UpdateSession Session("SESSIONKEY"), "sCIM", Session("IMFILEID")
+					UpdateSession Session("SESSIONKEY"), "sCustomCatalog", Session("CUSTOM_CATALOG_ID_FLAG")
+					
+					'Redirect
+					if(ValidateRequiredShopperInfo(db, shopper_id, s_err)) then
+						Response.Redirect Session("SecureURL") & "/opc.phtml"
+					else
+						Select case s_err
+						case 1
+							'Response.Redirect Session("SecureURL") & "/billing_info.phtml?update=1&flag=co"
+							if Session("TotalPrice") <> 0 then
+							  Response.Redirect Session("SecureURL") & "/billing_info.phtml?update=1&flag=co"
+							else
+							  Response.Redirect Session("SecureURL") & "/opc.phtml"
+							end if
+						case 2
+							Response.Redirect Session("SecureURL") & "/shipping_info.phtml?update=1&flag=co"
+						case 3
+							'Response.Redirect Session("SecureURL") & "/billing_info.phtml?update=1&flag=co&ccexp=1"
+							if Session("TotalPrice") <> 0 then
+							  Response.Redirect Session("SecureURL") & "/billing_info.phtml?update=1&flag=co"
+							else
+							  Response.Redirect Session("SecureURL") & "/opc.phtml"
+							end if
+						end select
+					end if
+				else
+					Session("shopper_id")=""
+					Session("LOGINGROUP") = "D"
+					Session("Shopper_Name") = ""
+					Session("Shopper_State") = ""
+					Session("Shopper_Zip") = ""
+					Session("shopper_country") = ""
+					
+					AddToHTMLMsgHldr status_msg,"Couldn't find a matching customer record.  Make sure you entered your email address and password correctly.",true
+				end if
+
+			else
+
+				AddToHTMLMsgHldr status_msg, "Please read and select checkbox to acknowledge privacy policy and user agreement.",true
+
+			end if
+			
+		
+		case else
+			if Session("shopper_id") = "GUEST" then
+			
+			else
+			
+				if Len(Session("shopper_id")) > 0 then
+				  if(ValidateRequiredShopperInfo(db, Session("shopper_id"), s_err)) then
+				    Response.Redirect Session("SecureURL") & "/opc.phtml"
+				   
+				  else
+				    Select case s_err
+						case 1
+						
+						  if Session("TotalPrice") <> 0 then
+							  Response.Redirect Session("SecureURL") & "/billing_info.phtml?update=1&flag=co"
+							else
+							  Response.Redirect Session("SecureURL") & "/opc.phtml"
+							end if
+							
+						case 2
+							Response.Redirect Session("SecureURL") & "/shipping_info.phtml?update=1&flag=co"
+						case 3
+							'Response.Redirect Session("SecureURL") & "/billing_info.phtml?update=1&flag=co&ccexp=1"
+							if Session("TotalPrice") <> 0 then
+							  Response.Redirect Session("SecureURL") & "/billing_info.phtml?update=1&flag=co"
+							else
+							  Response.Redirect Session("SecureURL") & "/opc.phtml"
+							end if
+						end select
+				  end if
+				end if
+			end if
+		
+					
+	end select
+
+%>

@@ -1,0 +1,94 @@
+<%		
+	i = 1
+	j = 0
+	grid_items_per_row = 3
+	iii = 0
+
+	do until rsProductList.EOF or i > CInt(page_size)
+
+		'prod_desc = TRIM(rsProductList("DESCR"))
+		sku = Trim(rsProductList("sku"))
+		g_description =rsProductList("DESCR")
+		manu_id = rsProductList("VEND_ID")
+		manu_name = rsProductList("VEND_NAME")
+		manu_part = rsProductList("VEND_PART")
+		icecat_id = rsProductList("icecat_id")
+		g_description2 =rsProductList("DESCR2")
+
+		'g_description = manu_name & " " & g_description
+
+		img1 = "" 'rsProductList("img1")
+		
+		If sku > 2000000000 AND sku < 2010000000 Then
+			sqlp = "SELECT thumb_image FROM " & Session("StoreID") & "_product where productid=" & sku
+			Set rsp = Conn.Execute(sqlp)
+			If Not rsp.EOF Then
+				If Len(rsp(0)) > 2 Then
+					ssImg = Session("StoreURL") & "/thumb_img/" & rsp(0)
+				Else
+					ssImg = "site_img/snopicsm_" & Session("TEMPLATEID") & ".gif"
+				End if
+			End If
+			rsp.Close
+		Else
+		
+			'ICECAT/CLOUDINARY
+			if rsProductList("image_published") = 1 Then	
+				sql = "SELECT cloudinary_url FROM [192.168.5.134].[icecat].dbo.cloudinary_images WHERE product_id = " & icecat_id
+				Set rsCloudImage = conn_ss1.Execute(sql)
+				If Not rsCloudImage.EOF Then
+					cloudImg = Trim(rsCloudImage("cloudinary_url"))
+				End If
+				rsCloudImage.Close
+				Set rsCloudImage = Nothing
+			Else
+				cloudImg = "http://res.cloudinary.com/dd3llssvr/image/upload/v1423588444/noimage_t0tp8k.png"
+				ssImg = "site_img/snopicsm_" & Session("TEMPLATEID") & ".gif"
+			end If
+
+			ssImgSize = "upload/w_" & EC_imageWidth & ",h_" & EC_imageHeight & ",c_pad/"
+
+			If Len(cloudImg) > 0 then
+				ssImg = Replace(cloudImg, "upload/", ssImgSize)
+			Else
+				ssImg = "site_img/snopicsm_" & Session("TEMPLATEID") & ".gif"
+			End if
+			
+		
+		End if
+		
+		'TODO: GET PRICE
+		adjusted_price = rsProductList("price_" & Session("LOGINGROUP"))
+		P_AVAIL = rsProductList("AVAIL")
+
+		if P_AVAIL = 1 then
+			b_enable_buy = true
+		else
+			if Session("PROD_AVAIL") = "1" or Session("PROD_AVAIL") = "3" then
+				'enable..
+				b_enable_buy = true
+			else
+				'disable..
+				b_enable_buy = false
+			end if
+		end if
+
+		
+		if Len(Session("CUSTOM_CATALOG_ID_FLAG")) > 0 then
+			md_adjusted_price = rsProductList("MD" & Session("CUSTOM_CATALOG_ID_FLAG") & "_COST")
+			if md_adjusted_price > 0 then
+				adjusted_price = md_adjusted_price
+			end if
+		end If
+		
+		iii = iii + 1
+		grid_item_class = ""
+		If iii Mod grid_items_per_row = 1 Then
+			grid_item_class = "first"
+		End If
+		If iii Mod grid_items_per_row = 0 Then
+			grid_item_class = "last"
+		End If
+
+		RowCount = i
+%>

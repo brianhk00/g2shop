@@ -1,0 +1,365 @@
+<!--#INCLUDE FILE="../../local/local.phtml"-->
+<!--#INCLUDE FILE="../../language_pack.phtml"-->
+<!--#INCLUDE FILE="../../util/xt_func_session.phtml"-->
+<!--#INCLUDE File="../../util/xt_func_util.phtml" -->
+<!--#INCLUDE FILE="../../util/xt_func_string.phtml"-->
+<!--#INCLUDE FILE="../../util/xt_func_seo.phtml"-->
+<!--#INCLUDE FILE="../../i_adodb.phtml"-->
+<!--#INCLUDE FILE="../../i_initsession.phtml"-->
+<!--#INCLUDE FILE="../../i_login.phtml"-->
+<%
+	pf_id = Trim(Request("pf_id"))
+	dept_ID = Trim(Request("dept_id"))
+	pf_id = FilterSKUString(pf_id)
+	dept_ID = FilterStringEx(dept_ID, "[^0-9-]")
+	
+	'----------------------------------------------------------
+	If Session("StoreID") = "nlesystem" then
+		'NLE ONLY
+		If Len(Session("shopper_id")) > 0 Then
+			sql = "SELECT apple_authorized FROM " & Session("StoreID") & "_shopper WHERE shopper_id='" & Session("shopper_id") & "'"
+			Set rsAuthorized = conn.Execute(sql)
+			If Not rsAuthorized.EOF Then
+				apple_authorized = rsAuthorized(0)
+			Else
+				apple_authorized = 0
+			End If
+			rsAuthorized.Close
+		Else
+			apple_authorized = 0
+		End If
+	End if
+	'----------------------------------------------------------
+
+	'=================================================================================================
+	'overwrite pf_id if urlkey present
+	'=================================================================================================
+	url_key = Trim(Request("urlkey"))
+	if Len(url_key) > 1 then
+		url_key = Replace(url_key, "/", "")
+		
+		sql = "SELECT * FROM " & g_storeid & "_rewrite WHERE rewrite_request_path='" & url_key & "'"
+		set rsRewrite = conn.Execute(sql)
+		if not rsRewrite.EOF then
+			rewrite_type = rsRewrite("rewrite_type")
+			rewrite_system_type = rsRewrite("rewrite_system_type")
+			rewrite_system_id = rsRewrite("rewrite_system_id")
+			rewrite_redirect_type = rsRewrite("rewrite_redirect_type")
+		else
+			rewrite_type = 0
+			rewrite_system_type = 0
+			rewrite_system_id = ""
+			rewrite_redirect_type = ""
+		end if
+		
+		if rewrite_system_type = 2 AND Len(rewrite_system_id) > 1 then
+			sType = "product"
+		end if
+		
+		pf_id = rewrite_system_id
+	end if
+	
+	'=================================================================================================
+	'check dept_id dept_ID if blank...
+	sql = "SELECT * FROM " &  Session("StoreID") & "_dept_prod WHERE pf_id='"& pf_id & "'"
+	Set rsDeptName = Conn.Execute(sql)
+	if not rsDeptName.EOF then
+		dept_ID = rsDeptName("dept_id")
+	else
+		dept_ID = ""
+		parent_dept = ""
+	end if
+	rsDeptName.Close
+	'=================================================================================================
+	forceLogin = false
+	
+	if Request("delete_action") = "DeleteReview" then
+		rating_id = request("ratingID")  
+		delete_sql = "DELETE FROM " & SESSION("StoreID") & "_Rating WHERE RatingID = '" & rating_id & "'"
+		Conn.Execute(delete_sql)
+	end if
+
+	if Request("vote_action") = "Vote_Yes" then
+		rating_id = request("ratingID")  
+		delete_sql = "UPDATE " & SESSION("StoreID") & "_Rating set FoundHelpful = FoundHelpful + 1 WHERE RatingID = '" & rating_id & "'"
+		Conn.Execute(delete_sql)
+	end if
+	
+	if Request("vote_action") = "Vote_No" then
+		rating_id = request("ratingID")  
+		delete_sql = "UPDATE " & SESSION("StoreID") & "_Rating set FoundNotHelpful = FoundNotHelpful + 1 WHERE RatingID = '" & rating_id & "'"
+		Conn.Execute(delete_sql)
+	end if
+
+	sql = "SELECT * FROM " & g_storeid & "_product WHERE pf_id = '" & pf_id & "'"
+	Set rsProd = Conn.Execute(sql)			
+	if not rsProd.EOF then	
+		prod_name = rsProd("name")
+		prod_desc = rsProd("description")
+		prod_detail = rsProd("details")
+		prod_list_price = rsProd("list_price")
+		prod_retail_price = rsProd("retail_price")
+		prod_thumb_image = rsProd("thumb_image")
+		prod_image_file = rsProd("image_file")
+		if Len(prod_image_file) > 0 then
+		else
+			prod_image_file = "--"
+		end If
+		prod_on_sale = rsProd("on_sale")
+		prod_sale_price = rsProd("sale_price")
+		prod_is_noship = rsProd("is_noship")
+		prod_dist_flag = rsProd("dist_flag")
+        if Session("LOGINGROUP") = "A" OR Session("LOGINGROUP") = "B" OR Session("LOGINGROUP") = "C" OR Session("LOGINGROUP") = "D" then
+			prod_group_price = rsProd("price_"& Session("LOGINGROUP"))
+        else
+			prod_group_price = rsProd("price_D")
+        end if
+		prod_use_price = rsProd("use_price")
+		prod_mm_url = rsProd("mm_link")
+		prod_mm_type = rsProd("mm_type")
+		prod_stock = rsProd("stock")
+		if IsNumeric(prod_stock)then
+		else
+			prod_stock = 1
+		end if
+		prod_iv_text = Trim(rsProd("iv_text"))
+		prod_warranty = Trim(rsProd("warranty_id"))
+		prod_manu_part_num = Trim(rsProd("manu_part_num"))
+		prod_bundle_flag = rsProd("bundle_flag")
+		prod_bundle_group_id = Trim(rsProd("bundle_group_id"))
+		prod_map_flag = rsProd("map_price_flag")
+		prod_discontinued = rsProd("discontinued")
+		item_status = rsProd("item_status")
+		related_item_category = Trim(rsProd("related_item_category"))
+		page_title = Trim(rsProd("page_title"))
+		prod_espec_sku = Trim(rsProd("espec_sku"))
+		buynow_link = Trim(rsProd("buynow_link"))
+		vendor_name = Trim(rsProd("vendor_name"))
+		vendor_number = Trim(rsProd("vendor_number"))
+		prod_use_icecat_images = rsProd("use_icecat_images")
+		prod_include_icecat_specdata = rsProd("include_icecat_specdata")
+		
+		if Len(prod_detail) > 0 then
+			prod_detail = Replace(prod_detail, "\n", "<br>")
+		end if
+		
+		cont_ok = true
+	else
+		cont_ok = false
+	end if
+	rsProd.Close
+	
+	Set conn_ss2 = Server.CreateObject("ADODB.Connection")
+	conn_ss2.open Session("SSPriceConnectionString")
+	
+	'====================================================================================================
+	'USE ICECAT IMAGE
+	'====================================================================================================
+	icecat_id = 0
+	if Session("ENABLEINT") = "2" OR Session("ENABLEINT") = "3" then
+		sql = "SELECT * FROM A_ssprice_CA WHERE sku='" & prod_espec_sku & "'"
+	else
+		sql = "SELECT * FROM A_ssprice_main WHERE sku='" & prod_espec_sku & "'"
+	end If
+
+	set rsPA = conn_ss2.Execute(sql)
+	if not rsPA.EOF then
+		icecat_image_published = rsPA("image_published")
+		icecat_icategoryid = Trim(rsPA("CATEGORY"))
+		icecat_id = rsPA("icecat_id")
+	end if
+	rsPA.Close
+	
+	'====================================================================================================
+	'Images
+	'====================================================================================================
+	ssThumbSize = "upload/w_" & EC_thumbWidth & ",h_" & EC_thumbHeight & ",c_pad/"
+	ssImgSize = "upload/w_" & EC_imageWidth & ",h_" & EC_imageHeight & ",c_pad/"
+	ssZoomSize = "upload/w_" & EC_zoomWidth & ",h_" & EC_zoomHeight & ",c_pad/"
+	
+	if prod_image_file = "--" then
+		cloudImg = g_noimage_url
+		ssImg = Replace(cloudImg, "upload/", ssImgSize)
+		ssImg1 = Replace(cloudImg, "upload/", ssThumbSize)
+		ssImg2 = Replace(cloudImg, "upload/", ssZoomSize)
+	else
+		if prod_mm_type = 1 then
+			if Len(prod_espec_sku) > 0 AND prod_use_icecat_images = 1 then
+				
+				sql = "SELECT cloudinary_url FROM [192.168.5.134].[icecat].dbo.cloudinary_images WHERE product_id = " & icecat_id
+				Set rsCloudImage = conn_ss2.Execute(sql)
+				If Not rsCloudImage.EOF Then
+					cloudImg = Trim(rsCloudImage("cloudinary_url"))
+				Else
+					sql = "SELECT * FROM " & g_storeid & "_product_image WHERE image_name = '" & prod_image_file & "'"
+					Set rsCloudImage2 = conn.Execute(sql)
+					If Not rsCloudImage2.EOF Then
+						cloudImg = Trim(rsCloudImage2("cloud_url"))
+					Else
+						cloudImg = g_noimage_url
+					End If
+					rsCloudImage2.Close
+					Set rsCloudImage2 = Nothing
+				End If
+				rsCloudImage.Close
+				Set rsCloudImage = Nothing
+				ssImg = Replace(cloudImg, "upload/", ssImgSize)
+				ssImg1 = Replace(cloudImg, "upload/", ssThumbSize)
+				ssImg2 = Replace(cloudImg, "upload/", ssZoomSize)
+			else
+				sql = "SELECT * FROM " & g_storeid & "_product_image WHERE image_name = '" & prod_image_file & "'"
+				Set rsCloudImage2 = conn.Execute(sql)
+				If Not rsCloudImage2.EOF Then
+					cloudImg = Trim(rsCloudImage2("cloud_url"))
+				Else
+					cloudImg = g_noimage_url
+				End If
+				rsCloudImage2.Close
+				Set rsCloudImage2 = Nothing
+				ssImg = Replace(cloudImg, "upload/", ssImgSize)
+				ssImg1 = Replace(cloudImg, "upload/", ssThumbSize)
+				ssImg2 = Replace(cloudImg, "upload/", ssZoomSize)
+			end if
+		else
+			ssImg = "http://a4.res.cloudinary.com/dd3llssvr/image/fetch/" & "w_" & EC_imageWidth & ",h_" & EC_imageHeight & ",c_pad/" & g_store_url & "assets/pmedia/prod_img/" & Server.URLEncode(prod_image_file)
+			ssImg1 = "http://a4.res.cloudinary.com/dd3llssvr/image/fetch/" & "w_" & EC_thumbWidth & ",h_" & EC_thumbHeight & ",c_pad/" & g_store_url & "assets/pmedia/prod_img/" & Server.URLEncode(prod_image_file)
+			ssImg2 = "http://a4.res.cloudinary.com/dd3llssvr/image/fetch/" & "w_" & EC_zoomWidth & ",h_" & EC_zoomHeight & ",c_pad/" & g_store_url & "assets/pmedia/prod_img/" & Server.URLEncode(prod_image_file)
+		end if
+	end if
+	
+	image_display_src = ssImg
+	image_display_src_zoom = ssImg2
+	image_display_src_thumb = ssImg1
+	
+	
+	'====================================================================================================
+	'Product Tabs
+	'====================================================================================================
+	dim ar_tabs(5)
+	dim pf_tab_show(5)
+	dim pf_tab_name(5)
+	dim pf_tab_type(5)	
+	sql = "SELECT * FROM " & Session("StoreID") & "_product_tabs WHERE pf_id = '" & pf_id & "'"
+	tab_count = 0
+	set rsTabs = Conn.Execute(sql)
+	if not rsTabs.EOF then
+		tab1_show = rsTabs("tab1_show")
+		tab1_name = Trim(rsTabs("tab1_name"))
+		tab1_type = rsTabs("tab1_type")
+		
+		tab2_show = rsTabs("tab2_show")
+		tab2_name = Trim(rsTabs("tab2_name"))
+		tab2_type = rsTabs("tab2_type")
+		
+		tab3_show = rsTabs("tab3_show")
+		tab3_name = Trim(rsTabs("tab3_name"))
+		tab3_type = rsTabs("tab3_type")
+		
+		tab4_show = rsTabs("tab4_show")
+		tab4_name = Trim(rsTabs("tab4_name"))
+		tab4_type = rsTabs("tab4_type")
+		
+		tab5_show = rsTabs("tab5_show")
+		tab5_name = Trim(rsTabs("tab5_name"))
+		tab5_type = rsTabs("tab5_type")
+		
+		if tab1_show = 1 AND Len(tab1_name) > 0 AND tab1_type <> 0 then
+			ar_tabs(tab_count) = 1
+			tab_count = tab_count + 1
+		end if
+		
+		if tab2_show = 1 AND Len(tab2_name) > 0 AND tab2_type <> 0 then
+			ar_tabs(tab_count) = 2
+			tab_count = tab_count + 1
+		end if
+		
+		if tab3_show = 1 AND Len(tab3_name) > 0 AND tab3_type <> 0 then
+			ar_tabs(tab_count) = 3
+			tab_count = tab_count + 1
+		end if
+		
+		if tab4_show = 1 AND Len(tab4_name) > 0 AND tab4_type <> 0 then
+			ar_tabs(tab_count) = 4
+			tab_count = tab_count + 1
+		end if
+		
+		if tab5_show = 1 AND Len(tab5_name) > 0 AND tab5_type <> 0 then
+			ar_tabs(tab_count) = 5
+			tab_count = tab_count + 1
+		end if
+		
+		pf_tab_show(1) = tab1_show
+		pf_tab_name(1) = tab1_name
+		pf_tab_type(1) = tab1_type
+		
+		pf_tab_show(2) = tab2_show
+		pf_tab_name(2) = tab2_name
+		pf_tab_type(2) = tab2_type
+		
+		pf_tab_show(3) = tab3_show
+		pf_tab_name(3) = tab3_name
+		pf_tab_type(3) = tab3_type
+		
+		pf_tab_show(4) = tab4_show
+		pf_tab_name(4) = tab4_name
+		pf_tab_type(4) = tab4_type
+		
+		pf_tab_show(5) = tab5_show
+		pf_tab_name(5) = tab5_name
+		pf_tab_type(5) = tab5_type
+		
+	end if
+	rsTabs.Close
+	
+	conn_ss2.Close
+	set conn_ss2 = nothing
+	'====================================================================================================
+	'Product display options..
+	'====================================================================================================
+	prod_list_price = prod_group_price
+	product_mode = 0
+
+	if prod_on_sale then
+		adjusted_price = prod_sale_price
+	Else
+		If prod_retail_price > 0 Then
+			adjusted_price = prod_retail_price
+		Else
+			adjusted_price = FormatNumber(prod_list_price,2)
+		End if
+	end if
+	
+	
+    if prod_stock > 0 then
+		sAvail = "In Stock"
+	else
+		sAvail = "Out of Stock"
+	end If
+	
+	If Len(Session("shopper_id")) > 0 Then
+		sql = "SELECT apple_authorized FROM " & Session("StoreID") & "_shopper WHERE shopper_id='" & Session("shopper_id") & "'"
+		Set rsAuthorized = conn.Execute(sql)
+		If Not rsAuthorized.EOF Then
+			apple_authorized = rsAuthorized(0)
+		Else
+			apple_authorized = 0
+		End If
+		rsAuthorized.Close
+	Else
+		apple_authorized = 0
+	End If
+	
+	If Len(page_title) > 0 Then
+		g_page_title = page_title
+	Else
+		g_page_title = prod_name
+	End If
+	
+	If Len(meta_text) > 0 Then
+		g_meta_text = meta_text
+	Else
+		g_meta_text = ""
+	End if
+	
+%>
+

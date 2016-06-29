@@ -1,0 +1,437 @@
+<!--INCLUDE FILE="../../language_pack.phtml"-->
+<!--#INCLUDE FILE="../../util/xt_func_session.phtml"-->
+<!--INCLUDE FILE="../../i_initsession.phtml"-->
+<!--INCLUDE FILE="../../i_login.phtml"-->
+<!--#INCLUDE FILE="../../i_adodb.phtml"-->
+<!--#INCLUDE FILE="../../util/xt_func_string.phtml"-->
+<!--#INCLUDE FILE="../../util/xt_func_util.phtml"-->
+<!--#INCLUDE FILE="../../util/xt_func_seo.phtml"-->
+
+<%
+
+	'===================================================================================
+	' Outside Link Search Disabled
+	bSearchReferral = false
+	search_referral_URL = LCase(Request.ServerVariables("HTTP_REFERER"))
+
+	if InStr(search_referral_URL, Session("StoreURL")) > 0 then
+		bSearchReferral = true
+	end if
+
+	if InStr(search_referral_URL, Session("SecureURL")) > 0 then
+		bSearchReferral = true
+	end if
+
+	if bSearchReferral then
+	else
+	  'Response.End
+	end if
+	'===================================================================================
+
+	sp = FilterStringEx(Trim(Request("sp")), "[^0-9a-zA-Z _#/.-]")
+	sp_flag = Trim(Request("sp_flag"))
+	cat = Trim(Request("cat"))
+	
+	if sp_flag = "1" then
+	  Session("SP_FLAG")="1"
+	else
+	  sp_flag = "0"
+	  Session("SP_FLAG")="0"
+	end if
+
+	if Len(sp) <= 0 then
+		Response.Redirect "index.phtml"
+	end If
+
+	sp1 = sp
+
+	Set Conn2 = Server.CreateObject("ADODB.Connection")
+	Conn2.open Session("SSPriceConnectionString")
+
+	Set conn_ss1 = Server.CreateObject("ADODB.Connection")
+	conn_ss1.open Session("SSPriceConnectionString")
+
+
+	'===================================================================================================================
+	' PRIVATE CATALOG - START
+	'===================================================================================================================
+	s_sp = sp
+
+	If Len(s_sp) > 0 then
+		ar_sp = Split(s_sp, " ")
+	End If
+	
+	for i=0 TO UBound(ar_sp)
+		s11 = s11 & "(a.pf_id like '" & ar_sp(i) & "%') OR"
+		s12 = s12 & "(*Q1* like '%" & ar_sp(i) & "%')AND"
+		s13 = s13 & "(manu_part_num like '" & ar_sp(i) & "%') OR"
+	next
+
+	if Len(s11) > 0 then
+		s11 = Left(s11, Len(s11)-3)
+	end if
+	if Len(s12) > 0 then
+		s12 = Left(s12, Len(s12)-3)
+	end if
+	if Len(s13) > 0 then
+		s13 = Left(s13, Len(s13)-3)
+	end if
+
+	pd_list = ""
+
+	'================pd_list - start==============================
+	sql = "SELECT dept_id FROM :9_dept WHERE is_master=0 AND is_hidden=0 AND Len(dept_id)=2 AND ec_flag=0 ORDER BY dept_id"
+	sql = Replace(sql, ":9", Session("StoreID"))
+		
+	Set rs1 = Conn.Execute(sql)
+	
+	do while not rs1.EOF
+		pd_list = pd_list & "'" & Trim(rs1(0)) & "',"
+		rs1.MoveNext
+	loop
+	rs1.Close
+
+	if Len(pd_list) > 2 then
+		pd_list = Left(pd_list, Len(pd_list)-1)
+	end if
+
+	if Len(pd_list) > 0 then
+		
+		sql = "SELECT dept_id FROM :9_dept WHERE is_master=0 AND is_hidden=0 AND Len(dept_id)=6 AND parent_dept IN (" & pd_list & ") AND ec_flag=0  ORDER BY dept_id"
+		sql = Replace(sql, ":9", Session("StoreID"))
+
+		pd_list = pd_list &  ","
+			
+		Set rs1 = Conn.Execute(sql)
+		
+		do while not rs1.EOF
+			pd_list = pd_list & "'" & Trim(rs1(0)) & "',"
+			rs1.MoveNext
+		loop
+		rs1.Close
+	end if
+	
+	if Len(pd_list) > 2 then
+		pd_list = Left(pd_list, Len(pd_list)-1)
+	end if
+
+	
+	if Len(pd_list) > 0 then
+		
+		sql = "SELECT dept_id FROM :9_dept WHERE is_master=0 AND is_hidden=0 AND Len(dept_id)=10 AND parent_dept IN (" & pd_list & ") AND ec_flag=0  ORDER BY dept_id"
+		sql = Replace(sql, ":9", Session("StoreID"))
+
+		pd_list = pd_list &  ","
+			
+		Set rs1 = Conn.Execute(sql)
+		
+		do while not rs1.EOF
+			pd_list = pd_list & "'" & Trim(rs1(0)) & "',"
+			rs1.MoveNext
+		loop
+		rs1.Close
+	end if
+
+	
+	if Len(pd_list) > 2 then
+		pd_list = Left(pd_list, Len(pd_list)-1)
+	end if
+
+	'=================pd_list - End===============================
+
+	if Len(pd_list) > 0 then
+
+		if sp_flag = "1" then
+		  sql = "SELECT TOP 50 * FROM " & Session("StoreID") & "_product WHERE ((" & s11 & ")OR(" & s13 & "))"
+		else
+			if UBound(ar_sp) > 0 then
+				sql = "SELECT TOP 50 * FROM " & Session("StoreID") & "_product WHERE (" & s12 & ")"
+			else	
+			  sql = "SELECT TOP 50 * FROM " & Session("StoreID") & "_product WHERE ((" & s11 & ")OR(" & s12 & ")OR(" & s13 & "))"
+			end if
+		end if
+
+		sql = Replace(sql,"a.pf_id", "pf_id")
+		sql = Replace(sql,"*Q1*", "(vendor_name + ' ' + name + ' ' + description)")
+		sql = sql & " AND (main_category IN (" & pd_list & "))"
+
+		Set rsDept = Server.CreateObject("ADODB.RecordSet")
+	    rsDept.Open sql, Session("ConnectionString"), 1, 1
+	
+	    page = FilterStringEx(Request("page"), "[^0-9]")
+		
+	    if Len(page) > 0then
+		    page = CInt(page)
+	    else
+		    page =1
+	    end if
+	
+	    page_size = 100
+	    block_size = 10
+
+		show = 100 'TODO
+	
+	    if not rsDept.EOF then
+            rsDept.PageSize = show
+            page_size = show
+		    page_count = rsDept.PageCount
+		    list_count = rsDept.RecordCount
+		    rsDept.AbsolutePage = page
+		    RowCount = 0
+		    i_start = page_size * (page-1) + 1
+		    i_last = page_size * page
+		
+		    if i_last > list_count then
+			    i_last = list_count
+		    end if
+	    else
+		    list_count = 0
+		    i_start = 0
+		    i_last = 0
+	    end if
+			
+
+	End If
+	
+	'===================================================================================================================
+	' PRIVATE CATALOG - END
+	'===================================================================================================================
+
+	'===================================================================================================================
+	' ESPEC CATALOG - START
+	'===================================================================================================================
+	if Session("DEMOVERSION") = "1" then
+		g_storeid = "bk01"
+	else
+		g_storeid = Session("StoreID")
+	end If
+  
+	keyword = Trim(sp)
+	keyword = LCase(keyword)
+	keyword = Replace(keyword, "laptop", "notebook")
+	keyword = Replace(keyword, "cpu", "processor")
+
+	keyword = Replace(keyword , "1tb", "1 tb")
+	keyword = Replace(keyword , "2tb", "2 tb")
+	keyword = Replace(keyword , "3tb", "3 tb")
+	keyword = Replace(keyword , "4tb", "4 tb")
+	keyword = Replace(keyword , "5tb", "5 tb")
+	keyword = Replace(keyword , "6tb", "6 tb")
+	keyword = Replace(keyword , "7tb", "7 tb")
+	keyword = Replace(keyword , "8tb", "8 tb")
+	keyword = Replace(keyword , "9tb", "9 tb")
+	keyword = Replace(keyword , "0tb", "10 tb")
+	
+	keyword = Replace(keyword , "1gb", "1 gb")
+	keyword = Replace(keyword , "2gb", "2 gb")
+	keyword = Replace(keyword , "3gb", "3 gb")
+	keyword = Replace(keyword , "4gb", "4 gb")
+	keyword = Replace(keyword , "5gb", "5 gb")
+	keyword = Replace(keyword , "6gb", "6 gb")
+	keyword = Replace(keyword , "7gb", "7 gb")
+	keyword = Replace(keyword , "8gb", "8 gb")
+	keyword = Replace(keyword , "9gb", "9 gb")
+	keyword = Replace(keyword , "0gb", "10 gb")
+
+	if Len(keyword) > 1 then
+		if (Right(keyword,1)) = "s" then
+			keyword = Left(keyword, Len(keyword)-1)
+		end if
+	end If
+
+	ar_sp = Split(keyword, " ")
+	
+	sps = """"
+
+	for i = 0 to UBound(ar_sp)
+	  
+	  ar_sp(i) = Replace(ar_sp(i) , "1tb", "1 tb")
+	  ar_sp(i) = Replace(ar_sp(i) , "2tb", "2 tb")
+	  ar_sp(i) = Replace(ar_sp(i) , "3tb", "3 tb")
+	  ar_sp(i) = Replace(ar_sp(i) , "4tb", "4 tb")
+	  ar_sp(i) = Replace(ar_sp(i) , "5tb", "5 tb")
+	  ar_sp(i) = Replace(ar_sp(i) , "6tb", "6 tb")
+	  ar_sp(i) = Replace(ar_sp(i) , "7tb", "7 tb")
+	  ar_sp(i) = Replace(ar_sp(i) , "8tb", "8 tb")
+	  ar_sp(i) = Replace(ar_sp(i) , "9tb", "9 tb")
+	  ar_sp(i) = Replace(ar_sp(i) , "0tb", "10 tb")
+	  
+	  ar_sp(i) = Replace(ar_sp(i) , "1gb", "1 gb")
+	  ar_sp(i) = Replace(ar_sp(i) , "2gb", "2 gb")
+	  ar_sp(i) = Replace(ar_sp(i) , "3gb", "3 gb")
+	  ar_sp(i) = Replace(ar_sp(i) , "4gb", "4 gb")
+	  ar_sp(i) = Replace(ar_sp(i) , "5gb", "5 gb")
+	  ar_sp(i) = Replace(ar_sp(i) , "6gb", "6 gb")
+	  ar_sp(i) = Replace(ar_sp(i) , "7gb", "7 gb")
+	  ar_sp(i) = Replace(ar_sp(i) , "8gb", "8 gb")
+	  ar_sp(i) = Replace(ar_sp(i) , "9gb", "9 gb")
+	  ar_sp(i) = Replace(ar_sp(i) , "0gb", "10 gb")
+	  
+	  ar_sp(i) = Replace(ar_sp(i) , "sata", "esata")
+	  
+	  
+	  sps = sps & ar_sp(i) & """ AND """
+	next
+	
+	if Len(sps)>0 then
+	  sps = Left(sps, len(sps)-6)
+	end If
+
+	Set regEx = New RegExp
+	
+	if Len(keyword) > 0 then
+		patrn = "[^0-9a-zA-Z-]"
+		regEx.Pattern = patrn
+		regEx.IgnoreCase = False
+		regEx.Global = True
+		keyword_1 = regEx.Replace(keyword, "%")
+	end If
+	
+	keyword_1 = Replace(keyword_1 , "1%tb", "1 tb")
+	keyword_1 = Replace(keyword_1 , "2%tb", "2 tb")
+	keyword_1 = Replace(keyword_1 , "3%tb", "3 tb")
+	keyword_1 = Replace(keyword_1 , "4%tb", "4 tb")
+	keyword_1 = Replace(keyword_1 , "5%tb", "5 tb")
+	keyword_1 = Replace(keyword_1 , "6%tb", "6 tb")
+	keyword_1 = Replace(keyword_1 , "7%tb", "7 tb")
+	keyword_1 = Replace(keyword_1 , "8%tb", "8 tb")
+	keyword_1 = Replace(keyword_1 , "9%tb", "9 tb")
+	keyword_1 = Replace(keyword_1 , "0%tb", "10 tb")
+	
+	keyword_1 = Replace(keyword_1 , "1%gb", "1 gb")
+	keyword_1 = Replace(keyword_1 , "2%gb", "2 gb")
+	keyword_1 = Replace(keyword_1 , "3%gb", "3 gb")
+	keyword_1 = Replace(keyword_1 , "4%gb", "4 gb")
+	keyword_1 = Replace(keyword_1 , "5%gb", "5 gb")
+	keyword_1 = Replace(keyword_1 , "6%gb", "6 gb")
+	keyword_1 = Replace(keyword_1 , "7%gb", "7 gb")
+	keyword_1 = Replace(keyword_1 , "8%gb", "8 gb")
+	keyword_1 = Replace(keyword_1 , "9%gb", "9 gb")
+	keyword_1 = Replace(keyword_1 , "0%gb", "10 gb")
+	
+	'--- TODO -----------
+	str_sort = ""
+    prod_listview = "100"
+    bUseBestResult = True
+	'---------------------
+    
+	sqlx1 = "sku IN(SELECT productid FROM " & specsource_db & ".dbo.search_attribute WHERE valueid IN (SELECT valueid FROM " &  specsource_db & ".dbo.search_attribute_values WHERE value = '" & keyword & "'))"
+	sqlx2 = "(sku like '" & keyword & "%' OR VEND_PART like '" & keyword & "%' OR VEND_PART2 like '" & keyword & "%')"
+	sqlx3 = "(VEND_NAME + ' ' + DESCR + ' ' + DESCR2 like '%" & keyword & "%' OR VEND_NAME + ' ' + DESCR2 + ' ' + DESCR like '%" & keyword & "%')"
+	sqlx4 = "(VEND_NAME + ' ' + DESCR + ' ' + DESCR2 + ' ' + VEND_PART like '%" & keyword_1 & "%' OR VEND_NAME + ' ' + DESCR2 + ' ' + DESCR like '%" & keyword_1 & "%')"
+	sqlx5 = "(t_keywords like '%" & keyword_1 & "%')"
+
+	sqlx = "SELECT * FROM " & g_storeid & "_ssprice WHERE hide_flag=0 AND sku NOT IN (SELECT sku FROM A_accessory) AND ("
+	sqlx = sqlx & sqlx2 & " OR "
+	sqlx = sqlx & sqlx4 & " OR "
+	sqlx = sqlx & sqlx5 & ")"
+	sqlx = sqlx & str_sort
+
+
+	pAdditionalFilter = "" ' TODO
+
+	if Session("PROD_AVAIL") = "4" then
+		pHideFilter = "(hide_flag=0) AND (AVAIL > 0)"
+	else
+		pHideFilter = "(hide_flag=0)"
+	end If
+	
+	if Len(pAdditionalFilter) > 1 then
+		sql1 = "SELECT TOP 100 sku FROM " & g_storeid & "_ssprice WHERE " & pHideFilter & " AND (" & pAdditionalFilter & ") AND ("
+	else
+		sql1 = "SELECT TOP 100 sku FROM " & g_storeid & "_ssprice WHERE " & pHideFilter & " AND ("
+	end If
+
+	sql1 = sql1 & sqlx2 & ") "
+
+	sql1 = sql1 & " AND sku NOT IN (SELECT espec_sku FROM [192.168.5.51].[ECOMNLE].[dbo].[nlesystem_product])"
+	
+	
+	sql1 = sql1 & " ORDER BY sku"
+
+	if Len(pAdditionalFilter) > 1 then
+		sql2 = "SELECT TOP 100 sku FROM " & g_storeid & "_ssprice WHERE " & pHideFilter & " AND (" & pAdditionalFilter & ") AND ("
+	else
+		sql2 = "SELECT TOP 100 sku FROM " & g_storeid & "_ssprice WHERE " & pHideFilter & " AND ("
+	end If
+
+	sql2 = sql2 & sqlx4 & ")"
+
+	sql2 = sql2 & " AND sku NOT IN (SELECT espec_sku FROM [192.168.5.51].[ECOMNLE].[dbo].[nlesystem_product] WHERE espec_sku <> '')"
+	sql2 = sql2 & " ORDER BY sku"
+
+	'Response.Write(sql2)
+
+	
+	set rs1 = Conn2.Execute(sql1)
+	set rs2 = Conn2.Execute(sql2)
+
+	sProductIDs = ""
+	do while not rs1.EOF
+		sProductIDs = sProductIDs & rs1(0) & ","
+		rs1.MoveNext
+	Loop
+	
+	do while not rs2.EOF
+		sProductIDs = sProductIDs & rs2(0) & ","
+		rs2.MoveNext
+	Loop
+	
+	'Response.Write(sProductIDs)
+
+	rs1.Close
+	rs2.Close
+
+
+	if Len(sProductIDs) > 1 then
+		sProductIDs = Left(sProductIDs, Len(sProductIDs)-1)
+	end if
+
+	if Len(sProductIDs) > 1 then
+		sqlx = "SELECT * FROM " & g_storeid & "_ssprice WHERE hide_flag=0 AND sku IN (" & sProductIDs & ") "
+		sqlx = sqlx & str_sort
+	else
+		sqlx = "SELECT * FROM " & g_storeid & "_ssprice WHERE hide_flag=0 AND sku IN (99999) "
+		sqlx = sqlx & str_sort
+	end If
+
+	'Response.Write(sqlx)
+
+	Set rsProductList = Server.CreateObject("ADODB.RecordSet")
+	rsProductList.CursorLocation = 3
+	rsProductList.Open sqlx,Session("SSPriceConnectionString"),3,3
+			
+	if not rsProductList.EOF then
+	  rsProductList.Sort = Replace(str_sort, " ORDER BY ", "")
+		rsProductList.PageSize = page_size
+		rsProductList.AbsolutePage = page
+
+		page_count = rsProductList.PageCount
+		num_total_product = rsProductList.RecordCount
+
+	end if
+
+	start_num = (page-1)*page_size + 1
+	end_num = start_num + page_size-1
+
+	if end_num > num_total_product then
+		end_num = num_total_product
+	end if
+	
+	if Len(zsql) > 0 OR Len(x_manufacturer) > 0 OR Len(s_prcn) > 0 then
+		bPageMode = 0
+	else
+		bPageMode = 1
+	end if
+	
+	bPageMode = 0
+
+	'===================================================================================================================
+	' ESPEC CATALOG - END
+	'===================================================================================================================
+
+	
+%>
+
+
+

@@ -1,0 +1,73 @@
+<!--#INCLUDE FILE="../../local/local.phtml"-->
+<!--#INCLUDE FILE="../../language_pack.phtml"-->
+<!--#INCLUDE FILE="../../util/xt_func_session.phtml"-->
+<!--#INCLUDE FILE="../../util/xt_func_string.phtml"-->
+<!--#INCLUDE FILE="../../util/xt_func_util.phtml"-->
+<%
+	sessionID = Request("sessionID")
+	sessionID = FilterSessionString(sessionID)
+	if Len(sessionID) > 0 then
+		Session("SESSIONKEY") = sessionID
+	else
+		if Len(Session("SESSIONKEY")) > 0 then
+			'session key exist
+		else
+			'no key information...
+			Response.Redirect Session("StoreURL") & "/index.phtml"
+		end if
+	end if
+%>
+<!--#INCLUDE FILE="../../i_login.phtml"-->
+<!--#INCLUDE FILE="../../i_adodb.phtml"-->
+<% 
+	if Session("shopper_id") = "" OR Session("shopper_id") = "GUEST" then
+		Response.Redirect "login.phtml?returnPage=account_profile"
+	end If
+  
+	sql = "Select * from " & Session("storeID") & "_shopper where shopper_id='"&Session("shopper_id") &"'"
+
+	set rsShopper= conn.execute(sql)
+	if not rsShopper.EOF then
+		FirstName = rsShopper("FirstName")
+		LastName = rsShopper("LastName")
+		Email = rsShopper("Email")
+		billing_Address = rsShopper("Address")
+		billing_City = rsShopper("City")
+		billing_State = rsShopper("State")
+		billing_ZipCode = rsShopper("ZipCode")
+		billing_Company = rsShopper("Company")
+		billing_country = rsShopper("Country")
+		billing_phone = rsShopper("Phone")
+		
+		if billing_country = "USA" OR billing_country = "" OR billing_country = "--" then
+		  billing_country = "US"
+		end If
+		
+		if Len(billing_country) > 0 then
+		else
+			billing_country = "US"
+		end If
+
+		shipping_FirstName = rsShopper("shipping_FirstName")
+		shipping_LastName = rsShopper("shipping_LastName")
+		shipping_address = rsShopper("shipping_Address")
+		shipping_city = rsShopper("shipping_City")
+		shipping_state = rsShopper("shipping_State")
+		shipping_zip = rsShopper("shipping_ZipCode")
+		shipping_country = rsShopper("shipping_Country")
+		shipping_phone = rsShopper("shipping_Phone")
+		
+		if shipping_country = "USA" OR shipping_country = "" OR shipping_country = "--" then
+		  shipping_country = "US"
+		end if
+		
+		if Len(shipping_country) > 0 then
+		else
+			shipping_country = "US"
+		end if
+		
+	end if
+
+	rsShopper.close
+
+%>

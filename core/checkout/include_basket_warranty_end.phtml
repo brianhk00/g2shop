@@ -1,0 +1,11 @@
+<%
+		if s_warranty_amount > 0 then
+			iSubtotal = iSubtotal + s_warranty_amount
+			iWarrantyTotal = iWarrantyTotal + s_warranty_amount
+			if Session("ENABLEINT") = "2" OR Session("ENABLEINT")="3" then
+				Total_Taxable = Total_Taxable + s_warranty_amount
+			end if
+		end if	
+	end If 'b_show_warranty2
+	end if 'Warranty..
+%>

@@ -1,0 +1,64 @@
+<%
+'======================================================================================================
+	Set conn = Server.CreateObject("ADODB.Connection")
+	conn.open Session("ConnectionString")
+
+	sql = "SELECT setting_values FROM " &  Session("StoreID") & "_setting WHERE setting_type='THEME_ENABLE'"
+	Set rsSetting = conn.Execute(sql)
+	if not rsSetting.EOF then
+		THEME_ENABLE = Trim(rsSetting(0))
+	else
+		THEME_ENABLE= "0"
+	end if
+	rsSetting.Close
+
+	sql = "SELECT setting_values FROM " &  Session("StoreID") & "_setting WHERE setting_type='THEME_TEMPLATE'"
+	Set rsSetting = conn.Execute(sql)
+	if not rsSetting.EOF then
+		THEME_TEMPLATE = Trim(rsSetting(0))
+	else
+		THEME_TEMPLATE = ""
+	end if
+	rsSetting.Close
+
+	sql = "SELECT setting_values FROM " &  Session("StoreID") & "_setting WHERE setting_type='THEME_SKIN'"
+	Set rsSetting = conn.Execute(sql)
+	if not rsSetting.EOF then
+		THEME_SKIN = Trim(rsSetting(0))
+	else
+		THEME_SKIN = ""
+	end if
+	rsSetting.Close
+
+	sql = "SELECT setting_values FROM " &  Session("StoreID") & "_setting WHERE setting_type='THEME_ALLOWED_IPS'"
+	Set rsSetting = conn.Execute(sql)
+	if not rsSetting.EOF then
+		THEME_ALLOWED_IPS = Trim(rsSetting(0))
+	else
+		THEME_ALLOWED_IPS = "0"
+	end if
+	rsSetting.Close
+	conn.close
+
+	THEME_ALLOWED_IPS = "0"
+
+	If THEME_ENABLE = "1" Then
+	Else
+		THEME_TEMPLATE = ""
+		THEME_SKIN = ""
+		THEME_ALLOWED_IPS = ""
+	End If
+	
+	client_remote_address = Request.ServerVariables("REMOTE_ADDR")
+
+	If Len(THEME_ALLOWED_IPS) > 1 Then
+		pos1 = InStr(THEME_ALLOWED_IPS, client_remote_address)
+		If pos1 = 0 Then
+			THEME_TEMPLATE = ""
+			THEME_SKIN = ""
+		End if
+	End if
+
+	THEME_TEMPLATE = "nle"
+	'======================================================================================================
+%>

@@ -1,0 +1,15 @@
+<%
+		x_headername = headername
+
+		if attname = x_attname then
+			x_attname = attname
+			x_attValue = x_attValue & chr(1) & attValue
+		else
+			x_attname = attname
+			x_attValue = attValue
+		end if
+
+		rsAttributes.MoveNext
+	Loop
+	'rsAttributes.close
+%>

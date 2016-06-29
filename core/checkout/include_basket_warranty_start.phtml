@@ -1,0 +1,18 @@
+<%
+	if Len(ARYShoppingCart(cartProductWarranty, i)) > 1 then
+		s_warranty_amount = "0.00"
+
+		b_show_warranty2 = false
+		'=================================================================================
+		sql = "SELECT * FROM " & Session("StoreID") & "_warranty2_group WHERE warranty_group_id='" & ARYShoppingCart(cartProductWarranty, i) & "'"
+
+		set rsWarranty = Conn.Execute(sql)
+		if not rsWarranty.EOF then
+		x_warranty_name = Trim(rsWarranty("warranty_group_name"))
+		x_warranty_url = Trim(rsWarranty("warranty_group_url"))
+		b_show_warranty2 = true
+		end if
+	rsWarranty.Close
+
+	if b_show_warranty2 then
+%>

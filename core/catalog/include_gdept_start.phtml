@@ -1,0 +1,583 @@
+﻿<!--#INCLUDE FILE="../../language_pack.asp"-->
+<!--#INCLUDE FILE="../../util/xt_func_session.asp"-->
+<!-- #INCLUDE File="../../util/xt_func_util.asp" -->
+<!--#INCLUDE FILE="../../util/xt_func_string.asp"-->
+<!--#INCLUDE FILE="../../util/xt_func_seo.asp"-->
+<%
+	dept_ID = Trim(Request("dept_id"))
+	dept_ID = FilterStringEx(dept_ID, "[^0-9-]")
+	so = Trim(Request("so"))
+	so = FilterStringEx(so, "[^0-9]")
+    show = Trim(Request("show"))
+	show = FilterStringEx(show, "[^0-9]")
+    mode = Trim(Request("mode"))
+
+    if mode = "grid" then
+    else
+        mode = ""
+    end if
+
+  forceLogin = false
+  SHOPPING_CART_FORCE_LOGIN_BY_CATEGORY = GetSettingValue("SHOPPING_CART_FORCE_LOGIN_BY_CATEGORY", "")
+  if Len(SHOPPING_CART_FORCE_LOGIN_BY_CATEGORY) > 1 then
+    SHOPPING_CART_FORCE_LOGIN_BY_CATEGORY = Replace(SHOPPING_CART_FORCE_LOGIN_BY_CATEGORY, " ", "")
+    ar_category = Split(SHOPPING_CART_FORCE_LOGIN_BY_CATEGORY, ",")
+    for iic = 0 to UBound(ar_category)
+      if InStr(dept_id, ar_category(iic)) >= 1 then
+        forceLogin = true
+      end if
+    next
+  end if
+%>
+
+<!--#INCLUDE FILE="../../i_initsession.asp"-->
+<!--#INCLUDE FILE="../../i_login.asp"-->
+<!--#INCLUDE FILE="../../i_adodb.asp"-->
+
+<script language="VBScript" RUNAT=SERVER>
+function GetParentCategoryLink(ByRef str_db, ByRef str_dept_id)
+
+	'Get Category Names...
+	dim str_dept_link
+	
+	Set dbconn = Server.CreateObject("ADODB.Connection")
+	dbconn.open str_db
+	
+	str_dept_link = ""
+	dept_id_len = Len(str_dept_id)
+	
+	select case dept_id_len
+	case 2 'Main category
+		'no parent directory...					
+	case 6 'Sub 1
+		sql = "SELECT dept_id, dept_name FROM :9_dept WHERE dept_id IN ('" & Left(str_dept_id, InStr(str_dept_id, "-")-1) & "') ORDER BY dept_id"
+		sql = Replace(sql, ":9", Session("StoreID"))
+		set rsDept=dbconn.Execute(sql)
+		
+		do while not rsDept.EOF
+			str_dept_link = str_dept_link & "<a href=""ggdept.asp?dept_id=" & rsDept("dept_id") & """>" & rsDept("dept_name") & "</a> > "
+			rsDept.MoveNext
+		loop
+					
+		rsDept.Close
+
+	case 10 'Sub 2
+		sql = "SELECT dept_id, dept_name FROM :9_dept WHERE dept_id IN ('" & Left(str_dept_id,2) & "', '" & Left(str_dept_id, 6) & "') ORDER BY dept_id"
+		sql = Replace(sql, ":9", Session("StoreID"))
+		set rsDept=conn.Execute(sql)
+		
+		i = dept_level
+		do while not rsDept.EOF
+			str_dept_link = str_dept_link & "<a href=""ggdept.asp?dept_id=" & rsDept("dept_id") & """>" & rsDept("dept_name") & "</a> > "
+			rsDept.MoveNext
+		loop
+					
+		rsDept.Close
+			
+	case else
+		
+	end select
+	
+	dbconn.close
+	
+	GetParentCategoryLink = str_dept_link
+end function
+</script>
+<%
+	sql = "SELECT dept_name, parent_dept, dept_list_view, dept_detail, dept_title_name FROM :9_dept WHERE dept_id='" & dept_ID & "'"
+	sql = replace(sql, ":9", Session("StoreID"))
+	Set rsDeptName = Conn.Execute(sql)
+							
+	if not rsDeptName.EOF then
+	  dept_name = Trim(rsDeptName("dept_name"))
+	  parent_dept = rsDeptName("parent_dept")
+	  dept_list_view = rsDeptName("dept_list_view")
+	  dept_detail = rsDeptName("dept_detail")
+		dept_title_name = rsDeptName("dept_title_name")
+	  dept_ok = true
+	else
+	  dept_ok = false 'no department available....
+	end if
+	rsDeptName.Close
+	
+	
+	If Len(dept_title_name) > 0 Then
+    dept_page_title = stripHTML(dept_title_name)
+  Else
+	  if Session("ENABLE_SEO") = 1 then
+		  dept_page_title = stripHTML(dept_name) & " - " & Session("StoreFullName")
+	  else
+		  dept_page_title = Session("StoreTitle") & " - Product List"
+	  end if
+	End If
+	
+%>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<script language="VBScript" RUNAT=SERVER>
+function GetParentCategoryLink(ByRef str_db, ByRef str_dept_id)
+
+	'Get Category Names...
+	dim str_dept_link
+	
+	Set dbconn = Server.CreateObject("ADODB.Connection")
+	dbconn.open str_db
+	
+	str_dept_link = ""
+	dept_id_len = Len(str_dept_id)
+	
+	select case dept_id_len
+	case 2 'Main category
+		'no parent directory...					
+	case 6 'Sub 1
+		sql = "SELECT dept_id, dept_name FROM :9_dept WHERE dept_id IN ('" & Left(str_dept_id, InStr(str_dept_id, "-")-1) & "') ORDER BY dept_id"
+		sql = Replace(sql, ":9", Session("StoreID"))
+		set rsDept=dbconn.Execute(sql)
+		
+		do while not rsDept.EOF
+			str_dept_link = str_dept_link & "<a href=""ggdept.asp?dept_id=" & rsDept("dept_id") & """>" & rsDept("dept_name") & "</a> > "
+			rsDept.MoveNext
+		loop
+					
+		rsDept.Close
+
+	case 10 'Sub 2
+		sql = "SELECT dept_id, dept_name FROM :9_dept WHERE dept_id IN ('" & Left(str_dept_id,2) & "', '" & Left(str_dept_id, 6) & "') ORDER BY dept_id"
+		sql = Replace(sql, ":9", Session("StoreID"))
+		set rsDept=conn.Execute(sql)
+		
+		i = dept_level
+		do while not rsDept.EOF
+			str_dept_link = str_dept_link & "<a href=""ggdept.asp?dept_id=" & rsDept("dept_id") & """>" & rsDept("dept_name") & "</a> > "
+			rsDept.MoveNext
+		loop
+					
+		rsDept.Close
+			
+	case else
+		
+	end select
+	
+	dbconn.close
+	
+	GetParentCategoryLink = str_dept_link
+	
+end function
+
+function GetCategoryPriceRule(str_db, str_dept_id, str_dept_pricerule, str_default)
+	
+	'Initialize..
+	f_pricerule = 0
+	dim b_pricerule, a_pricerule
+	
+	b_pricerule = false
+	a_pricerule = "0"
+	
+	Set dbconn = Server.CreateObject("ADODB.Connection")
+	dbconn.open str_db
+	
+	sql = "SELECT pri_pricerule_flag, pub_pricerule_flag FROM :9_profile"
+	sql = Replace(sql, ":9", Session("StoreID"))
+	set rsGlobal= dbconn.Execute(sql)
+					
+	if not rsGlobal.EOF then	  	
+		pri_pricerule_flag = rsGlobal("pri_pricerule_flag")
+		pub_pricerule_flag = rsGlobal("pub_pricerule_flag")
+		
+		if str_default = "000" then
+			if not (pri_pricerule_flag > 0) then
+				a_pricerule = "0"
+			else
+				if pri_pricerule_flag = 1 then
+					a_pricerule = str_default
+				end if
+			end if
+		else
+			if not (pub_pricerule_flag > 0) then
+				a_pricerule = "0"
+			else
+				if pub_pricerule_flag = 1 then
+					a_pricerule = str_default
+				end if
+			end if
+		end if
+	  	
+	else
+		a_pricerule = "0"
+	end if
+					
+	rsGlobal.Close
+	
+	'GRP
+	sql = "SELECT dept_pricerule FROM :9_dept WHERE dept_id='" & Left(str_dept_id,2) & "'"
+  sql = Replace(sql, ":9", Session("StoreID"))
+  set rsSub=dbconn.Execute(sql)
+  
+  if not rsSub.EOF then
+		pricerule_flag = rsSub("dept_pricerule")
+		if not (pricerule_flag > 0) then
+			a_pricerule = "0"
+		else
+			if pricerule_flag = 1 then
+				a_pricerule = Left(str_dept_id,2)
+			end if
+		end if
+  else
+		a_pricerule = "0"
+  end if
+  
+  if Len(str_dept_id) > 2 then
+		'CAT
+		sql = "SELECT dept_pricerule FROM :9_dept WHERE dept_id='" & Left(str_dept_id,6) & "'"
+		sql = Replace(sql, ":9", Session("StoreID"))
+		set rsSub=dbconn.Execute(sql)
+  
+		if not rsSub.EOF then
+			pricerule_flag = rsSub("dept_pricerule")
+			if not (pricerule_flag > 0) then
+				a_pricerule = "0"
+			else
+				if pricerule_flag = 1 then
+					a_pricerule = Left(str_dept_id,6)
+				end if
+			end if
+		else
+			a_pricerule = "0"
+		end if
+  end if
+  
+  if Len(str_dept_id) > 6 then
+		'CAT
+		sql = "SELECT dept_pricerule FROM :9_dept WHERE dept_id='" & Left(str_dept_id,10) & "'"
+		sql = Replace(sql, ":9", Session("StoreID"))
+		set rsSub=dbconn.Execute(sql)
+  
+		if not rsSub.EOF then
+			pricerule_flag = rsSub("dept_pricerule")
+			if not (pricerule_flag > 0) then
+				a_pricerule = "0"
+			else
+				if pricerule_flag = 1 then
+					a_pricerule = Left(str_dept_id,10)
+				end if
+			end if
+		else
+			a_pricerule = "0"
+		end if
+  end if
+  
+  if a_pricerule = "0" then
+		b_pricerule = false
+  else
+		b_pricerule = true
+  end if
+	
+	str_dept_pricerule = a_pricerule
+	
+	dbconn.Close
+	
+	GetCategoryPriceRule = b_pricerule
+end function
+
+function ApplyPriceRule(ByRef str_db, ByRef rule_dept, ByRef str_price)
+	dim retPrice
+	retPrice = 0
+	
+	call Numberize(str_price)
+	
+	set dbconn = Server.CreateObject("ADODB.Connection")
+	dbconn.Open str_db
+	
+	sql = "SELECT pricerule_rule FROM :9_pricerule WHERE pricerule_from <= " & str_price & " AND pricerule_to > " & str_price & " AND pricerule_dept='" & rule_dept & "'"
+	sql = Replace(sql, ":9", Session("StoreID"))
+	
+	set rsPrice = dbconn.Execute(sql)
+	if not rsPrice.EOF then
+		iRule = rsPrice("pricerule_rule")
+		if IsNumeric(iRule) then
+			retPrice = CDbl(str_price)*(iRule/100 + 1)
+		else
+			retPrice = 0
+		end if
+	else
+		retPrice = 0
+	end if
+	rsPrice.Close
+	
+	dbconn.Close
+	ApplyPriceRule = FormatNumber(retPrice, 2,,,0)
+	
+end function
+</script>
+
+
+
+<%
+
+    if Len(Session("CUSTOM_CATALOG_ID_FLAG")) > 0 then
+	
+	    cc_catalog_id = ""
+	    sql = "SELECT catalog_id FROM " & Session("StoreID") & "_custom_catalog WHERE enable_flag=" & Session("CUSTOM_CATALOG_ID_FLAG")
+	    set rsCatalog = Conn.Execute(sql)
+	    if not rsCatalog.EOF then
+		    cc_catalog_id = rsCatalog(0)
+	    end if
+	    rsCatalog.Close
+	
+    end if
+
+    sql = "SELECT * FROM :9_dept WHERE dept_id like '" & dept_ID & "'"
+	sql = replace(sql, ":9", Session("StoreID"))
+
+    Set rsDeptName = Conn.Execute(sql)
+
+    if not rsDeptName.EOF then
+	    dept_name = Trim(rsDeptName("dept_name"))
+	    parent_dept = rsDeptName("parent_dept")
+	    dept_list_view = rsDeptName("dept_list_view")
+	    dept_list_num = rsDeptName("dept_list_num")
+	
+	    if Len(Request("sort_order")) > 0 then
+		    dept_sort_order = Request("sort_order")
+	    else
+		    dept_sort_order = CStr(rsDeptName("dept_sort_order"))
+	    end if
+	
+	    dept_show_mfg = rsDeptName("dept_show_mfg")
+	    dept_markup = rsDeptName("markup_" & Session("LOGINGROUP"))
+	    dept_use_markup = rsDeptName("use_markup")
+	    dept_detail = rsDeptName("dept_detail")
+	    dept_title_name = rsDeptName("dept_title_name")
+	    cont_ok = true
+    else
+	    cont_ok = false
+    end if
+
+    rsDeptName.Close
+
+    if cont_ok then
+	    str_parent_dept = ""
+	    str_parent_dept = GetParentCategoryLink(Session("ConnectionString"),dept_ID)
+	
+        'Get markup...
+	    if (dept_use_markup) then
+		    current_markup = dept_markup
+	    else
+		    current_markup = CDbl(Session("PriMarkup_"& Session("LOGINGROUP")))
+		
+		    dept_level = Len(Trim(dept_ID))
+		
+		    Select case dept_level
+			
+		    case 2
+                'Do nothing.. use global markup...
+		    case 6
+			    sql = "SELECT markup_" & Session("LOGINGROUP") & " FROM :9_dept WHERE dept_id IN ('" & Left(dept_ID, 2) & "','" & dept_ID & "') AND use_markup=1 ORDER BY dept_id DESC"
+			    sql = replace(sql, ":9", Session("StoreID"))
+			    Set rsDeptMarkup = Conn.Execute(sql)
+			
+			    if rsDeptMarkup.EOF then
+                    'Do nothing...
+			    else
+				    current_markup = rsDeptMarkup(0)
+			    end if
+			
+			    rsDeptMarkup.Close
+		    case 10
+			
+			    sql = "SELECT markup_" & Session("LOGINGROUP") & " FROM :9_dept WHERE dept_id IN ('" & Left(dept_ID, 2) & "','" & Left(dept_ID,6) & "','" & dept_ID & "') AND use_markup=1 ORDER BY dept_id DESC"
+			    sql = replace(sql, ":9", Session("StoreID"))
+			    Set rsDeptMarkup = Conn.Execute(sql)
+			
+			    if rsDeptMarkup.EOF then
+                    'Do nothing...
+			    else
+				    current_markup = rsDeptMarkup(0)
+			    end if
+			
+			    rsDeptMarkup.Close
+			
+		    End Select
+		
+	    end if
+	
+        'Get price rule dept...
+	    dept_pricerule = "0"
+	    if GetCategoryPriceRule(Session("ConnectionString"), dept_ID, dept_pricerule, "000") then
+		    b_use_pricerule = true
+	    else
+		    b_use_pricerule = false
+	    end if
+	
+	    if so = "" then
+		    so = dept_sort_order
+	    end if
+	
+	    Select case so
+		
+	    case "0"
+		    str_sort = " ORDER BY name"
+		    sort_description = "Description <font face=webdings>6</font>"
+	    case "1"
+		    str_sort = " ORDER BY name DESC"
+		    sort_description = "Description <font face=webdings>5</font>"
+	    case "4"
+		    str_sort = " ORDER BY vendor_name, name"
+		    sort_description = "Manufacturer <font face=webdings>6</font>"
+	    case "5"
+		    str_sort = " ORDER BY vendor_name DESC, name"
+		    sort_description = "Manufacturer <font face=webdings>5</font>"
+	    case "6"
+		    str_sort = " ORDER BY pf_id"
+		    sort_description = "Part Number <font face=webdings>6</font>"
+	    case "7"
+		    str_sort = " ORDER BY pf_id DESC"
+		    sort_description = "Part Number <font face=webdings>5</font>"
+	    case "8"
+		    str_sort = " ORDER BY price_" &  Session("LOGINGROUP")
+		    sort_description = "Price <font face=webdings>6</font>"
+	    case "9"
+		    str_sort = " ORDER BY price_" &  Session("LOGINGROUP") & " DESC"
+		    sort_description = "Price <font face=webdings>5</font>"
+	    case else
+		    str_sort = " ORDER BY name"
+		    sort_description = "Description <font face=webdings>6</font>"
+		    so = "0"
+	    end Select
+
+		
+        Select case show
+		
+	    case "3"
+		    
+	    case "5"
+		    
+	    case "10"
+		    
+	    case "15"
+		    
+	    case "20"
+		    
+	    case else
+		    show = "20"
+	    end Select
+	
+	    strSQL = "SELECT " & Session("StoreID") & "_product.* FROM " & Session("StoreID") & "_product WHERE pf_id IN(SELECT pf_id FROM " & Session("StoreID") & "_dept_prod WHERE dept_id like '" & dept_ID & "%')"
+	
+	    if Len(Session("CUSTOM_CATALOG_ID_FLAG")) > 0 then
+		    strSQL = strSQL & " AND CC" & Session("CUSTOM_CATALOG_ID_FLAG") & "_FLAG=1"
+	    end if
+	
+	    strSQL = strSQL & str_sort
+	
+	    Set rsDept = Server.CreateObject("ADODB.RecordSet")
+	    rsDept.Open strSQL, Session("ConnectionString"), 1, 1
+	
+	    page = FilterStringEx(Request("page"), "[^0-9]")
+		
+	    if Len(page) > 0then
+		    page = CInt(page)
+	    else
+		    page =1
+	    end if
+	
+	    page_size = 10
+	    block_size = 10
+	
+	    if not rsDept.EOF then
+		    'rsDept.PageSize = dept_list_num
+		    'page_size = dept_list_num
+            rsDept.PageSize = show
+            page_size = show
+		    page_count = rsDept.PageCount
+		    list_count = rsDept.RecordCount
+		    rsDept.AbsolutePage = page
+		    RowCount = 0
+		    i_start = page_size * (page-1) + 1
+		    i_last = page_size * page
+		
+		    if i_last > list_count then
+			    i_last = list_count
+		    end if
+	    else
+		    list_count = 0
+		    i_start = 0
+		    i_last = 0
+	    end if
+	
+    end if 'cont_ok...
+
+    If Len(dept_title_name) > 0 Then
+	    dept_page_title = stripHTML(dept_title_name)
+    Else
+	    if Session("ENABLE_SEO") = 1 then
+		    dept_page_title = stripHTML(dept_name) & " - " & Session("StoreFullName")
+	    else
+		    dept_page_title = Session("StoreTitle") & " - Product List"
+	    end if
+    End If
+
+    '========================================================================================
+    ' GET TOOLBAR VALUES
+
+    strSortURL_3 = Session("StoreURL") & "/gdept.asp?dept_id=" & dept_id & "&mode=" & mode & "&so=" & so & "&show=3"
+    strSortURL_5 = Session("StoreURL") & "/gdept.asp?dept_id=" & dept_id & "&mode=" & mode & "&so=" & so & "&show=5"
+    strSortURL_10 = Session("StoreURL") & "/gdept.asp?dept_id=" & dept_id & "&mode=" & mode & "&so=" & so & "&show=10"
+    strSortURL_15 = Session("StoreURL") & "/gdept.asp?dept_id=" & dept_id & "&mode=" & mode & "&so=" & so & "&show=15"
+    strSortURL_20 = Session("StoreURL") & "/gdept.asp?dept_id=" & dept_id & "&mode=" & mode & "&so=" & so & "&show=20"
+
+    strSortURL_Name = Session("StoreURL") & "/gdept.asp?dept_id=" & dept_id & "&mode=" & mode & "&so=0&show=" & show
+    strSortURL_PartNumber = Session("StoreURL") & "/gdept.asp?dept_id=" & dept_id & "&mode=" & mode & "&so=6&show=" & show
+    strSortURL_Price = Session("StoreURL") & "/gdept.asp?dept_id=" & dept_id & "&mode=" & mode & "&so=8&show=" & show
+
+    Select case so
+		
+	case "0"
+        strSortURL_asc = Session("StoreURL") & "/gdept.asp?dept_id=" & dept_id & "&mode=" & mode & "&so=0&show=" & show
+        strSortURL_desc = Session("StoreURL") & "/gdept.asp?dept_id=" & dept_id & "&mode=" & mode & "&so=1&show=" & show  	
+	case "1"
+		strSortURL_asc = Session("StoreURL") & "/gdept.asp?dept_id=" & dept_id & "&mode=" & mode & "&so=0&show=" & show
+        strSortURL_desc = Session("StoreURL") & "/gdept.asp?dept_id=" & dept_id & "&mode=" & mode & "&so=1&show=" & show  	
+	case "4"
+		strSortURL_asc = Session("StoreURL") & "/gdept.asp?dept_id=" & dept_id & "&mode=" & mode & "&so=4&show=" & show
+        strSortURL_desc = Session("StoreURL") & "/gdept.asp?dept_id=" & dept_id & "&mode=" & mode & "&so=5&show=" & show  	
+	case "5"
+		strSortURL_asc = Session("StoreURL") & "/gdept.asp?dept_id=" & dept_id & "&mode=" & mode & "&so=4&show=" & show
+        strSortURL_desc = Session("StoreURL") & "/gdept.asp?dept_id=" & dept_id & "&mode=" & mode & "&so=5&show=" & show  	
+	case "6"
+		strSortURL_asc = Session("StoreURL") & "/gdept.asp?dept_id=" & dept_id & "&mode=" & mode & "&so=6&show=" & show
+        strSortURL_desc = Session("StoreURL") & "/gdept.asp?dept_id=" & dept_id & "&mode=" & mode & "&so=7&show=" & show
+	case "7"
+		strSortURL_asc = Session("StoreURL") & "/gdept.asp?dept_id=" & dept_id & "&mode=" & mode & "&so=6&show=" & show
+        strSortURL_desc = Session("StoreURL") & "/gdept.asp?dept_id=" & dept_id & "&mode=" & mode & "&so=7&show=" & show
+	case "8"
+		strSortURL_asc = Session("StoreURL") & "/gdept.asp?dept_id=" & dept_id & "&mode=" & mode & "&so=8&show=" & show
+        strSortURL_desc = Session("StoreURL") & "/gdept.asp?dept_id=" & dept_id & "&mode=" & mode & "&so=9&show=" & show
+	case "9"
+		strSortURL_asc = Session("StoreURL") & "/gdept.asp?dept_id=" & dept_id & "&mode=" & mode & "&so=8&show=" & show
+        strSortURL_desc = Session("StoreURL") & "/gdept.asp?dept_id=" & dept_id & "&mode=" & mode & "&so=9&show=" & show
+	case else
+		
+	end Select
+
+    strPageURL = Session("StoreURL") & "/gdept.asp?dept_id=" & dept_id & "&mode=" & mode & "&so=" & so & "&show=" & show
+
+    strModeURL = Session("StoreURL") & "/gdept.asp?dept_id=" & dept_id & "&so=" & so & "&show=" & show
+
+
+    '==========================================================================================
+
+%>

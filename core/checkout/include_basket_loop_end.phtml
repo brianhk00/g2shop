@@ -1,0 +1,10 @@
+<%
+		If (ARYShoppingCart(cartProductUnitPrice, i)) <> "" Then
+				iSubtotal = iSubtotal + UnitSubTotal
+		End If
+	Next
+
+	conn_ss3.close
+	
+	Session("TotalTaxable") = Total_Taxable
+%>

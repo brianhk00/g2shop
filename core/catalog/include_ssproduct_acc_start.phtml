@@ -1,0 +1,43 @@
+<%
+	iAccessories = 0
+	iRowCount = 0
+	sql = "SELECT * FROM " & g_storeid & "_ssprice WHERE sku IN (SELECT accessoryproductid FROM " & specsource_db & ".dbo.productaccessories WHERE productid = " & pf_id & ") AND hide_flag=0"
+	
+	ii = 0
+
+	set rsLists = conn_ss2.Execute(sql)
+	do while not rsLists.EOF
+		prod_name = Trim(rsLists("DESCR"))
+		acc_productid = rsLists("sku")
+		acc_adjusted_price = rsLists("price_" & Session("LOGINGROUP"))
+		image_published = rsLists("image_published")
+		acc_manu_name = Trim(rsLists("VEND_NAME"))
+		acc_mfgpartno = Trim(rsLists("VEND_PART"))
+		acc_AVAIL = rsLists("AVAIL")
+
+		if image_published = 1 then
+			ssImg = "http://content.etilize.com/images/96/" & acc_productid & ".jpg"
+		else
+			ssImg = "site_img/snopicsm_" & Session("TEMPLATEID") & ".gif"
+		end if
+		'=============================================
+		acc_pok = true
+		if Session("PROD_AVAIL") = "4" then
+			if acc_AVAIL > 0 then
+				acc_pok = false
+			end if
+		end if
+		'=============================================
+		if acc_AVAIL  > 0 then
+			acc_b_enable_buy = true
+		else
+			if Session("PROD_AVAIL") = "1" or Session("PROD_AVAIL") = "3" then
+				'enable..
+				acc_b_enable_buy = true
+			else
+				'disable..
+				acc_b_enable_buy = false
+			end if
+		end if
+
+%>

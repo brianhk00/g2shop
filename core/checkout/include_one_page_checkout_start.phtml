@@ -1,0 +1,1035 @@
+<!--#INCLUDE FILE="../../language_pack.asp"-->
+<!--#INCLUDE FILE="../../util/xt_func_session.asp"-->
+<%
+	sessionID = Request("sessionID")
+	sessionID = FilterSessionString(sessionID)
+	if Len(sessionID) > 0 then
+		Session("SESSIONKEY") = sessionID
+	else
+		if Len(Session("SESSIONKEY")) > 0 then
+			'session key exist
+		else
+			'no key information...
+			Response.Redirect Session("StoreURL") & "/index.asp"
+		end if
+	end if
+	
+	iCount = Session("ItemCount")
+	if( iCount < 1 )then
+		Response.Redirect Session("StoreURL") & "/basket.asp"
+	end if
+	
+%>
+<!--#INCLUDE FILE="../../util/xt_func_client.asp" -->
+<!--#INCLUDE FILE="../../util/xt_func_creditcard.asp"-->
+<!--#INCLUDE FILE="../../util/xt_func_payment.asp"-->
+<!--#INCLUDE FILE="../../util/xt_func_order.asp" -->
+<!--#INCLUDE FILE="../../util/xt_func_util.asp" -->
+<!-- #INCLUDE File="../../util/xt_func_misc_option.asp" -->
+<!--#INCLUDE FILE="../../util/xt_func_carrier.asp"-->
+<!--#INCLUDE FILE="../../util/xt_func_string.asp"-->
+<!-- #INCLUDE File="../../util/xt_func_rc4.asp" -->
+<!--#INCLUDE FILE="../../i_adodb.asp"-->
+<!--#INCLUDE FILE="../../cart.inc"-->
+<%
+  btncalc_shipping = Trim(Request("btncalc_shipping"))
+  btncalc_shipping = FilterStringSP(btncalc_shipping)
+  
+  if Request.Form("btnSubmitOrder.x").Count > 0 then
+		b_process_order = true
+	else
+	  b_process_order = false
+	end if
+  
+  if btncalc_shipping = "show me shipping choices" then
+    b_calc_shipping = true
+  else
+    b_calc_shipping = false
+  end if
+
+  '==================================================================
+  s_error = ""
+  
+  sh_option = Trim(Request("ShippingMethodChoice"))
+  if len(sh_option) > 0 then
+	  sp1 = instr(sh_option, "~")
+	  if sp1 > 0 then
+	    ar_sp1 = Split(sh_option, "~")
+	    sh_detail = ar_sp1(0)
+	    sh_ups_charge = ar_sp1(1)
+	  else
+	    sh_detail = ""
+	    sh_ups_charge = "0.00"
+	  end if
+	else
+	  sh_detail = ""
+	  sh_ups_charge = "0.00"
+	end if
+	
+	'=================================================================
+	
+	'GET USER DEFINED FIELD SETTINGS...
+	b_UDF01 = 0
+	b_UDF02 = 0
+	b_UDF03 = 0
+	b_UDF04 = 0
+	b_UDF05 = 0
+	
+	s_UDF01 = ""
+	s_UDF02 = ""
+	s_UDF03 = ""
+	s_UDF04 = ""
+	s_UDF05 = ""
+	
+	sql = "SELECT * FROM " & Session("StoreID") & "_UserField"
+	set rsUDF = conn.Execute(sql)
+	do while not rsUDF.EOF
+		
+		SELECT CASE rsUDF("UserField_ID")
+		CASE "UDF01"
+			b_UDF01 = rsUDF("UserField_SalesOrder")
+			s_UDF01 = Trim(rsUDF("UserField_Name"))
+		CASE "UDF02"
+			b_UDF02 = rsUDF("UserField_SalesOrder")
+			s_UDF02 = Trim(rsUDF("UserField_Name"))
+		CASE "UDF03"
+			b_UDF03 = rsUDF("UserField_SalesOrder")
+			s_UDF03 = Trim(rsUDF("UserField_Name"))
+		CASE "UDF04"
+			b_UDF04 = rsUDF("UserField_SalesOrder")
+			s_UDF04 = Trim(rsUDF("UserField_Name"))
+		CASE "UDF05"
+			b_UDF05 = rsUDF("UserField_SalesOrder")
+			s_UDF05 = Trim(rsUDF("UserField_Name"))
+		END SELECT
+		
+		rsUDF.MoveNext
+	loop
+	rsUDF.Close
+	
+	sql = "SELECT * FROM " & Session("StoreID") & "_setting WHERE setting_type='UDF_CHECKOUT_HTML'"
+	set rsSettings = conn.Execute(sql)
+	if not rsSettings.EOF then
+	  udf_HTML = rsSettings("setting_text")
+	else
+	  udf_HTML = ""
+	end if
+	rsSettings.Close
+	
+  '==================================================================
+  BillingFirstName = Trim(Request("BillingFirstName"))
+  BillingLastName = Trim(Request("BillingLastName"))
+  BillingCompanyName = Trim(Request("BillingCompanyName"))
+  BillingAddress1 = Trim(Request("BillingAddress1"))
+  BillingCity = Trim(Request("BillingCity"))
+  BillingCountry = Trim(Request("BillingCountry"))
+
+	If BillingCountry = "" Then
+		BillingCountry = Session("shopper_country")
+	End If
+	  
+  ss_billstate1 = ""
+  
+  BillingState_dropdown = Trim(Request("bill_state")) 'Trim(Request("BillingState_dropdown"))
+  BillingState = Trim(Request("bill_state"))
+  
+	ss_billstate = BillingState_dropdown
+  ss_billstate1 = BillingState_dropdown
+
+  'if BillingCountry = "US" OR BillingCountry = "CA" then
+    'ss_billstate = BillingState_dropdown
+    'ss_billstate1 = BillingState_dropdown
+    'SELECT CASE Session("ENABLEINT")
+		'CASE "0"
+		  'BillingCountry = "US"
+		'CASE "1"
+		 'BillingCountry = "US"
+		'CASE "2"
+		  'BillingCountry = "CA"
+		'CASE "3"
+		  'BillingCountry = "CA"
+		'CASE ELSE
+		  'BillingCountry = "US"
+		'END SELECT
+  'else
+    'ss_billstate = BillingState
+    'ss_billstate1 = ""
+  'end if
+    
+  BillingPostalCode = Trim(Request("BillingPostalCode"))
+  BillingPhoneNumber = Trim(Request("BillingPhoneNumber"))
+  Email = Trim(Request("Email"))
+  '=================================================================
+  BillingPostalCode = Trim(Request("BillingPostalCode"))
+  
+  
+  ShipFirstName = Trim(Request("ShipFirstName"))
+  ShipLastName = Trim(Request("ShipLastName"))
+  ShipCompanyName = Trim(Request("ShipCompanyName"))
+  ShipAddress1 = Trim(Request("ShipAddress1"))
+  ShipCity = Trim(Request("ShipCity"))
+  
+  ss_shipstate1 = "" 'for dropdown default
+  
+  ShipCountry = Trim(Request("ShippingCountry"))
+  ShipState_dropdown = Trim(Request("ship_state"))'Trim(Request("ShipState_dropdown"))
+  ShipState = Trim(Request("ship_state"))
+
+	If ShipCountry = "" Then
+		ShipCountry = Session("shopper_country")
+	End If
+
+	'Response.Write(ShipCountry)
+
+	ss_shipstate = ShipState_dropdown
+  ss_shipstate1 = ShipState_dropdown
+  
+  'if ShipCountry = "US" OR ShipCountry = "CA" then
+    'ss_shipstate = ShipState_dropdown
+    'ss_shipstate1 = ShipState_dropdown
+  'else
+    'ss_shipstate = ShipState
+    'ss_shipstate1 = ""
+    'SELECT CASE Session("ENABLEINT")
+		'CASE "0"
+		  'ShipCountry = "US"
+		'CASE "1"
+		  'ShipCountry = "US"
+		'CASE "2"
+		  'ShipCountry = "CA"
+		'CASE "3"
+		  'ShipCountry = "CA"
+		'CASE ELSE
+		  'ShipCountry = "US"
+		'END SELECT
+  'end if
+  
+  ShipPostalCode = Trim(Request("ShipPostalCode"))
+  ShipPhoneNumber = Trim(Request("ShipPhoneNumber"))
+  
+  password = Trim(Request("password"))
+  passwordagain = Trim(Request("passwordagain"))
+  
+  PaymentMethodType = Trim(Request("PaymentMethodType"))
+  CreditCardType = Trim(Request("CreditCardType"))
+  
+  CreditCardNumber = Trim(Request("CreditCardNumber"))
+  CardHoldersName = Trim(Request("CardHoldersName"))
+  CC_ExpDate_Month = Trim(Request("CC_ExpDate_Month"))
+  CC_ExpDate_Year = Trim(Request("CC_ExpDate_Year"))
+  cvv2 = Trim(Request("cvv2"))
+  
+  if Len(CreditCardNumber) > 0 then
+		CreditCardNumber = TrimToDigits(CreditCardNumber)
+	end If
+
+  
+  Keep_Payment_Method_On_File_CCard = Trim(Request("Keep_Payment_Method_On_File_CCard"))
+  
+  
+  po_number = Trim(Request("po_number"))
+	
+	UDF01 = Trim(Request("UDF01"))
+	UDF02 = Trim(Request("UDF02"))
+	UDF03 = Trim(Request("UDF03"))
+	UDF04 = Trim(Request("UDF04"))
+	UDF05 = Trim(Request("UDF05"))
+  
+  
+  '========================================================================================
+  
+  if b_calc_shipping then
+    s_error = ""
+    if Len(ShipCountry) > 0 then
+    else
+      s_error = s_error & "<li>Please fill in the Shipping Address field ""Country"".</li>"
+      b_calc_shipping = false
+    end if
+    
+    if Len(ss_shipstate) > 0 then
+    else
+      s_error = s_error & "<li>Please fill in the Shipping Address field ""State/Province"".</li>"
+      b_calc_shipping = false
+    end if
+    
+    if Len(ShipPostalCode) > 0 then
+    else
+      s_error = s_error & "<li>Please fill in the Shipping Address field ""Zip / Postal Code"".</li>"
+      b_calc_shipping = false
+    end if
+  end if
+  
+  '==========================================================================
+  
+  if b_process_order then
+    s_error = ""
+    
+    '=========================================================================================    
+    if Len(BillingFirstName) > 0 then
+    else
+      s_error = s_error & "<li>Please fill in the Billing Address field ""First Name"".</li>"
+      b_process_order = false
+    end if
+    
+    if Len(BillingLastName) > 0 then
+    else
+      s_error = s_error & "<li>Please fill in the Billing Address field ""Last Name"".</li>"
+      b_process_order = false
+    end if
+    
+    if Len(BillingAddress1) > 0 then
+    else
+      s_error = s_error & "<li>Please fill in the Billing Address field ""Address"".</li>"
+      b_process_order = false
+    end if
+    
+    if Len(BillingCity) > 0 then
+    else
+      s_error = s_error & "<li>Please fill in the Billing Address field ""City"".</li>"
+      b_process_order = false
+    end if
+    
+    if Len(BillingCountry) > 0 then
+    else
+      s_error = s_error & "<li>Please fill in the Billing Address field ""Country"".</li>"
+      b_process_order = false
+    end if
+    
+    if Len(ss_billstate) = 0 or ss_billstate = "--" then
+      s_error = s_error & "<li>Please fill in the Billing Address field ""State/Province"".</li>"
+      b_process_order = false
+    end if
+    
+    if Len(BillingPostalCode) > 0 then
+    else
+      s_error = s_error & "<li>Please fill in the Billing Address field ""Zip/Postal Code"".</li>"
+      b_process_order = false
+    end if
+    
+    if Len(BillingPhoneNumber) > 0 then
+    else
+      s_error = s_error & "<li>Please fill in the Billing Address field ""Phone"".</li>"
+      b_process_order = false
+    end if
+    
+    if Len(Email) > 0 then
+      if CheckEmailAddress(Email) then
+      else
+        s_error = s_error & "<li>Please fill in valid ""Email Address"".</li>"
+        b_process_order = false
+      end if
+    else
+      s_error = s_error & "<li>Please fill in the field ""Email Address"".</li>"
+      b_process_order = false
+    end if
+    
+    '=========================================================================================
+    if Len(ShipFirstName) > 0 then
+    else
+      s_error = s_error & "<li>Please fill in the Shipping Address field ""First Name"".</li>"
+      b_process_order = false
+    end if
+    
+    if Len(ShipLastName) > 0 then
+    else
+      s_error = s_error & "<li>Please fill in the Shipping Address field ""Last Name"".</li>"
+      b_process_order = false
+    end if
+    
+    if Len(ShipAddress1) > 0 then
+    else
+      s_error = s_error & "<li>Please fill in the Shipping Address field ""Address"".</li>"
+      b_process_order = false
+    end if
+    
+    if Len(ShipCity) > 0 then
+    else
+      s_error = s_error & "<li>Please fill in the Shipping Address field ""City"".</li>"
+      b_process_order = false
+    end if
+    
+    if Len(ShipCountry) > 0 then
+    else
+      s_error = s_error & "<li>Please fill in the Shipping Address field ""Country"".</li>"
+      b_process_order = false
+    end if
+    
+    if Len(ss_shipstate) = 0 or ss_shipstate = "--" then
+      s_error = s_error & "<li>Please fill in the Shipping Address field ""State/Province"".</li>"
+      b_process_order = false
+    end if
+    
+    if Len(ShipPostalCode) > 0 then
+    else
+      s_error = s_error & "<li>Please fill in the Shipping Address field ""Zip / Postal Code"".</li>"
+      b_process_order = false
+    end if
+    
+    if Len(ShipPhoneNumber) > 0 then
+    else
+      s_error = s_error & "<li>Please fill in the Shipping Address field ""Phone"".</li>"
+      b_process_order = false
+    end if
+    
+    if Len(password) > 0 then
+    else
+      s_error = s_error & "<li>Please fill in the field ""Password"".</li>"
+      b_process_order = false
+    end if
+    
+    if Len(passwordagain) > 0 then
+    else
+      s_error = s_error & "<li>Please fill in the field ""Password (Type it again)"".</li>"
+      b_process_order = false
+    end if
+    
+    if Len(password) > 0 AND Len(passwordagain) > 0 then
+      
+      if password = passwordagain then
+      else
+        s_error = s_error & "<li>""Password"" and ""Type it again"" must be the same, please try again.</li>"
+        b_process_order = false
+      end if
+    
+    end if
+    
+    if Len(PaymentMethodType) > 0 then
+    else
+      s_error = s_error & "<li>Please choose ""Payment Method"".</li>"
+      b_process_order = false
+    end if
+    
+    if PaymentMethodType = "Credit Card" then
+    
+      if Len(CreditCardNumber) > 0 then
+      else
+        s_error = s_error & "<li>Please fill in the field ""Credit Card Number"".</li>"
+        b_process_order = false
+      end if
+      
+      if Len(CardHoldersName) > 0 then
+      else
+        s_error = s_error & "<li>Please fill in the field ""Person's Name on Card"".</li>"
+        b_process_order = false
+      end if
+      
+      if Len(CC_ExpDate_Month) > 0 then
+      else
+        s_error = s_error & "<li>Please fill in the field ""Credit Card Expiration Month"".</li>"
+        b_process_order = false
+      end if
+      
+      if Len(CC_ExpDate_Year) > 0 then
+      else
+        s_error = s_error & "<li>Please fill in the field ""Credit Card Expiration Year"".</li>"
+        b_process_order = false
+      end if
+      
+      if Len(cvv2) > 0 then
+      else
+        s_error = s_error & "<li>Please enter ""Card ID Number"".</li>"
+        b_process_order = false
+      end if
+      
+      if(IsPaymentInfoValid(CreditCardType,CreditCardNumber,CC_ExpDate_Month,CC_ExpDate_Year,status_msg)) then
+      else
+        s_error = s_error & "<li>Invalid Credit Card Information.</li>"
+        b_process_order = false
+      end if
+    
+    end if
+    
+    if Len(sh_detail) > 0 then
+    else
+      s_error = s_error & "<li>Please choose Shipping Method.</li>"
+      b_process_order = false
+    end if
+  
+  end if
+  
+  if Len(CreditCardNumber) > 0 then
+    if IsRC4Encrypted(CreditCardNumber) then
+    else
+      CreditCardNumber = EnDeCrypt(CreditCardNumber, Session("STORE_OP"))
+    end if
+  end if
+  
+  '==================================================================
+  'SHOPPING CART INFO
+  
+	iSubtotal = 0
+	Total_Taxable = 0
+	ARYShoppingCart = Session("MyShoppingCart")
+	
+	For i = 1 to iCount
+    UnitPrice = ARYShoppingCart(cartProductUnitPrice, i)
+		if IsNumeric(cartProductUnitPrice) then
+			UnitPrice = FormatNumber(UnitPrice, 2)
+			if ARYShoppingCart(cartProductMode, i) = "9" then
+			else
+				if UnitPrice <= 0 then
+					UnitPrice = 0
+				end if
+			end if
+		end if
+						 
+		UnitNumber = CInt(ARYShoppingCart(cartOrderQuantity, i))
+		UnitSubTotal = (UnitPrice*(1-pmt_discount/100)) * UnitNumber
+		
+		if not ARYShoppingCart(cartTaxable, i) then
+			Total_Taxable = Total_Taxable + (ARYShoppingCart(cartOrderQuantity, i) * UnitPrice*(1-pmt_discount/100))
+		end if
+		
+		'=========================================================================================
+		if Len(ARYShoppingCart(cartProductWarranty, i)) > 1 then
+			s_warranty_amount = "0.00"
+		  bWarranty2 = false
+		  if Len(ARYShoppingCart(cartProductWarrantySelection, i)) > 2 then
+		    bWarranty2 = true
+		    sql = "SELECT * FROM " & Session("StoreID") & "_warranty2 WHERE warranty_id='" & ARYShoppingCart(cartProductWarrantySelection, i) & "'"
+				set rsWarranty = Conn.Execute(sql)
+				if not rsWarranty.EOF then
+					x_warranty_name = Trim(rsWarranty("warranty_name"))
+				end if
+				rsWarranty.Close
+				
+				s_warranty_amount = "0.00"
+				
+        sql = "SELECT * FROM " & Session("StoreID") & "_warranty2_param WHERE warranty_id IN "
+        sql = sql & "(SELECT warranty_id FROM " & Session("StoreID") & "_warranty2_group_item WHERE warranty_group_id='" & ARYShoppingCart(cartProductWarranty, i) & "')"
+        set rsWarranty = Conn.Execute(sql)
+        do while not rsWarranty.EOF
+  		    
+          z_wid = rsWarranty("warranty_id")
+          z_value = rsWarranty("warranty_value")
+          z_flag = rsWarranty("warranty_flag")
+          z_min_price = rsWarranty("min_price")
+          z_max_price = rsWarranty("max_price")
+          
+          if rsWarranty("warranty_id") = ARYShoppingCart(cartProductWarrantySelection, i) then
+  		    
+            if z_min_price = 0 AND z_max_price = 0 then
+              z_apply_warranty = true
+            else
+              if CDbl(UnitPrice) >= z_min_price AND CDbl(UnitPrice) <= z_max_price then
+                z_apply_warranty = true
+              else
+                z_apply_warranty = false
+              end if
+            end if
+  		    
+            if z_apply_warranty then
+    		      
+              if z_flag = 1 then
+                z_warranty_amount = FormatNumber(rsWarranty("warranty_value"),2)
+              else
+                z_warranty_amount = UnitPrice * (rsWarranty("warranty_value")/100)
+              end if
+                            
+              z_warranty_amount = z_warranty_amount * UnitNumber
+    		      
+              sql1 = "SELECT warranty_name FROM " &  Session("StoreID") & "_warranty2 WHERE warranty_id='" & z_wid & "'"
+              set rsWarranty1 = Conn.Execute(sql1)
+              if not rsWarranty1.EOF then
+                z_warranty_name = Trim(rsWarranty1(0))
+              else
+                z_warranty_name = "Extended Warranty"
+              end if
+              rsWarranty1.Close
+                            
+              s_warranty_amount =  FormatNumber(z_warranty_amount,2)
+              
+            end if
+          end if
+          rsWarranty.MoveNext
+        loop
+        rsWarranty.Close
+      end if
+      
+      if bWarranty2 = false then
+				if CInt(ARYShoppingCart(cartProductWarrantySelection, i)) > 0 then
+
+					sql = "SELECT * FROM " & Session("StoreID") & "_warranty WHERE warranty_id='" & ARYShoppingCart(cartProductWarranty, i) & "'"
+					set rsWarranty = Conn.Execute(sql)
+					if not rsWarranty.EOF then
+						x_warranty_name = Trim(rsWarranty("warranty_name"))
+						x_warranty_display_name = Trim(rsWarranty("warranty_display_name"))
+						x_warranty_message = Trim(rsWarranty("warranty_message"))
+					end if
+					rsWarranty.Close
+					
+					sql = "SELECT * FROM " & Session("StoreID") & "_warranty_item WHERE warranty_id='" & ARYShoppingCart(cartProductWarranty, i) & "' and row_id=" & ARYShoppingCart(cartProductWarrantySelection, i)
+					set rsWarranty = Conn.Execute(sql)
+
+					if not rsWarranty.EOF then
+						
+						if rsWarranty("warranty_item_flag") = 1 then
+							'amount
+							warranty_amount = rsWarranty("warranty_item_value")
+						else
+							warranty_amount = UnitPrice * (rsWarranty("warranty_item_value")/100)
+						end if
+
+						warranty_item_desc = rsWarranty("warranty_item_desc")
+
+						warranty_amount = warranty_amount * UnitNumber
+
+						s_warranty_amount = FormatNumber(warranty_amount,2)
+
+					end if
+					rsWarranty.Close
+					
+				end if
+			end if
+			
+			if s_warranty_amount > 0 then
+			  iSubtotal = iSubtotal + s_warranty_amount
+			  if Session("ENABLEINT") = "2" OR Session("ENABLEINT")="3" then
+				  Total_Taxable = Total_Taxable + s_warranty_amount
+			  end if
+		  end if
+      
+    end if
+    
+    '=========================================================================================
+		
+		If (ARYShoppingCart(cartProductUnitPrice, i)) <> "" Then
+			 iSubtotal = iSubtotal + UnitSubTotal
+	  End If
+  Next
+  
+  '===========================================================
+  Session("TotalTaxable") = Total_Taxable
+  dest_state = ss_shipstate
+  dest_postal = ShipPostalCode
+  dest_country = ShipCountry
+  sh_default_value = sh_detail
+  '===========================================================
+  
+  'Tax
+  bAppyTaxOnSH = 0
+  
+  if Session("ENABLEINT") = "2" OR Session("ENABLEINT")="3" then
+		apply_tax_rate = 0
+		if GetClientSalesTaxRateCA(Session("ConnectionString"),dest_state,dest_postal,tax1, tax2, Session("shopper_id"))then
+			if tax1 > 0 then
+				apply_tax_rate = apply_tax_rate + tax1
+				tax1=Round((tax1/100)*Session("TotalTaxable") ,2)
+				apply_tax = true
+			else
+				tax1 = 0
+			end if
+			if tax2 > 0 then
+				apply_tax_rate = apply_tax_rate + tax2
+				tax2=Round((tax2/100)*Session("TotalTaxable") ,2)
+				apply_tax = true
+			else
+				tax2 = 0
+			end if
+			tax = tax1 + tax2			
+		else
+			tax = 0.0
+			apply_tax = false
+		end if
+	else
+		if GetClientSalesTaxRate(Session("ConnectionString"),dest_state,dest_postal,tax, Session("shopper_id"), bAppyTaxOnSH)then
+			if tax > 0 then
+				apply_tax_rate = tax
+				tax=Round((tax/100)*Session("TotalTaxable") ,2)
+				apply_tax = true
+			else
+				tax = 0
+				apply_tax = false
+				apply_tax_rate = 0
+			end if
+		else
+			tax = 0
+			apply_tax = false
+			apply_tax_rate = 0
+		end if
+	end if
+	
+	'========================================================================================
+	if b_process_order then
+    'Process Order....
+    bok = false
+    b_need_cybercash = false
+    Session("order_id")=GetUniqueLongIntegerID()
+    gTotal = iSubtotal + tax + sh_ups_charge
+    
+    '=========================================================================================
+    'Filter Strings...
+    Email = FilterEmailString(Email)
+    '=========================================================================================
+    
+    '=========================================================================================
+    'PROFILE
+    sql = "SELECT ccv_flag FROM " & Session("StoreID") & "_profile"
+		set rsProfile = Conn.Execute(sql)
+		ccv_flag = rsProfile("ccv_flag")
+		rsProfile.Close
+    '=========================================================================================
+    
+    '================================================================================================
+    'Create / Update Customer...
+    sql = "SELECT shopper_id FROM " & Session("StoreID") & "_shopper WHERE Email = '" & Email & "'"
+    set rs = Conn.Execute(sql)
+    if not rs.EOF then
+      shopper_id = Trim(rs("shopper_id"))
+      b_existing_user = true
+      s_error = "The email address you've typed already has an account.<br> Please type a different e-mail address or <a href=""" & Session("SecureURL") & "/checkout.asp" & """ style=""color:#000066;font-weight:bold;"">click here</a> to go back and login."
+    else
+      shopper_id = GetUniqueLongIntegerID()
+      shopper_salesrep_id = ""
+	    shopper_master_account_id = ""
+	    shopper_master_account_first_name = ""
+	    shopper_master_account_last_name = ""
+	    
+	    str_shopper_company_id = "0"
+	    str_shopper_company_name = ""
+      str_shopper_company_address = ""
+      str_shopper_company_city = ""
+      str_shopper_company_state = ""
+      str_shopper_company_zip = ""
+	    
+      b_existing_user = false
+    end if
+    rs.Close
+        
+    if b_existing_user then
+    
+    else
+    
+      'ADD.....
+      'UPDATE.....
+      Set rsShopper = Server.CreateObject("ADODB.Recordset")
+	    with rsShopper
+		    .ActiveConnection = Conn
+		    .CursorLocation = 3 'adUseClient
+		    .CursorType = 1 'adOpenKeyset
+		    .LockType = 3 'adLockOptimistic
+		    .Source = Session("StoreID") & "_shopper WHERE shopper_id='0'"
+		    .Open
+		    .AddNew
+	    end with
+	    
+	    rsShopper("shopper_id") = shopper_id
+	    rsShopper("Email") = Email
+	    rsShopper("Password") = password
+	    rsShopper("FirstName") = BillingFirstName
+	    rsShopper("LastName") = BillingLastName
+	    rsShopper("Company") = BillingCompanyName
+	    rsShopper("Address") = BillingAddress1
+	    rsShopper("City") = BillingCity
+	    rsShopper("State") = ss_billstate
+	    rsShopper("ZipCode") = BillingPostalCode
+	    rsShopper("Country") = BillingCountry
+	    rsShopper("Phone") = BillingPhoneNumber
+	    
+	    rsShopper("shipping_FirstName") = ShipFirstName
+	    rsShopper("shipping_LastName") = ShipLastName
+	    rsShopper("shipping_Company") = ShipCompanyName
+	    rsShopper("shipping_Address") = ShipAddress1
+	    rsShopper("shipping_City") = ShipCity
+	    rsShopper("shipping_ZipCode") = ShipPostalCode
+	    rsShopper("shipping_State") = ss_shipstate
+	    rsShopper("shipping_Country") = ShipCountry
+	    rsShopper("shipping_Phone") = ShipPhoneNumber
+	    
+	    rsShopper("IsSameAddress") = 0
+	    
+	    if PaymentMethodType = "Credit Card" then
+	    
+	      rsShopper("CC_Type") = CreditCardType
+	      if Keep_Payment_Method_On_File_CCard = "Y" then	        
+	        rsShopper("CC_Number") = CreditCardNumber
+	        rsShopper("CC_ExpMonth") = CC_ExpDate_Month
+	        rsShopper("CC_ExpYear") = CC_ExpDate_Year
+	      end if
+	      
+	    else
+	      rsShopper("CC_Type") = PaymentMethodType
+	    end if
+	    
+	    
+	    If Conn.Errors.Count > 0 Then
+		    Conn.Errors.Clear
+		    rsShopper.CancelUpdate
+	    else
+		    rsShopper.Update
+	    End If
+	    
+	    rsShopper.Close
+    
+    end if
+    
+    '=========================================================================================
+    
+    psql = "SELECT * FROM " & Session("StoreID") & "_profile2"
+    Set rsProfile2 = Conn.Execute(psql)
+		
+    if not rsProfile2.EOF then
+      paypal_option = rsProfile2("paypal_option")
+      paypal_business_name = rsProfile2("paypal_business_name")
+      paypal_item_name = rsProfile2("paypal_item_name")
+			
+      paypal_APIUsername = Trim(rsProfile2("paypal_APIUsername"))
+      paypal_APIPassword = Trim(rsProfile2("paypal_APIPassword"))
+      paypal_APISignature = Trim(rsProfile2("paypal_APISignature"))
+      paypal_env = Trim(rsProfile2("paypal_env"))
+    end if
+
+    rsProfile2.Close
+	            
+    
+    '=========================================================================================
+    if b_existing_user then
+    else
+    
+      '========================================================================================
+      'If paypal express checkout...
+      if PaymentMethodType = "paypal" then
+        if paypal_option = 2 then
+          if Len(paypal_APIUsername) > 0 AND Len(paypal_APIPassword) > 0 then
+            Response.Redirect("paypal_express_checkout1.asp?debit_amount=" & gTotal)
+          end if
+        end if     
+      end if
+      '========================================================================================
+      str_purchasedate = Now()
+      'Create Order
+      Set rsNewOrder = Server.CreateObject("ADODB.Recordset")
+	    with rsNewOrder
+		    .ActiveConnection = Conn
+		    .CursorLocation = 3 'adUseClient
+		    .CursorType = 1 'adOpenKeyset
+		    .LockType = 3 'adLockOptimistic
+		    .Source = Session("StoreID") & "_order WHERE order_id='0'"
+		    .Open
+		    .AddNew
+	    end with
+  	
+	    'Update
+	    rsNewOrder("order_id") = Session("order_id")
+	    rsNewOrder("shopper_id") = shopper_id
+	    rsNewOrder("po_number") = ""
+	    rsNewOrder("date_entered") = str_purchasedate
+	    rsNewOrder("date_changed") = str_purchasedate
+    	
+	    rsNewOrder("ShipLastName") = ShipLastName
+	    rsNewOrder("ShipFirstName") = ShipFirstName
+	    rsNewOrder("ShipAddress") = ShipAddress1
+	    rsNewOrder("ShipCity") = ShipCity
+	    rsNewOrder("ShipState") = ss_shipstate
+	    rsNewOrder("ShipPhone") = ShipPhoneNumber
+	    rsNewOrder("ShipZIP") = ShipPostalCode
+	    rsNewOrder("ShipCountry") = ShipCountry
+  	  
+	    if PaymentMethodType = "Credit Card" then
+	      rsNewOrder("PaymentMethod") = CreditCardType
+	    else
+	      rsNewOrder("PaymentMethod") = PaymentMethodType
+	    end if
+  	  
+	    rsNewOrder("CardType") = CreditCardType
+	    rsNewOrder("CardName") = CardHoldersName
+    	
+	    rsNewOrder("CardNumber") = CreditCardNumber
+    	
+	    rsNewOrder("CardExpirationMonth") = CC_ExpDate_Month
+	    rsNewOrder("CardExpirationYear") = CC_ExpDate_Year
+    	
+	    rsNewOrder("CardAddress") = BillingAddress1
+	    rsNewOrder("CardCity") = BillingCity
+	    rsNewOrder("CardState") = ss_billstate
+	    rsNewOrder("CardZip") = BillingPostalCode
+	    rsNewOrder("CardCountry") = BillingCountry
+    	
+	    rsNewOrder("AuthNumber") = ""
+	    rsNewOrder("RefNumber") = ""
+    	
+	    rsNewOrder("Tax") = tax
+	    rsNewOrder("SH") = sh_ups_charge
+	    rsNewOrder("SH_Method") = sh_detail
+	    rsNewOrder("Total") = gTotal
+    	
+	    'TODO : rsNewOrder("Order_Comments") = str_comment
+  			
+	    rsNewOrder("bill_company") = BillingCompanyName
+	    rsNewOrder("ship_company") = ShipCompanyName
+  	
+	    rsNewOrder("bill_contact") = CardHoldersName
+	    rsNewOrder("ship_contact") = ShipFirstName & " " & ShipLastName
+  	
+	    rsNewOrder("cvv_info") = cvv2
+	    rsNewOrder("bill_phone") = BillingPhoneNumber
+  	
+	    rsNewOrder("company_id") = str_shopper_company_id
+	    rsNewOrder("company_name") = str_shopper_company_name
+	    rsNewOrder("company_address") = str_shopper_company_address
+	    rsNewOrder("company_city") = str_shopper_company_city
+	    rsNewOrder("company_state") = str_shopper_company_state
+	    rsNewOrder("company_zip") = str_shopper_company_zip
+  	
+	    rsNewOrder("shopper_firstname") = BillingFirstName
+	    rsNewOrder("shopper_lastname") = BillingLastName
+	    rsNewOrder("shopper_email") = Email
+	    rsNewOrder("shopper_phone") = BillingPhoneNumber
+  	
+	    rsNewOrder("order_tax_rate") = apply_tax_rate 'num_tax_rate
+	    rsNewOrder("tax_on_SH") = i_tax_on_sh
+	    rsNewOrder("order_ip_addr") = Request.ServerVariables("REMOTE_ADDR")
+
+	    rsNewOrder("salesrep_id") = shopper_salesrep_id
+  	
+
+	    if len(Session("PARTNER")) > 0 then
+		    if user_expiration =  1 then
+			    if user_duration > DateDiff("d", Session("Expiration"), Now) then
+				    rsNewOrder("affiliate_flag") = 0
+				    rsNewOrder("affiliate_id") = CStr(Session("PARTNER"))
+			    end if
+		    else
+			    rsNewOrder("affiliate_flag") = 0
+			    rsNewOrder("affiliate_id") = CStr(Session("PARTNER"))
+		    end if
+
+		    if onetime_payment = "1" then
+			    rsNewOrder("affiliate_flag") = 0
+			    rsNewOrder("affiliate_id") = CStr(Session("PARTNER")) & "-OT"
+			    Session("PARTNER") = Session("PARTNER") & "-OT"
+		    end if
+    		
+	    end if
+
+	    if Len(quote_id) > 0 then
+	    else
+		    'rsNewOrder("referer_url") = GetSession(Session("SESSIONKEY"), "sREFERER")
+		    sREFERER = GetSession(Session("SESSIONKEY"), "sREFERER")
+				if Len(sREFERER) > 200 then
+					sREFERER = Left(sREFERER, 195)
+				end if
+		    rsNewOrder("referer_url") = sREFERER
+	    end if
+
+	    rsNewOrder("order_version") = Session("SYS_VERSION")
+  	
+	    'Save Master Account Information...
+	    rsNewOrder("master_account_id") = shopper_master_account_id
+	    rsNewOrder("master_account_first_name") = shopper_master_account_first_name
+	    rsNewOrder("master_account_last_name") = shopper_master_account_last_name
+  	
+	    rsNewOrder("UDF01") = UDF01
+	    rsNewOrder("UDF02") = UDF02
+	    rsNewOrder("UDF03") = UDF03
+	    rsNewOrder("UDF04") = UDF04
+	    rsNewOrder("UDF05") = UDF05
+  	
+	    rsNewOrder("bill_contact_firstname") = BillingFirstName 
+	    rsNewOrder("bill_contact_lastname") = BillingLastName
+	    rsNewOrder("billing_address_id") = "0"
+	    rsNewOrder("shipping_address_id") = "0"
+  	
+	    If Conn.Errors.Count > 0 Then
+		    'DB Error occurred.. clean up...
+		    Conn.Errors.Clear
+		    rsNewOrder.CancelUpdate
+	    else
+		    rsNewOrder.Update  				
+	    End If
+
+	    rsNewOrder.Close
+  	  
+	    if AddShoppingCartItemToOrder(ARYShoppingCart, Session("order_id"), iCount) then
+
+		  end if
+      
+      '=========================================================================================
+      'Payment Gateway if neccessary
+      '=========================================================================================
+      bPaymentProcess = false
+      
+      if PaymentMethodType = "Credit Card" then
+      
+        if Session("CYBERCASH_PROVIDER")="2" OR Session("CYBERCASH_PROVIDER")="4" OR Session("CYBERCASH_PROVIDER")="6" OR Session("CYBERCASH_PROVIDER")="7" OR Session("CYBERCASH_PROVIDER")="8" OR Session("CYBERCASH_PROVIDER")="9" OR Session("CYBERCASH_PROVIDER")="10" OR Session("CYBERCASH_PROVIDER")="11" then
+          
+          if ChargeCreditCardEx(Session("ConnectionString"), cc_error_code, Session("CYBERCASH_PROVIDER"), Session("order_id"),_
+							  status_msg, validation_number, ref_number, cc_url) then
+				    bPaymentProcess = true
+  				  
+				    '=============================================================
+				    if Len(validation_number) > 0 or Len(ref_number) > 0 then
+					    sql = "UPDATE " & Session("StoreID") & "_order SET "
+					    if Len(validation_number) > 0 then
+						    sql = sql & "AuthNumber='" & validation_number & "'"
+					    else
+						    sql = sql & "AuthNumber=''"
+					    end if
+					    if Len(ref_number) > 0 then
+						    sql = sql & ",RefNumber='" & ref_number & "'"
+					    else
+						    sql = sql & ",RefNumber=''"
+					    end if
+					    sql = sql & " WHERE order_id='" & Session("order_id") & "'"
+					    Conn.execute sql
+				    end if
+  				
+				  else
+  				
+				    bPaymentProcess = false
+  				  
+				    '==============================================================================================
+			      if DeleteOrder(Session("ConnectionString"), Session("order_id")) then
+				    end if
+    				
+				    'DELETE Shopper as well
+				    if Len(shopper_id) > 0 then
+				      sql = "DELETE FROM " & Session("StoreID") & "_shopper WHERE shopper_id='" & shopper_id & "'"
+				      Conn.Execute(sql)
+				    end if
+				    '==============================================================================================
+    				
+				    s_error = s_error & "<li>Transaction has been DECLINED. Please verify your credit card information.</li>"
+  				
+				  end if
+  								
+			  else
+  			
+          bPaymentProcess = true
+          
+        end if
+        
+      else
+        bPaymentProcess = true
+      end if
+      
+      
+      '========================================================================================
+      'PAYPAL IPN MODE
+      if PaymentMethodType = "paypal" then
+        
+        psql = "UPDATE " & Session("StoreID") & "_order SET CardType='PayPal', PaymentMethod='PayPal', CardNumber='', AuthNumber='NOT VERIFIED' WHERE order_id='" & Session("order_id") & "'"
+			  Conn.Execute psql
+			
+        url_paypal = Session("SecureURL") & "/paypal_submit.asp?oid=" & Session("order_id")
+		    response.Redirect(url_paypal)
+      
+      end if
+      '========================================================================================
+      
+      '=========================================================================================
+      ' REDIRECT to Receipt Page
+      '=========================================================================================
+      if bPaymentProcess then
+      
+        if SendOrderNotificationViaEmail(Session("ConnectionString"),status_msg,Session("order_id"),Session("shopper_id"),gTotal,1001) then
+				end if
+				
+        Response.Redirect Session("SecureURL") & "/order_receipt.asp"
+        
+      end if
+      
+    end if 'b_existing_user
+    
+  end if
+%>

@@ -1,0 +1,31 @@
+<%
+		sql = "SELECT e.name, b.name, a.displayvalue "
+		sql = sql & "FROM productattribute as a,"
+		sql = sql & "attributenames as b,"
+		sql = sql & "categorydisplayattributes as c,"
+		sql = sql & "categoryheader as d,"
+		sql = sql & "headernames as e"
+		sql = sql & " WHERE a.attributeid = b.attributeid AND "
+		sql = sql & "a.attributeid = c.attributeid AND "
+		sql = sql & "c.headerid = d.headerid AND "
+		sql = sql & "e.headerid = d.headerid AND "
+		sql = sql & "a.productid = " & productid & " AND "
+		sql = sql & "c.templatetype=1 AND "
+		sql = sql & "a.localeid=" & Session("ESLOCALE") & " AND "
+		sql = sql & "b.localeid=" & Session("ESLOCALE") & " AND "
+		sql = sql & "c.categoryid=" & categoryid & " AND "
+		sql = sql & "d.templatetype=1 AND "
+		sql = sql & "d.categoryid = " & categoryid & " AND "
+		sql = sql & "c.attributeid NOT IN (1452,321452,341452,311452) AND "
+		sql = sql & "e.localeid=" & Session("ESLOCALE")
+		sql = sql & " ORDER BY d.defaultdisplayorder, c.defaultdisplayorder"
+
+
+							
+		set rsAttributes = conn_ss.Execute(sql)
+
+		if not rsAttributes.EOF then
+			x_headername = ""
+			x_attname = ""
+			x_attValue = ""
+	%>

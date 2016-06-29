@@ -1,0 +1,74 @@
+<!--#INCLUDE FILE="../../local/local.phtml"-->
+<!--#INCLUDE FILE="../../language_pack.phtml"-->
+<!--#INCLUDE FILE="../../util/xt_func_session.phtml"-->
+<!--#INCLUDE FILE="../../util/xt_func_string.phtml"-->
+<%
+	sessionID = Request("sessionID")
+	sessionID = FilterSessionString(sessionID)
+	if Len(sessionID) > 0 then
+		Session("SESSIONKEY") = sessionID
+	else
+		if Len(Session("SESSIONKEY")) > 0 then
+			'session key exist
+		else
+			'no key information...
+			Response.Redirect Session("StoreURL") & "/index.phtml"
+		end if
+	end if
+%>
+<!--#INCLUDE FILE="../../i_login.phtml"-->
+<!--#INCLUDE File="../../util/xt_func_util.phtml" -->
+<!--#INCLUDE File="../../util/xt_func_shopper.phtml" -->
+<!--#INCLUDE FILE="../../util/xt_func_string.phtml"-->
+<!--#INCLUDE FILE="../../i_adodb.phtml"-->
+<%
+dim shopper_id
+dim db, status_msg
+
+db = Session("ConnectionString")
+
+method=Request.Form("method")
+status_msg= ""
+
+select case method
+case "S"
+	
+	new_email = Trim(Request.Form("new_email"))
+	new_password1 = Trim(Request.Form("new_password1"))
+	new_password2 = Trim(Request.Form("new_password2"))
+	
+	new_email = FilterEmailString(new_email)
+	new_password1 = FilterPassword(new_password1)
+	new_password2 = FilterPassword(new_password2)
+	change_password = Trim(Request.Form("change_password"))
+
+	Response.Write(".." & change_password & "..")
+
+	if	IsShopperInfoValid(new_email, new_password1,new_password2,status_msg) then		
+								
+			sql = "Update " &  Session("StoreID") & "_shopper set email='"& new_email &"', password='"& new_password1 &"' WHERE shopper_id='"&Session("shopper_id")&"'"
+					
+			'conn.execute sql
+					
+			response.redirect("account_profile.phtml")
+	else
+		status_msg = "Confirm password does not match new password"
+	end if
+			
+case else
+	
+	sql = "Select Email, Password from :9_shopper where shopper_id='"&Session("shopper_id")&"'"
+	sql = replace(sql, ":9", Session("storeID"))
+	
+	set rs= conn.execute(sql)
+  if not rs.EOF then
+		new_email = rs("email")
+	else
+	  new_email = ""
+	end if
+	
+	rs.close
+
+end select
+
+%>

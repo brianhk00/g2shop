@@ -1,0 +1,847 @@
+<!--#INCLUDE FILE="../../local/local.phtml"-->
+<!--#INCLUDE FILE="../../language_pack.phtml"-->
+<!--#INCLUDE FILE="../../util/xt_func_session.phtml"-->
+<%
+	sessionID = Request("sessionID")
+	sessionID = FilterSessionString(sessionID)
+	if Len(sessionID) > 0 then
+		Session("SESSIONKEY") = sessionID
+	else
+		if Len(Session("SESSIONKEY")) > 0 then
+			'session key exist
+		else
+			'no key information...
+			Response.Redirect Session("StoreURL") & "/index.phtml"
+		end if
+	end If
+
+	 
+%>
+<!--#INCLUDE FILE="../../i_login.phtml"-->
+<!--#INCLUDE FILE="../../util/xt_func_util.phtml" -->
+<!--#INCLUDE FILE="../../util/xt_func_order.phtml" -->
+<!--#INCLUDE FILE="../../util/xt_func_client.phtml" -->
+<!--#INCLUDE FILE="../../util/xt_func_creditcard.phtml"-->
+<!--#INCLUDE FILE="../../util/xt_func_payment.phtml"-->
+<!--#INCLUDE FILE="../../util/xt_func_carrier.phtml"-->
+<!--#INCLUDE FILE="../../util/xt_func_string.phtml"-->
+<!--#INCLUDE File="../../util/xt_func_rc4.phtml" -->
+<!--#INCLUDE FILE="../../i_adodb.phtml"-->
+<!--#INCLUDE FILE="../../cart.inc"-->
+<%
+	iCount = Session("ItemCount")
+	if( iCount < 1 )then
+		Response.Redirect Session("StoreURL") & "/basket.phtml"
+	end if
+
+	ARYShoppingCart = Session("MyShoppingCart")
+
+	Dim db, status_msg, sh_method, orig_postal, ups_flags
+	dim tax
+	dim bok, b_need_cybercash
+
+	if Request.Form("|CONTINUE|.x").Count > 0 then
+		ORDER_ACTION = "S"
+	else
+		if Request.Form("|CANCEL|.x").Count > 0 then
+			ORDER_ACTION = "C"
+		else
+			if Request.Form("|PAYPAL|.x").Count > 0 then
+				ORDER_ACTION = "P"
+			else
+			  if Request.Form("|PAYPALEXPRESS|.x").Count > 0 then
+				  ORDER_ACTION = "PPE"
+			  else
+			    if Request("lease_option") = "1" then
+			      ORDER_ACTION = "L"
+			    end if
+			  end if
+			end if
+		end if
+	end If
+	
+	if ORDER_ACTION = "" then
+			ORDER_ACTION = Trim(Request("ORDER_ACTION"))
+			ORDER_ACTION = Left(ORDER_ACTION, 3)
+	end if 
+
+	
+	db = Session("ConnectionString")
+	Order_Comments=Request("Order_Comments")
+	po_number=Request("po_number")
+	
+	UDF01 = Trim(Request("UDF01"))
+	UDF02 = Trim(Request("UDF02"))
+	UDF03 = Trim(Request("UDF03"))
+	UDF04 = Trim(Request("UDF04"))
+	UDF05 = Trim(Request("UDF05"))
+	
+	if UDF01 = "" then
+		UDF01 = Session("UDF01")
+	end if
+	if UDF02 = "" then
+		UDF02 = Session("UDF02")
+	end if
+	if UDF03 = "" then
+		UDF03 = Session("UDF03")
+	end if
+	if UDF04 = "" then
+		UDF04 = Session("UDF04")
+	end if
+	if UDF05 = "" then
+		UDF05 = Session("UDF05")
+	end if
+	
+	select case ORDER_ACTION
+	
+	case "PPE"
+	
+	  sh_method = Request("sh_method")
+		cvv2 = Trim(Request("cvv2"))
+		tax_on_sh = Trim(Request("tax_on_sh"))
+		taxrate_on_sh = Trim(Request("taxrate_on_sh"))
+		if Len(taxrate_on_sh) > 0 then
+			if IsNumeric(taxrate_on_sh) then
+			else
+				taxrate_on_sh = 0
+			end if
+		else
+			taxrate_on_sh = 0
+		end if
+	
+		sh_option = Trim(Request("UPSCharge"))
+		
+		if len(sh_option) > 0 then
+			sp1 = instr(sh_option, "~")
+			sh_detail = left(sh_option, sp1-1)
+			sh_ups_charge = mid(sh_option, sp1+1)
+			Session("shopper_shipping_method2") = sh_detail
+			Session("shopper_shipping") = sh_ups_charge
+		else
+			sh_detail = "..."
+			sh_ups_charge = "0.00"
+			Session("shopper_shipping_method2") = sh_detail
+			Session("shopper_shipping") = sh_ups_charge
+		end if
+		
+		Session("order_id")=GetUniqueLongIntegerID()
+		if tax_on_sh = "1" AND taxrate_on_sh > 0 AND Session("shopper_shipping") > 0 then
+			Session("shopper_tax") = Session("shopper_tax") + Round((taxrate_on_sh/100)* Session("shopper_shipping") ,2)
+		end if
+		total = Session("TotalPrice") + Session("shopper_tax") + Session("shopper_shipping")
+		
+		Response.Redirect("paypal_express_checkout1.phtml?debit_amount=" & total)
+
+	case "S" 'Process Order...
+
+		bok = false
+		b_need_cybercash = false
+	
+		sh_method = Request("sh_method")
+		cvv2 = Trim(Request("cvv2"))
+		tax_on_sh = Trim(Request("tax_on_sh"))
+		taxrate_on_sh = Trim(Request("taxrate_on_sh"))
+		if Len(taxrate_on_sh) > 0 then
+			if IsNumeric(taxrate_on_sh) then
+			else
+				taxrate_on_sh = 0
+			end if
+		else
+			taxrate_on_sh = 0
+		end if
+	
+		sh_option = Request("UPSCharge")
+		if len(sh_option) > 0 then
+			sp1 = instr(sh_option, "~")
+			sh_detail = left(sh_option, sp1-1)
+			sh_ups_charge = mid(sh_option, sp1+1)
+			
+			Session("shopper_shipping") = sh_ups_charge
+		else
+			sh_detail = ""
+		end if
+
+		Session("order_id")=GetUniqueLongIntegerID()
+		
+		if tax_on_sh = "1" AND taxrate_on_sh > 0 AND Session("shopper_shipping") > 0 then
+			Session("shopper_tax") = Session("shopper_tax") + Round((taxrate_on_sh/100)* Session("shopper_shipping") ,2)
+		end if
+		
+		total=Session("TotalPrice")+Session("shopper_tax")+Session("shopper_shipping")
+
+		Select case Session("CYBERCASH_PROVIDER")
+
+		case "1" 'Use cybercash to charge account...
+			'No Longer needed...
+	
+		case "2" 'Use payflow to charge account...
+	
+			'Get credit card information...
+			sql = "SELECT * FROM :9_shopper WHERE shopper_id='" & Session("shopper_id") & "'"
+			sql = Replace(sql, ":9", Session("StoreID"))
+			set rsShopper = Conn.Execute(sql)
+			if not rsShopper.EOF then
+				cc_type = rsShopper("CC_Type")
+				cc_number =  rsShopper("CC_Number")
+				if Len(cc_number) > 0 then
+					cc_number=trimtodigits(cc_number)
+				end if
+				cc_expdate = Trim(rsShopper("CC_ExpMonth")) & Right(Trim(rsShopper("CC_ExpYear")),2)
+				'cc_expdate = "0102"
+				'Billing Informaiton
+				cc_name = rsShopper("FirstName") & " " & rsShopper("LastName")
+				cc_address =  rsShopper("Address")
+				cc_city =  rsShopper("City")
+				cc_state =  rsShopper("State")
+				cc_zip =  rsShopper("ZipCode")
+				cc_country="US"
+				
+				if NOT (cc_type="visa" or cc_type="mc" or cc_type="discover" or cc_type="amex")then
+				'if(cc_type="billme" or cc_type="cod" or cc_type="willcall")then
+					b_need_cybercash = false
+				else
+					b_need_cybercash = true
+				end if
+
+			else
+
+				b_need_cybercash =false
+
+			end if
+			rsShopper.Close
+
+			if b_need_cybercash then
+				
+				debit_amount = CStr(FormatNumber(total, 2))
+				call Numberize(debit_amount)
+
+				if ChargeCreditCard_Payflow(status_msg, Session("PAYFLOW_HOST_ADDRESS"), Session("order_id"),_
+								cc_number, cc_expdate, debit_amount,_
+								cc_zip,_
+								Session("PAYFLOW_MERCHANT_ID"), Session("PAYFLOW_MERCHANT_PW"),_
+								validation_number, ref_number,_
+								str_status) then
+					bok = true
+				else
+					bok = false
+					'Need response redirect to charge failure page...
+					Response.Redirect ("cc_error.phtml?status_msg=" & status_msg & " " &status_msg)
+
+				end if
+			
+			else
+			  bok = true
+			end if
+	
+		case "3" 'Access Point..
+			'Get credit card information...
+			sql = "SELECT * FROM :9_shopper WHERE shopper_id='" & Session("shopper_id") & "'"
+			sql = Replace(sql, ":9", Session("StoreID"))
+			set rsShopper = Conn.Execute(sql)
+			if not rsShopper.EOF then
+				cc_email = rsShopper("Email")
+				cc_type = rsShopper("CC_Type")
+				cc_number =  rsShopper("CC_Number")
+				if Len(cc_number) > 0 then
+					cc_number=trimtodigits(cc_number)
+				end if
+				cc_expMonth = Trim(rsShopper("CC_ExpMonth"))
+				cc_expYear = Trim(rsShopper("CC_ExpYear"))
+
+				'Billing Informaiton
+				cc_name = rsShopper("FirstName") & " " & rsShopper("LastName")
+				cc_address =  rsShopper("Address")
+				cc_city =  rsShopper("City")
+				cc_state =  rsShopper("State")
+				cc_zip =  rsShopper("ZipCode")
+				cc_country="US"
+
+				if NOT (cc_type="visa" or cc_type="mc" or cc_type="discover" or cc_type="amex")then
+				'if(cc_type="billme" or cc_type="cod" or cc_type="willcall")then
+					b_need_cybercash = false
+				else
+					b_need_cybercash = true
+				end if
+
+			else
+
+				b_need_cybercash =false
+
+			end if
+			rsShopper.Close
+			
+			if b_need_cybercash then
+				
+				debit_amount = CStr(FormatNumber(total, 2))
+				call Numberize(debit_amount)
+
+				url_charge = Session("APC_HOST_ADDRESS")	
+				url_charge = Replace(url_charge, ":A:", debit_amount)
+				url_charge = Replace(url_charge, ":ID:", Session("APC_MERCHANT_ID"))
+				url_charge = Replace(url_charge, ":BN:", cc_name)
+				url_charge = Replace(url_charge, ":BA:", cc_address)
+				url_charge = Replace(url_charge, ":BZ:", cc_zip)
+				url_charge = Replace(url_charge, ":BM:", cc_email)
+				url_charge = Replace(url_charge, ":CN:", cc_number)
+				url_charge = Replace(url_charge, ":EM:", cc_expMonth)
+				url_charge = Replace(url_charge, ":EY:", cc_expYear)
+				
+				'Store in the Session..
+				Session("APC_TOTAL") = total
+				Session("APC_SH") = sh_detail
+				Session("APC_OC") = Order_Comments
+				Session("APC_PO") = po_number
+				
+				Response.Redirect(url_charge)
+			
+			else
+			  bok = true	
+			end if
+			
+		case "4" 'Card Service .. linkpt.com...
+	
+			'Order Process...
+	
+		case "5"  'Payflow link....
+			'Get credit card information...
+			sql = "SELECT * FROM :9_shopper WHERE shopper_id='" & Session("shopper_id") & "'"
+			sql = Replace(sql, ":9", Session("StoreID"))
+			set rsShopper = Conn.Execute(sql)
+			if not rsShopper.EOF then
+				b_addr = rsShopper("address")
+				b_zip = rsShopper("ZipCode")
+				cc_email = rsShopper("Email")
+				cc_type = rsShopper("CC_Type")
+				cc_number =  rsShopper("CC_Number")
+				
+				'======================================================================
+				' RC4
+				if Len(cc_number) > 0 then
+					if IsRC4Encrypted(cc_number) then
+						cc_number = EnDeCrypt(cc_number, Session("STORE_OP"))
+					end if
+				end if
+				'======================================================================
+		
+				if Len(cc_number) > 0 then
+					cc_number=trimtodigits(cc_number)
+				end if
+				
+				cc_expdate = Trim(rsShopper("CC_ExpMonth")) & "/" & Right(Trim(rsShopper("CC_ExpYear")),2)
+
+				if NOT (cc_type="visa" or cc_type="mc" or cc_type="discover" or cc_type="amex")then
+				'if(cc_type="billme" or cc_type="cod" or cc_type="willcall")then
+					b_need_cybercash = false
+				else
+					b_need_cybercash = true
+				end if
+			else
+				b_need_cybercash =false
+			end if
+			rsShopper.Close
+			
+			if b_need_cybercash then
+				
+				'Save order to database..
+				if(AddNewOrder(db,Session("shopper_id"),Session("order_id"),status_msg,_
+						Session("shopper_tax"),Session("shopper_shipping"),total,sh_detail,Order_Comments,po_number,_
+						"", 0,_
+						validation_number,ref_number,cvv2,taxrate_on_sh, tax_on_sh,_
+						UDF01,UDF02,UDF03,UDF04,UDF05,_
+						str_status)) then
+
+						if AddShoppingCartItemToOrder(ARYShoppingCart, Session("order_id"), iCount) then
+
+						end if
+
+			  end if
+			  'End of Save order...
+			  'Redirect to payflow link...
+			  debit_amount = CStr(FormatNumber(total, 2))
+			  call Numberize(debit_amount)
+			  'debit_amount = 10.00
+			  
+			  xb_addr = b_addr
+				xb_addr_pos = InStr(xb_addr, "#")
+	
+				if xb_addr_pos > 0 then
+					xb_addr = Trim(Left(xb_addr, xb_addr_pos-1))
+				end if
+	
+			  url_charge = Session("PAYFLOWLINK_HOST_ADDRESS")	
+			  url_charge = Replace(url_charge, ":A:", debit_amount)
+			  url_charge = Replace(url_charge, ":ID:", Session("PAYFLOWLINK_LOGIN_ID"))
+			  url_charge = Replace(url_charge, ":PT:", Session("PAYFLOWLINK_PARTNER"))
+			  url_charge = Replace(url_charge, ":CN:", cc_number)
+			  url_charge = Replace(url_charge, ":ED:", cc_expdate)
+				url_charge = Replace(url_charge, ":ADR:", xb_addr)
+			  url_charge = Replace(url_charge, ":ZIP:", b_zip)
+			  url_charge = Replace(url_charge, ":CSC:", cvv2)
+			  'url_charge = url_charge & "&user1=" & db
+			  url_charge = url_charge & "&user2=" & Session("StoreID")
+			  url_charge = url_charge & "&user3=" & Session("order_id")
+			  
+			  Response.Redirect(url_charge)
+			
+			else
+			  bok = true
+			
+			end if 'b_need_cybercash...
+	
+		case "6" 'autorizenet..
+			'Order process...
+			
+		case "7" 'Paypal
+			
+		case else 'No charge is needed...
+			bok = true
+		End Select
+	
+		if bok then
+			if(AddNewOrder(db,Session("shopper_id"),Session("order_id"),status_msg,_
+						Session("shopper_tax"),Session("shopper_shipping"),total,sh_detail,Order_Comments,po_number,_
+						"", 0,_
+						validation_number,ref_number,cvv2,taxrate_on_sh, tax_on_sh,_
+						UDF01,UDF02,UDF03,UDF04,UDF05,_
+						str_status)) then
+
+				
+				'Add ordered items
+
+				if AddShoppingCartItemToOrder(ARYShoppingCart, Session("order_id"), iCount) then
+
+				end if
+				
+				'Send e-mail notification
+				if SendOrderNotificationViaEmail(db,status_msg,Session("order_id"),Session("shopper_id"),total,1001) then
+					
+				end if
+				
+				'redirect
+				Response.Redirect Session("SecureURL") & "/order_receipt.phtml"
+			else
+			
+			end if
+		end if
+		
+	case "P" 'Paypal order - Written by BK 2/2/03, Edited by ED KIM 4/25/03
+
+		sh_method = Request("sh_method")
+		cvv2 = Trim(Request("cvv2"))
+		tax_on_sh = Trim(Request("tax_on_sh"))
+		taxrate_on_sh = Trim(Request("taxrate_on_sh"))
+		if Len(taxrate_on_sh) > 0 then
+			if IsNumeric(taxrate_on_sh) then
+			else
+				taxrate_on_sh = 0
+			end if
+		else
+			taxrate_on_sh = 0
+		end if
+	
+		sh_option = Request("UPSCharge")
+		if len(sh_option) > 0 then
+			sp1 = instr(sh_option, "~")
+			sh_detail = left(sh_option, sp1-1)
+			sh_ups_charge = mid(sh_option, sp1+1)
+			Session("shopper_shipping") = sh_ups_charge
+		else
+			sh_detail = "..."
+			sh_ups_charge = "0.00"
+			Session("shopper_shipping") = sh_ups_charge
+		end if
+		
+		Session("order_id")=GetUniqueLongIntegerID()
+		if tax_on_sh = "1" AND taxrate_on_sh > 0 AND Session("shopper_shipping") > 0 then
+			Session("shopper_tax") = Session("shopper_tax") + Round((taxrate_on_sh/100)* Session("shopper_shipping") ,2)
+		end if
+		total = Session("TotalPrice") + Session("shopper_tax") + Session("shopper_shipping")
+
+		if(AddNewOrder(db,Session("shopper_id"),Session("order_id"),status_msg,_
+						Session("shopper_tax"),Session("shopper_shipping"),total,sh_detail,Order_Comments,po_number,_
+						"", 0,_
+						"NOT VERIFIED", "", cvv2, taxrate_on_sh, tax_on_sh,_
+						UDF01,UDF02,UDF03,UDF04,UDF05,_
+						str_status)) then
+
+			if AddShoppingCartItemToOrder(ARYShoppingCart, Session("order_id"), iCount) then
+
+			end if
+
+			psql = "UPDATE " & Session("StoreID") & "_order SET CardType='PayPal', PaymentMethod='PayPal', CardNumber='' WHERE order_id='" & Session("order_id") & "'"
+			Conn.Execute psql
+
+		end if
+
+		'Redirect to paypal...
+		url_paypal = "paypal_submit.phtml?oid=" & Session("order_id")
+
+		Response.Redirect(url_paypal)
+
+  case "L"
+  
+    sh_method = Request("sh_method")
+		cvv2 = Trim(Request("cvv2"))
+		tax_on_sh = Trim(Request("tax_on_sh"))
+		taxrate_on_sh = Trim(Request("taxrate_on_sh"))
+		if Len(taxrate_on_sh) > 0 then
+			if IsNumeric(taxrate_on_sh) then
+			else
+				taxrate_on_sh = 0
+			end if
+		else
+			taxrate_on_sh = 0
+		end if
+	
+		sh_option = Request("UPSCharge")
+		if len(sh_option) > 0 then
+			sp1 = instr(sh_option, "~")
+			sh_detail = left(sh_option, sp1-1)
+			sh_ups_charge = mid(sh_option, sp1+1)
+			
+			Session("shopper_shipping") = sh_ups_charge
+		else
+			sh_detail = ""
+		end if
+
+		Session("order_id")=GetUniqueLongIntegerID()
+		
+		if tax_on_sh = "1" AND taxrate_on_sh > 0 AND Session("shopper_shipping") > 0 then
+			Session("shopper_tax") = Session("shopper_tax") + Round((taxrate_on_sh/100)* Session("shopper_shipping") ,2)
+		end if
+		
+		total=Session("TotalPrice")+Session("shopper_tax")+Session("shopper_shipping")
+  
+    if(AddNewOrder(db,Session("shopper_id"),Session("order_id"),status_msg,_
+					Session("shopper_tax"),Session("shopper_shipping"),total,sh_detail,Order_Comments,po_number,_
+					"", 0,_
+					"","","",taxrate_on_sh, tax_on_sh,_
+					UDF01,UDF02,UDF03,UDF04,UDF05,_
+					str_status)) then
+			
+			'Add ordered items
+
+			if AddShoppingCartItemToOrder(ARYShoppingCart, Session("order_id"), iCount) then
+
+			end if
+			
+			psql = "UPDATE " & Session("StoreID") & "_order SET CardType='Lease', PaymentMethod='Lease', CardNumber='' WHERE order_id='" & Session("order_id") & "'"
+			Conn.Execute psql
+			
+			'Send e-mail notification
+			if SendOrderNotificationViaEmail(db,status_msg,Session("order_id"),Session("shopper_id"),total,1001) then
+				
+			end if
+			
+			'redirect
+			Response.Redirect Session("SecureURL") & "/order_receipt.phtml"
+		else
+		
+		  Response.Write("HERE")
+		  
+		end if
+  
+	case "C"	'Cancel Order...
+		Session("order_id") = ""
+		Session("shopper_tax") = 0
+		Session("shopper_shipping") = 0
+	
+		'redirect
+		Response.Redirect Session("StoreURL") & "/index.phtml"
+
+	case else 'Entry..
+		
+		shipping = 0
+	
+		if GetClientShippingCharge(db, shipping, sh_method,_
+			Session("CartItemCount"), Session("TotalPrice"),Session("TotalWeight"),_
+			orig_postal, ups_flags)then	
+		else
+			shipping = 0
+		end if
+		
+		'Get markup and additional charges...
+		sql = "SELECT sh_handling, sh_markup, UPS_insurance, tax_on_sh, ccv_flag, ups_xml_userid, ups_xml_password, ups_xml_key, ups_xml_flag FROM :9_profile"
+		sql = Replace(sql, ":9", Session("StoreID"))
+		set rsProfile = Conn.Execute(sql)
+		
+		sh_handling = rsProfile("sh_handling")
+		sh_markup = rsProfile("sh_markup")
+		ups_insurance = rsProfile("UPS_insurance")
+		tax_on_sh = rsProfile("tax_on_sh")
+		ccv_flag = rsProfile("ccv_flag")
+		
+		ups_xml_userid = rsProfile("ups_xml_userid")
+		ups_xml_password = rsProfile("ups_xml_password")
+		ups_xml_key = rsProfile("ups_xml_key")
+		ups_xml_flag = rsProfile("ups_xml_flag")
+
+		rsProfile.Close
+		
+		if (IsNull(tax_on_sh)) OR (not tax_on_sh = 1) then
+			tax_on_sh = 0
+		end if
+		
+		if Len(ups_xml_userid) > 0 AND Len(ups_xml_password) > 0 AND Len(ups_xml_key) > 0 then
+			b_UPSXML = true
+		else
+			b_UPSXML = false
+		end if
+		
+		Session("shopper_shipping") = shipping
+		
+		'=======================================================
+		
+		sh_option = Trim(Request("UPSCharge"))
+    if len(sh_option) > 0 then
+	    sp1 = instr(sh_option, "~")
+	    if sp1 > 0 then
+	      ar_sp1 = Split(sh_option, "~")
+	      sh_detail = ar_sp1(0)
+	      sh_ups_charge = ar_sp1(1)
+	    else
+	      sh_detail = ""
+	      sh_ups_charge = "0.00"
+	    end if
+	    
+	    Session("shopper_shipping_method2") = sh_detail
+		  Session("shopper_shipping") = sh_ups_charge
+	  else
+	    sh_detail = ""
+	    sh_ups_charge = "0.00"
+	  end if
+	  '======================================================			
+	
+	end select
+	
+	'GET USER DEFINED FIELD SETTINGS...
+	b_UDF01 = 0
+	b_UDF02 = 0
+	b_UDF03 = 0
+	b_UDF04 = 0
+	b_UDF05 = 0
+	
+	s_UDF01 = ""
+	s_UDF02 = ""
+	s_UDF03 = ""
+	s_UDF04 = ""
+	s_UDF05 = ""
+	
+	sql = "SELECT * FROM " & Session("StoreID") & "_UserField"
+	set rsUDF = conn.Execute(sql)
+	do while not rsUDF.EOF
+		
+		SELECT CASE rsUDF("UserField_ID")
+		CASE "UDF01"
+			b_UDF01 = rsUDF("UserField_SalesOrder")
+			s_UDF01 = Trim(rsUDF("UserField_Name"))
+		CASE "UDF02"
+			b_UDF02 = rsUDF("UserField_SalesOrder")
+			s_UDF02 = Trim(rsUDF("UserField_Name"))
+		CASE "UDF03"
+			b_UDF03 = rsUDF("UserField_SalesOrder")
+			s_UDF03 = Trim(rsUDF("UserField_Name"))
+		CASE "UDF04"
+			b_UDF04 = rsUDF("UserField_SalesOrder")
+			s_UDF04 = Trim(rsUDF("UserField_Name"))
+		CASE "UDF05"
+			b_UDF05 = rsUDF("UserField_SalesOrder")
+			s_UDF05 = Trim(rsUDF("UserField_Name"))
+		END SELECT
+		
+		rsUDF.MoveNext
+	loop
+	rsUDF.Close
+	
+%>
+
+<%
+
+	strSQL = "SELECT * FROM " & Session("StoreID") & "_shopper WHERE shopper_id='" & Session("shopper_id") & "'"
+
+	Set rsShopper = Conn.Execute(strSQL)
+	
+	if not rsShopper.EOF then
+		shopper_firstname = rsShopper("FirstName")
+		shopper_lastname = rsShopper("LastName")
+		shopper_address = rsShopper("Address")
+		shopper_city = rsShopper("City")
+		shopper_state = rsShopper("State")
+		shopper_zip = rsShopper("ZipCode")
+		shopper_country = rsShopper("Country")
+		shopper_phone = rsShopper("Phone")
+		shopper_company = rsShopper("Company")
+																
+		shopper_same_address = rsShopper("IsSameAddress")
+																
+		shipping_firstname = rsShopper("shipping_FirstName")
+		shipping_lastname = rsShopper("shipping_LastName")
+		shipping_address = rsShopper("shipping_Address")
+		shipping_city = rsShopper("shipping_City")
+		shipping_state = rsShopper("shipping_State")
+		shipping_country = rsShopper("shipping_Country")
+		shipping_zip = rsShopper("shipping_ZipCode")
+		shipping_phone = rsShopper("shipping_Phone")
+																
+		shopper_cc_type = rsShopper("CC_Type")
+		shopper_cc_number = rsShopper("CC_Number")
+		shopper_cc_expMonth = rsShopper("CC_ExpMonth")
+		shopper_cc_expYear = rsShopper("CC_ExpYear")
+																
+		shipping_company = rsShopper("shipping_company")
+	end if
+	
+	if shopper_same_address then
+		shipping_firstname = shopper_firstname
+		shipping_lastname = shopper_lastname
+		shipping_address = shopper_address
+		shipping_city = shopper_city
+		shipping_state = shopper_state
+		shipping_zip = shopper_zip
+		shipping_phone = shopper_phone
+		shipping_company = shopper_company
+		shipping_country = shopper_country
+	end if
+	
+	rsShopper.Close
+		
+	'===============================================================================
+	alt_billing_address_id = ""
+	alt_shipping_address_id = ""
+	
+	'NEED TO OVERRIDE Billing and Shipping Address...
+	sql = "SELECT * FROM " & Session("StoreID") & "_shopper_billing_address WHERE billing_shopper_id = '" & Session("shopper_id") & "' AND billing_set_default=1"
+	set rsBillingAddress = conn.Execute(sql)
+	if not rsBillingAddress.EOF then
+	
+		alt_billing_address_id = Trim(rsBillingAddress("billing_address_id"))
+		alt_billing_address_name = Trim(rsBillingAddress("billing_address_name"))
+		alt_billing_firstname = Trim(rsBillingAddress("billing_firstname"))
+		alt_billing_lastname = Trim(rsBillingAddress("billing_lastname"))
+		alt_billing_address = Trim(rsBillingAddress("billing_address"))
+		alt_billing_city = Trim(rsBillingAddress("billing_city"))
+		alt_billing_state = Trim(rsBillingAddress("billing_state"))
+		alt_billing_zip = Trim(rsBillingAddress("billing_zip"))
+		alt_billing_country = Trim(rsBillingAddress("billing_country"))
+		alt_billing_phone = Trim(rsBillingAddress("billing_phone"))
+		alt_billing_default = Trim(rsBillingAddress("billing_set_default"))
+		alt_billing_cc_type= Trim(rsBillingAddress("CC_Type"))
+		alt_billing_cc_number = Trim(rsBillingAddress("CC_Number"))
+		alt_billing_cc_expmonth = Trim(rsBillingAddress("CC_ExpMonth"))
+		alt_billing_cc_expyear = Trim(rsBillingAddress("CC_ExpYear"))
+		alt_billing_company = Trim(rsBillingAddress("bill_company"))
+		
+		alt_name_on_card = Trim(rsBillingAddress("NameOnCard"))
+		
+		if IsNumeric(alt_billing_cc_expmonth) then
+		else
+			alt_billing_cc_expmonth = "01"
+		end if
+		
+		if IsNumeric(alt_billing_cc_expyear) then
+		else
+			alt_billing_cc_expyear = "2005"
+		end if
+		
+		if Len(alt_billing_address) > 20 then
+			alt_billing_address1 = Left(alt_billing_address,20)
+		else
+			alt_billing_address1 = alt_billing_address
+		end if
+		
+		if alt_billing_default = 1 then
+			
+			shopper_firstname = alt_billing_firstname
+			shopper_lastname = alt_billing_lastname
+			
+			
+			shopper_cc_type = alt_billing_cc_type
+			shopper_cc_number = alt_billing_cc_number
+			shopper_cc_expMonth = alt_billing_cc_expmonth
+			shopper_cc_expYear = alt_billing_cc_expyear
+								
+			shopper_address = alt_billing_address
+			shopper_city = alt_billing_city
+			shopper_state =alt_billing_state
+			shopper_zip =alt_billing_zip
+			shopper_country = alt_billing_country
+			
+			shopper_phone = alt_billing_phone
+	
+		end if
+		
+	end if
+	
+	rsBillingAddress.Close
+
+		
+	'======================================================================
+	' RC4
+	if Len(shopper_cc_number) > 0 then
+		if IsRC4Encrypted(shopper_cc_number) then
+			'shopper_cc_number = ""'EnDeCrypt(shopper_cc_number, Session("STORE_OP"))
+			shopper_cc_number = EnDeCrypt(shopper_cc_number, Session("STORE_OP"))
+		end if
+	end if
+	'=====================================================================
+	
+	sql = "SELECT * FROM " & Session("StoreID") & "_shopper_shipping_address WHERE shopper_id = '" & Session("shopper_id") & "' AND set_default=1"
+	set rsShippingAddress = conn.Execute(sql)
+	if not rsShippingAddress.EOF then
+	
+		alt_shipping_address_id = Trim(rsShippingAddress("address_id"))
+		alt_shipping_address_name = Trim(rsShippingAddress("address_name"))
+		alt_shipping_firstname = Trim(rsShippingAddress("firstname"))
+		alt_shipping_lastname = Trim(rsShippingAddress("lastname"))
+		alt_shipping_address = Trim(rsShippingAddress("address"))
+		alt_shipping_city = Trim(rsShippingAddress("city"))
+		alt_shipping_state = Trim(rsShippingAddress("state"))
+		alt_shipping_zip = Trim(rsShippingAddress("zip"))
+		alt_shipping_country = Trim(rsShippingAddress("country"))
+		alt_shipping_phone = Trim(rsShippingAddress("phone"))
+		alt_shipping_default = Trim(rsShippingAddress("set_default"))
+		alt_shipping_company = Trim(rsShippingAddress("company"))
+		
+		shipping_firstname = alt_shipping_firstname
+		shipping_lastname = alt_shipping_lastname
+		shipping_address = alt_shipping_address
+		shipping_city = alt_shipping_city
+		shipping_state = alt_shipping_state
+		shipping_zip = alt_shipping_zip
+		shipping_phone = alt_shipping_phone
+		shipping_company = alt_shipping_company
+		shipping_country = alt_shipping_country
+	
+	end if
+	rsShippingAddress.Close
+	
+	'============================================================================================
+	
+	if Len(Session("ALT_SH_FIRSTNAME")) > 0 AND Len(Session("ALT_SH_LASTNAME")) > 0 AND Len(Session("ALT_SH_ADDRESS1")) > 0 AND Len(Session("ALT_SH_CITY")) > 0 AND Len(Session("ALT_SH_STATE")) > 0 AND Len(Session("ALT_SH_ZIP")) > 0 then
+	  
+	  shipping_firstname = Session("ALT_SH_FIRSTNAME")
+		shipping_lastname = Session("ALT_SH_LASTNAME")
+		shipping_address = Session("ALT_SH_ADDRESS1")
+		shipping_city = Session("ALT_SH_CITY")
+		shipping_state = Session("ALT_SH_STATE")
+		shipping_zip = Session("ALT_SH_ZIP")
+		shipping_phone = Session("ALT_SH_PHONE")
+		shipping_company = Session("ALT_SH_COMPANYNAME")
+		shipping_country = Session("ALT_SH_COUNTRY")
+		
+	end if
+	
+	'========================================================================================
+	
+	'For UPS calculation .. based on shipping address zip code...
+	dest_postal = shipping_zip
+	st_st = shipping_state
+	dest_state =shipping_state
+	'Used for card verification
+	dest_country = shipping_country
+	if dest_country = "" OR dest_country = "USA" then
+		dest_country = "US"
+	end if
+	payment_type = shopper_cc_type
+%>
+

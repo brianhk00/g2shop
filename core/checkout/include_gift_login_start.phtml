@@ -1,0 +1,73 @@
+<!--#INCLUDE FILE="../../language_pack.asp"-->
+<!--#INCLUDE FILE="../../util/xt_func_session.asp"-->
+<!--#INCLUDE FILE="../../util/xt_func_string.asp"-->
+<%
+	sessionID = Request("sessionID")
+	sessionID = FilterSessionString(sessionID)
+	if Len(sessionID) > 0 then
+		Session("SESSIONKEY") = sessionID
+	else
+		if Len(Session("SESSIONKEY")) > 0 then
+			'session key exist
+		else
+			'no key information...
+			Response.Redirect Session("StoreURL") & "/index.asp"
+		end if
+	end if
+%>
+
+<%
+	Session("shopper_id") = GetSession(Session("SESSIONKEY"), "sCID")
+	Session("Shopper_Name") = GetSession(Session("SESSIONKEY"), "sCName")
+	Session("PARTNER") = GetSession(Session("SESSIONKEY"), "sAffID")
+%>
+<!--#INCLUDE FILE="../../i_adodb.asp"-->
+<%
+	sku = Trim(Request("sku"))
+	sku = FilterSKUString(sku)
+	
+	flag = Trim(Request("flag"))
+	
+	if Session("shopper_id") <> "" then
+		'Already logged in...
+		'redirect to tp_wishlist to add to the list
+		Response.Redirect("tp_wishlist.asp?sku=" & sku & "&flag=" & flag)
+		
+	else
+		'Get product name
+		if Len(sku) > 0 then
+	
+	    SELECT CASE flag
+	    CASE "7"
+	      
+	      Set conn_ss2 = Server.CreateObject("ADODB.Connection")
+	      conn_ss2.open Session("SSPriceConnectionString")
+	      
+	      if Session("DEMOVERSION") = "1" then
+		      g_storeid = "bk01"
+	      else
+		      g_storeid = Session("StoreID")
+	      end if
+	      
+	      sku = FilterStringEx(sku, "[^0-9]")
+	      
+	      sql = "SELECT * FROM " & g_storeid & "_ssprice WHERE sku='" & sku & "'"
+		    set rsPA = conn_ss2.Execute(sql)
+		    if not rsPA.EOF then
+    		  pf_name = Trim(rsPA("DESCR"))
+    		end if
+    		
+    		conn_ss2.Close
+    		
+	    
+	    CASE ELSE
+			  sql = "SELECT name FROM " & Session("StoreID") & "_product WHERE pf_id='" & sku & "'"
+			  set rs = Conn.Execute(sql)
+			  if not rs.EOF then
+				  pf_name = rs("name")
+			  end if
+			  rs.Close
+		  END SELECT
+		end if
+	end if
+%>

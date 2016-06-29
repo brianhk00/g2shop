@@ -1,0 +1,389 @@
+
+<%
+	if himg = "1" then
+		page_size = 30
+	else
+		page_size = 15
+	end if
+	block_size = 5
+
+	so = Trim(Request("so"))
+	so = FilterStringEx(so, "[^0-9]")
+	show = Trim(Request("show"))
+	show = FilterStringEx(show, "[^0-9]")
+
+	mode = Trim(Request("mode"))
+
+	if mode = "grid" then
+	else
+			mode = ""
+	end if
+	
+	sPage = Trim(Request("page"))
+	if Len(sPage) > 0then
+	  if IsNumeric(sPage) then
+		  page = CInt(Request("page"))
+		  if page > 0 then
+		  else
+		    page = 1
+		  end if
+		else
+		  page = 1
+		end if
+	else
+		page =1
+	end if
+
+  'Get sort order...
+  prod_listview = request("prod_listview")
+  if prod_listview = "" then
+	  prod_listview = Session("PROD_LISTVIEW")
+	  if prod_listview = "" then
+		 prod_listview = "14"
+	  end if
+	end if
+    
+  select case prod_listview
+  case "0"
+    str_sort = " ORDER BY DESCR"
+    Session("PROD_LISTVIEW") = "0"
+  case "1"
+    str_sort = " ORDER BY DESCR DESC"
+    Session("PROD_LISTVIEW") = "1"
+  case "2"
+    str_sort = " ORDER BY VEND_PART"
+    Session("PROD_LISTVIEW") = "2"
+  case "3"
+    str_sort = " ORDER BY VEND_PART DESC"
+    Session("PROD_LISTVIEW") = "3"
+	case "4"
+    str_sort = " ORDER BY VEND_NAME"
+    Session("PROD_LISTVIEW") = "4"
+  case "5"
+    str_sort = " ORDER BY VEND_NAME DESC"
+    Session("PROD_LISTVIEW") = "5"
+	case "6"
+    str_sort = " ORDER BY IM_ID"
+    Session("PROD_LISTVIEW") = "6"
+  case "7"
+    str_sort = " ORDER BY IM_ID DESC"
+    Session("PROD_LISTVIEW") = "7"
+	case "8"
+    str_sort = " ORDER BY TD_ID"
+    Session("PROD_LISTVIEW") = "8"
+  case "9"
+    str_sort = " ORDER BY TD_ID DESC"
+    Session("PROD_LISTVIEW") = "9"
+	case "10"
+    str_sort = " ORDER BY IM_COST"
+    Session("PROD_LISTVIEW") = "10"
+  case "11"
+    str_sort = " ORDER BY IM_COST DESC"
+    Session("PROD_LISTVIEW") = "11"
+	case "12"
+    str_sort = " ORDER BY TD_COST"
+    Session("PROD_LISTVIEW") = "12"
+  case "13"
+    str_sort = " ORDER BY TD_COST DESC"
+    Session("PROD_LISTVIEW") = "13"
+	case "14"
+    str_sort = " ORDER BY price_" & Session("LOGINGROUP") & ""
+    Session("PROD_LISTVIEW") = "14"
+  case "15"
+    str_sort = " ORDER BY price_" & Session("LOGINGROUP") & " DESC"
+    Session("PROD_LISTVIEW") = "15"
+  
+  case else
+    str_sort = " ORDER BY price_" & Session("LOGINGROUP") & ""
+    Session("PROD_LISTVIEW") = "14"
+    prod_listview = "14"
+  end select
+  
+  '=========================================================================
+	if InStr(Session("SSCatalogConnectionString"), "SPECSOURCE2") > 0 then
+		specsource_db = "SPECSOURCE2"
+	else
+		specsource_db = "SPECSOURCE"
+	end if
+	'=========================================================================
+
+	'FROM SBB ONLY..................................
+	x_manufacturer = Trim(Request("manufacturer"))
+	x_manufacturer = FilterStringEx(x_manufacturer, "[^0-9]")
+
+	if Len(x_manufacturer) > 0 then
+		sql = "SELECT name FROM manufacturer WHERE manufacturerid=" & x_manufacturer
+		set rs = conn_ss.Execute(sql)
+		if not rs.EOF then
+			xg_manufacturer = Trim(rs(0))
+		end if
+		rs.close
+	end if
+	'-----------------------------------------------
+	manufacturer = Trim(Request("manufacturer"))
+	manufacturer = FilterStringEx(manufacturer, "[^0-9]")
+
+	'======================================================================================
+	'NEW FEATUREID
+
+	s_selectedFeatureIds = ""
+
+
+	for each item in Request.QueryString
+
+		'Response.Write(item)
+		If InStr(item, "ga_") Then
+			If Len(Trim(Request(item))) > 0 then
+				s_selectedFeatureIds = s_selectedFeatureIds & Replace(item, "ga_" , "") & ","
+			End if
+		End if
+
+	Next
+
+	'======================================================================================
+	
+	
+	If Len(s_selectedFeatureIds) > 0 Then
+		t_selectedFeatureIds = s_selectedFeatureIds
+		s_selectedFeatureIds = Left(s_selectedFeatureIds, Len(s_selectedFeatureIds) - 1)
+	End If
+	
+	range_min_price = Trim(Request("min"))
+	range_max_price = Trim(Request("max"))
+
+	If useAnchorCategory = 1 Then
+		sql = "SELECT specsource_categoryid FROM " & Session("StoreID") & "_ss_dept WHERE dept_id like '" & dept_id & "%'"
+		set rsDept=conn.Execute(sql)
+		ss_categoryid = ""
+		Do While Not rsDept.EOF
+			ss_categoryid = ss_categoryid & Trim(rsDept(0)) & ","
+			rsDept.MoveNext
+		Loop
+		rsDept.Close
+
+		If Len(ss_categoryid) > 1 Then
+			ss_categoryid = Left(ss_categoryid, Len(ss_categoryid)-1)
+		End If
+	else
+
+		sql = "SELECT specsource_categoryid FROM " & Session("StoreID") & "_ss_dept WHERE dept_id='" & dept_id & "'"
+		set rsDept=conn.Execute(sql)
+		if not rsDept.EOF then
+			ss_categoryid = Trim(rsDept(0))
+		end if
+		rsDept.Close
+
+	End if
+
+	'=======================================
+	' Filter Strings...
+	'=======================================
+
+	asql = ""
+	'zsql = ""
+	s_filter_url = ""
+
+	If s_selectedFeatureIds <> "" Then 
+		ga = Split(s_selectedFeatureIds, ",")
+		for i=0 to UBound(ga)
+				zsql = zsql & " icecat_id IN (SELECT productid FROM [192.168.5.134].[icecat].[dbo].[icecat_productattributes] WHERE featureid=" & ga(i) & " AND displayvalue='" & Trim(request("ga_" & ga(i))) & "' ) AND"
+				s_filter_url = s_filter_url & "&ga_" & ga(i) & "=" & Trim(request("ga_" & ga(i)))
+		Next
+	End If
+
+	'=======================================
+	' Price range..
+	'=======================================
+	s_prcn= ""
+	SELECT CASE prcn
+	CASE "0"
+		s_prcn = "(price_" & Session("LOGINGROUP") & " BETWEEN 0 AND 99.99)"
+	CASE "1"
+		s_prcn = "(price_" & Session("LOGINGROUP") & " BETWEEN 100 AND 499.99)"
+	CASE "2"
+		s_prcn = "(price_" & Session("LOGINGROUP") & " BETWEEN 500 AND 999.99)"
+	CASE "3"
+		s_prcn = "(price_" & Session("LOGINGROUP") & " BETWEEN 1000 AND 1999.99)"
+	CASE "4"
+		s_prcn = "(price_" & Session("LOGINGROUP") & " BETWEEN 2000 AND 100000)"
+	END Select
+	
+	If IsNumeric(range_min_price) AND Len(range_min_price) > 0 AND IsNumeric(range_max_price)  AND Len(range_max_price) > 0 Then
+		s_prcn = "(price_" & Session("LOGINGROUP") & " BETWEEN " & range_min_price & " AND " & range_max_price & ")"
+		s_filter_url = s_filter_url & "&min=" & range_min_price & "&max=" & range_max_price
+	End If
+
+	If Len(manufacturer) > 0 then
+		s_filter_url = s_filter_url & "&manufacturer=" & manufacturer
+	End if
+
+	if Len(zsql) > 0 then
+		zsql = Left(zsql, Len(zsql)-4)
+		filter_zsql = zsql
+	end If
+
+	zzsql = "SELECT sku FROM SPEC_PRICE.dbo." & g_storeid & "_ssprice WHERE hide_flag=0"
+	if Len(x_manufacturer) > 0 then
+		zzsql = zzsql & " AND VEND_ID=" & x_manufacturer
+	end if
+	
+
+	sql = "SELECT * FROM " & g_storeid & "_ssprice WHERE CATEGORY IN (" & ss_categoryid & ") AND DESCR <> '' AND hide_flag=0"
+
+	if Len(zsql) > 0 then
+		
+		'sql = sql & " AND sku IN (" & zsql & ")"
+		sql = sql & " AND " & zsql
+			
+	end if
+
+	if Len(x_manufacturer) > 0 then
+		sql = sql & " AND VEND_ID=" & x_manufacturer
+	end if
+
+	if Len(s_prcn) > 0 then
+		sql = sql & " AND " & s_prcn
+	end if
+	
+	if Session("PROD_AVAIL") = "4" then
+		sql = sql & " AND AVAIL=1"
+	end if
+	
+	'sql = sql & " AND sku NOT IN (SELECT sku FROM A_accessory)"
+	
+	if Len(Session("CUSTOM_CATALOG_ID_FLAG")) > 0 then
+	  sql = sql & " AND MD" & Session("CUSTOM_CATALOG_ID_FLAG") & "_ID='1'"
+	end if
+	
+  '================================================================
+  ' Improved sorting algorithm
+  '=================================================================
+	dept_list_num = "20"
+	Select case show
+
+	case "10"
+
+	case "20"
+
+	case "50"
+
+	case "100"
+
+	case "200"
+
+	case else
+		show = dept_list_num
+	end Select
+
+	Select case so
+
+	case "0"
+		str_sort = " ORDER BY DESCR"
+	case "1"
+		str_sort = " ORDER BY DESCR DESC"
+	case "4"
+		str_sort = " ORDER BY manu_name, DESCR"
+	case "5"
+		str_sort = " ORDER BY manu_name DESC, DESCR"
+	case "6"
+		str_sort = " ORDER BY sku"
+	case "7"
+		str_sort = " ORDER BY sku DESC"
+	case "8"
+		str_sort = " ORDER BY price_" &  Session("LOGINGROUP")
+	case "9"
+		str_sort = " ORDER BY price_" &  Session("LOGINGROUP") & " DESC"
+	case else
+		str_sort = " ORDER BY price_" &  Session("LOGINGROUP")
+		so = "8"
+	end Select
+
+	page_size = show
+
+	'Response.Write(sql)
+
+  
+  Set rsProductList = Server.CreateObject("ADODB.RecordSet")
+	rsProductList.CursorLocation = 3
+	rsProductList.Open sql,Session("SSPriceConnectionString"),3,3
+			
+	if not rsProductList.EOF then
+	  rsProductList.Sort = Replace(str_sort, " ORDER BY ", "")
+		rsProductList.PageSize = page_size
+		rsProductList.AbsolutePage = page
+
+		page_count = rsProductList.PageCount
+		num_total_product = rsProductList.RecordCount
+	end if
+
+	start_num = (page-1)*page_size + 1
+	end_num = start_num + page_size-1
+
+	if end_num > num_total_product then
+		end_num = num_total_product
+	end if
+	
+	if Len(zsql) > 0 OR Len(x_manufacturer) > 0 OR Len(s_prcn) > 0 then
+		bPageMode = 0
+	else
+		bPageMode = 1
+	end if
+	
+	bPageMode = 0
+
+	'========================================================================================
+	' GET TOOLBAR VALUES
+	If Len(s_filter_url) > 0 then
+		strToolbarBaseURL = Session("StoreURL") & "/ssdept.asp?dept_id=" & dept_id & s_filter_url
+	Else
+		strToolbarBaseURL = Session("StoreURL") & "/ssdept.asp?dept_id=" & dept_id 
+	End if
+
+	strSortURL_10 = strToolbarBaseURL & "&mode=" & mode & "&so=" & so & "&show=10"
+	strSortURL_20 = strToolbarBaseURL & "&mode=" & mode & "&so=" & so & "&show=20"
+	strSortURL_50 = strToolbarBaseURL & "&mode=" & mode & "&so=" & so & "&show=50"
+	strSortURL_100 = strToolbarBaseURL & "&mode=" & mode & "&so=" & so & "&show=100"
+	strSortURL_200 = strToolbarBaseURL & "&mode=" & mode & "&so=" & so & "&show=200"
+
+	strSortURL_Name = strToolbarBaseURL & "&mode=" & mode & "&so=0&show=" & show
+	strSortURL_PartNumber = strToolbarBaseURL & "&mode=" & mode & "&so=6&show=" & show
+	strSortURL_Price = strToolbarBaseURL & "&mode=" & mode & "&so=8&show=" & show
+
+	Select case so
+		
+	case "0"
+		strSortURL_asc = strToolbarBaseURL & "&mode=" & mode & "&so=0&show=" & show
+		strSortURL_desc = strToolbarBaseURL & "&mode=" & mode & "&so=1&show=" & show  	
+	case "1"
+		strSortURL_asc = strToolbarBaseURL & "&mode=" & mode & "&so=0&show=" & show
+    strSortURL_desc = strToolbarBaseURL & "&mode=" & mode & "&so=1&show=" & show  	
+	case "4"
+		strSortURL_asc = strToolbarBaseURL & "&mode=" & mode & "&so=4&show=" & show
+    strSortURL_desc = strToolbarBaseURL & "&mode=" & mode & "&so=5&show=" & show  	
+	case "5"
+		strSortURL_asc = strToolbarBaseURL & "&mode=" & mode & "&so=4&show=" & show
+    strSortURL_desc = strToolbarBaseURL & "&mode=" & mode & "&so=5&show=" & show  	
+	case "6"
+		strSortURL_asc = strToolbarBaseURL & "&mode=" & mode & "&so=6&show=" & show
+    strSortURL_desc = strToolbarBaseURL & "&mode=" & mode & "&so=7&show=" & show
+	case "7"
+		strSortURL_asc = strToolbarBaseURL & "&mode=" & mode & "&so=6&show=" & show
+    strSortURL_desc = strToolbarBaseURL & "&mode=" & mode & "&so=7&show=" & show
+	case "8"
+		strSortURL_asc = strToolbarBaseURL & "&mode=" & mode & "&so=8&show=" & show
+    strSortURL_desc = strToolbarBaseURL & "&mode=" & mode & "&so=9&show=" & show
+	case "9"
+		strSortURL_asc = strToolbarBaseURL & "&mode=" & mode & "&so=8&show=" & show
+    strSortURL_desc = strToolbarBaseURL & "&mode=" & mode & "&so=9&show=" & show
+	case else
+		
+	end Select
+
+	strPageURL = strToolbarBaseURL & "&mode=" & mode & "&so=" & so & "&show=" & show
+
+	strModeURL = strToolbarBaseURL & "&so=" & so & "&show=" & show
+
+
+	'==========================================================================================
+		
+%>

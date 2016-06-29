@@ -1,0 +1,27 @@
+<!--#INCLUDE FILE="../../language_pack.asp"-->
+<!--#INCLUDE FILE="../../util/xt_func_session.asp"-->
+<!--#INCLUDE FILE="../../util/xt_func_string.asp"-->
+<!--#INCLUDE FILE="../../util/xt_func_client.asp"-->
+<%
+	sessionID = Request("sessionID")
+	sessionID = FilterSessionString(sessionID)
+	if Len(sessionID) > 0 then
+		Session("SESSIONKEY") = sessionID
+	else
+		if Len(Session("SESSIONKEY")) > 0 then
+			'session key exist
+		else
+			'no key information...
+			Response.Redirect Session("StoreURL") & "/index.asp"
+		end if
+	end if
+%>
+<!--#INCLUDE FILE="../../i_login.asp"-->
+<!--#INCLUDE FILE="../../i_adodb.asp"-->
+<%
+	qid = Request("qid")
+	qid = FilterStringEx(qid, "[^0-9]")
+	
+	iCount = Session("ItemCount")
+  ARYShoppingCart = Session("MyShoppingCart")
+%>

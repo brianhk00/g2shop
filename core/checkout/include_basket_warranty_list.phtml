@@ -1,0 +1,67 @@
+<select name="wid<%=CStr(i)%>">
+<option value="0">No Thanks</option>
+<%
+	sql = "SELECT warranty_id FROM " & Session("StoreID") & "_warranty2_group_item WHERE warranty_group_id='" & ARYShoppingCart(cartProductWarranty, i) & "'"
+
+	Set rsW = Conn.Execute(sql)
+	Do While Not rsW.EOF
+		
+		z_wid = rsW(0)
+		sql = "SELECT * FROM " & Session("StoreID") & "_warranty2_param WHERE warranty_id = '" & z_wid & "'"
+		
+		Set rsWarranty = Conn.Execute(sql)
+		do while not rsWarranty.EOF
+			
+			z_value = rsWarranty("warranty_value")
+			z_flag = rsWarranty("warranty_flag")
+			z_min_price = rsWarranty("min_price")
+			z_max_price = rsWarranty("max_price")
+
+			if z_min_price = 0 AND z_max_price = 0 then
+				z_apply_warranty = true
+			else
+				if CDbl(UnitPrice) >= z_min_price AND CDbl(UnitPrice) <= z_max_price then
+					z_apply_warranty = true
+				else
+					z_apply_warranty = false
+				end if
+			end If
+
+			if z_apply_warranty then
+			
+				if z_flag = 1 then
+					z_warranty_amount = FormatNumber(rsWarranty("warranty_value"),2)
+				else
+					z_warranty_amount = UnitPrice * (rsWarranty("warranty_value")/100)
+				end If
+				
+				z_warranty_amount = z_warranty_amount '* UnitNumber
+			
+				sql1 = "SELECT warranty_name FROM " &  Session("StoreID") & "_warranty2 WHERE warranty_id='" & z_wid & "'"
+				set rsWarranty1 = Conn.Execute(sql1)
+				if not rsWarranty1.EOF then
+					z_warranty_name = Trim(rsWarranty1(0))
+				else
+					z_warranty_name = "Extended Warranty"
+				end if
+				rsWarranty1.Close
+			%>
+			<% if rsWarranty("warranty_id") = ARYShoppingCart(cartProductWarrantySelection, i) then %>
+			<option value="<%=rsWarranty("warranty_id")%>" selected><%=z_warranty_name%> -- <%=FormatCurrencyEx(z_warranty_amount)%></option>
+			<%
+				s_warranty_amount =  FormatNumber(z_warranty_amount,2) * UnitNumber
+			%>
+			<% else %>
+			<option value="<%=rsWarranty("warranty_id")%>"><%=z_warranty_name%> -- <%=FormatCurrencyEx(z_warranty_amount)%></option>
+			<% end if %>
+			<%
+					end if
+			rsWarranty.MoveNext
+		Loop
+		rsWarranty.Close
+
+		rsW.MoveNext
+	Loop
+	rsW.Close	  
+%>
+</select>

@@ -1,0 +1,192 @@
+<%
+    'TODO: May need to be removed ===============
+    iCount = Session("ItemCount")
+	ARYShoppingCart = Session("MyShoppingCart")
+    '=============================================
+
+	iSubtotal = 0
+	iWarrantyTotal = 0
+	Total_Taxable = 0
+    
+	Set conn_ss3 = Server.CreateObject("ADODB.Connection")
+    conn_ss3.open Session("SSPriceConnectionString")
+
+	For i = 1 to iCount
+
+		basket_item_name = ARYShoppingCart(2, i)
+		SELECT CASE ARYShoppingCart(9, i)
+		CASE "0" 'Private Catalog
+			basket_item_link = Session("StoreURL") & "/product.phtml?pf_id=" & ARYShoppingCart(1, i)
+			
+			sql = "SELECT * FROM " & Session("StoreID") & "_product WHERE pf_id='" & ARYShoppingCart(1, i) & "'"
+			Set rsCartItem = Conn.Execute(sql)
+			If Not rsCartItem.EOF Then
+				prod_thumb_image = rsCartItem("thumb_image")
+				cart_dist_flag = rsCartItem("dist_flag")
+				cart_espec_sku = rsCartItem("espec_sku")
+				prod_espec_sku = rsCartItem("espec_sku")
+				prod_image_file = rsCartItem("image_file")
+				prod_use_icecat_images = rsCartItem("use_icecat_images")
+				prod_mm_type = rsCartItem("mm_type")
+				if Len(prod_image_file) > 0 then
+				else
+					prod_image_file = "--"
+				end If
+				
+				icecat_id = 0
+				if Len(prod_espec_sku) > 0 then
+					if Session("ENABLEINT") = "2" OR Session("ENABLEINT") = "3" then
+						sql = "SELECT * FROM A_ssprice_CA WHERE sku='" & prod_espec_sku & "'"
+					else
+						sql = "SELECT * FROM A_ssprice_main WHERE sku='" & prod_espec_sku & "'"
+					end If
+					set rsPA = conn_ss3.Execute(sql)
+					if not rsPA.EOF then
+						icecat_image_published = rsPA("image_published")
+						icecat_icategoryid = Trim(rsPA("CATEGORY"))
+						icecat_id = rsPA("icecat_id")
+					end if
+					rsPA.Close
+				end if
+				ssThumbSize = "upload/w_" & EC_thumbWidth & ",h_" & EC_thumbHeight & ",c_pad/"
+				ssImgSize = "upload/w_" & EC_imageWidth & ",h_" & EC_imageHeight & ",c_pad/"
+				ssZoomSize = "upload/w_" & EC_zoomWidth & ",h_" & EC_zoomHeight & ",c_pad/"
+				ssMiniCartSize = "upload/w_" & EC_miniCartWidth & ",h_" & EC_miniCartHeight & ",c_pad/"
+				
+				if prod_image_file = "--" then
+					cloudImg = g_noimage_url
+					ssImg = Replace(cloudImg, "upload/", ssImgSize)
+					ssImg1 = Replace(cloudImg, "upload/", ssThumbSize)
+					ssImg2 = Replace(cloudImg, "upload/", ssZoomSize)
+					ssImg_minicart = Replace(cloudImg, "upload/", ssMiniCartSize)
+				else
+					if prod_mm_type = 1 then
+						if Len(prod_espec_sku) > 0 AND prod_use_icecat_images = 1 then
+							
+							sql = "SELECT cloudinary_url FROM [192.168.5.134].[icecat].dbo.cloudinary_images WHERE product_id = " & icecat_id
+							Set rsCloudImage = conn_ss3.Execute(sql)
+							If Not rsCloudImage.EOF Then
+								cloudImg = Trim(rsCloudImage("cloudinary_url"))
+							Else
+								sql = "SELECT * FROM " & g_storeid & "_product_image WHERE image_name = '" & prod_image_file & "'"
+								Set rsCloudImage2 = conn.Execute(sql)
+								If Not rsCloudImage2.EOF Then
+									cloudImg = Trim(rsCloudImage2("cloud_url"))
+								Else
+									cloudImg = g_noimage_url
+								End If
+								rsCloudImage2.Close
+								Set rsCloudImage2 = Nothing
+							End If
+							rsCloudImage.Close
+							Set rsCloudImage = Nothing
+							ssImg = Replace(cloudImg, "upload/", ssImgSize)
+							ssImg1 = Replace(cloudImg, "upload/", ssThumbSize)
+							ssImg2 = Replace(cloudImg, "upload/", ssZoomSize)
+							ssImg_minicart = Replace(cloudImg, "upload/", ssMiniCartSize)
+						else
+							sql = "SELECT * FROM " & g_storeid & "_product_image WHERE image_name = '" & prod_image_file & "'"
+							Set rsCloudImage2 = conn.Execute(sql)
+							If Not rsCloudImage2.EOF Then
+								cloudImg = Trim(rsCloudImage2("cloud_url"))
+							Else
+								cloudImg = g_noimage_url
+							End If
+							rsCloudImage2.Close
+							Set rsCloudImage2 = Nothing
+							ssImg = Replace(cloudImg, "upload/", ssImgSize)
+							ssImg1 = Replace(cloudImg, "upload/", ssThumbSize)
+							ssImg2 = Replace(cloudImg, "upload/", ssZoomSize)
+							ssImg_minicart = Replace(cloudImg, "upload/", ssMiniCartSize)
+						end if
+					else
+						ssImg = "http://a4.res.cloudinary.com/dd3llssvr/image/fetch/" & "w_" & EC_imageWidth & ",h_" & EC_imageHeight & ",c_pad/" & g_store_url & "assets/pmedia/prod_img/" & Server.URLEncode(prod_thumb_image)
+						ssImg1 = "http://a4.res.cloudinary.com/dd3llssvr/image/fetch/" & "w_" & EC_thumbWidth & ",h_" & EC_thumbHeight & ",c_pad/" & g_store_url & "assets/pmedia/prod_img/" & Server.URLEncode(prod_thumb_image)
+						ssImg2 = "http://a4.res.cloudinary.com/dd3llssvr/image/fetch/" & "w_" & EC_zoomWidth & ",h_" & EC_zoomHeight & ",c_pad/" & g_store_url & "assets/pmedia/prod_img/" & Server.URLEncode(prod_thumb_image)
+					end if
+				end if
+				
+			End if
+			
+			ssImgInCart = ssImg1
+			ssImgInMiniCart = ssImg_minicart
+
+		CASE "7"
+			basket_item_link = Session("StoreURL") & "/ssproduct.phtml?pf_id=" & ARYShoppingCart(1, i)
+			ssImgInCart = "http://content.etilize.com/thumbnail/" & ARYShoppingCart(1, i) & ".jpg"
+			
+			sql = "SELECT * FROM " & Session("StoreID") & "_ssprice WHERE sku='" & ARYShoppingCart(1, i) & "'"
+			set rsPA = conn_ss3.Execute(sql)
+			if not rsPA.EOF then
+				image_published = rsPA("image_published")
+				icecat_id = rsPA("icecat_id")
+			end if
+			rsPA.Close
+			
+			'ICECAT/CLOUDINARY
+			if image_published = 1 Then	
+				sql = "SELECT cloudinary_url FROM [192.168.5.134].[icecat].dbo.cloudinary_images WHERE product_id = " & icecat_id
+				Set rsCloudImage = conn_ss3.Execute(sql)
+				If Not rsCloudImage.EOF Then
+					cloudImg = Trim(rsCloudImage("cloudinary_url"))
+				End If
+				rsCloudImage.Close
+				Set rsCloudImage = Nothing
+			Else
+				cloudImg = "http://res.cloudinary.com/dd3llssvr/image/upload/v1423588444/noimage_t0tp8k.png"
+				ssImg = "site_img/snopicsm_" & Session("TEMPLATEID") & ".gif"
+			end If
+			
+			EC_thumbWidth = "160"
+			EC_thumbHeight = "160"
+			
+			ssImgSize = "upload/w_" & EC_imageWidth & ",h_" & EC_imageHeight & ",c_pad/"
+			ssThumbSize = "upload/w_" & EC_thumbWidth & ",h_" & EC_thumbHeight & ",c_pad/"
+			ssZoomSize = "upload/w_" & EC_zoomWidth & ",h_" & EC_zoomHeight & ",c_pad/"
+
+			If Len(cloudImg) > 0 then
+				'ssImg = Replace(cloudImg, "upload/", "upload/w_500,h_500,c_pad/")
+				'ssImg1 = Replace(cloudImg, "upload/", "upload/w_300,h_300,c_pad/")
+				'ssImg2 = Replace(cloudImg, "upload/", "upload/w_96,h_196,c_pad/")
+				ssImg = Replace(cloudImg, "upload/", ssImgSize)
+				ssThumb = Replace(cloudImg, "upload/", ssThumbSize)
+				ssZoom = Replace(cloudImg, "upload/", ssZoomSize)
+			Else
+				ssThumb = "site_img/snopicsm_" & Session("TEMPLATEID") & ".gif"
+			End If
+			ssImgInCart = ssThumb
+			
+		CASE ELSE
+			basket_item_link = "#"
+		END Select
+
+		'Get Unit Price..
+		UnitPrice = ARYShoppingCart(5, i)
+		if IsNumeric(UnitPrice) then
+
+			if ARYShoppingCart(9, i) = "9" then
+				'It is coupon...don't do anything..
+			else
+				if UnitPrice <= 0 then
+				 UnitPrice = 0
+				end if
+			end if
+			UnitPrice = FormatNumber(UnitPrice, 2)
+		else
+			'Something Wrong...
+			UnitPrice = 0
+		end if
+				 
+		'Get subtotal..
+		UnitNumber = CInt(ARYShoppingCart(4, i))
+		UnitSubTotal = UnitPrice * UnitNumber
+		
+		if not ARYShoppingCart(cartTaxable, i) then
+			Total_Taxable = Total_Taxable + (ARYShoppingCart(4, i) * UnitPrice*(1-pmt_discount/100))
+		end If
+		
+		basket_item_qty = ARYShoppingCart(4, i)
+		basket_item_mode = ARYShoppingCart(9, i)
+		basket_item_delete_link = "xt_basket_delitem.phtml?item_index=" & i
+
+%>

@@ -1,0 +1,11 @@
+<!--#INCLUDE FILE="../../language_pack.asp"-->
+<!--#INCLUDE FILE="../../util/xt_func_session.asp"-->
+<!--#INCLUDE FILE="../../i_initsession.asp"-->
+<!--#INCLUDE File="../../util/xt_func_util.asp" -->
+<%
+	Session("shopper_id") = GetSession(Session("SESSIONKEY"), "sCID")
+	Session("Shopper_Name") = GetSession(Session("SESSIONKEY"), "sCName")
+	Session("PARTNER") = GetSession(Session("SESSIONKEY"), "sAffID")
+%>
+<!--#INCLUDE FILE="../../util/xt_func_string.asp"-->
+<!--#INCLUDE FILE="../../i_adodb.asp"-->

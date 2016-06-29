@@ -1,0 +1,220 @@
+<!--#INCLUDE FILE="../../local/local.phtml"-->
+<!--#INCLUDE FILE="../../language_pack.phtml"-->
+<!--#INCLUDE FILE="../../util/xt_func_session.phtml"-->
+<%
+	sessionID = Request("sessionID")
+	sessionID = FilterSessionString(sessionID)
+	if Len(sessionID) > 0 then
+		Session("SESSIONKEY") = sessionID
+	else
+		if Len(Session("SESSIONKEY")) > 0 then
+			'session key exist
+		else
+			'no key information...
+			Response.Redirect Session("StoreURL") & "/index.phtml"
+		end if
+	end if
+%>
+<!--#INCLUDE FILE="../../i_login.phtml"-->
+<!-- #INCLUDE File="../../util/xt_func_string.phtml" -->
+<!-- #INCLUDE File="../../util/xt_func_util.phtml" -->
+<!-- #INCLUDE File="../../util/xt_func_rc4.phtml" -->
+<!--#INCLUDE FILE="../../i_adodb.phtml"-->
+<!--#INCLUDE FILE="../i_adoopen.phtml"-->
+<%
+	iCount = Session("ItemCount")
+	if( iCount < 1 )then
+		Response.Redirect Session("SecureURL")&"/basket.phtml"
+	end if
+	
+	sql = "SELECT * FROM " & g_storeid & "_shopper WHERE shopper_id='" & Session("shopper_id") & "'"
+
+	Set rsShopper = dbconn.Execute(sql)
+	
+	if not rsShopper.EOF then
+		shopper_firstname = rsShopper("FirstName")
+		shopper_lastname = rsShopper("LastName")
+		
+		shopper_billing_firstname = rsShopper("billing_firstname")
+		shopper_billing_lastname = rsShopper("billing_lastname")
+		
+		if Len(shopper_billing_firstname) > 0 then
+		else
+			shopper_billing_firstname = shopper_firstname
+		end if
+	
+		if Len(shopper_billing_lastname) > 0 then
+		else
+			shopper_billing_lastname = shopper_lastname
+		end if
+	
+		shopper_address = rsShopper("Address")
+		shopper_city = rsShopper("City")
+		shopper_state = rsShopper("State")
+		shopper_zip = rsShopper("ZipCode")
+		shopper_country = rsShopper("Country")
+		shopper_phone = rsShopper("Phone")
+		shopper_company = rsShopper("Company")
+		
+		shopper_same_address = rsShopper("IsSameAddress")														
+		shipping_firstname = rsShopper("shipping_FirstName")
+		shipping_lastname = rsShopper("shipping_LastName")
+		shipping_address = rsShopper("shipping_Address")
+		shipping_city = rsShopper("shipping_City")
+		shipping_state = rsShopper("shipping_State")
+		shipping_country = rsShopper("shipping_Country")
+		shipping_zip = rsShopper("shipping_ZipCode")
+		shipping_phone = rsShopper("shipping_Phone")														
+		shopper_cc_type = rsShopper("CC_Type")
+		shopper_cc_number = rsShopper("CC_Number")
+		shopper_cc_expMonth = rsShopper("CC_ExpMonth")
+		shopper_cc_expYear = rsShopper("CC_ExpYear")	
+		shipping_company = rsShopper("shipping_company")
+		
+	end if
+	
+	
+	'===============================================================================
+	alt_billing_address_id = ""
+	alt_shipping_address_id = ""
+	
+	'NEED TO OVERRIDE Billing and Shipping Address...
+	sql = "SELECT * FROM " & g_storeid & "_shopper_billing_address WHERE billing_shopper_id = '" & Session("shopper_id") & "' AND billing_set_default=1"
+	set rsBillingAddress = conn.Execute(sql)
+	if not rsBillingAddress.EOF then
+		alt_billing_address_id = Trim(rsBillingAddress("billing_address_id"))
+		alt_billing_address_name = Trim(rsBillingAddress("billing_address_name"))
+		alt_billing_firstname = Trim(rsBillingAddress("billing_firstname"))
+		alt_billing_lastname = Trim(rsBillingAddress("billing_lastname"))
+		alt_billing_address = Trim(rsBillingAddress("billing_address"))
+		alt_billing_city = Trim(rsBillingAddress("billing_city"))
+		alt_billing_state = Trim(rsBillingAddress("billing_state"))
+		alt_billing_zip = Trim(rsBillingAddress("billing_zip"))
+		alt_billing_country = Trim(rsBillingAddress("billing_country"))
+		alt_billing_phone = Trim(rsBillingAddress("billing_phone"))
+		alt_billing_default = Trim(rsBillingAddress("billing_set_default"))
+		alt_billing_cc_type= Trim(rsBillingAddress("CC_Type"))
+		alt_billing_cc_number = Trim(rsBillingAddress("CC_Number"))
+		alt_billing_cc_expmonth = Trim(rsBillingAddress("CC_ExpMonth"))
+		alt_billing_cc_expyear = Trim(rsBillingAddress("CC_ExpYear"))
+		alt_billing_company = Trim(rsBillingAddress("bill_company"))
+		alt_name_on_card = Trim(rsBillingAddress("NameOnCard"))
+		
+		if IsNumeric(alt_billing_cc_expmonth) then
+		else
+			alt_billing_cc_expmonth = "01"
+		end if
+		
+		if IsNumeric(alt_billing_cc_expyear) then
+		else
+			alt_billing_cc_expyear = "2016"
+		end if
+		
+		if Len(alt_billing_address) > 20 then
+			alt_billing_address1 = Left(alt_billing_address,20)
+		else
+			alt_billing_address1 = alt_billing_address
+		end if
+		
+		if alt_billing_default = 1 then
+			
+			shopper_firstname = alt_billing_firstname
+			shopper_lastname = alt_billing_lastname
+			shopper_cc_type = alt_billing_cc_type
+			shopper_cc_number = alt_billing_cc_number
+			shopper_cc_expMonth = alt_billing_cc_expmonth
+			shopper_cc_expYear = alt_billing_cc_expyear
+			shopper_address = alt_billing_address
+			shopper_city = alt_billing_city
+			shopper_state =alt_billing_state
+			shopper_zip =alt_billing_zip
+			shopper_country = alt_billing_country
+			shopper_phone = alt_billing_phone
+		end if
+		
+	end if
+	
+	rsBillingAddress.Close
+	'=====================================================================
+	
+	sql = "SELECT * FROM " & g_storeid & "_shopper_shipping_address WHERE shopper_id = '" & Session("shopper_id") & "' AND set_default=1"
+	set rsShippingAddress = conn.Execute(sql)
+	if not rsShippingAddress.EOF then
+	
+		alt_shipping_address_id = Trim(rsShippingAddress("address_id"))
+		alt_shipping_address_name = Trim(rsShippingAddress("address_name"))
+		alt_shipping_firstname = Trim(rsShippingAddress("firstname"))
+		alt_shipping_lastname = Trim(rsShippingAddress("lastname"))
+		alt_shipping_address = Trim(rsShippingAddress("address"))
+		alt_shipping_city = Trim(rsShippingAddress("city"))
+		alt_shipping_state = Trim(rsShippingAddress("state"))
+		alt_shipping_zip = Trim(rsShippingAddress("zip"))
+		alt_shipping_country = Trim(rsShippingAddress("country"))
+		alt_shipping_phone = Trim(rsShippingAddress("phone"))
+		alt_shipping_default = Trim(rsShippingAddress("set_default"))
+		alt_shipping_company = Trim(rsShippingAddress("company"))
+		
+		shipping_firstname = alt_shipping_firstname
+		shipping_lastname = alt_shipping_lastname
+		shipping_address = alt_shipping_address
+		shipping_city = alt_shipping_city
+		shipping_state = alt_shipping_state
+		shipping_zip = alt_shipping_zip
+		shipping_phone = alt_shipping_phone
+		shipping_company = alt_shipping_company
+		shipping_country = alt_shipping_country
+	
+	end if
+	rsShippingAddress.Close
+	
+	'========================================================================================================
+	'Global parameters
+	'========================================================================================================
+	if Len(alt_billing_address_id) > 0 then
+		billing_address_id = alt_billing_address_id
+		order_billing_company = alt_billing_company
+		order_billing_address = alt_billing_address
+		order_billing_city = alt_billing_city
+		order_billing_state = alt_billing_state
+		order_billing_zip = alt_billing_zip
+		order_billing_country = alt_billing_country
+		order_billing_phone = alt_billing_phone
+		order_billing_contact_firstname = alt_billing_firstname
+		order_billing_contact_lastname = alt_billing_lastname
+	else
+		billing_address_id = "0"
+		order_billing_company = shopper_company
+		order_billing_address = shopper_address
+		order_billing_city = shopper_city
+		order_billing_state = shopper_state
+		order_billing_zip = shopper_zip
+		order_billing_country = shopper_country
+		order_billing_phone = shopper_phone
+		order_billing_contact_firstname = shopper_billing_firstname
+		order_billing_contact_lastname = shopper_billing_lastname
+	end if
+	
+	if Len(alt_shipping_address_id) > 0 then
+		shipping_address_id = alt_billing_address_id
+		order_shipping_firstname = alt_shipping_firstname
+		order_shipping_lastname = alt_shipping_lastname
+		order_shipping_company = alt_shipping_company
+		order_shipping_address = alt_shipping_address
+		order_shipping_city = alt_shipping_city
+		order_shipping_state = alt_shipping_state
+		order_shipping_zip = alt_shipping_zip
+		order_shipping_country = alt_shipping_country
+		order_shipping_phone = alt_shipping_phone
+	else
+		shipping_address_id = "0"
+		order_shipping_firstname = shipping_firstname
+		order_shipping_lastname = shipping_lastname
+		order_shipping_company = shipping_company
+		order_shipping_address = shipping_address
+		order_shipping_city = shipping_city
+		order_shipping_state = shipping_state
+		order_shipping_zip = shipping_zip
+		order_shipping_country = shipping_country
+		order_shipping_phone = shipping_phone
+	end if
+%>

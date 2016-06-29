@@ -1,0 +1,24 @@
+<% 
+	sql = "SELECT CountryID, CountryName, ISOCode2 FROM A_GlobalCountries WHERE ISOCode2 in (SELECT iso_code2 FROM " & Session("storeid") & "_countries)"
+	set rsCntry = Conn.Execute(sql)
+	i = 0
+	do while not rsCntry.Eof
+		country = rsCntry("CountryName")
+		'country_id = rsCntry("CountryID")
+		iso_code = rsCntry("ISOCode2")
+
+		if iso_code = Session("shopper_country") then
+			Response.Write("<option value=""" & iso_code & """ selected>" & country & "</option>")
+		else
+			if ( i = 0 ) and (Session("shopper_country") = "") then 
+				Response.Write("<option value=""" & iso_code & """ selected>" & country & "</option>")
+			else
+				Response.Write("<option value=""" & iso_code & """>" & country & "</option>")
+			end if
+		end if
+		
+		rsCntry.MoveNext
+		i = i + 1
+	loop
+	rsCntry.Close
+%>

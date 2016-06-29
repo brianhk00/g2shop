@@ -1,0 +1,24 @@
+<%
+	sessionID = Request("sessionID")
+
+	if Len(sessionID) > 0 then
+		patrn_1 = "[^0-9a-zA-Z-{}]"
+	
+		Set regEx1 = New RegExp
+		regEx1.Pattern = patrn_1
+		regEx1.IgnoreCase = False
+		regEx1.Global = True
+		sessionID = regEx1.Replace(sessionID, "")
+	end if
+
+	if Len(sessionID) > 0 then
+		Session("SESSIONKEY") = sessionID
+	else
+		if Len(Session("SESSIONKEY")) > 0 then
+			'session key exist
+		else
+			'No session key initialized, create new.
+			InitializeSession()
+		end if
+	end if
+%>

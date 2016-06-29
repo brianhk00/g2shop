@@ -1,0 +1,264 @@
+<!--#INCLUDE FILE="../../local/local.phtml"-->
+<!--#INCLUDE FILE="../../language_pack.phtml"-->
+<!--#INCLUDE FILE="../../util/xt_func_session.phtml"-->
+<%
+	sessionID = Request("sessionID")
+	sessionID = FilterSessionString(sessionID)
+
+	if Len(sessionID) > 0 then
+		Session("SESSIONKEY") = sessionID
+	else
+		if Len(Session("SESSIONKEY")) > 0 then
+			'session key exist
+		else
+			'no key information...
+			Response.Redirect Session("StoreURL") & "/index.phtml"
+		end if
+	end if
+%>
+<!-- #INCLUDE File="../../util/xt_func_order.phtml" -->
+<!-- #INCLUDE File="../../util/xt_func_client.phtml" -->
+<!-- #INCLUDE FILE="../../util/xt_func_carrier.phtml" -->
+<!-- #INCLUDE File="../../util/xt_func_quote.phtml" -->
+<!-- #INCLUDE FILE="../../util/xt_func_string.phtml" -->
+<!-- #INCLUDE FILE="../../util/xt_func_util.phtml" -->
+<%
+	forceLogin = false
+	SHOPPING_CART_FORCE_LOGIN = GetSettingValue("SHOPPING_CART_FORCE_LOGIN", "0")
+	if SHOPPING_CART_FORCE_LOGIN = "1" then
+		forceLogin = true
+	end if
+%>
+<!-- #INCLUDE FILE="../../i_login.phtml"-->
+<!-- #include FILE="../../cart.inc" -->
+<!-- #INCLUDE FILE="../../i_adodb.phtml" -->
+<!-- #INCLUDE FILE="../../i_system.phtml" -->
+<%	
+
+	'Initialize shopping cart
+	dim iCount, ARYShoppingCart
+	iCount = Session("ItemCount")
+	ARYShoppingCart = Session("MyShoppingCart")
+	db = Session("ConnectionString")
+	
+	dept_id = Trim(Request("dept_id"))
+	dept_id = FilterStringEx(dept_id, "[^0-9-]")
+	pf_id = Trim(Request("pf_id"))
+	pf_id = FilterSKUString(pf_id)
+	color = Trim(Request("Color1"))
+	
+	
+	'==========================================================================
+	sql = "SELECT * FROM " & Session("StoreID") & "_profile"
+	Set rsProfile = Conn.Execute(sql)
+	if (not rsProfile.EOF) then
+		espec_part_number_mode = rsProfile("espec_part_number_mode")
+	end if
+	rsProfile.Close
+		
+	'==========================================================================
+	' ADDED BY BK 11/3/07
+	basket_referral_URL = LCase(Request.ServerVariables("HTTP_REFERER"))
+	
+	bNewContShoppingURL = false
+	if InStr(basket_referral_URL, "product.phtml") > 0 then
+		bNewContShoppingURL = true
+	end if
+	
+	if InStr(basket_referral_URL, "dept.phtml") > 0 then
+		bNewContShoppingURL = true
+	end if
+	
+	if InStr(basket_referral_URL, "config.phtml") > 0 then
+		bNewContShoppingURL = true
+	end if
+	
+	if InStr(basket_referral_URL, "search.phtml") > 0 then
+		bNewContShoppingURL = true
+	end if
+	
+	if bNewContShoppingURL then
+		Session("BASKET_CONT_SHOPPING_URL") = basket_referral_URL
+	end if
+	
+	'==========================================================================
+			
+	If iCount < MaxShoppingCartItems Then
+
+		op = Trim(Request("product_mode"))
+
+		adjusted_price = Request("adjusted_price")
+		adjusted_price = FilterStringEx(adjusted_price,"[^0-9.]")
+
+		part_cost = Trim(Request("var1"))
+		wid = Trim(Request("wid"))
+				
+		if op = "4" then
+			str_system_options = Trim(Request("configsystemdata"))
+			
+			if str_system_options = "" then
+				if GetSystemValuesEx(Session("ConnectionString"), pf_id, adjusted_price, part_cost, str_system_options) then
+					'pf_id = config_id
+				else
+					pf_id = ""
+				end if
+			end if
+			
+		end if
+																		
+		if Len(pf_id) > 0 then
+			
+			'Add item to Shopping Cart...
+			iCount = iCount + 1
+			
+			cart_row = Request("cart_row")
+			if cart_row = "" then
+				ix = iCount
+			else
+				ix = CInt(cart_row)
+				iCount = iCount - 1
+			end if
+
+			if AddItemToShoppingCart(Session("ConnectionString"), ARYShoppingCart, pf_id, op, adjusted_price, part_cost, ix, wid, 1) then
+				ARYShoppingCart(cartOptions, ix) = str_system_options
+				Session("ItemCount") = iCount
+				Session("MyShoppingCart") = ARYShoppingCart
+				
+				'rrurl = Session("SecureURL")& "/tp_basket.phtml?actionflag=" & Trim(Request("actionflag"))
+				'Response.Redirect (rrurl)
+				
+				bRedirect = true
+				
+			else
+				iCount = iCount - 1
+			end if
+		
+		end if
+		
+		pf_ids = Trim(Request("pf_ids"))
+		pf_qtys = Trim(Request("pf_qtys"))
+
+		if Len(pf_ids) > 0 then
+			
+			ar_pfid = Split(pf_ids, "|")
+			
+			if Len(pf_qtys) > 1 then
+				ar_qtys = Split(pf_qtys, "|")
+			end if
+
+			for j = 0 to Ubound(ar_pfid)
+				
+				ar_pfid(j) = FilterSKUString(ar_pfid(j))
+
+				if Len(ar_pfid(j)) > 0 then
+			
+					'Add item to Shopping Cart...
+					iCount = iCount + 1
+					
+					cart_row = Request("cart_row")
+					if cart_row = "" then
+						ix = iCount
+					else
+						ix = CInt(cart_row)
+						iCount = iCount - 1
+					end if
+						
+					if AddItemToShoppingCart(Session("ConnectionString"), ARYShoppingCart, ar_pfid(j), op, adjusted_price, part_cost, ix, "", ar_qtys(j)) then
+						ARYShoppingCart(cartOptions, ix) = "" 'should not be system
+						Session("ItemCount") = iCount
+						Session("MyShoppingCart") = ARYShoppingCart
+						'Response.Redirect (Session("SecureURL")& "/tp_basket.phtml?actionflag=" & Trim(Request("actionflag")))
+						bRedirect = true
+					else
+						iCount = iCount - 1
+					end if
+				
+				end if
+
+			next
+
+		end if
+		
+		Session("ItemCount") = iCount
+		Session("MyShoppingCart") = ARYShoppingCart
+		
+		if bRedirect then
+			rrurl = Session("SecureURL")& "/tp_basket.phtml?actionflag=" & Trim(Request("actionflag"))
+			Response.Redirect (rrurl)
+		end if
+		
+	End If
+	
+	if Len(Session("BASKET_CONT_SHOPPING_URL")) > 5 then
+		continue_shopping_URL = Session("BASKET_CONT_SHOPPING_URL")
+	else
+		continue_shopping_URL = Session("StoreURL") & "/index.phtml"
+	end If
+	
+	bShowShippingOption = false
+	If Session("shopper_country") = "" OR Session("shopper_country") = "US" OR Session("shopper_country") = "CA" then
+		if Session("Shopper_State") <> "" AND Session("Shopper_Zip") <> "" Then
+			bShowShippingOption = true
+		Else
+			bShowShippingOption = false
+		End If
+	Else
+		bShowShippingOption = true
+	End If
+
+	if bShowShippingOption then 
+		dest_postal = Session("Shopper_Zip")
+		dest_country = Session("shopper_country")
+		dest_state = Session("Shopper_State")
+		sh_default_value = Session("shopper_shipping_method2")
+	End If
+	
+	'Get tax..
+	tax = 0
+	bAppyTaxOnSH = 0
+
+	apply_tax_rate = 0
+	apply_tax_rate_gst = 0
+	apply_tax_rate_pst = 0
+	apply_tax_on_sh = 0
+
+		
+	if Session("ENABLEINT") = "2" OR Session("ENABLEINT")="3" then
+		'Jerry's code 2010/01/20
+		sql = "SELECT tax_on_sh FROM " & Session("StoreID") & "_profile"
+		set rsProfile = Conn.Execute(sql)
+		bTax_on_ship = rsProfile("tax_on_sh")
+		rsProfile.Close
+
+		Session("TotalTaxable") = Session("TotalTaxable") + iWarrantyTotal
+		if bTax_on_ship = 1 then
+			Session("TotalTaxable") = Session("TotalTaxable") + iDefaultShippingRate
+		end if
+		
+		if GetClientSalesTaxRateCA(Session("ConnectionString"),Session("Shopper_State"),Session("Shopper_Zip"),tax1, tax2, Session("shopper_id"))then
+			tax1=Round((tax1/100)*(Session("TotalTaxable")) ,2)
+			if Session("Shopper_State") = "Quebec" OR Session("Shopper_State") = "QC" then
+				tax2=Round((tax2/100)*(Session("TotalTaxable")+ tax1) ,2)
+			else
+				tax2=Round((tax2/100)*(Session("TotalTaxable")) ,2)
+			end if
+			tax = tax1 + tax2
+		else
+			tax = 0
+			tax1 = 0
+			tax2 = 0
+		end if
+	else
+		if GetClientSalesTaxRate(Session("ConnectionString"),Session("Shopper_State"),Session("Shopper_Zip"),tax, Session("shopper_id"), bAppyTaxOnSH)then
+			if bAppyTaxOnSH = 1 then
+				Session("TotalTaxable") = Session("TotalTaxable") + iDefaultShippingRate
+				tax=Round((tax/100)* Session("TotalTaxable") ,2)
+			else
+				tax=Round((tax/100)* Session("TotalTaxable") ,2)
+			end if
+		else
+			tax = 0
+		end if
+	end if
+				
+%>

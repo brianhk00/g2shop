@@ -1,0 +1,55 @@
+<!--#INCLUDE FILE="../../local/local.phtml"-->
+<!--#INCLUDE FILE="../../language_pack.phtml"-->
+<!--#INCLUDE FILE="../../util/xt_func_session.phtml"-->
+<!--#INCLUDE FILE="../../util/xt_func_string.phtml"-->
+<!--#INCLUDE FILE="../../util/xt_func_util.phtml"-->
+<%
+	sessionID = Request("sessionID")
+	sessionID = FilterSessionString(sessionID)
+	if Len(sessionID) > 0 then
+		Session("SESSIONKEY") = sessionID
+	else
+		if Len(Session("SESSIONKEY")) > 0 then
+			'session key exist
+		else
+			'no key information...
+			Response.Redirect Session("StoreURL") & "/index.phtml"
+		end if
+	end if
+%>
+<!--#INCLUDE FILE="../../i_login.phtml"-->
+<!--#INCLUDE FILE="../../i_adodb.phtml"-->
+<% 
+  if Session("shopper_id") = "" OR Session("shopper_id") = "GUEST" then
+    Response.Redirect "login.phtml?returnPage=order_status_list"
+  end if
+%>
+
+<%
+	ss_order_filter = Trim(Request("ss_order_filter"))
+
+	select case ss_order_filter
+
+		case "recent_orders"
+			order_filter = ""
+			recent_orders = "TOP 10"
+			Title_filter = "Recent Orders(10)"
+			v1 = "1"
+		case "all_orders"
+			order_filter = ""
+			Title_filter = "All Orders"
+			v1 = "0"
+		case "pen_orders"
+			order_filter = "AND status = 'pending'"
+			Title_filter = "Opened Orders"
+			v1 = "2"
+		case "shipped_orders"
+			order_filter = "AND status = 'shipped'"
+			Title_filter = "Shipped Orders"
+			v1 = "3"
+		case else
+			order_filter = ""
+			Title_filter = "All Orders"
+			v1 = "0"
+	end select
+%>

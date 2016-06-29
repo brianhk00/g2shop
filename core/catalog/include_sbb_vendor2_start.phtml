@@ -1,0 +1,37 @@
+<!--#INCLUDE FILE="../../language_pack.asp"-->
+<!--#INCLUDE FILE="../../util/xt_func_session.asp"-->
+<!--#INCLUDE FILE="../../i_initsession.asp"-->
+<!--#INCLUDE FILE="../../i_login.asp"-->
+<!--#INCLUDE FILE="../../i_adodb.asp"-->
+
+<!--#INCLUDE FILE="../../util/xt_func_string.asp"-->
+<!--#INCLUDE FILE="../../util/xt_func_util.asp"-->
+<!--#INCLUDE FILE="../../util/xt_func_seo.asp"-->
+
+<%
+	mfg = Trim(Request("mfg"))
+	mfg = FilterStringEx(mfg, "[^0-9]")
+
+	If Len(mfg) > 0 Then
+	else
+		Response.Redirect("/sbb2.asp")
+	End if
+
+	if Session("DEMOVERSION") = "1" then
+		g_storeid = "bk01"
+	else
+		g_storeid = Session("StoreID")
+	end if
+
+	Set conn_ss = Server.CreateObject("ADODB.Connection")
+	conn_ss.open Session("SSCatalogConnectionString")
+
+	sql = "SELECT * FROM manufacturer WHERE manufacturerid=" & mfg 
+
+	set rsManuf = conn_ss.Execute(sql)
+	if not rsManuf.EOF then
+		mfg_name = Trim(rsManuf("name"))
+	end if
+	rsManuf.close
+
+%>

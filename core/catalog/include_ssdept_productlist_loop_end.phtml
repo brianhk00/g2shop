@@ -1,0 +1,26 @@
+<%
+		i = i + 1
+		rsProductList.MoveNext
+	loop
+	
+
+	'if Len(zsql) > 0 then
+		'zsql = ""
+		'If num_total_product <> 0 then
+		'rsProductList.MoveFirst
+		'End if
+		'do while not rsProductList.EOF
+			
+			'zsql = zsql & rsProductList("sku") & ","
+		
+			'rsProductList.MoveNext
+		'loop
+		
+		'if Len(zsql) > 0 then
+			'zsql = Left(zsql, Len(zsql)-1)
+		'end if
+		
+	'end If
+	
+	rsProductList.Close
+%>
