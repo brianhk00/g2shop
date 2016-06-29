@@ -1,0 +1,995 @@
+<%response.Expires=-1%>
+<!-- #INCLUDE File="../local/local.phtml" -->
+<%
+	
+	category_id = Trim(Request("category_id"))
+	parent_id = Trim(Request("parent_id"))
+	
+	sql = "SELECT * FROM " & g_storeid & "_dept WHERE dept_id='" & category_id & "'"
+	set rs = dbconn.Execute(sql)
+	
+	if not rs.EOF then
+		dept_name = Trim(rs("dept_name"))
+		is_hidden = Trim(rs("is_hidden"))
+		if rs("is_hidden") then
+		  dept_is_hidden = "1"
+		else
+		  dept_is_hidden = "0"
+		end if
+		
+		dept_list_view = rs("dept_list_view")
+		dept_list_num = rs("dept_list_num")
+		dept_sort_order = rs("dept_sort_order")
+		dept_show_mfg = rs("dept_show_mfg")
+		dept_use_mfg = rs("dept_use_mfg")
+		dept_detail = rs("dept_detail")
+		dept_title_name = rs("dept_title_name")
+		warranty_id = Trim(rs("warranty_id"))
+		shopzilla_categoryid = Trim(rs("shopzilla_categoryid"))
+		nextag_categoryid = Trim(rs("nextag_categoryid"))
+		dept_image = rs("dept_image")
+		use_markup = rs("use_markup")
+		include_topnav = rs("include_topnav")
+		
+		icecat_category = Trim(rs("icecat_category"))
+		icecat_category1 = Trim(rs("icecat_category1"))
+		icecat_category2 = Trim(rs("icecat_category2"))
+		icecat_category3 = Trim(rs("icecat_category3"))
+		icecat_category4 = Trim(rs("icecat_category4"))
+		
+		url_key = Trim(rs("url_key"))
+	
+	else
+		dept_name = ""
+		dept_is_hidden = "0"
+		dept_list_view = 0
+		dept_list_num = 10
+		dept_sort_order = 0
+		dept_show_mfg = false
+		dept_use_mfg = true
+		dept_detail = ""
+		warranty_id = ""
+		shopzilla_categoryid = ""
+		nextag_categoryid = ""
+		dept_image = ""
+		use_markup = 0
+		include_topnav = 0
+		
+		icecat_category = ""
+		icecat_category1 = ""
+		icecat_category2 = ""
+		icecat_category3 = ""
+		icecat_category4 = ""
+		
+	end if
+	
+	rs.Close
+	
+	set rs = nothing
+%>
+<input type="hidden" name="dept_id" id="dept_id" value="<%=category_id%>" >
+<input type="hidden" name="parent_id" id="parent_id" value="<%=parent_id%>" >
+<div class="tabbable">
+	<ul id="myTab" class="nav nav-tabs tab-green">
+		<li <% if Session("catalog_category_tab") = "#panel_tab_example1" OR Session("catalog_category_tab") = "" then %>class="active"<% end if %>>
+			<a href="#panel_tab_example1" data-toggle="tab">
+				<i class="pink fa fa-info-circle"></i> General Information
+			</a>
+		</li>
+		<li <% if Session("catalog_category_tab") = "#panel_tab_example2" then %>class="active"<% end if %>>
+			<a href="#panel_tab_example2" data-toggle="tab">
+				<i class="pink fa fa-dollar"></i> Profit Markup &amp; Price Rule
+			</a>
+		</li>
+		<li <% if Session("catalog_category_tab") = "#panel_tab_example3" then %>class="active"<% end if %>>
+			<a href="#panel_tab_example3" data-toggle="tab">
+				<i class="pink fa fa-cog"></i> Settings
+			</a>
+		</li>
+		<li <% if Session("catalog_category_tab") = "#panel_tab_example4" then %>class="active"<% end if %>>
+			<a href="#panel_tab_example4" data-toggle="tab">
+				<i class="pink fa fa-image"></i> Images
+			</a>
+		</li>
+		<li <% if Session("catalog_category_tab") = "#panel_tab_example5" then %>class="active"<% end if %>>
+			<a href="#panel_tab_example5" data-toggle="tab">
+				<i class="pink fa fa-folder-open"></i> Category Products
+			</a>
+		</li>
+	</ul>
+	<div class="tab-content">
+		<div class="tab-pane <% if Session("catalog_category_tab") = "#panel_tab_example1" OR Session("catalog_category_tab") = "" then %>active<% end if %>" id="panel_tab_example1">
+			<div class="form-group">
+				<label class="col-sm-2 control-label" for="dept_name">
+				Name <span class="symbol required"></span>
+				</label>
+				<div class="col-sm-8">
+				<input type="text" placeholder="" id="dept_name" name="dept_name" class="form-control" value="<%=dept_name%>">
+				</div>
+			</div>
+			<% if g_store_mode = "icecat" then %>
+			<div class="form-group">
+				<label class="col-sm-2 control-label" for="">
+					Map to ICECAT
+				</label>
+				<div class="col-sm-2">
+					<select class="form-control input-sm" id="icecat_category1" name="icecat_category1">
+					</select>
+				</div>
+				<div class="col-sm-2">
+					<select class="form-control input-sm" id="icecat_category2" name="icecat_category2">
+					</select>
+				</div>
+				<div class="col-sm-2">
+					<select class="form-control input-sm" id="icecat_category3" name="icecat_category3">
+					</select>
+				</div>
+				<div class="col-sm-2">
+					<select class="form-control input-sm" id="icecat_category4" name="icecat_category4">
+					</select>
+				</div>
+			</div>
+			<% end if %>
+			<div class="form-group">
+				<label class="col-sm-2 control-label" for="url_key">
+				URL Key <span class="symbol required"></span>
+				</label>
+				<div class="col-sm-8">
+				<input type="text" placeholder="" id="url_key" name="url_key" class="form-control" value="<%=url_key%>">
+				</div>
+			</div>
+			<div class="form-group">
+				<label class="col-sm-2 control-label" for="dept_is_hidden">
+					Visibility <span class="symbol required"></span>
+				</label>
+				<div class="col-sm-10"> 
+					<select id="dept_is_hidden" name="dept_is_hidden" class="js-example-basic-hide-search js-states form-control">
+					<option value=""></option>
+					<option value="0" <%if dept_is_hidden = "0" then%>selected<%end if%>>Show</option>
+					<option value="1" <%if dept_is_hidden = "1" then%>selected<%end if%>>Hide</option>
+					</select>
+				</div>
+			</div>
+			<div class="form-group">
+				<label class="col-sm-2 control-label" for="dept_list_view">
+					Display View <span class="symbol required"></span>
+				</label>
+				<div class="col-sm-10"> 
+					<select id="dept_list_view" name="dept_list_view" class="js-example-basic-hide-search js-states form-control">
+					<option value="0" <%if dept_list_view = 1 then%>selected<%end if%>>List</option>
+					<option value="1" <%if dept_list_view = 0 then%>selected<%end if%>>Grid</option>
+					</select>
+				</div>
+			</div>
+			<div class="form-group">
+				<label class="col-sm-2 control-label" for="dept_list_num">
+					Items per page <span class="symbol required"></span>
+				</label>
+				<div class="col-sm-10"> 
+					<select id="dept_list_num" name="dept_list_num" class="js-example-basic-hide-search js-states form-control">
+						<option value="10" <%if dept_list_num = 10 then%>selected<%end if%>>10</option>
+						<option value="15" <%if dept_list_num = 15 then%>selected<%end if%>>15</option>
+						<option value="20" <%if dept_list_num = 20 then%>selected<%end if%>>20</option>
+						<option value="30" <%if dept_list_num = 30 then%>selected<%end if%>>30</option>
+						<option value="40" <%if dept_list_num = 40 then%>selected<%end if%>>40</option>
+					</select>
+				</div>
+			</div>
+			<div class="form-group">
+				<label class="col-sm-2 control-label" for="dept_sort_order">
+					Default Sort <span class="symbol required"></span>
+				</label>
+				<div class="col-sm-10"> 
+					<select id="dept_sort_order" name="dept_sort_order" class="js-example-basic-hide-search js-states form-control">
+						<option value="0" <%if dept_sort_order = 0 then%>selected<%end if%>>Name (A-Z)</option>
+						<option value="1" <%if dept_sort_order = 1 then%>selected<%end if%>>Name (Z-A)</option>
+						<option value="4" <%if dept_sort_order = 4 then%>selected<%end if%>>Vendor Name (A-Z)</option>
+						<option value="5" <%if dept_sort_order = 5 then%>selected<%end if%>>Vendor Name (Z-A)</option>
+						<option value="6" <%if dept_sort_order = 6 then%>selected<%end if%>>Product ID (A-Z)</option>
+						<option value="7" <%if dept_sort_order = 7 then%>selected<%end if%>>Product ID (Z-A)</option>
+						<option value="8" <%if dept_sort_order = 8 then%>selected<%end if%>>Price (Low-High)</option>
+						<option value="9" <%if dept_sort_order = 9 then%>selected<%end if%>>Price (High-Low)</option>
+					</select>
+				</div>
+			</div>
+			<div class="form-group">
+				<label class="col-sm-2 control-label" for="dept_show_mfg">
+					Show vendor name <span class="symbol required"></span>
+				</label>
+				<div class="col-sm-10"> 
+					<select id="dept_show_mfg" name="dept_show_mfg" class="js-example-basic-hide-search js-states form-control">
+						<option value="0" <%if not dept_show_mfg then%>selected<%end if%>>No</option>
+						<option value="1" <%if dept_show_mfg then%>selected<%end if%>>Yes</option>
+					</select>
+				</div>
+			</div>
+			<div class="form-group">
+				<label class="col-sm-2 control-label" for="dept_show_mfg">
+					Include in Navigation <span class="symbol required"></span>
+				</label>
+				<div class="col-sm-10"> 
+					<select id="include_topnav" name="include_topnav" class="js-example-basic-hide-search js-states form-control">
+						<option value="0" <%if not include_topnav then%>selected<%end if%>>No</option>
+						<option value="1" <%if include_topnav then%>selected<%end if%>>Yes</option>
+					</select>
+				</div>
+			</div>
+			<div class="form-group">
+				<label class="col-sm-2 control-label" for="dept_detail">
+					Detail
+				</label>
+				<div class="col-sm-10">
+				<textarea maxlength="255" rows="7" id="dept_detail" name="dept_detail" class="form-control limited"><%=dept_detail%></textarea>
+				</div>
+			</div>
+		</div>
+		<div class="tab-pane <% if Session("catalog_category_tab") = "#panel_tab_example2" then %>active<% end if %>" id="panel_tab_example2">
+			<table class="table table-hover">
+				<thead>
+				<tr>
+				  <th width=350>
+					Category Name
+				  </th>
+				  <th width=100 class="center">
+					A(%)
+				  </th>
+				  <th width=100 class="center">
+					B(%)
+				  </th>
+				  <th width=100 class="center">
+					C(%)
+				  </th>
+				  <th width=100 class="center">
+					D(%)
+				  </th>
+				  <th width=40 class="center">
+					Use
+				  </th>
+				</tr>
+				</thead>
+				<%
+				  sql = "SELECT * FROM " & g_storeid & "_profile"
+				  set rsGlobal= dbconn.Execute(sql)
+				  if not rsGlobal.EOF then
+					pri_markup_A = FormatNumber(rsGlobal("pri_markup_A"),2)
+					pri_markup_B = FormatNumber(rsGlobal("pri_markup_B"),2)
+					pri_markup_C = FormatNumber(rsGlobal("pri_markup_C"),2)
+					pri_markup_D = FormatNumber(rsGlobal("pri_markup_D"),2)
+					pri_pricerule_flag = rsGlobal("pri_pricerule_flag")
+					if not (pri_pricerule_flag >= 0) then
+						pri_pricerule_flag = 0
+					end if
+				  else
+					pri_markup_A = 0
+					pri_markup_B = 0
+					pri_markup_C = 0
+					pri_markup_D = 0
+					pri_pricerule_flag = 0
+				  end if	
+				  rsGlobal.Close
+				%>
+				<tr class="info">
+					<td>
+						Global Markup
+					</td>
+					<td class="center">
+						<%=pri_markup_A%> %
+					</td>
+					<td class="center">
+						<%=pri_markup_B%> %
+					</td>
+					<td class="center">
+						<%=pri_markup_C%> %
+					</td>
+					<td class="center">
+						<%=pri_markup_D%> %
+					</td>
+					<td class="center">
+						<i class='fa fa-check text-red'></i>
+					</td>
+				</tr>
+				<%
+					ar_dept_id = Split(category_id, "-")
+					x_dept_id = ""
+					for iii = 0 to Ubound(ar_dept_id)
+					
+					if x_dept_id = "" then
+						x_dept_id = ar_dept_id(iii)
+					else
+						x_dept_id = x_dept_id & "-" & ar_dept_id(iii)
+					end if
+					
+					sql = "SELECT * FROM " & g_storeid & "_dept WHERE dept_id='" & x_dept_id & "'"
+					set rsSub=dbconn.Execute(sql)
+					if not rsSub.EOF then
+						sub_dept_name = rsSub("dept_name")
+
+						if rsSub("use_markup") then
+							markup_A = FormatNumber(rsSub("markup_A"),2)
+							markup_B = FormatNumber(rsSub("markup_B"),2)
+							markup_C = FormatNumber(rsSub("markup_C"),2)
+							markup_D = FormatNumber(rsSub("markup_D"),2)
+							use_markup = true
+
+							pricerule_flag = rsSub("dept_pricerule")
+
+							if not (pricerule_flag >= 0) then
+								pricerule_flag = 0
+							end if
+						else
+							markup_A = FormatNumber(0,2)
+							markup_B = FormatNumber(0,2)
+							markup_C = FormatNumber(0,2)
+							markup_D = FormatNumber(0,2)
+
+							use_markup = false
+
+							pricerule_flag = rsSub("dept_pricerule")
+							if not (pricerule_flag >= 0) then
+								pricerule_flag = 0
+							end if
+						end if
+					else
+						markup_A = FormatNumber(0,2)
+						markup_B = FormatNumber(0,2)
+						markup_C = FormatNumber(0,2)
+						markup_D = FormatNumber(0,2)
+
+						use_markup = false
+						
+						pricerule_flag = 0
+					end if
+					rsSub.Close
+				%>
+				<% if x_dept_id = category_id then %>
+				<tr class="warning">
+					<td><%=sub_dept_name%></td>
+					<td class="center"><input type="text" placeholder="" id="dept_markup_A" name="dept_markup_A" class="form-control text-right" value="<%=markup_A%>"></td>
+					<td class="center"><input type="text" placeholder="" id="dept_markup_B" name="dept_markup_B" class="form-control text-right" value="<%=markup_B%>"></td>
+					<td class="center"><input type="text" placeholder="" id="dept_markup_C" name="dept_markup_C" class="form-control text-right" value="<%=markup_C%>"></td>
+					<td class="center"><input type="text" placeholder="" id="dept_markup_D" name="dept_markup_D" class="form-control text-right" value="<%=markup_D%>"></td>
+					<td class="center">
+						<div class="checkbox clip-check check-danger text-left">
+							<input type="checkbox" id="use_markup" name="use_markup" value="1" <%if use_markup then%>checked<%end if%>>
+							<label for="use_markup" style="padding:0px !important;margin:0px;"></label>
+						</div>
+					</td>
+				</tr>
+				<% else %>
+				<tr class="success">
+					<td><%=sub_dept_name%></td>
+					<td class="center">
+						<% if use_markup then %>
+						  <%=markup_A%> %
+						<% else %>
+						  ..
+						<% end if%>
+					</td>
+					<td class="center">
+						<% if use_markup then %>
+						  <%=markup_B%> %
+						<% else %>
+						  ..
+						<% end if%>
+					</td>
+					<td class="center">
+						<% if use_markup then %>
+						  <%=markup_C%> %
+						<% else %>
+						  ..
+						<% end if%>
+					</td>
+					<td class="center">
+						<% if use_markup then %>
+						  <%=markup_D%> %
+						<% else %>
+						  ..
+						<% end if%>
+					</td>
+					<td class="center">
+						<% if use_markup then %>
+						  <i class='fa fa-check text-red'></i>
+						<% else %>
+						  <i class='fa fa-close text-grey'></i>
+						<% end if%>
+					</td>
+				</tr>
+				<% end if %>
+				<%
+					Next
+				%>
+			</table>
+			
+			<table class="table table-striped table-hover" id="sample_2">
+				<thead>
+				<tr>
+					<th class="center">Product ID</th>
+					<th class="center">Name</th>
+					<th class="center">Cost</th>
+					<th class="center">A</th>
+					<th class="center">B</th>
+					<th class="center">C</th>
+					<th class="center">D</th>
+					<th class="center"></th>
+					<th class="center">Use</th>
+					<th class="center">Edit</th>
+				</tr>
+				</thead>
+				<tbody>
+					<tr>
+						<td colspan="9" class="dataTables_empty">Loading data from server</td>
+					</tr>
+				</tbody>
+			</table>
+		</div>
+		<div class="tab-pane <% if Session("catalog_category_tab") = "#panel_tab_example3" then %>active<% end if %>" id="panel_tab_example3">
+			<div class="form-group">
+				<label class="col-sm-2 control-label" for="dept_title_name">
+				Page Title 
+				</label>
+				<div class="col-sm-8">
+				<input type="text" placeholder="" id="dept_title_name" name="dept_title_name" class="form-control" value="<%=dept_title_name%>">
+				</div>
+			</div>
+			<div class="form-group">
+				<label class="col-sm-2 control-label" for="meta_text">
+					Meta Tags
+				</label>
+				<div class="col-sm-10">
+				<textarea maxlength="255" rows="7" id="meta_text" name="meta_text" class="form-control limited"><%=meta_text%></textarea>
+				</div>
+			</div>
+			<div class="form-group">
+				<label class="col-sm-2 control-label" for="meta_text">
+					Warranty
+				</label>
+				<div class="col-sm-10">
+					<select name="warranty_id" class="form-control">
+					<option value="0">None</option>
+					<%
+						sql = "SELECT * FROM " & g_storeid & "_warranty2_group ORDER BY warranty_group_name"
+						set rsW = dbconn.Execute(sql)
+
+						do while not rsW.EOF
+					%>
+					<option value="<%=rsW("warranty_group_id")%>" <%if warranty_id=rsW("warranty_group_id") then%>selected<%end if%>><%=rsW("warranty_group_name")%></option>
+					<%
+							rsW.MoveNext
+						loop
+						rsW.Close
+					%>
+					</select>
+				</div>
+			</div>
+			
+		</div>
+		<div class="tab-pane active" id="panel_tab_example4">
+			<input type="hidden" name="dept_image" id="dept_image" value="<%=dept_image%>">
+			<iframe src="jquery_upload_cat.phtml?file_id=<%=category_id%>&dfile=<%=Server.URLEncode(dept_image)%>" width="100%" height="240" frameborder="0" style="border:1px solid #333333" id="linkIframe"></iframe>
+			<script>
+			$(document).ready(function() 
+			{
+				//$("#linkIframe").attr("src", "");
+				<% if Session("catalog_category_tab") = "#panel_tab_example4" then %>
+				<% else %>
+				//$("#panel_tab_example4").removeClass("active");
+				<% end if %>
+			});
+			</script>
+		 
+		</div>
+		<div class="tab-pane <% if Session("catalog_category_tab") = "#panel_tab_example5" then %>active<% end if %>" id="panel_tab_example5">
+			<table class="table table-striped table-bordered table-hover table-full-width" id="sample_1">
+				<thead>
+				<tr>
+					<th>Product ID</th>
+					<th>Thumbnail</th>
+					<th>Name</th>
+					<th>SKU</th>
+					<th>Price</th>
+					<th>Qty</th>
+					<th>Category</th>
+					<th>Status</th>
+					<!--<th>Action</th>-->
+				</tr>
+				</thead>
+				<tbody>
+					<tr>
+						<td colspan="9" class="dataTables_empty">Loading data from server</td>
+					</tr>
+				</tbody>
+			</table>
+		</div>
+	</div>
+</div>
+
+<%
+	order_display = "3"
+	order_filter = "All"
+%>
+<script type="text/javascript">
+	var oTable;
+	var v1 = "All";
+	var v2 = "All";
+	var v3 = "All";
+	
+	var TableData = function () {
+		//function to initiate DataTable
+		//DataTable is a highly flexible tool, based upon the foundations of progressive enhancement, 
+		//which will add advanced interaction controls to any HTML table
+		//For more information, please visit https://datatables.net/
+		var runDataTable = function () {
+			oTable = $('#sample_1').dataTable({
+				"bProcessing": true,
+				"bStateSave": false,
+				"bJQueryUI": false,
+				"iDisplayLength": 20,
+				"bServerSide": true,
+				"bAutoWidth": false,
+				"sAjaxSource": "api/sp_product_list_by_category.phtml?category_id=" + "<%=category_id%>" + "&v1=" + v1 + "&v2=" + v2 + "&v3=" + v3 + "&z1=",
+				"aoColumns": [ 
+					/* Product ID */  { "sClass": "left" },
+					/* Thumbnail */  { "sClass": "center","bSortable": false },
+					/* Name */  { "sClass": "left" },
+					/* sku */  { "sClass": "center" },
+					/* Price */  { "sClass": "right"},
+					/* Qty */ { "sClass": "right"},
+					/* Category */ { "sClass": "center","bSortable": false },
+					/* Status*/  { "sClass": "center" ,"bSortable": false}
+				  ],
+				  
+				"aaSorting": [[0, 'desc']],
+				
+				"aLengthMenu": [
+					[10, 20, 30, 40, 50],
+					[10, 20, 30, 40, 50] // change per page values here
+				],
+				
+				"oLanguage": {
+					"sLengthMenu": "Show _MENU_ Rows",
+					"sSearch": "",
+					"sProcessing": '<img src="assets/images/ajax-loader-primary.gif"/>',
+					"oPaginate": {
+						"sPrevious": "",
+						"sNext": ""
+					}
+				},
+				
+				'fnServerData' : function ( sSource, aoData, fnCallback ) {
+					aoData.push( { 'name' : 'min', 'value' : $("#min").val() } );
+					aoData.push( { 'name' : 'max', 'value' : $("#max").val() } );
+					$.ajax({
+						'dataType' : 'json',
+						'data' : aoData,
+						'type' : 'GET',
+						'url' : sSource,
+						'success' : fnCallback
+					});
+				} 
+			});
+			
+			$('#sample_1_wrapper .dataTables_filter input').addClass("form-control input-sm").attr("placeholder", "Search");
+			// modify table search input
+			$('#sample_1_wrapper .dataTables_length select').addClass("m-wrap small");
+			// modify table per page dropdown
+			$('#sample_1_wrapper .dataTables_length select').select2();
+			// initialzie select2 dropdown
+		};
+		
+		var runDataTable2 = function () {
+			var newRow = false;
+			var actualEditingRow = null;
+
+			function restoreRow(oTable, nRow) {
+				var aData = oTable.fnGetData(nRow);
+				var jqTds = $('>td', nRow);
+
+				for (var i = 0, iLen = jqTds.length; i < iLen; i++) {
+					oTable.fnUpdate(aData[i], nRow, i, false);
+				}
+				oTable.fnUpdate('<a class="edit-row" href=""><i class="fa fa-pencil"></i></a>', nRow, 9, false);
+				//oTable.fnDraw();
+			}
+
+			function editRow(oTable, nRow) {
+				var aData = oTable.fnGetData(nRow);
+				var jqTds = $('>td', nRow);
+				jqTds[3].innerHTML = '<input type="text" class="form-control input-sm text-right" value="' + aData[3] + '" style="width:80px;">';
+				jqTds[4].innerHTML = '<input type="text" class="form-control input-sm text-right" value="' + aData[4] + '" style="width:80px;">';
+				jqTds[5].innerHTML = '<input type="text" class="form-control input-sm text-right" value="' + aData[5] + '" style="width:80px;">';
+				jqTds[6].innerHTML = '<input type="text" class="form-control input-sm text-right" value="' + aData[6] + '" style="width:80px;">';
+				if (aData[7] == "1")
+				{
+					jqTds[7].innerHTML = '<input type="checkbox" class="form-control checkbox" value="1" checked>';
+				}
+				else
+				{
+					jqTds[7].innerHTML = '<input type="checkbox" class="form-control checkbox" value="1">';
+				}
+
+				jqTds[8].innerHTML = '<a class="save-row" href=""><i class="fa fa-save"></i></a> | <a class="cancel-row" href=""><i class="fa fa-rotate-left"></i></a>';
+				//jqTds[4].innerHTML = '<a class="cancel-row" href="">Cancel</a>';
+
+			}
+
+			function saveRow(oTable, nRow, sPriceA,  sPriceB,  sPriceC,  sPriceD) {
+				var jqInputs = $('input', nRow);
+				
+				/*
+				oTable.fnUpdate(jqInputs[0].value, nRow, 3, false);
+				oTable.fnUpdate(jqInputs[1].value, nRow, 4, false);
+				oTable.fnUpdate(jqInputs[2].value, nRow, 5, false);
+				oTable.fnUpdate(jqInputs[3].value, nRow, 6, false);
+				*/
+				oTable.fnUpdate(sPriceA, nRow, 3, false);
+				oTable.fnUpdate(sPriceB, nRow, 4, false);
+				oTable.fnUpdate(sPriceC, nRow, 5, false);
+				oTable.fnUpdate(sPriceD, nRow, 6, false);
+				
+				if (jqInputs[4].checked) {
+					oTable.fnUpdate("1", nRow, 7, false);
+					oTable.fnUpdate('<a class="edit-row" href=""><i class="fa fa-check text-red"></i></a>', nRow, 8, false);
+					$('td', nRow).closest('tr').css('background', '#ffcc7b');
+				}
+				else
+				{
+					oTable.fnUpdate("0", nRow, 7, false);
+					oTable.fnUpdate('<a class="edit-row" href=""><i class="fa fa-close text-grey"></i></a>', nRow, 8, false);
+					$('td', nRow).closest('tr').css('background', '#ffffff');
+				}
+				
+				oTable.fnUpdate('<a class="edit-row" href=""><i class="fa fa-pencil"></i></a>', nRow, 9, false);
+				
+				
+				//oTable.fnDraw();
+				newRow = false;
+				actualEditingRow = null;
+			}
+
+			$('#sample_2').on('click', '.cancel-row', function(e) {
+
+				e.preventDefault();
+				if (newRow) {
+					newRow = false;
+					actualEditingRow = null;
+					var nRow = $(this).parents('tr')[0];
+					oTable.fnDeleteRow(nRow);
+
+				} else {
+					restoreRow(oTable, actualEditingRow);
+					actualEditingRow = null;
+				}
+			});
+			
+			$('#sample_2').on('click', '.save-row', function(e) {
+				e.preventDefault();
+				
+				
+				var nRow = $(this).parents('tr')[0];
+				var aData = oTable.fnGetData(nRow);
+				var jqInputs = $('input', nRow);
+				//saveRow(oTable, nRow);
+				/*
+				$.blockUI({
+					message : '<i class="fa fa-spinner fa-spin"></i> Do some ajax to sync with backend...'
+				});
+				*/
+				
+				var formData = {pricea:jqInputs[0].value,priceb:jqInputs[1].value,pricec:jqInputs[2].value,priced:jqInputs[3].value,useprice:jqInputs[4].checked,pf_id:aData[0]}; //Array 
+				$.ajax({
+					url : 'api/sp_catalog_product_price_update.phtml',
+					type: "POST",
+					data : formData,
+					dataType: 'json',
+					success : function(data) {
+						var price_a1= "0.00";
+						var price_b1= "0.00";
+						var price_c1= "0.00";
+						var price_d1= "0.00";
+						
+						for (var i = 0; i < data.UpdateInfo.length; i++){
+							//alert(data.UpdateInfo[i].id)
+							price_a1 = data.UpdateInfo[i].price_a;
+							price_b1 = data.UpdateInfo[i].price_b;
+							price_c1 = data.UpdateInfo[i].price_c;
+							price_d1 = data.UpdateInfo[i].price_d;
+						}
+						saveRow(oTable, nRow, price_a1, price_b1, price_c1, price_d1);
+					}
+				});
+				
+			});
+			$('#sample_2').on('click', '.edit-row', function(e) {
+				e.preventDefault();
+				if (actualEditingRow) {
+					if (newRow) {
+						oTable.fnDeleteRow(actualEditingRow);
+						newRow = false;
+					} else {
+						restoreRow(oTable, actualEditingRow);
+
+					}
+				}
+				var nRow = $(this).parents('tr')[0];
+				editRow(oTable, nRow);
+				actualEditingRow = nRow;
+
+			});
+			oTable = $('#sample_2').dataTable({
+				"bProcessing": true,
+				"bStateSave": false,
+				"bJQueryUI": false,
+				"iDisplayLength": 20,
+				"bServerSide": true,
+				"bAutoWidth": false,
+				"responsive": true,
+				"sAjaxSource": "api/sp_product_list_with_price.phtml?category_id=" + "<%=category_id%>" + "&v1=" + v1 + "&v2=" + v2 + "&v3=" + v3 + "&z1=",
+				"aoColumns": [ 
+					/* SKU */  { "sClass": "left" },
+					/* Name */  { "sClass": "center","bSortable": false },
+					/* Cost */  { "sClass": "text-right" },
+					/* Price A */  { "sClass": "text-right" },
+					/* Price B*/  { "sClass": "text-right"},
+					/* Price C*/ { "sClass": "text-right"},
+					/* Price D*/ { "sClass": "text-right"},
+					/* use data*/ { "sClass": "text-right","bSortable": false,"bVisible": false},
+					/* use display*/  { "sClass": "center" ,"bSortable": false},
+					/* Edit*/  { "sClass": "center" ,"bSortable": false}
+				  ],
+				  
+				"aaSorting": [[0, 'desc']],
+				
+				"aLengthMenu": [
+					[10, 20, 30, 40, 50],
+					[10, 20, 30, 40, 50] // change per page values here
+				],
+				
+				"oLanguage": {
+					"sLengthMenu": "Show _MENU_ Rows",
+					"sSearch": "",
+					"oPaginate": {
+						"sPrevious": "",
+						"sNext": ""
+					}
+				},
+				
+				'fnServerData' : function ( sSource, aoData, fnCallback ) {
+					aoData.push( { 'name' : 'min', 'value' : $("#min").val() } );
+					aoData.push( { 'name' : 'max', 'value' : $("#max").val() } );
+					$.ajax({
+						'dataType' : 'json',
+						'data' : aoData,
+						'type' : 'GET',
+						'url' : sSource,
+						'success' : fnCallback
+					});
+				},
+				
+				'fnRowCallback': function (nRow, aData, iDisplayIndex, iDisplayIndexFull) {
+				$('td', nRow).closest('tr').css('background', aData[7] === '1' ? '#ffcc7b' : '#fff');
+				return nRow;
+				}
+			});
+			
+			$('#sample_2_wrapper .dataTables_filter input').addClass("form-control input-sm").attr("placeholder", "Search");
+			// modify table search input
+			$('#sample_2_wrapper .dataTables_length select').addClass("m-wrap small");
+			// modify table per page dropdown
+			$('#sample_2_wrapper .dataTables_length select').select2();
+			// initialzie select2 dropdown
+		};
+		
+		return {
+			//main function to initiate template pages
+			init: function () {
+				runDataTable();
+				runDataTable2();
+			},
+			
+			reload: function(theURL) {
+				if ( theURL ) {
+					oTable.fnReloadAjax(theURL);
+				}
+				else {
+					oTable.fnReloadAjax("sp_product_list.phtml?v1=All&v2=All&v3=All&z1=");
+				}
+			}
+		};
+	}();
+	
+	function StatusFilter (theObj)
+	{
+		v3 = theObj.value;
+		oTable.fnReloadAjax("sp_product_list.phtml?v1=" + v1 + "&v2=" + v2 + "&v3=" + theObj.value + "&z1=");
+	}
+	
+	function VisibilityFilter (theObj)
+	{
+		v2 = theObj.value;
+		oTable.fnReloadAjax("sp_product_list.phtml?v1=" + v1 + "&v2=" + theObj.value + "&v3=" + v3 + "&z1=");
+	}
+	
+	function TypeFilter (theObj)
+	{
+		v1 = theObj.value;
+		oTable.fnReloadAjax("sp_product_list.phtml?v1=" + theObj.value + "&v2=" + v2 + "&v3=" + v3 + "&z1=");
+	}
+	
+	
+	TableData.init();
+</script>
+
+<% if g_store_mode = "icecat" then %>
+<script>
+	jQuery.ajax({
+		type:"post",
+		url: "api/sp_catalog_get_icecat_subcategories.phtml",
+		data: {parent_id: '2833', 'isAjax':true},
+		dataType: 'json',
+		success: function(data) {
+			var listItems= "<option value=''>All Categories</option>";
+			for (var i = 0; i < data.Subcategories.length; i++){
+				if (data.Subcategories[i].id == '<%=icecat_category1%>')
+				{
+					listItems+= "<option value='" + data.Subcategories[i].id + "' selected>" + data.Subcategories[i].name + "</option>";
+				}
+				else
+				{
+					listItems+= "<option value='" + data.Subcategories[i].id + "'>" + data.Subcategories[i].name + "</option>";
+				}
+			}
+			var select = jQuery("#icecat_category1"), options = '';
+			select.empty(); 
+			select.append(listItems);
+		}
+	});
+	
+	<% if Len(icecat_category1) > 0 then %>
+	jQuery.ajax({
+		type:"post",
+		url: "api/sp_catalog_get_icecat_subcategories.phtml",
+		data: {parent_id: '<%=icecat_category1%>', 'isAjax':true},
+		dataType: 'json',
+		success: function(data) {
+			var listItems= "<option value=''>All Categories</option>";
+			for (var i = 0; i < data.Subcategories.length; i++){
+				if (data.Subcategories[i].id == '<%=icecat_category2%>')
+				{
+					listItems+= "<option value='" + data.Subcategories[i].id + "' selected>" + data.Subcategories[i].name + "</option>";
+				}
+				else
+				{
+					listItems+= "<option value='" + data.Subcategories[i].id + "'>" + data.Subcategories[i].name + "</option>";
+				}
+			}
+			var select = jQuery("#icecat_category2"), options = '';
+			select.empty(); 
+			select.append(listItems);
+			
+			select = jQuery("#icecat_category3"), options = '';
+			select.empty(); 
+			
+			select = jQuery("#icecat_category4"), options = '';
+			select.empty();
+		}
+	});
+	<% end if %>
+	
+	<% if Len(icecat_category2) > 0 then %>
+	jQuery.ajax({
+		type:"post",
+		url: "api/sp_catalog_get_icecat_subcategories.phtml",
+		data: {parent_id: '<%=icecat_category2%>', 'isAjax':true},
+		dataType: 'json',
+		success: function(data) {
+			var listItems= "<option value=''>All Categories</option>";
+			for (var i = 0; i < data.Subcategories.length; i++){
+				if (data.Subcategories[i].id == '<%=icecat_category3%>')
+				{
+					listItems+= "<option value='" + data.Subcategories[i].id + "' selected>" + data.Subcategories[i].name + "</option>";
+				}
+				else
+				{
+					listItems+= "<option value='" + data.Subcategories[i].id + "'>" + data.Subcategories[i].name + "</option>";
+				}
+			}
+			var select = jQuery("#icecat_category3"), options = '';
+			select.empty(); 
+			select.append(listItems);
+			
+			select = jQuery("#icecat_category4"), options = '';
+			select.empty();
+		}
+	});
+	<% end if %>
+	<% if Len(icecat_category3) > 0 then %>
+	jQuery.ajax({
+		type:"post",
+		url: "api/sp_catalog_get_icecat_subcategories.phtml",
+		data: {parent_id: '<%=icecat_category3%>', 'isAjax':true},
+		dataType: 'json',
+		success: function(data) {
+			var listItems= "<option value=''>All Categories</option>";
+			for (var i = 0; i < data.Subcategories.length; i++){
+				if (data.Subcategories[i].id == '<%=icecat_category4%>')
+				{
+					listItems+= "<option value='" + data.Subcategories[i].id + "' selected>" + data.Subcategories[i].name + "</option>";
+				}
+				else
+				{
+					listItems+= "<option value='" + data.Subcategories[i].id + "'>" + data.Subcategories[i].name + "</option>";
+				}
+			}
+			var select = jQuery("#icecat_category4"), options = '';
+			select.empty(); 
+			select.append(listItems);
+		}
+	});
+	<% end if %>
+	
+	jQuery( "#icecat_category1" ).change(function() {
+	  jQuery.ajax({
+			type:"post",
+			url: "api/sp_catalog_get_icecat_subcategories.phtml",
+			data: {parent_id: jQuery('#icecat_category1').val(), 'isAjax':true},
+			dataType: 'json',
+			success: function(data) {
+				var listItems= "<option value=''>All Categories</option>";
+				for (var i = 0; i < data.Subcategories.length; i++){
+					listItems+= "<option value='" + data.Subcategories[i].id + "'>" + data.Subcategories[i].name + "</option>";
+				}
+				var select = jQuery("#icecat_category2"), options = '';
+				select.empty(); 
+				select.append(listItems);
+				
+				select = jQuery("#icecat_category3"), options = '';
+				select.empty(); 
+				
+				select = jQuery("#icecat_category4"), options = '';
+				select.empty();
+			}
+		});
+	});
+	
+	jQuery( "#icecat_category2" ).change(function() {
+	  jQuery.ajax({
+			type:"post",
+			url: "api/sp_catalog_get_icecat_subcategories.phtml",
+			data: {parent_id: jQuery('#icecat_category2').val(), 'isAjax':true},
+			dataType: 'json',
+			success: function(data) {
+				var listItems= "<option value=''>All Categories</option>";
+				for (var i = 0; i < data.Subcategories.length; i++){
+					listItems+= "<option value='" + data.Subcategories[i].id + "'>" + data.Subcategories[i].name + "</option>";
+				}
+				var select = jQuery("#icecat_category3"), options = '';
+				select.empty(); 
+				select.append(listItems);
+				
+				select = jQuery("#icecat_category4"), options = '';
+				select.empty();
+			}
+		});
+	});
+	
+	jQuery( "#icecat_category3" ).change(function() {
+	  jQuery.ajax({
+			type:"post",
+			url: "api/sp_catalog_get_icecat_subcategories.phtml",
+			data: {parent_id: jQuery('#icecat_category3').val(), 'isAjax':true},
+			dataType: 'json',
+			success: function(data) {
+				var listItems= "<option value=''>All Categories</option>";
+				for (var i = 0; i < data.Subcategories.length; i++){
+					listItems+= "<option value='" + data.Subcategories[i].id + "'>" + data.Subcategories[i].name + "</option>";
+				}
+				var select = jQuery("#icecat_category4"), options = '';
+				select.empty(); 
+				select.append(listItems);
+				
+			}
+		});
+	});
+</script>
+<% end if  %>
+
