@@ -105,6 +105,37 @@
 				</label>
 				<div class="col-sm-8">
 				<input type="text" placeholder="" id="dept_name" name="dept_name" class="form-control" value="<%=dept_name%>">
+				<%
+					sql = "SELECT * FROM " & g_storeid & "_store_view WHERE view_id <> 1 ORDER BY view_sort_order"
+					set rs = dbconn.Execute(sql)
+					do while not rs.EOF
+						view_id = rs("view_id")
+						view_code = rs("view_code")
+						view_name = rs("view_name")
+						view_status = rs("view_status")
+						
+						sql = "SELECT field_value FROM " & g_storeid & "_store_type_data_varchar WHERE "
+						sql = sql & "type_id=" & "1" & " AND "
+						sql = sql & "view_id=" & view_id & " AND "
+						sql = sql & "entity_id='" & category_id & "' AND "
+						sql = sql & "field_id=" & "1" & ""
+						
+						set rs1 = dbconn.Execute(sql)
+						if not rs1.EOF then
+							sbtn = ""
+						else
+							sbtn = "btn-o"
+						end if
+						rs1.Close
+						set rs1 = nothing
+				%>
+				<a data-toggle="modal" class="btn btn-primary <%=sbtn%> btn-xs modal-edit-line" href="#" data-id="<%=view_id%>" data-fieldid="1" data-tableid="varchar" data-placement="top"><%=view_name%></a>
+				<%
+						rs.MoveNext
+					loop
+					rs.Close
+					set rs = nothing
+				%>
 				</div>
 			</div>
 			<% if g_store_mode = "icecat" then %>
@@ -220,6 +251,37 @@
 				</label>
 				<div class="col-sm-10">
 				<textarea maxlength="255" rows="7" id="dept_detail" name="dept_detail" class="form-control limited"><%=dept_detail%></textarea>
+				<%
+					sql = "SELECT * FROM " & g_storeid & "_store_view WHERE view_id <> 1 ORDER BY view_sort_order"
+					set rs = dbconn.Execute(sql)
+					do while not rs.EOF
+						view_id = rs("view_id")
+						view_code = rs("view_code")
+						view_name = rs("view_name")
+						view_status = rs("view_status")
+						
+						sql = "SELECT field_value FROM " & g_storeid & "_store_type_data_text WHERE "
+						sql = sql & "type_id=" & "1" & " AND "
+						sql = sql & "view_id=" & view_id & " AND "
+						sql = sql & "entity_id='" & category_id & "' AND "
+						sql = sql & "field_id=" & "1" & ""
+						
+						set rs1 = dbconn.Execute(sql)
+						if not rs1.EOF then
+							sbtn = ""
+						else
+							sbtn = "btn-o"
+						end if
+						rs1.Close
+						set rs1 = nothing
+				%>
+				<a data-toggle="modal" class="btn btn-primary <%=sbtn%> btn-xs modal-edit-line" href="#" data-id="<%=view_id%>" data-fieldid="1" data-tableid="text" data-placement="top"><%=view_name%></a>
+				<%
+						rs.MoveNext
+					loop
+					rs.Close
+					set rs = nothing
+				%>
 				</div>
 			</div>
 		</div>
@@ -502,7 +564,7 @@
 		</div>
 	</div>
 </div>
-
+<div id="ajax-modal3" class="modal fade" tabindex="-1" style="display: none;"></div>
 <%
 	order_display = "3"
 	order_filter = "All"
@@ -817,6 +879,20 @@
 	
 	
 	TableData.init();
+</script>
+<script>
+	var $modal3 = jQuery('#ajax-modal3');
+	jQuery('.modal-edit-line').on('click', function () {
+		$('body').modalmanager('loading');
+		var view_id = jQuery(this).data('id');
+		var field_id = jQuery(this).data('fieldid');
+		var table_id = jQuery(this).data('tableid');
+		setTimeout(function () {
+			$modal3.load('api/modal_ajax_lang_varchar.phtml?entity_id=<%=category_id%>&type_id=1&table_id=' + table_id + '&view_id=' + view_id + '&field_id=' + field_id, '', function () {
+				$modal3.modal();
+			});
+		}, 300);
+	});
 </script>
 
 <% if g_store_mode = "icecat" then %>

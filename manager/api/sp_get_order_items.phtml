@@ -1,0 +1,82 @@
+<%response.Expires=-1%>
+<!-- #INCLUDE File="../local/local.phtml" -->
+<%
+	order_id = Trim(Request("order_id"))
+	s_edit = ""
+	
+	i_subtotal = 0
+	sql = "SELECT * FROM " & g_storeid & "_order_item WHERE order_id='" & order_id & "' ORDER BY row_id"
+	set rsOrderItems = dbconn.Execute(sql)
+	do while not rsOrderItems.EOF
+		order_row_id = rsOrderItems("row_id")
+		order_item_description = rsOrderItems("item_description")
+		order_item_sku = rsOrderItems("sku")
+		order_item_options = rsOrderItems("options")
+		order_item_row_id = rsOrderItems("row_id")
+		
+		order_item_pack_quantity = 1
+		if order_item_pack_quantity = 0 then
+			order_item_pack_quantity = 1
+		end if
+		
+		if Len(order_item_options) > 0 then
+			order_item_options = Replace(order_item_options, vbCr, " ")
+			order_item_options = Replace(order_item_options, vbLf, " ")
+			order_item_options = Replace(order_item_options, vbCrLf, " ")
+		end if
+		
+		order_item_quantity = rsOrderItems("quantity")
+		order_item_adjusted_price = FormatNumber(rsOrderItems("adjusted_price"),2)
+		order_item_cost = FormatNumber(0,2)
+		order_item_subtotal = FormatNumber(order_item_quantity * order_item_adjusted_price * order_item_pack_quantity,2)
+		i_subtotal = i_subtotal + (order_item_quantity * order_item_adjusted_price * order_item_pack_quantity)
+		
+	
+		order_item_size_qty = ""
+		
+		
+		s_edit = s_edit & "<tr>"
+		s_edit = s_edit & "<td class=\""left\"">"
+		s_edit = s_edit & "<b>" & order_item_description & "</b>"
+		s_edit = s_edit & "<br><b>SKU</b>: " & order_item_sku
+		s_edit = s_edit & "<br>" & order_item_options
+		s_edit = s_edit & "</td>"
+		s_edit = s_edit & "<td class=\""center\"">" & order_item_quantity & "</td>"
+		s_edit = s_edit & "<td class=\""text-right\"">" & order_item_adjusted_price & "</td>"
+		s_edit = s_edit & "<td class=\""hidden-xs text-right\"">" & order_item_subtotal & "</td>"
+		s_edit = s_edit & "<td class=\""center\"">"
+		s_edit = s_edit & "<div class=\""visible-md visible-lg hidden-sm hidden-xs\"">"
+		s_edit = s_edit & "<a href=\""#\"" class=\""btn btn-xs btn-teal tooltips modal-edit-line\""  data-toggle=\""modal\"" data-id=\""" & Trim(order_row_id) & "\"" data-placement=\""top\"" data-original-title=\""Edit\""><i class=\""fa fa-edit\""></i></a> &nbsp;"
+		s_edit = s_edit & "<a href=\""#\"" class=\""btn btn-xs btn-bricky tooltips modal-delete-line\"" data-toggle=\""modal\"" data-id=\""" & Trim(order_row_id) & "\"" data-placement=\""top\"" data-original-title=\""Remove\""><i class=\""fa fa-times fa fa-white\""></i></a>"
+		s_edit = s_edit & "</div>"
+		s_edit = s_edit & "<div class=\""visible-xs visible-sm hidden-md hidden-lg\"">"
+		s_edit = s_edit & "<div class=\""btn-group\"">"
+		s_edit = s_edit & "<a class=\""btn btn-primary dropdown-toggle btn-sm\"" data-toggle=\""dropdown\"" href=\""#\"">"
+		s_edit = s_edit & "<i class=\""fa fa-cog\""></i> <span class=\""caret\""></span>"
+		s_edit = s_edit & "</a>"
+		s_edit = s_edit & "<ul role=\""menu\"" class=\""dropdown-menu pull-right\"">"
+		s_edit = s_edit & "<li role=\""presentation\"">"
+		s_edit = s_edit & "<a role=\""menuitem\"" tabindex=\""-1\"" href=\""#\"">"
+		s_edit = s_edit & "<i class=\""fa fa-edit\""></i> Edit"
+		s_edit = s_edit & "</a>"
+		s_edit = s_edit & "</li>"
+		s_edit = s_edit & "<li role=\""presentation\"">"
+		s_edit = s_edit & "<a role=\""menuitem\"" tabindex=\""-1\"" href=\""#\"">"
+		s_edit = s_edit & "<i class=\""fa fa-times\""></i> Remove"
+		s_edit = s_edit & "</a>"
+		s_edit = s_edit & "</li>"
+		s_edit = s_edit & "</ul>"
+		s_edit = s_edit & "</div>"
+		s_edit = s_edit & "</div></td>"
+		s_edit = s_edit & "</tr>"
+		
+		rsOrderItems.MoveNext
+	loop
+	rsOrderItems.Close
+	set rsOrderItems = nothing
+%>
+{
+"ORDERITEMS" : [
+{"id" : "<%=order_id%>","detail" : "<%=s_edit%>"}
+]
+}

@@ -1,0 +1,60 @@
+<%response.Expires=-1%>
+<%
+	Response.CodePage = 65001
+	Response.CharSet = "UTF-8"
+%>
+<!--#INCLUDE FILE="../../util/xt_func_carrier.phtml"-->
+<!--#INCLUDE FILE="../util/xt_func_string.phtml"-->	
+<!-- #INCLUDE File="../local/local.phtml" -->
+<%
+	lang_id=Trim(Request("lang_id"))
+	entity_id=Trim(Request("entity_id"))
+	type_id = Trim(Request("type_id"))
+	table_id = Trim(Request("table_id"))
+	view_id = Trim(Request("view_id"))
+	field_id = Trim(Request("field_id"))
+	field_value = Trim(Request("field_value"))
+	
+	if lang_id = "0" then
+		Set rsUpdate = Server.CreateObject("ADODB.Recordset")
+		with rsUpdate
+			.ActiveConnection = dbconn
+			.CursorLocation = 3
+			.CursorType = 1
+			.LockType = 3
+			.Source = g_storeid & "_store_type_data_" &  table_id & " WHERE lang_id=0"
+			.Open
+			.AddNew
+		end with
+		
+		rsUpdate("entity_id") = entity_id
+		rsUpdate("type_id") = type_id
+		rsUpdate("view_id") = view_id
+		rsUpdate("field_id") = field_id
+	else
+		Set rsUpdate = Server.CreateObject("ADODB.Recordset")
+		with rsUpdate
+			.ActiveConnection = dbconn
+			.CursorLocation = 3
+			.CursorType = 1
+			.LockType = 3
+			.Source = g_storeid & "_store_type_data_" &  table_id & " WHERE lang_id=" & lang_id
+			.Open
+		end with
+	
+	end if
+	
+
+	rsUpdate("field_value") = field_value
+	
+	If dbconn.Errors.Count > 0 Then
+		dbconn.Errors.Clear
+		rsUpdate.CancelUpdate
+	else
+		rsUpdate.Update
+	End If
+	
+	rsUpdate.Close
+	set rsUpdate = nothing
+	
+%>

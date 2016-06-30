@@ -1,6 +1,5 @@
 <%@ Language=VBScript %>
 <!--#INCLUDE FILE="local/local.phtml"-->
-<!--#INCLUDE FILE="core/i_adoopen.phtml"-->
 <!--#INCLUDE FILE="core/include_template_info.phtml"-->
 <%
 	If THEME_TEMPLATE = "" then
@@ -9,4 +8,3 @@
 		Server.Execute("theme/" & THEME_TEMPLATE & "/dept.phtml")
 	End if
 %>
-<!--#INCLUDE FILE="core/i_adoclosed.phtml"-->

@@ -1,0 +1,182 @@
+<%response.Expires=-1%>
+<%
+	Response.CodePage = 65001
+	Response.CharSet = "UTF-8"
+%>
+<!-- #INCLUDE File="../local/local.phtml" -->
+<!-- #INCLUDE File="../util/xt_func_util.phtml" -->
+<!-- #INCLUDE File="../util/xt_func_string.phtml" -->
+<%
+	entity_id=Trim(Request("entity_id"))
+	type_id = Trim(Request("type_id"))
+	table_id = Trim(Request("table_id"))
+	view_id = Trim(Request("view_id"))
+	field_id = Trim(Request("field_id"))
+	
+	sql = "SELECT * FROM " & g_storeid & "_store_view WHERE view_id = " & view_id
+	set rs = dbconn.Execute(sql)
+	if not rs.EOF then
+		sLabel = rs("view_name")
+	end if
+	rs.Close
+	set rs = nothing
+	
+	sql = "SELECT lang_id, field_value FROM " & g_storeid & "_store_type_data_" &  table_id & " WHERE "
+	sql = sql & " entity_id='" & entity_id & "' "
+	sql = sql & " AND type_id=" & type_id & " "
+	sql = sql & " AND view_id=" & view_id & " "
+	sql = sql & " AND field_id=" & field_id & " "
+	
+	'Response.Write(sql)
+	
+	set rs = dbconn.Execute(sql)
+	
+	field_value = ""
+	lang_id = 0
+	
+	if not rs.EOF then
+		lang_id = rs(0)
+		field_value = rs(1)
+	end if
+	
+	rs.Close
+	
+	set rs = nothing
+%>
+
+<div class="modal-header">
+	<button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+	<h4>Store View Language</h4>
+</div>
+<form role="form" id='formx'>
+<div class="modal-body" style="padding-left: 30px;">
+	<div class="col-md-12">
+		<div id="errorHandler1" class="errorHandler alert alert-danger no-display">
+			<i class="fa fa-times-sign"></i> You have some form errors. Please check below.
+		</div>
+		<div id="errorHandler2" class="errorHandler alert alert-danger no-display">
+			<i class="fa fa-times-sign"></i> The information has not been saved properly. Please contact system administrator.
+		</div>
+		<div class="successHandler alert alert-success no-display">
+			<i class="fa fa-ok"></i> The information has been saved.
+		</div>
+	</div>
+	<div class="row">
+		
+		<div class="form-group">
+			<label class="col-sm-2 control-label" for="field_value">
+				<%=sLabel%> <span class="symbol required"></span> 
+			</label>
+			<div class="col-sm-10">
+				<% if table_id = "text" then %>
+				<textarea class="form-control input-sm" id="field_value" name="field_value" rows="10"><%=field_value%></textarea>
+				<% else %>
+				<input type="text" placeholder="" id="field_value" name="field_value" class="form-control input-sm" value="<%=field_value%>">
+				<% end if %>
+			</div>
+		</div>
+	</div>
+</div>
+<div class="modal-footer">
+	<button class="btn btn-primary btn-sm" id="billing_update_btn" type="submit">Save</button>
+	<button type="button" data-dismiss="modal" class="btn btn-white btn-sm">Cancel</button>
+</div>
+<input type="hidden" id="lang_id" name="lang_id" value="<%=lang_id%>">
+<input type="hidden" id="entity_id" name="entity_id" value="<%=entity_id%>">
+<input type="hidden" id="type_id" name="type_id" value="<%=type_id%>">
+<input type="hidden" id="table_id" name="table_id" value="<%=table_id%>">
+<input type="hidden" id="field_id" name="field_id" value="<%=field_id%>">
+<input type="hidden" id="view_id" name="view_id" value="<%=view_id%>">
+</form>
+
+<script language="javascript">
+var FormValidator = function () {
+// function to initiate Validation Sample 1
+	var runValidator1 = function () {
+		var form1 = $('#formx');
+		var errorHandler1 = $('#errorHandler1', form1);
+		var errorHandler2 = $('#errorHandler2', form1);
+		var successHandler1 = $('.successHandler', form1);
+		$.validator.addMethod("FullDate", function () {
+			//if all values are selected
+			if ($("#dd").val() != "" && $("#mm").val() != "" && $("#yyyy").val() != "") {
+				return true;
+			} else {
+				return false;
+			}
+		}, 'Please select a day, month, and year');
+		$('#formx').validate({
+			errorElement: "span", // contain the error msg in a span tag
+			errorClass: 'help-block',
+			errorPlacement: function (error, element) { // render error placement for each input type
+				if (element.attr("type") == "radio" || element.attr("type") == "checkbox") { // for chosen elements, need to insert the error after the chosen container
+					error.insertAfter($(element).closest('.form-group').children('div').children().last());
+				} else if (element.attr("name") == "dd" || element.attr("name") == "mm" || element.attr("name") == "yyyy") {
+					error.insertAfter($(element).closest('.form-group').children('div'));
+				} else {
+					error.insertAfter(element);
+					// for other inputs, just perform default behavior
+				}
+			},
+			ignore: "",
+			
+			//RULES
+			rules: {
+				filed_value: {
+					required: true
+				}
+			},
+			//END OF RULES
+			
+			invalidHandler: function (event, validator) { //display error alert on form submit
+				successHandler1.hide();
+				errorHandler1.show();
+			},
+			highlight: function (element) {
+				$(element).closest('.help-block').removeClass('valid');
+				$(element).closest('.form-group').removeClass('has-success').addClass('has-error').find('.symbol').removeClass('ok').addClass('required');
+			},
+			unhighlight: function (element) { 
+				$(element).closest('.form-group').removeClass('has-error');
+			},
+			success: function (label, element) {
+				label.addClass('help-block valid');
+				$(element).closest('.form-group').removeClass('has-error').addClass('has-success').find('.symbol').removeClass('required').addClass('ok');
+			},
+			submitHandler: function (form) {
+				successHandler1.hide();
+				errorHandler1.hide();
+				errorHandler2.hide();
+				$.ajax({
+					type: "POST",
+					url: "api/sp_view_language_update.phtml",
+					data: $("#formx").serialize(),
+					success: function() {
+						successHandler1.show();
+						setTimeout(function () {
+							 $('#ajax-modal3').modal('hide');
+						}, 700);
+					},
+					error: function() {
+						errorHandler2.show();
+					}
+				});
+			}
+		});
+	};
+	return {
+		//main function to initiate template pages
+		init: function () {
+			runValidator1();
+		}
+	};
+}();
+</script>
+<script type="text/javascript">
+
+	$("#formx").submit(function (e) {
+		e.preventDefault(); //prevent default form submit
+	});
+	FormValidator.init();
+	
+</script>

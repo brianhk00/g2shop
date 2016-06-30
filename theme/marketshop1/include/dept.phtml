@@ -11,7 +11,29 @@
 		<h3 class="subtitle">Categories</h3>
 		<div class="box-category">
 			<ul id="cat_accordion">
-				<li><a href="category.html">Clothing</a><span class="down"></span>
+				<%
+				'Product Categories..
+				sql = "SELECT * FROM " & g_storeid & "_dept WHERE parent_dept='0' AND is_hidden=0 ORDER BY dept_row"
+				Set rsDeptClassic = dbconn.Execute(sql)
+				do while not rsDeptClassic.EOF
+					m_dept_id = rsDeptClassic("dept_id")
+					m_dept_name = rsDeptClassic("dept_name")
+					m_has_sub = rsDeptClassic("has_sub")
+					m_use_mfg = rsDeptClassic("dept_use_mfg")
+					m_ec_flag = rsDeptClassic("ec_flag")
+					m_url_key = rsDeptClassic("url_key")
+					
+					'Language Convert
+					sql = "SELECT field_value FROM " & g_storeid & "_store_type_data_varchar WHERE type_id=1 AND view_id=4 AND entity_id='01' AND field_id=1"
+					set rsx = dbconn.Execute(sql)
+					if not rsx.EOF then
+						m_dept_name = rsx(0)
+					end if
+					rsx.Close
+					set rsx = nothing
+					
+				%>
+				<li><a href="category.html"><%=m_dept_name%></a><span class="down"></span>
 				<ul>
 					<li><a href="category.html">Men</a><span class="down"></span>
 					<ul>
@@ -39,6 +61,13 @@
 					</li>
 				</ul>
 				</li>
+				<%
+						rsDeptClassic.MoveNext
+					loop
+					rsDeptClassic.close
+					set rsDeptClassic = nothing
+				%>
+				
 				<li><a class="active" href="category.html">Electronics</a><span class="down"></span>
 				<ul style="display:block;">
 					<li><a href="category.html">Laptops</a><span class="down"></span>

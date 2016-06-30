@@ -1,0 +1,370 @@
+<%response.Expires=-1%>
+<!-- #INCLUDE File="../local/local.phtml" -->
+<!-- #INCLUDE File="../util/xt_func_util.phtml" -->
+<!-- #INCLUDE File="../util/xt_func_string.phtml" -->
+<%
+	order_id=Trim(Request("order_id"))
+	row_id = Trim(Request("row_id"))
+	sku = Trim(Request("sku"))
+	item_mode = Trim(Request("item_mode"))
+	
+	
+	i_subtotal = 0
+	sql = "SELECT * FROM " & g_storeid & "_order_item WHERE order_id='" & order_id & "' AND row_id='" & row_id & "'"
+	set rsOrderItems = dbconn.Execute(sql)
+	if not rsOrderItems.EOF then
+		order_row_id = rsOrderItems("row_id")
+		item_mode = Cstr(rsOrderItems("row_mode"))
+		order_item_description = rsOrderItems("item_description")
+		order_item_sku = rsOrderItems("sku")
+		order_item_options = rsOrderItems("options")
+		order_item_quantity = rsOrderItems("quantity")
+		order_item_adjusted_price = FormatNumber(rsOrderItems("adjusted_price"),2)
+		order_item_adjusted_cost = FormatNumber(rsOrderItems("item_cost"),2)
+		
+		order_manu_part_num = rsOrderItems("item_sku2")
+		order_item_weight = rsOrderItems("item_weight")
+		if rsOrderItems("item_taxable") then
+			order_item_taxable = 1
+		else
+			order_item_taxable = 0
+		end if
+		
+		order_item_IM_part_number = rsOrderItems("item_IM_part_number")
+		order_item_TD_part_number = rsOrderItems("item_TD_part_number")
+		order_item_eConnect_part_number = rsOrderItems("item_eConnect_part_number")
+		order_item_mfg = rsOrderItems("item_mfg")
+		order_item_SN_part_number = rsOrderItems("item_SN_part_number")
+		order_item_DH_part_number = ""
+		order_item_SUN_part_number = ""
+		if item_mode = "0" then
+			order_item_soruce = "Private Catalog"
+		end if
+		if item_mode = "7" then
+			order_item_soruce = "ICECAT Catalog"
+		end if
+		
+		
+	end if
+	rsOrderItems.Close
+	set rsOrderItems = nothing
+	
+	t_header = ""
+	t_body = ""
+	
+	
+	bNewItemFromCatalog = false
+	if row_id = "0" AND Len(sku) > 0 then
+		bNewItemFromCatalog = true
+	end if
+	
+	if bNewItemFromCatalog then
+		if item_mode = "0" then
+			order_item_soruce = "Private Catalog"
+			sql = "SELECT * FROM " & g_storeid & "_product WHERE pf_id='" & sku & "'"
+			set rsProduct = dbconn.Execute(sql)
+			if not rsProduct.EOF then
+				pf_name = Trim(rsProduct("name"))
+				pf_sku = Trim(rsProduct("sku"))
+				pf_descirption = Trim(rsProduct("description"))
+				pf_list_price = rsProduct("list_price")
+				pf_weight= rsProduct("weight")
+				pf_is_nontaxable= rsProduct("is_nontaxable")
+				pf_price_A = rsProduct("price_A")
+				pf_price_B = rsProduct("price_B")
+				pf_price_C = rsProduct("price_C")
+				pf_price_D = rsProduct("price_D")
+				pf_manu_part_num = rsProduct("manu_part_num")
+				pf_IM_part_num = rsProduct("IM_part_num")
+				pf_TD_part_num= rsProduct("TD_part_num")
+				pf_espec_sku= rsProduct("espec_sku")
+				pf_SN_part_num= rsProduct("SN_part_num")
+				pf_vendor_name= rsProduct("vendor_name")
+				
+				'order_item_sku = pf_sku
+				order_item_sku = sku
+				order_item_description = pf_name
+				order_manu_part_num = pf_manu_part_num
+				order_item_weight = pf_weight
+				if pf_is_nontaxable then
+					order_item_taxable = 0
+				else
+					order_item_taxable = 1
+				end if
+				order_item_adjusted_cost = FormatNumber(pf_list_price,2,,,0)
+				order_item_adjusted_price = FormatNumber(pf_price_D,2,,,0)
+				order_item_quantity = "1"
+				
+				order_item_IM_part_number = pf_IM_part_num
+				order_item_TD_part_number = pf_TD_part_num
+				order_item_eConnect_part_number = pf_espec_sku
+				order_item_mfg = pf_vendor_name
+				order_item_SN_part_number = pf_SN_part_num
+				order_item_DH_part_number = ""
+				order_item_SUN_part_number = ""
+		
+				
+			end if
+			rsProduct.Close
+		end if
+		
+		if item_mode = "7" then
+			order_item_soruce = "ICECAT Catalog"
+			sql = "SELECT * FROM " & g_storeid & "_ssprice WHERE sku='" & sku & "'"
+			set rsProduct = dbconn_icecat.Execute(sql)
+			if not rsProduct.EOF then
+				pf_name = Trim(rsProduct("DESCR"))
+				pf_sku = Trim(rsProduct("sku"))
+				pf_list_price = rsProduct("cost")
+				pf_weight= rsProduct("SHIPWEIGHT")
+				pf_price_A = rsProduct("price_A")
+				pf_price_B = rsProduct("price_B")
+				pf_price_C = rsProduct("price_C")
+				pf_price_D = rsProduct("price_D")
+				
+				pf_manu_part_num = rsProduct("VEND_PART")
+				pf_IM_part_num = rsProduct("IM_ID")
+				pf_TD_part_num= rsProduct("TD_ID")
+				pf_espec_sku= rsProduct("sku")
+				pf_SN_part_num= rsProduct("SN_ID")
+				pf_vendor_name= rsProduct("VEND_NAME")
+				pf_DH_part_num= rsProduct("DH_ID")
+				pf_SUN_part_num= rsProduct("SUN_ID")
+				
+				order_item_sku = sku
+				order_item_description = pf_name
+				order_manu_part_num = pf_manu_part_num
+				order_item_weight = pf_weight
+				order_item_taxable = 1
+				order_item_adjusted_cost = FormatNumber(pf_list_price,2,,,0)
+				order_item_adjusted_price = FormatNumber(pf_price_D,2,,,0)
+				order_item_quantity = "1"
+				
+				order_item_IM_part_number = pf_IM_part_num
+				order_item_TD_part_number = pf_TD_part_num
+				order_item_eConnect_part_number = pf_espec_sku
+				order_item_mfg = pf_vendor_name
+				order_item_SN_part_number = pf_SN_part_num
+				order_item_DH_part_number = pf_DH_part_num
+				order_item_SUN_part_number = pf_SUN_part_num
+				
+			end if
+			rsProduct.Close
+		end if
+		
+		
+	else
+		
+	end if
+		
+%>
+<div class="modal-header">
+	<button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+	<h4>Order Line Item</h4>
+</div>
+<form role="form" id='billingform'>
+<input type="hidden" name="name" value="line_item" />
+<input type="hidden" name="order_id" value="<%=order_id%>" />
+<input type="hidden" name="row_id" value="<%=row_id%>" />
+<div class="modal-body" style="padding-left: 30px;">
+	<div class="col-md-12">
+		<div id="errorHandler1" class="errorHandler alert alert-danger no-display">
+			<i class="fa fa-times-sign"></i> You have some form errors. Please check below.
+		</div>
+		<div id="errorHandler2" class="errorHandler alert alert-danger no-display">
+			<i class="fa fa-times-sign"></i> The information has not been saved properly. Please contact system administrator.
+		</div>
+		<div class="successHandler alert alert-success no-display">
+			<i class="fa fa-ok"></i> The information has been saved.
+		</div>
+	</div>
+	<div class="row">
+		<div class="form-group">
+			<label class="col-sm-3 control-label" for="order_item_sku">
+				Source 
+			</label>
+			<div class="col-sm-9">
+				<input type="text" placeholder="" id="order_item_soruce" name="order_item_soruce" class="form-control input-sm" value="<%=order_item_soruce%>" disabled>
+				<input type="hidden" id="order_item_row_mode" name="order_item_row_mode" value="<%=item_mode%>">
+			</div>
+		</div>
+		<br><br>
+		<div class="form-group">
+			<label class="col-sm-3 control-label" for="order_item_sku">
+				SKU <span class="symbol required"></span> 
+			</label>
+			<div class="col-sm-9">
+				<input type="text" placeholder="" id="order_item_sku_view" name="order_item_sku_view" class="form-control input-sm" value="<%=order_item_sku%>" disabled>
+				<input type="hidden" id="order_item_sku" name="order_item_sku" value="<%=order_item_sku%>">
+				<input type="hidden" id="order_item_manu_part_num" name="order_item_manu_part_num" value="<%=order_manu_part_num%>">
+			</div>
+		</div>
+		<br><br>
+		<div class="form-group">
+			<label class="col-sm-3 control-label" for="order_item_description">
+				Item Name <span class="symbol required"></span> 
+			</label>
+			<div class="col-sm-9">
+				<input type="text" placeholder="" id="order_item_description" name="order_item_description" class="form-control input-sm" value="<%=order_item_description%>">
+			</div>
+		</div>
+		<br><br>
+		<div class="form-group">
+			<label class="col-sm-3 control-label" for="order_item_adjusted_price">
+				Unit Cost
+			</label>
+			<div class="col-sm-9">
+				<input type="text" placeholder="" id="order_item_adjusted_cost_view" name="order_item_adjusted_cost_view" class="form-control input-sm" value="<%=order_item_adjusted_cost%>" disabled>
+				<input type="hidden" id="order_item_adjusted_cost" name="order_item_adjusted_cost" value="<%=order_item_adjusted_cost%>">
+			</div>
+		</div>
+		<br><br>
+		<div class="form-group">
+			<label class="col-sm-3 control-label" for="order_item_adjusted_price">
+				Unit Price <span class="symbol required"></span> 
+			</label>
+			<div class="col-sm-9">
+				<input type="text" placeholder="" id="order_item_adjusted_price" name="order_item_adjusted_price" class="form-control input-sm" value="<%=order_item_adjusted_price%>">
+			</div>
+		</div>
+		<br><br>
+		<div class="form-group">
+			<label class="col-sm-3 control-label" for="order_item_quantity">
+				Qty <span class="symbol required"></span> 
+			</label>
+			<div class="col-sm-9">
+				<input type="text" placeholder="" id="order_item_quantity" name="order_item_quantity" class="form-control input-sm" value="<%=order_item_quantity%>">
+			</div>
+		</div>
+		<input type="hidden" id="order_item_weight" name="order_item_weight" value="<%=order_item_weight%>">
+		<input type="hidden" id="order_item_taxable" name="order_item_taxable" value="<%=order_item_taxable%>">
+		<input type="hidden" id="order_item_IM_part_number" name="order_item_IM_part_number" value="<%=order_item_IM_part_number%>">
+		<input type="hidden" id="order_item_TD_part_number" name="order_item_TD_part_number" value="<%=order_item_TD_part_number%>">
+		<input type="hidden" id="order_item_eConnect_part_number" name="order_item_eConnect_part_number" value="<%=order_item_eConnect_part_number%>">
+		<input type="hidden" id="order_item_mfg" name="order_item_mfg" value="<%=order_item_mfg%>">
+		<input type="hidden" id="order_item_SN_part_number" name="item_SN_part_number" value="<%=order_item_SN_part_number%>">
+		<input type="hidden" id="order_item_DH_part_number" name="item_DH_part_number" value="<%=order_item_DH_part_number%>">
+		<input type="hidden" id="order_item_SUN_part_number" name="item_SUN_part_number" value="<%=order_item_SUN_part_number%>">
+	</div>
+</div>
+<div class="modal-footer">
+	<button class="btn btn-primary btn-sm" id="billing_update_btn"><%if bNewItemFromCatalog then%>Add<%else%>Update<%end if%></button>
+	<button type="button" data-dismiss="modal" class="btn btn-white btn-sm">Cancel</button>
+</div>
+</form>
+<script language="javascript">
+var FormValidator = function () {
+// function to initiate Validation Sample 1
+	var runValidator1 = function () {
+		var form1 = $('#billingform');
+		var errorHandler1 = $('#errorHandler1', form1);
+		var errorHandler2 = $('#errorHandler2', form1);
+		var successHandler1 = $('.successHandler', form1);
+		$.validator.addMethod("FullDate", function () {
+			//if all values are selected
+			if ($("#dd").val() != "" && $("#mm").val() != "" && $("#yyyy").val() != "") {
+				return true;
+			} else {
+				return false;
+			}
+		}, 'Please select a day, month, and year');
+		$('#billingform').validate({
+			errorElement: "span", // contain the error msg in a span tag
+			errorClass: 'help-block',
+			errorPlacement: function (error, element) { // render error placement for each input type
+				if (element.attr("type") == "radio" || element.attr("type") == "checkbox") { // for chosen elements, need to insert the error after the chosen container
+					error.insertAfter($(element).closest('.form-group').children('div').children().last());
+				} else if (element.attr("name") == "dd" || element.attr("name") == "mm" || element.attr("name") == "yyyy") {
+					error.insertAfter($(element).closest('.form-group').children('div'));
+				} else {
+					error.insertAfter(element);
+					// for other inputs, just perform default behavior
+				}
+			},
+			ignore: "",
+			
+			//RULES
+			rules: {
+				order_item_sku: {
+					required: true
+				},
+				order_item_description: {
+					required: true
+				},
+				order_item_adjusted_price: {
+					required: true
+				},
+				order_item_quantity: {
+					required: true,
+					number: true
+				}
+			},
+			messages: {
+				pf_sku:
+				{
+					required: "Please specify product SKU.",
+					minlength: "The SKU must be greater than 3 chracter length.",
+					remote: "The specified SKU is not unique."
+				},
+				pf_name: "Please specify product name",
+				pf_description: "Please specify product description",
+				pf_url_key:
+				{
+					minlength: "The URL Key must be greater than 5 chracter length.",
+					remote: "The specified URL Key is not unique."
+				}
+			},
+			//END OF RULES
+			
+			invalidHandler: function (event, validator) { //display error alert on form submit
+				successHandler1.hide();
+				errorHandler1.show();
+			},
+			highlight: function (element) {
+				$(element).closest('.help-block').removeClass('valid');
+				$(element).closest('.form-group').removeClass('has-success').addClass('has-error').find('.symbol').removeClass('ok').addClass('required');
+			},
+			unhighlight: function (element) { 
+				$(element).closest('.form-group').removeClass('has-error');
+			},
+			success: function (label, element) {
+				label.addClass('help-block valid');
+				$(element).closest('.form-group').removeClass('has-error').addClass('has-success').find('.symbol').removeClass('required').addClass('ok');
+			},
+			submitHandler: function (form) {
+				successHandler1.hide();
+				errorHandler1.hide();
+				errorHandler2.hide();
+				$.ajax({
+					type: "POST",
+					url: "api/sp_sales_orders_detail_update.phtml",
+					data: $("#billingform").serialize(),
+					success: function() {
+						successHandler1.show();
+						setTimeout(function () {
+							 $('#ajax-modal3').modal('hide');
+						}, 700);
+					},
+					error: function() {
+						errorHandler2.show();
+					}
+				});
+			}
+		});
+	};
+	return {
+		//main function to initiate template pages
+		init: function () {
+			runValidator1();
+		}
+	};
+}();
+</script>
+<script type="text/javascript">
+
+	$("#billingform").submit(function (e) {
+		e.preventDefault(); //prevent default form submit
+	});
+	FormValidator.init();
+	
+</script>

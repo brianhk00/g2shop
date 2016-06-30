@@ -1,9 +1,12 @@
 <%
-	Response.CodePage = 1252 
-	Response.CharSet = "windows-1252" 
+	'Response.CodePage = 1252 
+	'Response.CharSet = "windows-1252" 
+	Response.CodePage = 65001
+	Response.CharSet = "UTF-8"
 %>
 <!--#INCLUDE FILE="../../core/include_index_start.phtml"-->
 <!--#INCLUDE FILE="template_setting.phtml"-->
+
 <!DOCTYPE html>
 <html>
 <head>
@@ -21,6 +24,6 @@
 <!--#INCLUDE FILE="include/js.phtml"-->
 <!--#INCLUDE FILE="include/before_body_end.phtml"-->
 <!--#INCLUDE FILE="include/AbsoluteFooter.phtml"-->
+<!--#INCLUDE FILE="../../core/include_index_end.phtml"-->
 </body>
 </html>
-<!--#INCLUDE FILE="../../core/include_index_end.phtml"-->
