@@ -1,0 +1,128 @@
+<%response.Expires=-1%>
+<!-- #INCLUDE File="../local/local.phtml" -->
+<!-- #INCLUDE File="../util/xt_func_util.phtml" -->
+<!-- #INCLUDE File="../util/xt_func_string.phtml" -->
+<%
+	'--POST DATA------------------------------------------
+	mode = Trim(Request("mode"))
+	system_id = Trim(Request("system_id"))
+	
+	formop = Trim(Request("formop"))
+	group_id = Trim(Request("group_id"))
+	group_name = Trim(Request("group_name"))
+	
+	sysdept_id = Trim(Request("sysdept_id"))
+	sysdept_name = Trim(Request("sysdept_name"))
+	sysdept_description = Trim(Request("sysdept_description"))
+	sysdept_mode = Trim(Request("sysdept_mode"))
+	allow_none = Trim(Request("allow_none"))
+	none_default = Trim(Request("none_default"))
+	
+	if formop = "group" then
+	
+		if group_id = "0" then
+			Set rsUpdate = Server.CreateObject("ADODB.Recordset")
+			with rsUpdate
+				.ActiveConnection = dbconn
+				.CursorLocation = 3
+				.CursorType = 1
+				.LockType = 3
+				.Source = g_storeid & "_system_config_group WHERE group_id='0'"
+				.Open
+				.AddNew
+			end with
+			rsUpdate("group_id") = GetUniqueLongIntegerID()
+			rsUpdate("pf_id") = system_id
+		else
+			Set rsUpdate = Server.CreateObject("ADODB.Recordset")
+			with rsUpdate
+				.ActiveConnection = dbconn
+				.CursorLocation = 3
+				.CursorType = 1
+				.LockType = 3
+				.Source = g_storeid & "_system_config_group WHERE group_id='" & group_id & "'"
+				.Open
+			end with
+			
+		end if
+		
+		rsUpdate("group_name") = group_name
+		
+		If dbconn.Errors.Count > 0 Then
+			dbconn.Errors.Clear
+			rsUpdate.CancelUpdate
+		else
+			rsUpdate.Update
+		End If
+		
+		rsUpdate.Close
+		set rsUpdate = nothing
+	
+	end if
+	
+	if formop = "options" then
+	
+		if sysdept_id = "0" then
+			
+			new_row = 0
+			sql = "SELECT MAX(sysdept_row) FROM " & g_storeid & "_sysdept WHERE config_id='" & system_id & "'"
+			set rsMax = dbconn.Execute(sql)
+			if not rsMax.EOF then
+				new_row = rsMax(0) + 1
+			end if
+			rsMax.Close
+			set rsMax = nothing
+			
+			if IsNumeric(new_row) then
+			else
+				new_row = 0
+			end if
+			
+			Set rsUpdate = Server.CreateObject("ADODB.Recordset")
+			with rsUpdate
+				.ActiveConnection = dbconn
+				.CursorLocation = 3
+				.CursorType = 1
+				.LockType = 3
+				.Source = g_storeid & "_sysdept WHERE sysdept_id='0'"
+				.Open
+				.AddNew
+			end with
+			rsUpdate("sysdept_id") = GetUniqueLongIntegerID()
+			rsUpdate("config_id") = system_id
+			rsUpdate("sysdept_group") = ""
+			rsUpdate("sysdept_row") = new_row
+		else
+			
+			Set rsUpdate = Server.CreateObject("ADODB.Recordset")
+			with rsUpdate
+				.ActiveConnection = dbconn
+				.CursorLocation = 3
+				.CursorType = 1
+				.LockType = 3
+				.Source = g_storeid & "_sysdept WHERE sysdept_id='" & sysdept_id & "'"
+				.Open
+			end with
+		end if
+		
+		rsUpdate("sysdept_name") = sysdept_name
+		rsUpdate("sysdept_description") = sysdept_description
+		rsUpdate("sysdept_mode") = sysdept_mode
+		rsUpdate("allow_none") = allow_none
+		rsUpdate("none_default") = none_default
+		rsUpdate("sysdept_qty") = ""
+		
+		If dbconn.Errors.Count > 0 Then
+			dbconn.Errors.Clear
+			rsUpdate.CancelUpdate
+		else
+			rsUpdate.Update
+		End If
+		
+		rsUpdate.Close
+		set rsUpdate = nothing
+		
+	end if
+	
+	
+%>

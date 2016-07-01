@@ -58,35 +58,47 @@
 					</ul>
 				</div>
 				<div id="language" class="btn-group">
-					<button class="btn-link dropdown-toggle" data-toggle="dropdown"><span><img src="image/flags/gb.png" alt="English" title="English">English <i class="fa fa-caret-down"></i></span></button>
+					<%
+						sql = "SELECT * FROM " & g_storeid & "_store_view WHERE view_id = " & Session("CURRENT_VIEW_ID") 
+						set rs = dbconn.Execute(sql)
+						if not rs.EOF then
+							view_id = rs("view_id")
+							view_code = rs("view_code")
+							view_name = rs("view_name")
+							view_status = rs("view_status")
+					%>
+					<button class="btn-link dropdown-toggle" data-toggle="dropdown"><span><img src="image/flags/<%=view_code%>.png" alt="<%=view_name%>" title="<%=view_name%>"><%=view_name%> <i class="fa fa-caret-down"></i></span></button>
+					<%
+						end if
+						rs.close
+						set rs = nothing
+					%>
 					<ul class="dropdown-menu">
+						<%
+							sql = "SELECT * FROM " & g_storeid & "_store_view WHERE view_id <> " & Session("CURRENT_VIEW_ID") & " ORDER BY view_sort_order"
+							set rs = dbconn.Execute(sql)
+							do while not rs.EOF
+								view_id = rs("view_id")
+								view_code = rs("view_code")
+								view_name = rs("view_name")
+								view_status = rs("view_status")
+						%>
 						<li>
-						<button class="btn btn-link btn-block language-select" type="button" name="GB"><img src="image/flags/gb.png" alt="English" title="English"/> English</button>
+						<button class="btn btn-link btn-block language-select" type="button" name="<%=view_code%>" onclick="window.location.href='?storeviewid=<%=view_id%>';"><img src="image/flags/<%=view_code%>.png" alt="<%=view_name%>" title="<%=view_name%>" /> <%=view_name%></button>
 						</li>
-						<li>
-						<button class="btn btn-link btn-block language-select" type="button" name="GB"><img src="image/flags/ar.png" alt="Arabic" title="Arabic"/> Arabic</button>
-						</li>
-					</ul>
-				</div>
-				<div id="currency" class="btn-group">
-					<button class="btn-link dropdown-toggle" data-toggle="dropdown"><span> $ USD <i class="fa fa-caret-down"></i></span></button>
-					<ul class="dropdown-menu">
-						<li>
-						<button class="currency-select btn btn-link btn-block" type="button" name="EUR">¢æ Euro</button>
-						</li>
-						<li>
-						<button class="currency-select btn btn-link btn-block" type="button" name="GBP">¡Ì Pound Sterling</button>
-						</li>
-						<li>
-						<button class="currency-select btn btn-link btn-block" type="button" name="USD">$ US Dollar</button>
-						</li>
+						<%
+								rs.MoveNext
+							loop
+							rs.close
+							set rs = nothing
+						%>
 					</ul>
 				</div>
 			</div>
 			<div id="top-links" class="nav pull-right flip">
 				<ul>
-					<li><a href="login.html">Login</a></li>
-					<li><a href="register.html">Register</a></li>
+					<li><a href="<%=g_secure_url%>login.phtml"><%=a("Login")%></a></li>
+					<li><a href="<%=g_secure_url%>register.phtml"><%=a("Register")%></a></li>
 				</ul>
 			</div>
 		</div>
@@ -100,7 +112,7 @@
 			<!-- Logo Start -->
 			<div class="col-table-cell col-lg-6 col-md-6 col-sm-12 col-xs-12 inner">
 				<div id="logo">
-					<a href="index.html"><img class="img-responsive" src="image/logo.png" title="MarketShop" alt="MarketShop"/></a>
+					<a href="<%=g_store_url%>index.phtml"><img class="img-responsive" src="image/hubutu1.png" title="MarketShop" alt="MarketShop"/></a>
 				</div>
 			</div>
 			<!-- Logo End -->
@@ -109,7 +121,7 @@
 				<div id="cart">
 					<button type="button" data-toggle="dropdown" data-loading-text="Loading..." class="heading dropdown-toggle">
 					<span class="cart-icon pull-left flip"></span>
-					<span id="cart-total">2 item(s) - $1,132.00</span></button>
+					<span id="cart-total">2 <%=a("item(s)")%> - $1,132.00</span></button>
 					<ul class="dropdown-menu">
 						<li>
 						<table class="table">
@@ -201,7 +213,7 @@
 			<!-- Search Start-->
 			<div class="col-table-cell col-lg-3 col-md-3 col-sm-6 col-xs-12 inner">
 				<div id="search" class="input-group">
-					<input id="filter_name" type="text" name="search" value="" placeholder="Search" class="form-control input-lg"/>
+					<input id="filter_name" type="text" name="search" value="" placeholder="<%=a("Search")%>" class="form-control input-lg"/>
 					<button type="button" class="button-search"><i class="fa fa-search"></i></button>
 				</div>
 			</div>
@@ -218,7 +230,7 @@
 		</div>
 		<div class="collapse navbar-collapse navbar-ex1-collapse">
 			<ul class="nav navbar-nav">
-				<li><a class="home_link" title="Home" href="index.html"><span>Home</span></a></li>
+				<li><a class="home_link" title="Home" href="<%=g_store_url%>index.phtml"><span>Home</span></a></li>
 				<li class="mega-menu dropdown"><a>Categories</a>
 				<div class="dropdown-menu">
 					<div class="column col-lg-2 col-md-3">

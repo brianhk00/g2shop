@@ -1,0 +1,19 @@
+<%
+	storeviewid = Trim(Request("storeviewid"))
+	if storeviewid = "" then
+	else
+		Session("CURRENT_VIEW_ID") = storeviewid
+		SELECT CASE storeviewid
+		CASE "1"
+			Session("CURRENT_LOCALE") = "en_US"
+		CASE "2"
+			Session("CURRENT_LOCALE") = "zh_CN"
+		CASE "3"
+			Session("CURRENT_LOCALE") = "ja_JP"
+		CASE "4"
+			Session("CURRENT_LOCALE") = "ko_KR"
+		CASE ELSE
+			Session("CURRENT_LOCALE") = "en_US"
+		END SELECT
+	end if
+%>	

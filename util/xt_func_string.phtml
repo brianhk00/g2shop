@@ -179,6 +179,7 @@ Function TranslateX(string, strTypeId, strEntityId, strFieldId)
 	xstring = string
 	
 	current_view_id = "4"
+	current_view_id = Session("CURRENT_VIEW_ID")
 	
 	sql = "SELECT field_value FROM " & g_storeid & "_store_type_data_varchar WHERE "
 	sql = sql & "type_id=" & strTypeId & " AND "
@@ -195,6 +196,33 @@ Function TranslateX(string, strTypeId, strEntityId, strFieldId)
 	TranslateX = xstring
 	
 End Function
+
+function a(string)
+	
+	current_locale = "ko_KR"
+	current_locale = Session("CURRENT_LOCALE")
+	
+	xstring = string
+	
+	Set objConnection = CreateObject("ADODB.Connection")
+	Set objRecordSet = CreateObject("ADODB.Recordset")
+	
+	strPathtoTextFile = Server.MapPath("/") & "\locale\" & current_locale 	
+	objConnection.Open "Provider=Microsoft.ACE.OLEDB.12.0;" & _
+	"Data Source=" & strPathtoTextFile & ";" & _
+	"Extended Properties=""text;HDR=YES;FMT=Delimited;CharacterSet=65001;"""
+	objRecordset.Open "SELECT lang2 FROM [translate.csv] WHERE lang1='" & Replace(string, "'", "''") & "'", objConnection
+	
+	if not objRecordset.EOF then
+		xstring = objRecordset(0)
+	end if
+	
+	objRecordset.close
+	set objRecordset = nothing
+	set objConnection = nothing
+	a = xstring
+	
+End function
 
 
 </SCRIPT>
