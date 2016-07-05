@@ -43,7 +43,8 @@
 	
 	set rs = nothing
 %>
-
+<div class="modal-dialog">
+	<div class="modal-content">
 <div class="modal-header">
 	<button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
 	<h4>Store View Language</h4>
@@ -79,7 +80,7 @@
 </div>
 <div class="modal-footer">
 	<button class="btn btn-primary btn-sm" id="billing_update_btn" type="submit">Save</button>
-	<button type="button" data-dismiss="modal" class="btn btn-white btn-sm">Cancel</button>
+	<button type="button" data-dismiss="modal" class="btn btn-default btn-sm">Cancel</button>
 </div>
 <input type="hidden" id="lang_id" name="lang_id" value="<%=lang_id%>">
 <input type="hidden" id="entity_id" name="entity_id" value="<%=entity_id%>">
@@ -88,7 +89,7 @@
 <input type="hidden" id="field_id" name="field_id" value="<%=field_id%>">
 <input type="hidden" id="view_id" name="view_id" value="<%=view_id%>">
 </form>
-
+</div></div>
 <script language="javascript">
 var FormValidator = function () {
 // function to initiate Validation Sample 1

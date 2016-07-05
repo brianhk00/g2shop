@@ -1,0 +1,142 @@
+<SCRIPT LANGUAGE=VBScript RUNAT=Server>
+SUB Application_OnStart
+
+
+END SUB
+
+</SCRIPT>
+
+<SCRIPT LANGUAGE=VBScript RUNAT=Server>
+
+SUB Application_OnEnd
+
+END SUB
+
+</SCRIPT>
+
+<SCRIPT LANGUAGE=VBScript RUNAT=Server>
+Function LTrimEx(str)
+  Dim re
+  Set re = New RegExp
+  re.Pattern = "^\s*"
+  re.Multiline = False
+  LTrimEx = re.Replace(str, "")
+End Function
+
+SUB Session_OnStart
+	'-----------------------------------------------------------------------
+	' READ LOCAL
+	'-----------------------------------------------------------------------
+	g_storeid = ""
+	StoreLocalFile = Request.ServerVariables("APPL_PHYSICAL_PATH") & "local\local.phtml"
+	'Response.Write(StoreLocalFile)
+	Set FileObject = Server.CreateObject("Scripting.FileSystemObject")
+	Set Out = FileObject.OpenTextFile(StoreLocalFile,1,FALSE, FALSE)
+	do while not out.AtEndOfStream
+		s_out = Trim(Out.ReadLine)
+
+		if Len(s_out) > 0 then
+			if Left(s_out,1) = ";" OR Left(s_out,1) = "[" then
+			else
+				
+				if InStr(s_out, "=") > 0 then
+					ar_ini = Split(s_out, "= """)
+					'Session(Trim(ar_ini(0))) = Trim(ar_ini(1))
+					SELECT CASE LTrimEx(Trim(ar_ini(0)))
+					CASE "g_connection_string"
+						Session("ConnectionString") = Trim(Replace(ar_ini(1), """", ""))
+					CASE "g_storeid"
+						g_storeid = Trim(Replace(ar_ini(1), """", ""))
+						'Session("StoreID") = g_storeid
+					END SELECT
+					
+				end if
+			end if
+		end if
+
+	loop
+
+	Out.Close
+	
+	set Out = nothing
+	set FileObject = nothing
+	
+	
+	'-----------------------------------------------------------------------
+	'SESSION INIT
+	'-----------------------------------------------------------------------
+	Session("CURRENT_VIEW_ID") = "1"
+	Session("CURRENT_LOCALE") = "en_US"
+	Session("shopper_country") = "US"
+	Session("shopper_id") = ""
+	'-----------------------------------------------------------------------
+	'OVERRIDE SESSION WITH COOKIE
+	'-----------------------------------------------------------------------
+	if Len(Trim(Request.Cookies(g_storeid)("CURRENT_VIEW_ID")))> 0 then
+		Session("CURRENT_VIEW_ID") = Request.Cookies(g_storeid)("CURRENT_VIEW_ID")
+	end if
+	
+	if Len(Trim(Request.Cookies(g_storeid)("CURRENT_LOCALE"))) > 0 then
+		Session("CURRENT_LOCALE") = Request.Cookies(g_storeid)("CURRENT_LOCALE")
+	end if
+	
+	'-----------------------------------------------------------------------
+	'SHOPPING CART
+	'-----------------------------------------------------------------------
+	const MaxShoppingCartItems   = 25
+	const ShoppingCartAttributes = 21
+	
+	ReDim ARYShoppingCart(ShoppingCartAttributes,MaxShoppingCartItems)
+	
+	Session("MyShoppingCart") = ARYShoppingCart
+	Session("ItemCount") = 0 
+	Session("TotalPrice") = 0
+	Session("TotalTaxable") = 0
+	Session("TotalWeight") = 0
+	Session("CartItemCount") = 0
+	
+	Set conn = Server.CreateObject("ADODB.Connection")
+	conn.open Session("ConnectionString")
+	'-----------------------------------------------------------------------
+	'PROFILE - 1
+	'-----------------------------------------------------------------------
+	sql = "SELECT * FROM " & g_storeid & "_profile"
+	Set rsProfile = conn.Execute(sql)
+	if not rsProfile.EOF then
+		Session("StoreFullName") = rsProfile("company")
+	end if
+	rsProfile.Close
+	set rsProfile = nothing
+	'-----------------------------------------------------------------------
+	'PROFILE - 2
+	'-----------------------------------------------------------------------
+	sql = "SELECT * FROM " & g_storeid & "_profile2"
+	Set rsProfile2 = conn.Execute(sql)
+	if not rsProfile2.EOF then
+	end if
+	rsProfile2.Close
+	set rsProfile2 = nothing
+	'-----------------------------------------------------------------------
+	'SETTINGS
+	'-----------------------------------------------------------------------
+	
+	conn.Close
+	set conn = nothing
+	
+	
+END SUB
+</SCRIPT>
+
+
+<SCRIPT LANGUAGE=VBScript RUNAT=Server>
+SUB Session_OnEnd
+	
+	Session("shopper_id") = ""
+	Session("ItemCount") = 0
+	Session("TotalPrice") = 0
+	Session("TotalTaxable") = 0
+	Session("TotalWeight") = 0
+	Session("CartItemCount") = 0
+
+END SUB
+</SCRIPT>

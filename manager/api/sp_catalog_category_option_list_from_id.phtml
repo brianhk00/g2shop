@@ -1,0 +1,64 @@
+<%response.Expires=-1%>
+<!-- #INCLUDE File="../local/local.phtml" -->
+<%
+	ids = Trim(Request("ids"))
+	sid = Trim(Request("sid"))
+	
+	const adCmdTableDirect = 512
+	
+	if Len(ids) > 1 then
+		ids = "'" & Replace(ids, ",", "','") & "'"
+	else
+		ids = "0"
+	end if
+	
+%>
+{
+"Subcategories" : [
+<%
+	s_sub = ""
+	s_sub = s_sub & "{""id"" : """ & "0" & """,""name"" : """ & "Use Global Markup" & """},"
+	if ids <> "" then
+		sql = "SELECT dept_id, dept_name FROM " & g_storeid & "_dept WHERE dept_id IN (" & ids & ") ORDER BY dept_id"
+		set rs1 = dbconn.Execute(sql)
+		do while not rs1.EOF
+			s_name = ""
+			ar_id = Split(rs1(0), "-")
+			xid = ""
+			sname = ""
+			for iii = 0 to Ubound(ar_id)
+				if iii = 0 then
+					xid = ar_id(iii)
+				else
+					xid = xid & "-" & ar_id(iii)
+				end if
+				
+				xname = ""
+				sql = "SELECT dept_name FROM " & g_storeid & "_dept WHERE dept_id = '" & xid & "'"
+				set rs2 = dbconn.Execute(sql)
+				if not rs2.EOF then
+					xname = Trim(rs2(0))
+				end if
+				rs2.Close
+				set rs2 = nothing
+				
+				if iii = 0 then
+					sname = xname
+				else
+					sname = sname & " > " & xname
+				end if
+				
+			next
+			s_sub = s_sub & "{""id"" : """ & rs1(0) & """,""name"" : """ & sname & """},"
+			rs1.MoveNext
+		loop
+		rs1.Close
+		set rs1 = nothing
+		if Len(s_sub) > 0 then
+			s_sub = Left(s_sub, Len(s_sub)-1)
+		end if
+	end if
+	response.Write(s_sub)
+%>
+]
+}

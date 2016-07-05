@@ -1,0 +1,9 @@
+<!--#INCLUDE FILE="local/local.phtml"-->
+<!--#INCLUDE FILE="core/include_template_info.phtml"-->
+<%
+	If THEME_TEMPLATE = "" then
+		Server.Execute("_Error404.phtml")
+	Else
+		Server.Execute("theme/" & THEME_TEMPLATE & "/Error404.phtml")
+	End if
+%>

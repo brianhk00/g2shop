@@ -1,0 +1,62 @@
+<%@ Language=VBScript %>
+<!--#INCLUDE FILE="local/local.phtml"-->
+<%
+	url_key = Trim(Request("urlkey"))
+	if Len(url_key) > 1 then
+		
+		url_key = Replace(url_key, "/", "")
+		
+		Set dbconn_rewrite =server.CreateObject("ADODB.Connection")
+		dbconn_rewrite.Open g_connection_string
+		
+		sql = "SELECT * FROM " & g_storeid & "_rewrite WHERE rewrite_request_path='" & url_key & "'"
+		set rsRewrite = dbconn_rewrite.Execute(sql)
+		if not rsRewrite.EOF then
+			rewrite_type = rsRewrite("rewrite_type")
+			rewrite_system_type = rsRewrite("rewrite_system_type")
+			rewrite_system_id = rsRewrite("rewrite_system_id")
+			rewrite_redirect_type = rsRewrite("rewrite_redirect_type")
+		else
+			rewrite_type = 0
+			rewrite_system_type = 0
+			rewrite_system_id = ""
+			rewrite_redirect_type = ""
+		end if
+		
+		sType = ""
+		if rewrite_system_type = 1 AND Len(rewrite_system_id) > 1 then
+			sType = "dept"
+		end if
+		if rewrite_system_type = 2 AND Len(rewrite_system_id) > 1 then
+			sType = "product"
+		end if
+		if rewrite_system_type = 3 AND Len(rewrite_system_id) > 1 then
+			sType = "cms"
+		end if
+		
+		rsRewrite.Close
+		set rsRewrite = nothing
+		dbconn_rewrite.close
+		set dbconn_rewrite = nothing
+		
+		SELECT CASE sType
+		CASE "dept"
+			server.execute("dept.phtml")	
+		CASE "product"
+			server.execute("product.phtml")
+		CASE "cms"
+			server.execute("page.phtml")
+		CASE ELSE
+			'Execute 404 pages
+			Server.Execute("Error404.phtml")
+			Response.Status = "404 Not found"
+		END SELECT
+	
+	else
+		'Execute 404 pages
+		Server.Execute("Error404.phtml")
+		Response.Status = "404 Not found"
+
+	end if
+
+%>

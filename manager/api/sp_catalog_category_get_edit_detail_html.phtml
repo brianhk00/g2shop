@@ -138,7 +138,7 @@
 				%>
 				</div>
 			</div>
-			<% if g_store_mode = "icecat" then %>
+			<% if g_store_use_icecat_catalog = "1" then %>
 			<div class="form-group">
 				<label class="col-sm-2 control-label" for="">
 					Map to ICECAT
@@ -895,7 +895,7 @@
 	});
 </script>
 
-<% if g_store_mode = "icecat" then %>
+<% if g_store_use_icecat_catalog = "1" then %>
 <script>
 	jQuery.ajax({
 		type:"post",

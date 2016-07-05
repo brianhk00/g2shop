@@ -1,0 +1,134 @@
+<%response.Expires=-1%>
+<!-- #INCLUDE File="../local/local.phtml" -->
+<%
+	pf_id = Trim(Request("pf_id"))
+	
+	s_dept_id = ","
+	
+	if Len(pf_id) > 1 then
+		sql = "SELECT dept_id FROM " & g_storeid & "_dept_prod WHERE pf_id = '" & pf_id & "'"
+		set rs = dbconn.Execute(sql)
+		do while not rs.EOF
+			s_dept_id = s_dept_id & rs("dept_id") & ","
+			rs.MoveNext
+		loop
+		rs.Close
+		set rs = nothing
+	end if
+%>
+[
+	<%
+		s_tree = ""
+		
+		sql = "SELECT dept_id, dept_name FROM " & g_storeid & "_dept WHERE parent_dept='0' ORDER BY dept_row"
+		set rs = dbconn.Execute(sql)
+		do while not rs.EOF
+			category_id = rs("dept_id")
+			category_name = rs("dept_name")
+			
+			s_tree = s_tree & "{"
+			s_tree = s_tree & """title"": """ & category_name & """ , "
+			s_tree = s_tree & """isFolder"": true, "
+			if InStr(s_dept_id, "," & category_id & ",") then
+				s_tree = s_tree & """select"": true, "
+			else
+				s_tree = s_tree & """select"": false, "
+			end if
+			
+			if InStr(s_dept_id, "," & category_id & "-") then
+				s_tree = s_tree & """expand"": true, "
+			end if
+			
+			
+			s_tree = s_tree & """href"": ""catalog_category.phtml?dept_id=" & category_id & """, "
+			s_tree = s_tree & """key"": """ & category_id & """"
+			
+			s_tree_sub_1 = ""
+			
+			sql = "SELECT dept_id, dept_name FROM " & g_storeid & "_dept WHERE parent_dept='" & category_id & "' ORDER BY dept_row"
+			set rs1 = dbconn.Execute(sql)
+			if not rs1.EOF then
+				s_tree = s_tree & ",""children"": ["
+				do while not rs1.EOF
+					category_id = rs1("dept_id")
+					category_name = rs1("dept_name")
+					
+					s_tree_sub_1 = s_tree_sub_1 & "{"
+					s_tree_sub_1 = s_tree_sub_1 & """title"": """ & category_name & """ , "
+					s_tree_sub_1 = s_tree_sub_1 & """isFolder"": true, "
+					if InStr(s_dept_id, "," & category_id & ",") then
+						s_tree_sub_1 = s_tree_sub_1 & """select"": true, "
+					else
+						s_tree_sub_1 = s_tree_sub_1 & """select"": false, "
+					end if
+					
+					if InStr(s_dept_id, "," & category_id & "-") then
+						s_tree_sub_1 = s_tree_sub_1 & """expand"": true, "
+					end if
+			
+					s_tree_sub_1 = s_tree_sub_1 & """href"": ""catalog_category.phtml?dept_id=" & category_id & """, "
+					s_tree_sub_1 = s_tree_sub_1 & """key"": """ & category_id & """"
+					
+					s_tree_sub_2 = ""
+					sql = "SELECT dept_id, dept_name FROM " & g_storeid & "_dept WHERE parent_dept='" & category_id & "' ORDER BY dept_row"
+					set rs2 = dbconn.Execute(sql)
+					
+					if not rs2.EOF then
+						s_tree_sub_1 = s_tree_sub_1 & ",""children"": ["
+						do while not rs2.EOF
+							category_id = rs2("dept_id")
+							category_name = rs2("dept_name")
+							
+							s_tree_sub_2 = s_tree_sub_2 & "{"
+							s_tree_sub_2 = s_tree_sub_2 & """title"": """ & category_name & """ , "
+							s_tree_sub_2 = s_tree_sub_2 & """isFolder"": true, "
+							if InStr(s_dept_id, "," & category_id & ",") then
+								s_tree_sub_2 = s_tree_sub_2 & """select"": true, "
+							else
+								s_tree_sub_2 = s_tree_sub_2 & """select"": false, "
+							end if
+							s_tree_sub_2 = s_tree_sub_2 & """href"": ""catalog_category.phtml?dept_id=" & category_id & """, "
+							s_tree_sub_2 = s_tree_sub_2 & """key"": """ & category_id & """"
+							s_tree_sub_2 = s_tree_sub_2 & "},"
+							
+							rs2.MoveNext
+						loop
+						rs2.Close
+						set rs2 = nothing
+						
+						if Len(s_tree_sub_2) > 0 then
+							s_tree_sub_2 = Left(s_tree_sub_2, Len(s_tree_sub_2)-1)
+							s_tree_sub_1 = s_tree_sub_1 & s_tree_sub_2
+						end if
+				
+						s_tree_sub_1 = s_tree_sub_1 & "]"
+					end if
+					s_tree_sub_1 = s_tree_sub_1 & "},"
+					
+					rs1.MoveNext
+				loop
+				rs1.Close
+				set rs1 = nothing
+				
+				if Len(s_tree_sub_1) > 0 then
+					s_tree_sub_1 = Left(s_tree_sub_1, Len(s_tree_sub_1)-1)
+					s_tree = s_tree & s_tree_sub_1
+				end if
+		
+				s_tree = s_tree & "]"
+				
+			end if									
+			s_tree = s_tree & "},"
+			
+			rs.MoveNext
+		loop
+		rs.Close
+		set rs = nothing
+		
+		if Len(s_tree) > 0 then
+			s_tree = Left(s_tree, Len(s_tree)-1)
+		end if
+		
+%>
+	<%= s_tree %>
+]

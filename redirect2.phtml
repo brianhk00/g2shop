@@ -1,0 +1,51 @@
+<%@ Language=VBScript %>
+<!--#INCLUDE FILE="local/local.phtml"-->
+<%
+	url_key = Trim(Request("urlkey"))
+	if Len(url_key) > 1 then
+		
+		url_key = Replace(url_key, "/", "")
+		
+		Set dbconn_rewrite =server.CreateObject("ADODB.Connection")
+		dbconn_rewrite.Open g_connection_icecat_catalog
+		
+		sql = "SELECT * FROM " & g_storeid & "_ssprice WHERE url_key='" & url_key & "'"
+		set rsRewrite = dbconn_rewrite.Execute(sql)
+		if not rsRewrite.EOF then
+			rewrite_system_id = rsRewrite("sku")
+			rewrite_system_type = 2
+		else
+			rewrite_type = 0
+			rewrite_system_id = ""
+		end if
+		
+		sType = ""
+		'if rewrite_system_type = 1 AND Len(rewrite_system_id) > 1 then
+			'sType = "dept"
+		'end if
+		if rewrite_system_type = 2 AND Len(rewrite_system_id) > 1 then
+			sType = "ssproduct"
+		end if
+		
+		rsRewrite.Close
+		set rsRewrite = nothing
+		dbconn_rewrite.close
+		set dbconn_rewrite = nothing
+		
+		SELECT CASE sType
+		CASE "ssproduct"
+			server.execute("ssproduct.phtml")
+		CASE ELSE
+			'Execute 404 pages
+			Server.Execute("Error404.phtml")
+			Response.Status = "404 Not found"
+		END SELECT
+	
+	else
+		'Execute 404 pages
+		Server.Execute("Error404.phtml")
+		Response.Status = "404 Not found"
+
+	end if
+
+%>

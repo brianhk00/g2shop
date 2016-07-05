@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    <system.webServer>
+        <defaultDocument>
+            <files>
+                <add value="index.phtml" />
+            </files>
+        </defaultDocument>
+		<httpErrors errorMode="Detailed" existingResponse="PassThrough" />
+        <staticContent>
+            <mimeMap fileExtension=".woff" mimeType="application/x-woff" />
+            <mimeMap fileExtension=".woff2" mimeType="application/x-woff" />
+        </staticContent>
+		<rewrite>
+		<rules>
+			<rule name="rule 1u">
+				<match url="^(.*)\.html\?(.*)$"  />
+				<action type="Rewrite" url="//redirect.phtml?urlkey={R:1}&amp;{R:2}"  />
+			</rule>
+			<rule name="rule 1p">
+				<match url="^(.*)\.html$"  />
+				<action type="Rewrite" url="//redirect.phtml?urlkey={R:1}"  />
+			</rule>
+			<rule name="rule 2u">
+				<match url="^(.*)\.htm\?(.*)$"  />
+				<action type="Rewrite" url="//redirect2.phtml?urlkey={R:1}&amp;{R:2}"  />
+			</rule>
+			<rule name="rule 2p">
+				<match url="^(.*)\.htm$"  />
+				<action type="Rewrite" url="//redirect2.phtml?urlkey={R:1}"  />
+			</rule>
+		</rules>
+		</rewrite>
+    </system.webServer>
+</configuration>

@@ -1,0 +1,44 @@
+<%response.Expires=-1%>
+<%
+	Response.CodePage = 65001
+	Response.CharSet = "UTF-8"
+%>
+<!-- #INCLUDE File="../local/local.phtml" -->
+<!-- #INCLUDE File="../util/xt_func_util.phtml" -->
+<!-- #INCLUDE File="../util/xt_func_string.phtml" -->
+<%
+	id = Trim(Request("id"))
+%>
+<div class="modal-dialog modal-lg">
+	<div class="modal-content">
+		<div class="modal-header">
+			<button type="button" class="close" data-dismiss="modal" aria-label="Close">
+				<span aria-hidden="true">&times;</span>
+			</button>
+			<h4 class="modal-title" id="myModalLabel">WYSIWYG Editor</h4>
+		</div>
+		<div class="modal-body">
+			<div class="row"><div class="col-sm-12">
+			<div class="form-group">
+				<div class="col-sm-12">
+					<textarea id="wysiwig_text_2" name="wysiwig_text_2" class="form-control" style="height:200px;"></textarea>
+				</div>
+			</div>
+			</div></div>
+		</div>
+		<div class="modal-footer">
+			<button class="btn btn-primary btn-sm update_2" id="billing_update_btn btn-sm">Update</button>
+			<button type="button" data-dismiss="modal" class="btn btn-default btn-sm">Close</button>
+		</div>
+	</div>
+</div>
+<script type="text/javascript" src="ckfinder/ckeditor/ckeditor.js"></script>
+<script>
+$('#wysiwig_text_2').val($('#<%=id%>').val());
+CKEDITOR.config.allowedContent = true;
+var editor_2 = CKEDITOR.replace('wysiwig_text_2',
+{
+height: '350px'
+});
+//CKFinder.setupCKEditor( editor, 'ckfinder/' ) ;
+</script>

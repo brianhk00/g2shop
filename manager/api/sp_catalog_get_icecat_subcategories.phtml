@@ -1,0 +1,26 @@
+<%response.Expires=-1%>
+<!-- #INCLUDE File="../local/local.phtml" -->
+<%
+	parent_id = Trim(Request("parent_id"))
+%>
+{
+"Subcategories" : [
+<%
+	s_sub = ""
+	if parent_id <> "" then
+		sql = "SELECT * FROM A_ICECAT_Category as a, A_ICECAT_Category_Name as b WHERE a.Id = b.EntityId AND a.ParentId = " & parent_id
+		set rs1 = dbconn_icecat.Execute(sql)
+		do while not rs1.EOF
+			s_sub = s_sub & "{""id"" : """ & rs1(0) & """,""name"" : """ & rs1("value") & """},"
+			rs1.MoveNext
+		loop
+		rs1.Close
+		set rs1 = nothing
+		if Len(s_sub) > 0 then
+			s_sub = Left(s_sub, Len(s_sub)-1)
+		end if
+	end if
+	response.Write(s_sub)
+%>
+]
+}

@@ -1,0 +1,564 @@
+<%response.Expires=-1%>
+<%
+	Response.CodePage = 65001
+	Response.CharSet = "UTF-8"
+%>
+<!-- #INCLUDE File="../local/local.phtml" -->
+<!-- #INCLUDE File="../util/xt_func_util.phtml" -->
+<!-- #INCLUDE File="../util/xt_func_string.phtml" -->
+<Script language="VBScript" RUNAT=SERVER>
+Function GetExtension(strFileName)
+	GetExtension = LCase(Right(strFileName,(Len(strFileName)-InStrRev(strFileName,"."))))
+End Function
+Function ResizeImage(ByRef oFile, ByRef ox, ByRef oy, ByRef mFile, ByRef mx, ByRef my, ByRef bResize, ByRef Img_Type)
+
+	Set Image = Server.CreateObject("AspImage.Image")
+
+	If Img_Type = "GIF" then
+		Image.ImageFormat = 5
+	else
+		Image.ImageFormat = 1
+	end if
+
+	Image.MaxX = ox
+	Image.MaxY = oy
+
+	b = Image.LoadImage (oFile)
+
+	if bResize = 1 then
+		Image.ResizeR mx, my
+	end if
+
+	Image.FileName = mFile
+
+	Image.SaveImage
+
+
+	Set Image = nothing
+
+	ResizeImage = true
+
+End Function
+</script>
+<%
+	'--POST DATA------------------------------------------
+	pf_id = Trim(Request("pf_id"))
+	pf_op = Trim(Request("pf_op"))
+	pf_sku = Trim(Request("pf_sku"))
+	pf_name = Trim(Request("pf_name"))
+	pf_description = Trim(Request("pf_description"))
+	
+	pf_IM_part_number = Trim(Request("pf_IM_part_number"))
+	pf_SN_part_number = Trim(Request("pf_SN_part_number"))
+	pf_TD_part_number = Trim(Request("pf_TD_part_number"))
+	pf_UPC_code = Trim(Request("pf_UPC_code"))
+	pf_dh_part_number = Trim(Request("pf_dh_part_number"))
+	pf_dist_flag = Trim(Request("pf_dist_flag"))
+	pf_dist_inventory_sync = Trim(Request("pf_dist_inventory_sync"))
+	pf_espec_sku = Trim(Request("pf_espec_sku"))
+	pf_is_nontaxable = Trim(Request("pf_is_nontaxable"))
+	pf_item_status  = Trim(Request("pf_item_status"))
+	pf_list_price = Trim(Request("pf_list_price"))
+	pf_manu_part_number = Trim(Request("pf_manu_part_number"))
+	
+	pf_use_price = Trim(Request("pf_use_price"))
+	pf_price_A = Trim(Request("pf_price_A"))
+	pf_price_B = Trim(Request("pf_price_B"))
+	pf_price_C = Trim(Request("pf_price_C"))
+	pf_price_D = Trim(Request("pf_price_D"))
+		
+	pf_map_price_flag = Trim(Request("pf_map_price_flag"))
+	pf_meta_description = Trim(Request("pf_meta_description"))
+	pf_meta_keywords = Trim(Request("pf_meta_keywords"))
+	pf_on_sale = Trim(Request("pf_on_sale"))
+	if pf_on_sale = "1" then
+	else
+		pf_on_sale = "0"
+	end if
+	pf_page_title = Trim(Request("pf_page_title"))
+	pf_retail_price = Trim(Request("pf_retail_price"))
+	pf_sale_price = Trim(Request("pf_sale_price"))
+	pf_stock = Trim(Request("pf_stock"))
+	pf_stock_status = Trim(Request("pf_stock_status"))
+	pf_url_key = Trim(Request("pf_url_key"))
+	pf_vendor_number = Trim(Request("pf_vendor_number"))
+	pf_weight = Trim(Request("pf_weight"))
+	
+	pf_include_icecat_specdata = Trim(Request("pf_include_icecat_specdata"))
+	pf_use_icecat_images = Trim(Request("pf_use_icecat_images"))
+	pf_item_status = Trim(Request("pf_item_status"))
+	
+	pf_detail = Trim(Request("pf_detail"))
+		
+	
+	pf_productimage = Trim(Request("productimage"))
+	if Len(pf_productimage) > 3 then
+	else
+		pf_productimage = "--"
+	end if
+	
+	if Len(pf_url_key) > 1 then
+	else
+		pf_url_key = CreateURLKey(pf_name)
+	end if
+	
+	pf_markup_category =  Trim(Request("pf_markup_category"))
+	if Len(pf_markup_category) > 1 then
+	else
+		pf_markup_category = "0"
+	end if
+	
+	'------------------------------
+	'category
+	'------------------------------
+	pf_selected_dept = Trim(Request("selectedDept"))
+	'------------------------------
+	'Related Items
+	'------------------------------
+	pf_related_items = Trim(Request("pf_related_items"))
+	'------------------------------
+	'Tabl
+	'------------------------------
+	pf_tab1_html = Trim(Request("pf_tab1_html"))
+	pf_tab1_name = Trim(Request("pf_tab1_name"))
+	pf_tab1_show = Trim(Request("pf_tab1_show"))
+	pf_tab1_type = Trim(Request("pf_tab1_type"))
+	
+	pf_tab2_html = Trim(Request("pf_tab2_html"))
+	pf_tab2_name = Trim(Request("pf_tab2_name"))
+	pf_tab2_show = Trim(Request("pf_tab2_show"))
+	pf_tab2_type = Trim(Request("pf_tab2_type"))
+	
+	pf_tab3_html = Trim(Request("pf_tab3_html"))
+	pf_tab3_name = Trim(Request("pf_tab3_name"))
+	pf_tab3_show = Trim(Request("pf_tab3_show"))
+	pf_tab3_type = Trim(Request("pf_tab3_type"))
+	
+	pf_tab4_html = Trim(Request("pf_tab4_html"))
+	pf_tab4_name = Trim(Request("pf_tab4_name"))
+	pf_tab4_show = Trim(Request("pf_tab4_show"))
+	pf_tab4_type = Trim(Request("pf_tab4_type"))
+	
+	pf_tab5_html = Trim(Request("pf_tab5_html"))
+	pf_tab5_name = Trim(Request("pf_tab5_name"))
+	pf_tab5_show = Trim(Request("pf_tab5_show"))
+	pf_tab5_type = Trim(Request("pf_tab5_type"))
+	
+	pf_tab_table_data1 = Trim(Request("pf_tab_table_data1"))
+	pf_tab_table_data2 = Trim(Request("pf_tab_table_data2"))
+	pf_tab_table_data3 = Trim(Request("pf_tab_table_data3"))
+	pf_tab_table_data4 = Trim(Request("pf_tab_table_data4"))
+	pf_tab_table_data5 = Trim(Request("pf_tab_table_data5"))
+	
+	if pf_tab1_show = "1" then
+	else
+		pf_tab1_show = "0"
+	end if
+	
+	if pf_tab2_show = "1" then
+	else
+		pf_tab2_show = "0"
+	end if
+	
+	if pf_tab3_show = "1" then
+	else
+		pf_tab3_show = "0"
+	end if
+	
+	if pf_tab4_show = "1" then
+	else
+		pf_tab4_show = "0"
+	end if
+	
+	if pf_tab5_show = "1" then
+	else
+		pf_tab5_show = "0"
+	end if
+  
+	'--END OF POST DATA-----------------------------------
+	
+	
+	'====================================================================================================================
+	'UPDATE _product table....
+	'====================================================================================================================
+	
+	if pf_op = "new" then
+		Set rsUpdate = Server.CreateObject("ADODB.Recordset")
+		with rsUpdate
+			.ActiveConnection = dbconn
+			.CursorLocation = 3
+			.CursorType = 1
+			.LockType = 3
+			.Source = g_storeid & "_product WHERE pf_id='0'"
+			.Open
+			.AddNew
+		end with
+		
+		rsUpdate("pf_id") = pf_id
+		
+		'-------------------------------------------------------------------------------------
+		'GET NEW PRODUCT ID
+		'-------------------------------------------------------------------------------------	
+	else
+		Set rsUpdate = Server.CreateObject("ADODB.Recordset")
+		with rsUpdate
+			.ActiveConnection = dbconn
+			.CursorLocation = 3
+			.CursorType = 1
+			.LockType = 3
+			.Source = g_storeid & "_product WHERE pf_id='" & pf_id & "'"
+			.Open
+		end with
+	end if
+	
+	rsUpdate("name") = pf_name
+	rsUpdate("sku") = pf_sku
+	rsUpdate("description") = pf_description
+	
+	rsUpdate("IM_part_num") = pf_IM_part_number
+	rsUpdate("SN_part_num") = pf_SN_part_number
+	rsUpdate("TD_part_num") = pf_TD_part_number
+	rsUpdate("UPC") = pf_UPC_code
+	rsUpdate("dh_part_number") = pf_dh_part_number
+	rsUpdate("dist_flag") = pf_dist_flag
+	rsUpdate("dist_inventory_sync") = pf_dist_inventory_sync
+	rsUpdate("espec_sku") = pf_espec_sku
+	rsUpdate("is_nontaxable") = pf_is_nontaxable
+	rsUpdate("item_status") = pf_item_status
+	rsUpdate("list_price") = pf_list_price
+	rsUpdate("manu_part_num") = pf_manu_part_number
+	rsUpdate("map_price_flag") = pf_map_price_flag
+	rsUpdate("meta_description") = pf_meta_description
+	rsUpdate("meta_keywords") = pf_meta_keywords
+	rsUpdate("on_sale") = pf_on_sale
+	rsUpdate("page_title") = pf_page_title
+	rsUpdate("retail_price") = pf_retail_price
+	rsUpdate("sale_price") = pf_sale_price
+	rsUpdate("stock") = pf_stock
+	rsUpdate("stock_status") = pf_stock_status
+	rsUpdate("url_key") = pf_url_key
+	rsUpdate("vendor_number") = pf_vendor_number
+	rsUpdate("weight") = pf_weight
+	rsUpdate("details") = pf_detail
+	
+	rsUpdate("image_file") = pf_productimage
+	rsUpdate("include_icecat_specdata")  = pf_include_icecat_specdata
+	rsUpdate("use_icecat_images")  = pf_use_icecat_images
+	
+	rsUpdate("mm_type") = 1
+	
+	rsUpdate("use_price") = pf_use_price
+	rsUpdate("price_A") = pf_price_A
+	rsUpdate("price_B") = pf_price_B
+	rsUpdate("price_C") = pf_price_C
+	rsUpdate("price_D") = pf_price_D
+	rsUpdate("markup_category") = pf_markup_category
+	
+	
+	If dbconn.Errors.Count > 0 Then
+		dbconn.Errors.Clear
+		rsUpdate.CancelUpdate
+	else
+		rsUpdate.Update
+	End If
+	
+	rsUpdate.Close
+	set rsUpdate = nothing
+	
+	
+	
+	'====================================================================================================================
+	'UPDATE _dept_prod table....
+	'====================================================================================================================
+	sqld = "DELETE FROM " & g_storeid & "_dept_prod WHERE pf_id='" & pf_id & "'"
+	dbconn.execute(sqld)
+	
+	if Len(pf_selected_dept) > 0 then
+		
+		ar_selected_dept = Split(pf_selected_dept, ",")
+		
+		For i = 0 to UBound(ar_selected_dept)
+			
+			sqli = "INSERT INTO " &  g_storeid & "_dept_prod(dept_id, pf_id) VALUES('" & ar_selected_dept(i) & "','" & pf_id & "')"
+			dbconn.execute(sqli)
+		
+		Next
+	
+	end if
+	
+	'====================================================================================================================
+	'UPDATE _dept_image....
+	'====================================================================================================================
+	pf_list_image_id = Trim(Request("pf_list_image_id"))
+	pf_list_image_label = Trim(Request("pf_list_image_label"))
+	pf_list_image_sort_order = Trim(Request("pf_list_image_sort_order"))
+	
+	For i = 1 To Request("pf_list_image_id").Count 
+		list_image_id = Request("pf_list_image_id")(i)
+		list_image_label = Request("pf_list_image_label")(i)
+		list_image_sort_order = Request("pf_list_image_sort_order")(i)
+		
+		if IsNumeric(list_image_sort_order) then
+		else
+			list_image_sort_order = "1"
+		end if
+		
+		if Len(list_image_id) > 0 then
+			Set rsUpdate = Server.CreateObject("ADODB.Recordset")
+			with rsUpdate
+				.ActiveConnection = dbconn
+				.CursorLocation = 3
+				.CursorType = 1
+				.LockType = 3
+				.Source = g_storeid & "_product_image WHERE pf_id='" & pf_id & "' AND image_name = '" & list_image_id & "'"
+				.Open
+			end with
+			
+			rsUpdate("image_label") = list_image_label
+			rsUpdate("sort_order") = list_image_sort_order
+			
+			If dbconn.Errors.Count > 0 Then
+				dbconn.Errors.Clear
+				rsUpdate.CancelUpdate
+			else
+				rsUpdate.Update
+			End If
+			
+			rsUpdate.Close
+			set rsUpdate = nothing
+	
+		end if
+		
+	Next
+	
+	'====================================================================================================================
+	'UPDATE _rewrite table....
+	'====================================================================================================================
+	
+	sql = "SELECT rewrite_id FROM " & g_storeid & "_rewrite WHERE rewrite_system_id='" & pf_id & "' AND rewrite_system_type = 2"
+	set rsRewrite = dbconn.Execute(sql)
+	if not rsRewrite.EOF then
+		rewrite_id = rsRewrite("rewrite_id")
+	else
+		rewrite_id = 0
+	end if
+	
+	rsRewrite.Close
+	set rsRewrite = nothing
+	
+	if rewrite_id = 0 then
+		Set rsUpdate = Server.CreateObject("ADODB.Recordset")
+		with rsUpdate
+			.ActiveConnection = dbconn
+			.CursorLocation = 3
+			.CursorType = 1
+			.LockType = 3
+			.Source = g_storeid & "_rewrite WHERE rewrite_id=0"
+			.Open
+			.AddNew
+		end with
+		
+		rsUpdate("rewrite_type") = 1
+		rsUpdate("rewrite_system_type") = 2
+		rsUpdate("rewrite_system_id") = pf_id
+		rsUpdate("rewrite_redirect_type") = ""
+	
+	else
+		Set rsUpdate = Server.CreateObject("ADODB.Recordset")
+		with rsUpdate
+			.ActiveConnection = dbconn
+			.CursorLocation = 3
+			.CursorType = 1
+			.LockType = 3
+			.Source = g_storeid & "_rewrite WHERE rewrite_id=" & rewrite_id
+			.Open
+		end with
+	end if
+	
+	rsUpdate("rewrite_request_path") = pf_url_key
+	
+	If dbconn.Errors.Count > 0 Then
+		dbconn.Errors.Clear
+		rsUpdate.CancelUpdate
+	else
+		rsUpdate.Update
+	End If
+	
+	rsUpdate.Close
+	set rsUpdate = nothing
+
+	'====================================================================================================================
+	'UPDATE related
+	'====================================================================================================================
+	sqld = "DELETE FROM " & g_storeid & "_prod_cross WHERE pf_id1='" & pf_id & "'"
+	dbconn.execute(sqld)
+	
+	ar_pf_related_items = Split(pf_related_items, ",")
+	
+	for kk = 0 to Ubound(ar_pf_related_items)
+		if Len(ar_pf_related_items(kk)) > 0 then
+			if ar_pf_related_items(kk) = pf_id then
+			else
+				sqlu = "INSERT INTO " & g_storeid & "_prod_cross (pf_id1,pf_id2) VALUES ('"& pf_id &"','" & ar_pf_related_items(kk) & "')"
+				dbconn.execute(sqlu)
+			end if
+		end if
+	next
+	'====================================================================================================================
+	'UPDATE tabs
+	'====================================================================================================================
+	sqld = "DELETE FROM " & g_storeid & "_product_tabs WHERE pf_id='" & pf_id & "'"
+	dbconn.Execute sqld
+	
+	Set rsUpdate = Server.CreateObject("ADODB.Recordset")
+	with rsUpdate
+		.ActiveConnection = dbconn
+		.CursorLocation = 3 'adUseClient
+		.CursorType = 1 'adOpenKeyset
+		.LockType = 3 'adLockOptimistic
+		.Source = g_storeid & "_product_tabs WHERE pf_id='" & pf_id & "'"
+		.Open
+		.AddNew
+	end with
+
+	rsUpdate("pf_id") = pf_id
+
+	rsUpdate("tab1_show") = pf_tab1_show
+	rsUpdate("tab1_name") = pf_tab1_name
+	rsUpdate("tab1_type") = pf_tab1_type
+
+	rsUpdate("tab2_show") = pf_tab2_show
+	rsUpdate("tab2_name") = pf_tab2_name
+	rsUpdate("tab2_type") = pf_tab2_type
+
+	rsUpdate("tab3_show") = pf_tab3_show
+	rsUpdate("tab3_name") = pf_tab3_name
+	rsUpdate("tab3_type") = pf_tab3_type
+
+	rsUpdate("tab4_show") = pf_tab4_show
+	rsUpdate("tab4_name") = pf_tab4_name
+	rsUpdate("tab4_type") = pf_tab4_type
+
+	rsUpdate("tab5_show") = pf_tab5_show
+	rsUpdate("tab5_name") = pf_tab5_name
+	rsUpdate("tab5_type") = pf_tab5_type
+
+	rsUpdate.Update				
+	rsUpdate.Close
+	
+	set rsUpdate = nothing
+	for tid = 1 to 5
+		
+		'=============================
+		'HTML
+		'=============================
+		SELECT CASE tid
+		CASE 1
+			page_text = pf_tab1_html
+		CASE 2
+			page_text = pf_tab2_html
+		CASE 3
+			page_text = pf_tab3_html
+		CASE 4
+			page_text = pf_tab4_html
+		CASE 5
+			page_text = pf_tab5_html
+		CASE ELSE
+			page_text = ""
+		END SELECT
+		
+		sql = "SELECT * FROM " & g_storeid & "_tab_HTML WHERE pf_id='" & pf_id & "' AND tab_id=" & tid
+		set rs = dbconn.Execute(sql)
+		if not rs.EOF then
+			bExist = true
+		else
+			bExist = false
+		end if
+		rs.Close
+		
+		Set rsUpdate = Server.CreateObject("ADODB.Recordset")
+		if bExist then
+			with rsUpdate
+			.ActiveConnection = dbconn
+			.CursorLocation = 3
+			.CursorType = 1
+			.LockType = 3
+			.Source = g_storeid & "_tab_HTML WHERE pf_id='" & pf_id & "' AND tab_id=" & tid
+			.Open
+			end with
+			
+		else
+			with rsUpdate
+			.ActiveConnection = dbconn
+			.CursorLocation = 3
+			.CursorType = 1
+			.LockType = 3
+			.Source = g_storeid & "_tab_HTML WHERE pf_id='0'"
+			.Open
+			.AddNew
+			end with
+			
+			rsUpdate("pf_id") = pf_id
+			rsUpdate("tab_id") = tid
+			
+		end if
+
+		rsUpdate("tab_HTML") = page_text
+
+		rsUpdate.Update
+		rsUpdate.Close
+		set rsUpdate = nothing
+		
+		'=============================
+		'TABLE
+		'=============================
+		
+		SELECT CASE tid
+		CASE 1
+			tab_table_data = pf_tab_table_data1
+		CASE 2
+			tab_table_data = pf_tab_table_data2
+		CASE 3
+			tab_table_data = pf_tab_table_data3
+		CASE 4
+			tab_table_data = pf_tab_table_data4
+		CASE 5
+			tab_table_data = pf_tab_table_data5
+		CASE ELSE
+			tab_table_data = ""
+		END SELECT
+		
+		
+		sqld = "DELETE FROM " & g_storeid & "_tab_table WHERE pf_id='" & pf_id & "' AND tab_id=" & tid
+		dbconn.Execute (sqld)
+		
+		if Len(tab_table_data) > 0 then
+			ar_tab_table_rows = Split(tab_table_data, "%%")
+			for k = 0 to UBound(ar_tab_table_rows)
+				if Len(ar_tab_table_rows(k)) > 0 then
+					ar_tab_table_cells = Split(ar_tab_table_rows(k), "||")
+					tab_header = Trim(ar_tab_table_cells(0))
+					tab_value = Trim(ar_tab_table_cells(1))
+
+					if Len(tab_header) > 0 AND Len(tab_value) > 0 then
+						sql = "INSERT INTO " & g_storeid & "_tab_table(pf_id, tab_id, tab_header, tab_desc, tab_order) VALUES('"
+						sql = sql & pf_id & "',"
+						sql = sql & tid & ",'"
+						sql = sql & CheckString(tab_header) & "','"
+						sql = sql & CheckString(tab_value) & "',"
+						sql = sql & CStr(k) & ")"
+						dbconn.Execute sql
+					end if
+				end if
+			next	
+		end if
+		
+	next
+
+	dbconn.Close
+	
+	
+	
+	
+	
+%>
