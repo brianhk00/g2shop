@@ -1,0 +1,166 @@
+<%@ Language=VBScript %>
+<%
+	Response.CodePage = 65001
+	Response.CharSet = "UTF-8"
+%>
+<%
+  Response.Expires = -1
+%>
+<!-- #INCLUDE File="../local/local.phtml" -->
+<!-- #INCLUDE File="../util/xt_func_util.phtml" -->
+<!-- #INCLUDE File="../util/xt_func_string.phtml" -->
+<%
+  sEcho = Cint(Request("sEcho"))
+  iDisplayLength = Cint(Request("iDisplayLength"))
+  iDisplayStart = Cint(Request("iDisplayStart"))
+  sSearch = Trim(Request("sSearch"))
+  v1 = Trim(Request("v1"))
+  
+  'iDisplayLength = 10
+  'iDisplayStart = 0
+  if v1 = "1" then
+    str_filter = "salesrep_id='" & Session("AdminID") & "'"
+  end if
+ 
+  
+  'SEARCH - here we make the Where clause that will be used in the SQL querry. You only put here the fields you want to search 
+  strWhere = " ("
+  strWhere = strWhere &  " shopper_id LIKE '%" & sSearch & "%' OR "
+  strWhere = strWhere &  " Company LIKE '%" & sSearch & "%' OR "
+  strWhere = strWhere &  " LastName LIKE '%" & sSearch & "%' OR "
+  strWhere = strWhere &  " FirstName LIKE '%" & sSearch & "%' OR "
+  strWhere = strWhere &  " Phone LIKE '%" & sSearch & "%' OR "
+  strWhere = strWhere &  " Email LIKE '%" & sSearch & "%' OR "
+  strWhere = strWhere &  " City LIKE '%" & sSearch & "%' OR "
+  strWhere = strWhere &  " State LIKE '%" & sSearch & "%' OR "
+  strWhere = strWhere &  " salesrep_id LIKE '%" & sSearch & "%')"
+  
+  if Len(str_filter) > 0 then
+    strWhere  = strWhere & " AND " & str_filter
+  end if
+  
+  '=======================================================================================
+  'ORDERING
+	'passes through all cols and first check if the column is sortable, if yes then construct
+	'the variable "order" that list in order the sequence of ordering
+	for k = 0 to 5
+		if Request("bSortable_" & k)="true" then
+			order = order & Request("iSortCol_" & k) & " " & Request("sSortDir_" & k)
+		end if
+	next
+	'here we replace the number corresponding the column position by the corresponding name of the column in the database
+	order =	Replace(order,"0",", shopper_id")
+	order =	Replace(order,"1",", Company")
+	order =	Replace(order,"4",", LastName")
+	order =	Replace(order,"5",", Phone")
+	order =	Replace(order,"6",", Email")
+	order =	Replace(order,"7",", City")
+	order =	Replace(order,"8",", State")
+	order =	Replace(order,"9",", member_group")
+	order =	Replace(order,"10",", salesrep_id")
+	
+	'here we eliminate the first comma of the variable "order"
+	if Len(order) > 0 then
+	  order = Right(order, Len(order)-1)
+	else
+	  order = " Company"
+	end if
+
+	'here we create the variable "strOrderBy" that will be used in the SQL querry
+	strOrderBy = "ORDER BY " & order
+	
+	'======================================================================================
+	
+
+	'Set dbconn=server.CreateObject("ADODB.Connection")
+	'dbconn.Open Session("ConnectionString")
+	
+	sql = "SELECT * FROM " & g_storeid & "_shopper WHERE " & strWhere & " " & strOrderBy
+	
+	sqlx = "SELECT COUNT(shopper_id) FROM " & g_storeid & "_shopper WHERE " & strWhere 
+	
+	'Response.Write(sql)
+	'Response.end
+		
+	set rs = dbconn.Execute(sql)
+	
+	iTotalDisplayRecords = 0
+	iTotalRecords = 50
+	set rs1 = dbconn.Execute(sqlx)
+	if not rs1.EOF then
+	  iTotalDisplayRecords = rs1(0)
+	  iTotalRecords = rs1(0)
+	else
+	end if
+	rs1.Close
+	
+	'iTotalDisplayRecords = 50
+	
+	'iTotalRecords = 50
+	
+%>
+{"sEcho": <%=sEcho%>, "iTotalRecords": <%=iTotalRecords%>, "iTotalDisplayRecords": <%=iTotalDisplayRecords%>, "aaData": [ 
+<%
+  i = 0
+  
+  if rs.eof = false then
+    rs.move(iDisplayStart)
+    do while i < iDisplayLength and not rs.eof
+    
+      s_shopper_id = rs("shopper_id")
+      s_company = rs("Company")
+      s_lastname = rs("LastName")
+      s_firstname = rs("FirstName")
+      s_email = rs("Email")
+      s_address = rs("Address")
+      s_city = rs("City")
+      s_state = rs("State")
+      s_salesrep_id = rs("salesrep_id")
+      s_phone = rs("Phone")
+      s_group = rs("member_group")
+      
+      If Len(s_lastname) > 0 Then
+				s_lastname = Replace(s_lastname, "'", "&#39")
+			End if
+			If Len(s_firstname) > 0 Then
+				s_firstname = Replace(s_firstname, "'", "&#39")
+			End if
+			If Len(s_company) > 0 Then
+				s_company = Replace(s_company, "'", "&#39")
+			End if
+			If Len(s_address) > 0 Then
+				s_address = Replace(s_address, "'", "&#39")
+			End if
+			If Len(s_city) > 0 Then
+				s_city = Replace(s_city, "'", "&#39")
+			End if
+      
+      aaData = aaData & "['"
+      aaData = aaData & "<a href=\'customer_manage_customer_detail.phtml?shopper_id=" & s_shopper_id & "\'>" & s_shopper_id & "</a>','"
+      aaData = aaData & s_company & "','"
+      aaData = aaData & "<a class=\'btn btn-blue btn-xs btn-o\' href=\'api/tp_sales_quotation_detail.phtml?quote_id=0&shopper_id=" & s_shopper_id & "\'><i class=\'fa fa-plus\'></i></a>','"
+      aaData = aaData & "<a class=\'btn btn-blue btn-xs btn-o\' href=\'api/tp_sales_orders_detail.phtml?so_id=0&shopper_id=" & s_shopper_id & "\'><i class=\'fa fa-plus\'></i></a>','"
+      aaData = aaData & s_lastname & ", " & s_firstname & "','" 
+      aaData = aaData & s_phone & "','" 
+      aaData = aaData & s_email & "','" 
+      aaData = aaData & s_city & "','" 
+      aaData = aaData & s_state & "','"
+      aaData = aaData & s_group & "','"
+      aaData = aaData & s_salesrep_id & "'],"
+      'aaData = aaData & "<input type=checkbox name=cust_del value=" & s_shopper_id & ">'],"
+      'aaData = aaData & "<a class=\'btn btn-red btn-xs btn-o\' href=\'javascript:RemoveCustomer(" & s_shopper_id & ")\'><i class=\'fa fa-close\'></i></a>'],"
+          
+      aaData = Replace(aaData,"'",chr(34))
+      rs.MoveNext
+      i=i+1
+      
+    loop
+    rs.Close
+    aaData = Left(aaData, Len(aaData)-1)
+  else
+    aaData = ""
+  end if
+  response.write aaData & "] }"
+  
+ 
+%>

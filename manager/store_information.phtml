@@ -1,0 +1,1118 @@
+<%
+	Response.CodePage = 65001
+	Response.CharSet = "UTF-8"
+%>
+<!-- #INCLUDE File="local/local.phtml" -->
+<!-- #INCLUDE File="util/xt_func_util.phtml" -->
+<!-- #INCLUDE File="util/xt_func_string.phtml" -->
+<!-- #INCLUDE File="../util/xt_func_misc_option.phtml" -->
+<!-- #INCLUDE File="include/i_login.phtml" -->
+<%
+	g_access_key = "08-a"
+%>
+<!-- #INCLUDE File="include/i_access.phtml" -->
+<script language="VBScript" runat="Server">
+function GetSettingValue(strKey, strDefault)
+  
+	sReturnValue = ""
+ 
+	sql = "SELECT setting_values FROM " & g_storeid & "_setting WHERE setting_type='"& strKey & "'"
+	set rsSetting1 = dbconn.Execute(sql)
+	if not rsSetting1.EOF then
+	  sReturnValue = rsSetting1(0)
+	else
+	  sReturnValue = strDefault
+	end if
+	rsSetting1.Close
+	GetSettingValue = sReturnValue
+	
+end function
+</script>
+<%
+	sql = "SELECT * FROM " & g_storeid & "_profile"
+	set rs = dbconn.Execute(sql)
+	if not rs.EOF then
+	
+		company = rs("Company")
+		address = rs("Address")
+		city = rs("City")
+		state = rs("State")
+		zip = rs("Zip")
+		szCountry = rs("Country")
+		phone = rs("Phone")
+		email = rs("Email")
+		
+		profile_visa = rs("visa")
+		profile_mastercard = rs("MasterCard")
+		profile_americanexpress = rs("AmericanExpress")
+		profile_discover = rs("Discover")
+		profile_cod = rs("cod")
+		profile_billme = rs("billme")
+		'profile_check = rs("HasCheckPayment")
+		
+		SH_display_flag = rs("SH_display_flag")
+		
+		
+		'Warehouse Information...
+		warehouse_city = Trim(rs("warehouse_city"))
+		warehouse_state = Trim(rs("warehouse_state"))
+		warehouse_zip = Trim(rs("warehouse_zip"))
+		warehouse_country = Trim(rs("warehouse_country"))
+		
+		'UPS
+		sh_handling = rs("sh_handling")
+		sh_handling = CStr(FormatNumber(sh_handling,2))
+		sh_markup = rs("sh_markup")
+		sh_markup = CStr(FormatNumber(sh_markup,2))
+		ups_xml_userid = Trim(rs("ups_xml_userid"))
+		ups_xml_password = Trim(rs("ups_xml_password"))
+		ups_xml_key = Trim(rs("ups_xml_key"))
+		ups_xml_flag = Trim(rs("ups_xml_flag"))
+		sh_ups_flags = rs("sh_ups_flags")
+		
+		'UPS tables...(2)
+		GND="0"
+		DM1="0"
+		DA1="0"
+		DP1="0"
+		DM2="0"
+		DA2="0"
+		DS3="0"
+			
+		if mid(sh_ups_flags,1,1) = "1" then
+			GND = "1"
+		end if
+		if mid(sh_ups_flags,2,1) = "1" then
+			DM1 = "1"
+		end if
+		if mid(sh_ups_flags,3,1) = "1" then
+			DA1 = "1"
+		end if
+		if mid(sh_ups_flags,4,1) = "1" then
+			DP1 = "1"
+		end if
+		if mid(sh_ups_flags,5,1) = "1" then
+			DM2 = "1"
+		end if
+		if mid(sh_ups_flags,6,1) = "1" then
+			DA2 = "1"
+		end if
+		if mid(sh_ups_flags,7,1) = "1" then
+			DS3 = "1"
+		end if
+	
+		'FedEx Settings
+		fedex_markup = rs("fedex_markup")
+		fedex_markup = CStr(FormatNumber(fedex_markup,2))
+		fedex_handling = rs("fedex_handling")
+		fedex_handling = CStr(FormatNumber(fedex_handling,2))
+		show_fedex_tracking = rs("show_fedex_tracking")
+		fedex_service_flag = Trim(rs("fedex_service_flag"))
+		
+		fedex_account = Trim(rs("fedex_account"))
+		fedex_meter = Trim(rs("fedex_meter")) 
+		
+		'USPS Settings
+		usps_userid = Trim(rs("usps_userid"))
+		usps_password = Trim(rs("usps_password"))
+		usps_markup = rs("usps_markup")
+		usps_markup = CStr(FormatNumber(usps_markup,2))
+		usps_handling = rs("usps_handling")
+		usps_handling = CStr(FormatNumber(usps_handling,2))
+		show_usps_tracking = rs("show_usps_tracking")
+		usps_service_flag = Trim(rs("usps_service_flag"))
+		
+	end if
+	rs.Close
+	set rs = nothing
+	
+	goodgree_payment_enable = GetSettingValue("goodgree_payment_enable", "0")
+	goodgree_payment_mode = GetSettingValue("goodgree_payment_mode", "sandbox")
+	goodgree_payment_sandbox_sk = GetSettingValue("goodgree_payment_sandbox_sk", "")
+	goodgree_payment_live_sk = GetSettingValue("goodgree_payment_live_sk", "")
+	goodgree_payment_payment_action = GetSettingValue("goodgree_payment_payment_action", "authorize_capture")
+	goodgree_payment_descriptor = GetSettingValue("goodgree_payment_descriptor", "")
+	goodgree_payment_account_id = GetSettingValue("goodgree_payment_account_id", "")
+	goodgree_payment_access_token = GetSettingValue("goodgree_payment_access_token", "")
+	goodgree_payment_access_token_sandbox = GetSettingValue("goodgree_payment_access_token_sandbox", "")
+
+
+%>
+<!--#INCLUDE FILE="include/doctype.phtml"-->
+<head>
+<!--#INCLUDE FILE="include/head.phtml"-->
+<!-- start: CSS REQUIRED FOR THIS PAGE ONLY -->
+<!-- end: CSS REQUIRED FOR THIS PAGE ONLY -->
+<link rel="stylesheet" href="assets/css/custom.css">
+</head>	
+<body>
+	<div id="app">
+		<!--#INCLUDE FILE="include/sidebar.phtml"-->
+		<div class="app-content">
+			<!--#INCLUDE FILE="include/header.phtml"-->
+			<div class="main-content" >
+				<div class="wrap-content container" id="container">
+					<!-- start: TITLE -->
+					<section id="page-title" class="padding-top-15 padding-bottom-15">
+						<div class="row">
+							<div class="col-sm-8">
+								<h1 class="mainTitle">Store Information</h1>
+								<span class="mainDescription">overview </span>
+							</div>
+							<ol class="breadcrumb">
+								
+							</ol>
+						</div>
+					</section>
+					<!-- end: TITLE -->
+					<div class="container-fluid container-fullw bg-white">
+						<div class="content-header-floating" style="display: block;">
+							<div class="content-header">
+								<h3 class="mainTitle">Store Information</h3>
+								<p class="content-buttons form-buttons">
+									
+								</p>	
+							</div>
+						</div>
+						<div class="row">
+							<div class="col-sm-12">
+								<!-- start: INLINE TABS PANEL -->
+								<div class="panel panel-blue">
+									<div class="panel-heading">
+										<h4 class="panel-title">General Information</h4>
+										<div class="panel-tools" >
+											<a data-original-title="Collapse" data-toggle="tooltip" data-placement="top" class="btn btn-transparent btn-sm panel-collapse" href="#"><i class="ti-minus collapse-off"></i><i class="ti-plus collapse-on"></i></a>
+										</div>
+									</div>
+									<div class="panel-body partition-white">
+										<div class="row">
+											<div class="col-sm-12">
+												<form role="form" class="form-horizontal" id="form">
+													<input type="hidden" id="formid" name="formid" value="pan1" />
+													<div class="row">
+														<div class="col-md-12">
+															<div id="errorHandler1" class="errorHandler alert alert-danger no-display">
+																<i class="fa fa-times-sign"></i> You have some form errors. Please check below.
+															</div>
+															<div id="errorHandler2" class="errorHandler alert alert-danger no-display">
+																<i class="fa fa-times-sign"></i> The information has not been saved properly. Please contact system administrator.
+															</div>
+															<div class="successHandler alert alert-success no-display">
+																<i class="fa fa-ok"></i> The information has been saved.
+															</div>
+														</div>
+														<div class="col-md-12">
+															<div class="form-group">
+																<label class="col-sm-2 control-label" for="company">
+																	Company <span class="symbol required"></span>
+																</label>
+																<div class="col-sm-9">
+																	<input type="text" placeholder="" class="form-control" id="company" name="company" value="<%=company%>">
+																</div>
+															</div>
+															<div class="form-group">
+																<label class="col-sm-2 control-label" for="address">
+																	Street Address <span class="symbol required"></span>
+																</label>
+																<div class="col-sm-9">
+																	<input type="text" placeholder="" id="address" name="address" class="form-control" value="<%=address%>">
+																</div>
+															</div>
+															<div class="form-group">
+																<label class="col-sm-2 control-label" for="city">
+																	City <span class="symbol required"></span>
+																</label>
+																<div class="col-sm-9">
+																	<input type="text"  id="city" name="city" class="form-control" value="<%=city%>">
+																</div>
+															</div>
+															<div class="form-group">
+																<label class="col-sm-2 control-label" for="state">
+																	State / Province <span class="symbol required"></span>
+																</label>
+																<div class="col-sm-9">
+																	<select class="form-control" id="state" name="state">
+																		<option value="">&nbsp;</option>
+																		<%=GetStatesOptionTags(state)%>
+																	</select>
+																</div>
+															</div>
+															<div class="form-group">
+																<label class="col-sm-2 control-label" for="zip">
+																	Zip / Postal Code <span class="symbol required"></span>
+																</label>
+																<div class="col-sm-9">
+																	<input type="text"  id="zip" name="zip" class="form-control" value="<%=zip%>">
+																</div>
+															</div>
+															<div class="form-group">
+																<label class="col-sm-2 control-label" for="phone">
+																	Phone Number <span class="symbol required"></span>
+																</label>
+																<div class="col-sm-9">
+																	<input type="text"  id="phone" name="phone" class="form-control" value="<%=phone%>">
+																</div>
+															</div>
+															<div class="form-group">
+																<label class="col-sm-2 control-label" for="email">
+																	Email Address <span class="symbol required"></span>
+																</label>
+																<div class="col-sm-9">
+																	<input type="text"  id="email" name="email" class="form-control" value="<%=email%>">
+																</div>
+															</div>
+															<!--
+															<div class="form-group">
+																<label class="col-sm-2 control-label" for="form-field-1">
+																	Show this on Contact Block <span class="symbol required"></span>
+																</label>
+																<div class="col-sm-9">
+																	<label class="radio-inline">
+																		<input type="radio" value="" name="optionsRadios" class="grey">
+																		Yes
+																	</label>
+																	<label class="radio-inline">
+																		<input type="radio" value="" name="optionsRadios" class="grey">
+																		No
+																	</label>
+																</div>
+															</div>
+															-->
+															
+														</div>
+													</div>
+													<div class="row">
+														<div class="col-sm-1">
+														</div>
+														<div class="col-sm-8">
+															<button class="btn btn-blue" type="submit">
+															<i class="fa fa-check-square"></i>
+															Save
+															</button>
+														</div>
+													</div>
+												</form>
+											</div>
+										</div>
+									</div>
+								</div>
+							</div>
+						</div>
+						
+						<div class="row">
+							<div class="col-sm-12">
+								<!-- start: INLINE TABS PANEL -->
+								<div class="panel panel-blue collapses">
+									<div class="panel-heading">
+										<h4 class="panel-title">Payments</h4>
+										<div class="panel-tools" >
+											<a data-original-title="Collapse" data-toggle="tooltip" data-placement="top" class="btn btn-transparent btn-sm panel-collapse" href="#"><i class="ti-minus collapse-off"></i><i class="ti-plus collapse-on"></i></a>
+										</div>
+									</div>
+									<div class="panel-body partition-white">
+										<div class="row">
+											<div class="col-sm-12">
+												<div class="tabbable">
+													<ul id="myTab4" class="nav nav-tabs tab-green">
+														<li class="active">
+															<a href="#panel_tab2_example1" data-toggle="tab">
+																Stripe Payment
+															</a>
+														</li>
+													</ul>
+													<form role="form"  action="tp_store_information_payment_update.phtml" class="form-horizontal" id="form2" method="post">
+													<div class="tab-content">
+														<div class="tab-pane active" id="panel_tab2_example1">
+														<div class="form-group">
+															<label class="col-sm-2 control-label" for="goodgree_payment_enable">
+																Enable <span class="symbol required"></span>
+															</label>
+															<div class="col-sm-4">
+																<select id="goodgree_payment_enable" name="goodgree_payment_enable" class="form-control select">
+																	<option value="0" <% if goodgree_payment_enable = "0" then%>selected<% end if %>>No</option>
+																	<option value="1" <% if goodgree_payment_enable = "1" then%>selected<% end if %>>Yes</option>
+																</select>
+															</div>
+															<div class="col-sm-4">
+																<img src="assets/images/stripe/big.png" border="0"/>
+															</div>
+														</div>
+														<div class="form-group">
+															<label class="col-sm-2 control-label" for="goodgree_payment_mode">
+																Mode <span class="symbol required"></span>
+															</label>
+															<div class="col-sm-9">
+																<select id="goodgree_payment_mode" name="goodgree_payment_mode" class="form-control select">
+																	<option value="sandbox"  <% if goodgree_payment_mode = "sandbox" then%>selected<% end if %>>Sandbox</option>
+																	<option value="live"  <% if goodgree_payment_mode = "live" then%>selected<% end if %>>Live</option>
+																</select>
+															</div>
+														</div>
+														<!--
+														<div class="form-group">
+															<label class="col-sm-2 control-label" for="goodgree_payment_sandbox_sk">
+																Test Secret Key <span class="symbol required"></span>
+															</label>
+															<div class="col-sm-9">
+																<input type="text"  id="goodgree_payment_sandbox_sk" name="goodgree_payment_sandbox_sk" class="form-control" value="<%=goodgree_payment_sandbox_sk%>">
+															</div>
+														</div>
+														<div class="form-group">
+															<label class="col-sm-2 control-label" for="goodgree_payment_live_sk">
+																Live Secret Key <span class="symbol required"></span>
+															</label>
+															<div class="col-sm-9">
+																<input type="text"  id="goodgree_payment_live_sk" name="goodgree_payment_live_sk" class="form-control" value="<%=goodgree_payment_live_sk%>">
+															</div>
+														</div>
+														-->
+														<div class="form-group">
+															<label class="col-sm-2 control-label" for="goodgree_payment_payment_action">
+																Payment Action <span class="symbol required"></span>
+															</label>
+															<div class="col-sm-9">
+																<select id="goodgree_payment_payment_action" name="goodgree_payment_payment_action" class="form-control select">
+																	<option value="authorize" <% if goodgree_payment_payment_action = "authorize" then%>selected<% end if %>>Authorize Only</option>
+																	<option value="authorize_capture" <% if goodgree_payment_payment_action = "authorize_capture" then%>selected<% end if %>>Authorize and Capture</option>
+																</select>
+															</div>
+														</div>
+														
+														<div class="form-group">
+															<label class="col-sm-2 control-label" for="goodgree_payment_descriptor">
+																Store Descriptor (OC:xxxxxx)<span class="symbol required"></span>
+															</label>
+															<div class="col-sm-9">
+																<input type="text"  id="goodgree_payment_descriptor" name="goodgree_payment_descriptor" class="form-control" value="<%=goodgree_payment_descriptor%>">
+															</div>
+														</div>
+														
+														<div class="form-group">
+															<label class="col-sm-2 control-label" for="goodgree_payment_account_id">
+																Account ID
+															</label>
+															<div class="col-sm-9">
+																<input type="text"  id="goodgree_payment_account_id" name="goodgree_payment_account_id" class="form-control" value="<%=goodgree_payment_account_id%>" disabled>
+															</div>
+														</div>
+														
+														<div class="form-group">
+															<label class="col-sm-2 control-label" for="goodgree_payment_access_token_sandbox">
+																Access Key (sandbox)
+															</label>
+															<div class="col-sm-9">
+																<input type="text"  id="goodgree_payment_access_token_sandbox" name="goodgree_payment_access_token_sandbox" class="form-control" value="<%=goodgree_payment_access_token_sandbox%>" disabled>
+															</div>
+														</div>
+														
+														<div class="form-group">
+															<label class="col-sm-2 control-label" for="goodgree_payment_access_token">
+																Access Key (production)
+															</label>
+															<div class="col-sm-9">
+																<input type="text"  id="goodgree_payment_access_token" name="goodgree_payment_access_token" class="form-control" value="<%=goodgree_payment_access_token%>" disabled>
+															</div>
+														</div>
+														
+														<div class="form-group">
+															<label class="col-sm-2 control-label" for="goodgree_payment_account_id">
+																&nbsp;
+															</label>
+															<div class="col-sm-9">
+																<a class="stripe-connect" href="http://app.olivecommerce.com/stripe_auth.php?storeid=<%=g_storeid%>" target="_blank"><span>Connect with Stripe (sandbox)</span></a>
+																<a class="stripe-connect" href="http://app.olivecommerce.com/stripe_auth_production.php?storeid=<%=g_storeid%>" target="_blank"><span>Connect with Stripe (live)</span></a>
+															</div>
+														</div>
+														</div>
+													</div>
+													<br>
+													<div class="row">
+														<div class="col-sm-1">
+														</div>
+														<div class="col-sm-8">
+															<button class="btn btn-blue" type="submit">
+															<i class="fa fa-check-square"></i>
+															Save
+															</button>
+														</div>
+													</div>
+													</form>
+													
+												</div>
+											</div>
+										</div>
+									</div>
+								</div>
+								<!-- end: INLINE TABS PANEL -->
+							</div>
+						</div>
+						<div class="row">
+							<div class="col-sm-12">
+								<!-- start: INLINE TABS PANEL -->
+								<div class="panel panel-blue collapses">
+									<div class="panel-heading">
+										<h4 class="panel-title">Shipping</h4>
+										<div class="panel-tools" >
+											<a data-original-title="Collapse" data-toggle="tooltip" data-placement="top" class="btn btn-transparent btn-sm panel-collapse" href="#"><i class="ti-minus collapse-off"></i><i class="ti-plus collapse-on"></i></a>
+										</div>
+									</div>
+									<div class="panel-body partition-white">
+										<div class="row">
+											<div class="col-sm-12">
+												<div class="tabbable">
+													<ul id="myTab4" class="nav nav-tabs tab-padding tab-space-3 tab-blue">
+														<li class="active">
+															<a href="#panel_tab3_example1" data-toggle="tab">
+																Preference
+															</a>
+														</li>
+														<li>
+															<a href="#panel_tab3_example2" data-toggle="tab">
+																UPS
+															</a>
+														</li>
+														<li>
+															<a href="#panel_tab3_example3" data-toggle="tab">
+																FedEx
+															</a>
+														</li>
+														<li>
+															<a href="#panel_tab3_example4" data-toggle="tab">
+																USPS
+															</a>
+														</li>
+														<!--
+														<li>
+															<a href="#panel_tab3_example5" data-toggle="tab">
+																Flat Table
+															</a>
+														</li>
+														<li>
+															<a href="#panel_tab3_example6" data-toggle="tab">
+																Custom Table
+															</a>
+														</li>
+														-->
+													</ul>
+													<form role="form"  action="tp_store_information_shipping_update.phtml" class="form-horizontal" id="form3">
+													<div class="tab-content">
+														<div class="tab-pane in active" id="panel_tab3_example1">
+															<h4><i class="fa fa-pencil-square teal"></i> Warehouse</h4>
+															<div class="form-group">
+																<label class="col-sm-3 control-label" for="warehouse_city">
+																	City <span class="symbol required"></span>
+																</label>
+																<div class="col-sm-9">
+																	<input type="text"  id="warehouse_city" name="warehouse_city" class="form-control" value="<%=warehouse_city%>">
+																</div>
+															</div>
+															<div class="form-group">
+																<label class="col-sm-3 control-label" for="warehouse_country">
+																	Country <span class="symbol required"></span>
+																</label>
+																<div class="col-sm-9">
+																	<select id="warehouse_country" name="warehouse_country"  class="form-control">
+																		<option value="US" <%if warehouse_country = "US" then %>selected<%end if%>>United States</option>
+																		<option value="CA" <%if warehouse_country = "CA" then %>selected<%end if%>>CANADA</option>
+																	</select></div>
+															</div>
+															<div class="form-group">
+																<label class="col-sm-3 control-label" for="warehouse_state">
+																	State <span class="symbol required"></span>
+																</label>
+																<div class="col-sm-9">
+																	<select id="warehouse_state" name="warehouse_state" class="form-control" size=1>
+																	<%
+																		SELECT CASE Session("ENABLEINT")
+																		CASE "0"
+																			Response.Write(GetStatesOptionTags(warehouse_state))
+																		CASE "1"
+																			Response.Write(GetStatesOptionTagsInt(warehouse_state, "0"))
+																		CASE "2"
+																			Response.Write(GetStatesOptionTagsInt(warehouse_state, "1"))
+																		CASE "3"
+																			Response.Write(GetStatesOptionTagsInt(warehouse_state, "0"))
+																		CASE ELSE
+																			Response.Write(GetStatesOptionTags(warehouse_state))
+																		END SELECT
+																	%>
+																	</select>
+																</div>
+															</div>
+															<div class="form-group">
+																<label class="col-sm-3 control-label" for="warehouse_zip">
+																	Zip / Postal Code <span class="symbol required"></span>
+																</label>
+																<div class="col-sm-9">
+																	<input type="text"  id="warehouse_zip" name="warehouse_zip" class="form-control" value="<%=warehouse_zip%>">
+																</div>
+															</div>
+															<h4><i class="fa fa-pencil-square teal"></i> Shipping & Handling Setting</h4>
+															<!--
+															<div class="form-group">
+																<label class="col-sm-3 control-label" for="form-field-1">
+																	Tax on Shipping<span class="symbol required"></span>
+																</label>
+																<div class="col-sm-9">
+																	<input type="text"  id="form-field-1" class="form-control">
+																</div>
+															</div>
+															-->
+															<div class="form-group">
+																<label class="col-sm-3 control-label" for="form-field-1">
+																	Default Destination Type <span class="symbol required"></span>
+																</label>
+																<div class="col-sm-9">
+																	<label class="radio-inline">
+																		<input type="radio" value="1" name="assume_res" class="grey" <% if assume_res = "1" then%>checked<%end if%>>
+																		Residential
+																	</label>
+																	<label class="radio-inline">
+																		<input type="radio" value="0" name="assume_res" class="grey" <% if assume_res = "0" then%>checked<%end if%>>
+																		Commercial
+																	</label>
+																</div>
+															</div>
+															
+														</div>
+														<div class="tab-pane" id="panel_tab3_example2">
+															<div class="form-group">
+																<label class="col-sm-3 control-label" for="form-field-1">
+																	Enable <span class="symbol required"></span>
+																</label>
+																<div class="col-sm-9">
+																	<div class="make-switch" data-on="primary" data-off="default">
+																		<input type="checkbox" id="SH_display_flag" name="SH_display_flag" value="UPS" <% if InStr(SH_display_flag, "UPS")>0 then%> checked <% end if%>>
+																	</div>
+																</div>
+															</div>
+															<div class="form-group">
+																<label class="col-sm-3 control-label" for="ups_xml_password">
+																	Password <span class="symbol required"></span>
+																</label>
+																<div class="col-sm-9">
+																	<input type="text"  id="ups_xml_password" name="ups_xml_password" class="form-control" value="<%=ups_xml_password%>">
+																</div>
+															</div>
+															<div class="form-group">
+																<label class="col-sm-3 control-label" for="ups_xml_key">
+																	Access License Number <span class="symbol required"></span>
+																</label>
+																<div class="col-sm-9">
+																	<input type="text"  id="ups_xml_key" name="ups_xml_key" class="form-control" value="<%=ups_xml_key%>">
+																</div>
+															</div>
+															<div class="form-group">
+																<label class="col-sm-3 control-label" for="ups_xml_userid">
+																	User ID <span class="symbol required"></span>
+																</label>
+																<div class="col-sm-9">
+																	<input type="text"  id="ups_xml_userid" name="ups_xml_userid" class="form-control" value="<%=ups_xml_userid%>">
+																</div>
+															</div>
+															<div class="form-group">
+																<label class="col-sm-3 control-label" for="form-field-1">
+																	Allowed Methods <span class="symbol required"></span>
+																</label>
+																<div class="col-sm-9">
+																	<div class="checkbox">
+																		<label>
+																			<input type="checkbox" name="DA1" value="1" <%if DA1="1" then%>checked<%end if%> class="grey">
+																			Next Day Air
+																		</label>
+																	</div>
+																	<div class="checkbox">
+																		<label>
+																			<input type="checkbox" name="DA2" value="1" <%if DA2="1" then%>checked<%end if%> class="grey">
+																			2nd Day Air
+																		</label>
+																	</div>
+																	<div class="checkbox">
+																		<label>
+																			<input type="checkbox" name="GND" value="1" <%if GND="1" then%>checked<%end if%> class="grey">
+																			Ground 
+																		</label>
+																	</div>
+																	<div class="checkbox">
+																		<label>
+																			<input type="checkbox" name="DS3" value="1" <%if DS3="1" then%>checked<%end if%> class="grey">
+																			3Day Select
+																		</label>
+																	</div>
+																	<div class="checkbox">
+																		<label>
+																			<input type="checkbox" name="DP1" value="1" <%if DP1="1" then%>checked<%end if%> class="grey">
+																			Next Day Air Saver
+																		</label>
+																	</div>
+																	<div class="checkbox">
+																		<label>
+																			<input type="checkbox" name="DM1" value="1" <%if DM1="1" then%>checked<%end if%> class="grey">
+																			Next Day Air Early AM
+																		</label>
+																	</div>
+																	<div class="checkbox">
+																		<label>
+																			<input type="checkbox" name="DM2" value="1" <%if DM2="1" then%>checked<%end if%> class="grey">
+																			2nd Day Early AM
+																		</label>
+																	</div>
+																	<div class="checkbox">
+																		<label>
+																			<input type="checkbox" name="X07" value="1" <%if X07="1" then%>checked<%end if%> class="grey">
+																			Worldwide Express
+																		</label>
+																	</div>
+																	<div class="checkbox">
+																		<label>
+																			<input type="checkbox" name="X08" value="1" <%if X08="1" then%>checked<%end if%> class="grey">
+																			Worldwide Expedited
+																		</label>
+																	</div>
+																	<div class="checkbox">
+																		<label>
+																			<input type="checkbox" name="X11" value="1" <%if X11="1" then%>checked<%end if%> class="grey">
+																			Standard
+																		</label>
+																	</div>
+																	<div class="checkbox">
+																		<label>
+																			<input type="checkbox" name="X54" value="1" <%if X54="1" then%>checked<%end if%> class="grey">
+																			Worldwide Express Plus
+																		</label>
+																	</div>
+																	<div class="checkbox">
+																		<label>
+																			<input type="checkbox" name="X65" value="1" <%if X65="1" then%>checked<%end if%> class="grey">
+																			Express Saver
+																		</label>
+																	</div>
+																	
+																</div>
+															</div>
+															<div class="form-group">
+																<label class="col-sm-3 control-label" for="sh_markup">
+																	Markup Multiplier <span class="symbol required"></span>
+																</label>
+																<div class="col-sm-9">
+																	<input type="text"  id="sh_markup" name="sh_markup" class="form-control" value="<%=sh_markup%>">
+																</div>
+															</div>
+															<div class="form-group">
+																<label class="col-sm-3 control-label" for="sh_handling">
+																	Handling Fee<span class="symbol required"></span>
+																</label>
+																<div class="col-sm-9">
+																	<input type="text"  id="sh_handling" name="sh_handling" class="form-control" value="<%=sh_handling%>">
+																</div>
+															</div>
+														</div>
+														<div class="tab-pane" id="panel_tab3_example3">
+															<div class="form-group">
+																<label class="col-sm-3 control-label" for="form-field-1">
+																	Enable <span class="symbol required"></span>
+																</label>
+																<div class="col-sm-9">
+																	<div class="make-switch" data-on="primary" data-off="default">
+																		<input type="checkbox" id="SH_display_flag" name="SH_display_flag" value="FedEx" <% if InStr(SH_display_flag, "FedEx")>0 then%> checked <% end if%>>
+																	</div>
+																</div>
+															</div>
+															<div class="form-group">
+																<label class="col-sm-3 control-label" for="fedex_account">
+																	Account ID <span class="symbol required"></span>
+																</label>
+																<div class="col-sm-9">
+																	<input type="text"  id="fedex_account" name="fedex_account" class="form-control" value="<%=fedex_account%>">
+																</div>
+															</div>
+															<div class="form-group">
+																<label class="col-sm-3 control-label" for="fedex_meter">
+																	Meter Number <span class="symbol required"></span>
+																</label>
+																<div class="col-sm-9">
+																	<input type="text"  id="fedex_meter" name="fedex_meter" class="form-control" value="<%=fedex_meter%>">
+																</div>
+															</div>
+															<div class="form-group">
+																<label class="col-sm-3 control-label" for="form-field-1">
+																	Allowed Methods <span class="symbol required"></span>
+																</label>
+																<div class="col-sm-9">
+																	<div class="checkbox">
+																		<label>
+																			<input type="checkbox" name="fedex_service_flag" value="01"  <%if InStr(fedex_service_flag, "01")>0 then%>checked<%end if%> class="grey">
+																			Priority (International Priority)
+																		</label>
+																	</div>
+																	<div class="checkbox">
+																		<label>
+																			<input type="checkbox" name="fedex_service_flag" value="03"  <%if InStr(fedex_service_flag, "03")>0 then%>checked<%end if%> class="grey">
+																			2Day (International Economy)
+																		</label>
+																	</div>
+																	<div class="checkbox">
+																		<label>
+																			<input type="checkbox" name="fedex_service_flag" value="05"  <%if InStr(fedex_service_flag, "05")>0 then%>checked<%end if%> class="grey">
+																			Standard Overnight
+																		</label>
+																	</div>
+																	<div class="checkbox">
+																		<label>
+																			<input type="checkbox" name="fedex_service_flag" value="06"  <%if InStr(fedex_service_flag, "06")>0 then%>checked<%end if%> class="grey">
+																			First Overnight  (International First)
+																		</label>
+																	</div>
+																	<div class="checkbox">
+																		<label>
+																			<input type="checkbox" name="fedex_service_flag" value="20"  <%if InStr(fedex_service_flag, "20")>0 then%>checked<%end if%> class="grey">
+																			Express Saver
+																		</label>
+																	</div>
+																	<div class="checkbox">
+																		<label>
+																			<input type="checkbox" name="fedex_service_flag" value="90"  <%if InStr(fedex_service_flag, "90")>0 then%>checked<%end if%> class="grey">
+																			FedEx Home Delivery (Residential)
+																		</label>
+																	</div>
+																	<div class="checkbox">
+																		<label>
+																			<input type="checkbox" name="fedex_service_flag" value="92"  <%if InStr(fedex_service_flag, "92")>0 then%>checked<%end if%> class="grey">
+																			FedEx Ground (Commercial)
+																		</label>
+																	</div>
+																</div>
+															</div>
+															<div class="form-group">
+																<label class="col-sm-3 control-label" for="fedex_markup">
+																	Markup Multiplier <span class="symbol required"></span>
+																</label>
+																<div class="col-sm-9">
+																	<input type="text"  id="fedex_markup" name="fedex_markup" class="form-control" value="<%=fedex_markup%>">
+																</div>
+															</div>
+															<div class="form-group">
+																<label class="col-sm-3 control-label" for="fedex_handling">
+																	Handling Fee<span class="symbol required"></span>
+																</label>
+																<div class="col-sm-9">
+																	<input type="text"  id="fedex_handling" name="fedex_handling" class="form-control" value="<%=fedex_handling%>">
+																</div>
+															</div>
+														</div>
+														<div class="tab-pane" id="panel_tab3_example4">
+															<div class="form-group">
+																<label class="col-sm-3 control-label" for="form-field-1">
+																	Enable <span class="symbol required"></span>
+																</label>
+																<div class="col-sm-9">
+																	<div class="make-switch" data-on="primary" data-off="default">
+																		<input type="checkbox" id="SH_display_flag" name="SH_display_flag" value="USPS" <% if InStr(SH_display_flag, "USPS")>0 then%> checked <% end if%>>
+																	</div>
+																</div>
+															</div>
+															<div class="form-group">
+																<label class="col-sm-3 control-label" for="usps_userid">
+																	User ID <span class="symbol required"></span>
+																</label>
+																<div class="col-sm-9">
+																	<input type="text"  id="usps_userid" name="usps_userid" class="form-control" value="<%=usps_userid%>">
+																</div>
+															</div>
+															<div class="form-group">
+																<label class="col-sm-3 control-label" for="usps_password">
+																	Password <span class="symbol required"></span>
+																</label>
+																<div class="col-sm-9">
+																	<input type="text"  id="usps_password" name="usps_password" class="form-control" value="<%=usps_password%>">
+																</div>
+															</div>
+															<div class="form-group">
+																<label class="col-sm-3 control-label" for="form-field-1">
+																	Allowed Methods <span class="symbol required"></span>
+																</label>
+																<div class="col-sm-9">
+																	<div class="checkbox">
+																		<label>
+																			<input type="checkbox" name="usps_service_flag" value="92"  <%if InStr(usps_service_flag, "92")>0 then%>checked<%end if%> class="grey">
+																			Parcel
+																		</label>
+																	</div>
+																	<div class="checkbox">
+																		<label>
+																			<input type="checkbox" name="usps_service_flag" value="01"  <%if InStr(usps_service_flag, "01")>0 then%>checked<%end if%> class="grey">
+																			Priority
+																		</label>
+																	</div>
+																	<div class="checkbox">
+																		<label>
+																			<input type="checkbox" name="usps_service_flag" value="02"  <%if InStr(usps_service_flag, "02")>0 then%>checked<%end if%> class="grey">
+																			Express
+																		</label>
+																	</div>
+																	<div class="checkbox">
+																		<label>
+																			<input type="checkbox" name="usps_service_flag" value="04"  <%if InStr(usps_service_flag, "04")>0 then%>checked<%end if%> class="grey">
+																			Global Express Mail (EMS)
+																		</label>
+																	</div>
+																	<div class="checkbox">
+																		<label>
+																			<input type="checkbox" name="usps_service_flag" value="05"  <%if InStr(usps_service_flag, "05")>0 then%>checked<%end if%> class="grey">
+																			Airmail Parcel Post
+																		</label>
+																	</div>
+																	<div class="checkbox">
+																		<label>
+																			<input type="checkbox" name="usps_service_flag" value="06"  <%if InStr(usps_service_flag, "06")>0 then%>checked<%end if%> class="grey">
+																			Economy (surface) Parcel Post
+																		</label>
+																	</div>
+																</div>
+															</div>
+															<div class="form-group">
+																<label class="col-sm-3 control-label" for="usps_markup">
+																	Markup Multiplier <span class="symbol required"></span>
+																</label>
+																<div class="col-sm-9">
+																	<input type="text"  id="usps_markup" name="usps_markup" class="form-control" value="<%=usps_markup%>">
+																</div>
+															</div>
+															<div class="form-group">
+																<label class="col-sm-3 control-label" for="usps_handling">
+																	Handling Fee<span class="symbol required"></span>
+																</label>
+																<div class="col-sm-9">
+																	<input type="text"  id="usps_handling" name="usps_handling" class="form-control" value="<%=usps_handling%>">
+																</div>
+															</div>
+														</div>
+														
+														<div class="tab-pane" id="panel_tab3_example5">
+															<p>
+																Trust fund seitan letterpress, keytar raw denim keffiyeh etsy art party before they sold out master cleanse gluten-free squid scenester freegan cosby sweater. Fanny pack portland seitan DIY, art party locavore wolf cliche high life echo park Austin.
+															</p>
+															<p>
+																<a href="#panel_tab3_example1" class="btn btn-purple show-tab">
+																	Return to tab 1
+																</a>
+															</p>
+														</div>
+														
+														<div class="tab-pane" id="panel_tab3_example6">
+															<p>
+																Trust fund seitan letterpress, keytar raw denim keffiyeh etsy art party before they sold out master cleanse gluten-free squid scenester freegan cosby sweater. Fanny pack portland seitan DIY, art party locavore wolf cliche high life echo park Austin.
+															</p>
+															<p>
+																<a href="#panel_tab3_example1" class="btn btn-purple show-tab">
+																	Return to tab 1
+																</a>
+															</p>
+														</div>
+													</div>
+													<br>
+													<div class="row">
+														<div class="col-sm-1">
+														</div>
+														<div class="col-sm-8">
+															<button class="btn btn-blue" type="submit">
+															<i class="fa fa-check-square"></i>
+															Save
+															</button>
+														</div>
+													</div>
+													</form>
+												</div>
+											</div>
+										</div>
+									</div>
+								</div>
+							</div>
+						</div>
+						
+						<div class="row">
+							<div class="col-sm-12">
+								<!-- start: INLINE TABS PANEL -->
+								<div class="panel panel-blue collapses">
+									<div class="panel-heading">
+										<h4 class="panel-title">Tax</h4>
+										<div class="panel-tools" >
+											<a data-original-title="Collapse" data-toggle="tooltip" data-placement="top" class="btn btn-transparent btn-sm panel-collapse" href="#"><i class="ti-minus collapse-off"></i><i class="ti-plus collapse-on"></i></a>
+										</div>
+									</div>
+									<div class="panel-body partition-white">
+										<form method="post" action="tp_store_information_tax_update.phtml" id="CompanyInfoForm" id="CompanyInfoForm">
+										<div class="row">
+											<div class="col-sm-12">
+											
+											
+											<table class="table table-condensed table-hover" id="sample-table-3">
+												<thead>
+												<tr class="header_section">
+													<td>&nbsp;</td>
+													<th align="left" width=20%>State</th>
+													<th align="left" width=40%>Tax Collection Method</th>
+													<th align="left" width=10%>Freight</th>
+													<th align="left" width=15%>Nexus City</th>
+													<th align="left" width=15%>Nexus Zip</th>
+												</tr>
+												</thead>
+												<tbody>
+												<%
+													sql = "SELECT * FROM A_STATE_LIST_US ORDER BY state_name"
+													set rsState = dbconn.Execute(sql)
+													
+													do while not rsState.EOF
+													
+														'get values...
+														nsql = "SELECT * FROM " & g_storeid & "_nexus_tax WHERE StateID='" & rsState("state") & "'"
+														set rsNexus = dbconn.Execute(nsql)
+														if not rsNexus.EOF then
+															n_tax_method = rsNexus("CollectionMethod")
+															n_freight_tax = rsNexus("TaxOnFreight")
+															n_nexus_city = rsNexus("NexusCity")
+															n_nexus_zip = rsNexus("NexusZip")
+														else
+															n_tax_method = "0"
+															n_freight_tax = "0"
+															n_nexus_city = ""
+															n_nexus_zip = ""
+														end if
+														rsNexus.Close
+												%>
+												<tr class=alt>
+													<td>&nbsp;</td>
+													<td><%=rsState("state_name")%></td>
+													<td>
+														<select name="tax_method_<%=rsState("state")%>">
+														<option value="0">Do not collect tax from customers in this state</option>
+														<option value="1" style="color:red" <%if n_tax_method = "1" then%>selected<%end if%>>Use the sales tax rate of ship-to location</option>
+														<option value="2" style="color:red" <%if n_tax_method = "2" then%>selected<%end if%>>Use the sales tax rate of billing location</option>
+														<option value="3" style="color:red" <%if n_tax_method = "3" then%>selected<%end if%>>Use the sales tax rate of our nexus location</option>
+														<option value="4" style="color:red" <%if n_tax_method = "4" then%>selected<%end if%>>Use the sales tax rate of our headquater location</option>
+														<option value="6" style="color:red" <%if n_tax_method = "6" then%>selected<%end if%>>Use the use tax rate of ship-to location</option>
+														<option value="7" style="color:red" <%if n_tax_method = "7" then%>selected<%end if%>>Use the use tax rate of billing location</option>
+														</select>
+													</td>
+													<td><input type="checkbox" name="freight_tax_<%=rsState("state")%>" value="1" <%if n_freight_tax = "1" then%>checked<%end if%>></td>
+													<td><input type="text" name="nexus_city_<%=rsState("state")%>" value="<%=n_nexus_city%>"></td>
+													<td><input type="text" name="nexus_zip_<%=rsState("state")%>" value="<%=n_nexus_zip%>"></td>
+												</tr>
+												
+												<%
+														rsState.MoveNext
+													loop
+													rsState.Close
+												%>
+												</tbody>		
+											</table>
+											
+											
+											
+											
+											
+											</div>
+										</div>
+										<div class="row">
+											<div class="col-sm-1">
+											</div>
+											<div class="col-sm-8">
+												<button class="btn btn-blue" type="submit">
+												<i class="fa fa-check-square"></i>
+												Save
+												</button>
+											</div>
+										</div>
+										</form>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+		<!--#INCLUDE FILE="include/footer.phtml"-->
+	</div>
+	<!--#INCLUDE FILE="include/js.phtml"-->
+	<!-- start: JAVASCRIPTS REQUIRED FOR THIS PAGE ONLY -->
+	<!-- end: JAVASCRIPTS REQUIRED FOR THIS PAGE ONLY -->
+	<script src="assets/js/main.js"></script>
+	<!-- start: JavaScript Event Handlers for this page -->
+	
+	<script>
+		jQuery(document).ready(function() {
+			Main.init();
+		});
+	</script>
+	<!-- end: JavaScript Event Handlers for this page -->
+	<style>
+		.stripe-connect, .button-example {
+			-moz-user-select: none;
+			background-image: linear-gradient(#28a0e5, #015e94);
+			border: 0 none;
+			border-radius: 4px;
+			box-shadow: 0 1px 0 rgba(0, 0, 0, 0.2);
+			cursor: pointer;
+			display: inline-block;
+			height: 30px;
+			margin-bottom: 1px;
+			padding: 1px;
+			text-decoration: none !important;
+		}
+		.stripe-connect span, .button-example span {
+			background: #1275ff linear-gradient(#7dc5ee, #008cdd 85%, #30a2e4) repeat scroll 0 0;
+			border-radius: 3px;
+			box-shadow: 0 1px 0 rgba(255, 255, 255, 0.25) inset;
+			color: white;
+			display: block;
+			font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;
+			font-size: 14px;
+			font-weight: bold;
+			height: 30px;
+			line-height: 30px;
+			padding: 0 12px;
+			position: relative;
+			text-shadow: 0 -1px 0 rgba(0, 0, 0, 0.2);
+		}
+		#doc #details article p.submit-note {
+			color: #999;
+			font-size: 11px;
+		}
+		#doc #details article p.button-example {
+			margin-bottom: 2px;
+		}
+		.stripe-connect span {
+			padding-left: 44px;
+		}
+		.stripe-connect span::before {
+			background-repeat: no-repeat;
+			background-size: 23px 24px;
+			content: "";
+			display: block;
+			height: 24px;
+			left: 11px;
+			margin-top: -12px;
+			position: absolute;
+			top: 50%;
+			width: 23px;
+		}
+		.stripe-connect:active, .button-example:active {
+			background: #005d93 none repeat scroll 0 0;
+		}
+		.stripe-connect:active span, .button-example:active span {
+			background: #008cdd linear-gradient(#008cdd, #008cdd 85%, #239adf) repeat scroll 0 0;
+			box-shadow: 0 1px 0 rgba(0, 0, 0, 0.1) inset;
+			color: #eee;
+		}
+		.stripe-connect span::before, .stripe-connect.blue span::before {
+			background-image: url("data:image/png;base64,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");
+		}
+		@media not all, only screen and (min--moz-device-pixel-ratio: 1.5), not all {
+		.stripe-connect span::before, .stripe-connect.blue span::before {
+			background-image: url("data:image/png;base64,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");
+		}
+	}
+	</style>
+</body>
+</html>

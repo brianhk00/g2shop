@@ -6,11 +6,11 @@ Function GetUserAccessVariables(ByRef str_ref_index)
 		exit function
 	end if
 
-	Set dbconn = Server.CreateObject("ADODB.Connection")
-	dbconn.open Session("ConnectionString")
+	Set dbconnx = Server.CreateObject("ADODB.Connection")
+	dbconnx.open g_connection_string
 
-	sql = "SELECT access_flag FROM " & Session("StoreID") & "_users WHERE user_id='" & Session("AdminID")& "'"
-	Set rsUser = dbconn.Execute(sql)
+	sql = "SELECT access_flag FROM " & g_storeid & "_users WHERE user_id='" & Session("AdminID")& "'"
+	Set rsUser = dbconnx.Execute(sql)
 	
 	if not rsUser.EOF then
 		access_flag = Trim(rsUser("access_flag"))
@@ -55,7 +55,7 @@ Function GetUserAccessVariables(ByRef str_ref_index)
 		exit function
 	end if
 
-	dbconn.close
+	dbconnx.close
 
 End Function
 </SCRIPT>

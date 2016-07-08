@@ -1,0 +1,396 @@
+<%
+	Response.CodePage = 65001
+	Response.CharSet = "UTF-8"
+%>
+<!-- #INCLUDE File="local/local.phtml" -->
+<!-- #INCLUDE File="util/xt_func_util.phtml" -->
+<!-- #INCLUDE File="util/xt_func_string.phtml" -->
+<!-- #include file="aspuploader/include_aspuploader.asp" -->
+<!-- #INCLUDE File="include/i_login.phtml" -->
+<%
+	g_access_key = "04-d"
+%>
+<!-- #INCLUDE File="include/i_access.phtml" -->
+<%
+	index_slider_enable = GetSettingValue("INDEX_SLIDER_ENABLE", "1")
+%>
+<!--#INCLUDE FILE="include/doctype.phtml"-->
+<head>
+<!--#INCLUDE FILE="include/head.phtml"-->
+<!-- start: CSS REQUIRED FOR THIS PAGE ONLY -->
+<!-- end: CSS REQUIRED FOR THIS PAGE ONLY -->
+<link rel="stylesheet" href="assets/css/custom.css">
+</head>	
+<body>
+	<div id="app">
+		<!--#INCLUDE FILE="include/sidebar.phtml"-->
+		<div class="app-content">
+			<!--#INCLUDE FILE="include/header.phtml"-->
+			<div class="main-content" >
+				<div class="wrap-content container" id="container">
+					<!-- start: TITLE -->
+					<form role="form" class="form-horizontal" id="form">
+					<section id="page-title" class="padding-top-15 padding-bottom-15">
+						<div class="row">
+							<div class="col-sm-8">
+								<h1 class="mainTitle">Index Page</h1>
+								<span class="mainDescription">overview</span>
+							</div>
+							<ol class="breadcrumb">
+								<button class="btn btn-blue btn-sm" type="submit">
+								<i class="fa fa-check-square"></i>
+								Save
+								</button>
+							</ol>
+						</div>
+					</section>
+					<!-- end: TITLE -->
+					<div class="container-fluid container-fullw bg-white">
+						<div class="content-header-floating" style="display: block;">
+							<div class="content-header">
+								<h3 class="mainTitle">
+								Index Page
+								</h3>
+								<p class="content-buttons form-buttons">
+									<button class="btn btn-blue btn-sm" type="submit">
+									<i class="fa fa-check-square"></i>
+									Save
+									</button>
+								</p>	
+							</div>
+						</div>
+						<div class="row">
+							<div class="col-md-12">
+								<div id="errorHandler1" class="errorHandler alert alert-danger" style="display:none;">
+									<button type="button" class="close" aria-label="Close">
+										<span aria-hidden="true">&times;</span>
+									</button>
+									<i class="fa fa-times-sign"></i> You have some form errors. Please check below.
+								</div>
+								<div id="errorHandler2" class="errorHandler alert alert-danger" style="display:none;">
+									<button type="button" class="close" aria-label="Close">
+										<span aria-hidden="true">&times;</span>
+									</button>
+									<i class="fa fa-times-sign"></i> The information has not been saved properly. Please contact system administrator.
+								</div>
+								<div class="successHandler alert alert-success" style="display:none;">
+									<button type="button" class="close" aria-label="Close">
+										<span aria-hidden="true">&times;</span>
+									</button>
+									<i class="fa fa-check-square-o"></i> The information has been saved.
+								</div>
+							</div>
+						</div>
+						<div class="row">
+							<div class="col-md-12">
+								<div class="tabbable">
+									<ul id="myTab3" class="nav nav-tabs tab-green">
+										<li class="active">
+											<a href="#panel_design_index_example1" data-toggle="tab">
+												<i class="blue fa fa-file-image-o"></i> Image Slider
+											</a>
+										</li>
+										<li class="">
+											<a href="#panel_design_index_example2" data-toggle="tab">
+												<i class="blue fa fa-gear"></i> Settings
+											</a>
+										</li>
+									</ul>
+									<div class="tab-content">
+										<div class="tab-pane active" id="panel_design_index_example1">
+											<div class="row">
+												<div class="col-sm-11">
+													<div class="panel panel-blue">
+														<div class="panel-heading">
+															<h4 class="panel-title">Settings</h4>
+															<div class="panel-tools" >
+																<a data-original-title="Collapse" data-toggle="tooltip" data-placement="top" class="btn btn-transparent btn-sm panel-collapse" href="#"><i class="ti-minus collapse-off"></i><i class="ti-plus collapse-on"></i></a>
+															</div>
+														</div>
+														<div class="panel-body partition-white">
+															<div class="row">
+																<div class="col-sm-6">
+																	<div class="form-group">
+																		<label class="col-sm-4 control-label" for="index_slider_enable">
+																			Enable
+																		</label>
+																		<div class="col-sm-8">
+																			<select class="form-control input-sm" name="index_slider_enable" id="index_slider_enable">
+																				<option value="0" <% if index_slider_enable  = "0" then %> selected <%end if%>>No</option>
+																				<option value="1" <% if index_slider_enable = "1" then %> selected <%end if%>>Yes</option>
+																			</select>
+																		</div>
+																	</div>
+																</div>
+															</div>
+														</div>
+													</div>
+												</div>
+											</div>
+											<div class="row">
+												<div class="col-sm-11">
+													<div class="panel panel-blue">
+														<div class="panel-heading">
+															<h4 class="panel-title">Images</h4>
+															<div class="panel-tools" >
+																<a data-original-title="Collapse" data-toggle="tooltip" data-placement="top" class="btn btn-transparent btn-sm panel-collapse" href="#"><i class="ti-minus collapse-off"></i><i class="ti-plus collapse-on"></i></a>
+															</div>
+														</div>
+														<div class="panel-body partition-white"><div style="padding:4px">
+															
+															<%
+															Dim uploader
+															Set uploader=new AspUploader
+															uploader.MaxSizeKB=1024
+															uploader.AllowedFileExtensions="jpeg,jpg,gif,png"
+															uploader.Name="myuploader"
+															uploader.InsertText="Select multiple files (Max 1M)"
+															uploader.InsertButtonID="uploadbutton"
+															uploader.MultipleFilesUpload=true
+															%>
+																
+															<%=uploader.GetString() %>
+															<button class="btn btn-primary btn-sm" type="button" id="uploadbutton">
+															<i class="fa fa-upload"></i>
+															Select multiple files (Max 1M)
+															</button>
+															
+															</div>
+															<br /><br />
+															<div style="padding:4px" id="myfilescontainer">
+																Loading....
+															</div>
+														</div>
+													</div>
+												</div>
+											</div>
+										</div>
+										<div class="tab-pane" id="panel_design_index_example2">
+										</div>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+					</form>
+				</div>
+			</div>
+		</div>
+		<!--#INCLUDE FILE="include/footer.phtml"-->
+	</div>
+	<!--#INCLUDE FILE="include/js.phtml"-->
+	<!-- start: JAVASCRIPTS REQUIRED FOR THIS PAGE ONLY -->
+	<!-- end: JAVASCRIPTS REQUIRED FOR THIS PAGE ONLY -->
+	<script src="vendor/jquery-validation/jquery.validate.min.js"></script>
+	<script src="assets/js/main.js"></script>
+	<!-- start: JavaScript Event Handlers for this page -->
+	<script type="text/javascript">
+		var handlerurl='index-filemanager-handler.asp'
+	</script>
+	<script language="javascript">
+	var FormValidator = function () {
+	// function to initiate Validation Sample 1
+		var runValidator1 = function () {
+			var form1 = $('#form');
+			var errorHandler1 = $('#errorHandler1', form1);
+			var errorHandler2 = $('#errorHandler2', form1);
+			var successHandler1 = $('.successHandler', form1);
+			
+			$.validator.addMethod("FullDate", function () {
+				//if all values are selected
+				if ($("#dd").val() != "" && $("#mm").val() != "" && $("#yyyy").val() != "") {
+					return true;
+				} else {
+					return false;
+				}
+			}, 'Please select a day, month, and year');
+			$('#form').validate({
+				errorElement: "span", // contain the error msg in a span tag
+				errorClass: 'help-block',
+				errorPlacement: function (error, element) { // render error placement for each input type
+					if (element.attr("type") == "radio" || element.attr("type") == "checkbox") { // for chosen elements, need to insert the error after the chosen container
+						error.insertAfter($(element).closest('.form-group').children('div').children().last());
+					} else if (element.attr("name") == "dd" || element.attr("name") == "mm" || element.attr("name") == "yyyy") {
+						error.insertAfter($(element).closest('.form-group').children('div'));
+					} else {
+						error.insertAfter(element);
+						// for other inputs, just perform default behavior
+					}
+				},
+				ignore: "",
+				
+				//RULES
+				rules: {
+					pf_name: {
+						minlength: 2,
+						required: true
+					}
+				},
+				
+				//END OF RULES
+				
+				invalidHandler: function (event, validator) { //display error alert on form submit
+					successHandler1.hide();
+					errorHandler1.show();
+				},
+				highlight: function (element) {
+					$(element).closest('.help-block').removeClass('valid');
+					$(element).closest('.form-group').removeClass('has-success').addClass('has-error').find('.symbol').removeClass('ok').addClass('required');
+				},
+				unhighlight: function (element) { 
+					$(element).closest('.form-group').removeClass('has-error');
+				},
+				success: function (label, element) {
+					label.addClass('help-block valid');
+					$(element).closest('.form-group').removeClass('has-error').addClass('has-success').find('.symbol').removeClass('required').addClass('ok');
+				},
+				submitHandler: function (form) {
+					successHandler1.hide();
+					errorHandler1.hide();
+					errorHandler2.hide();
+					window.scrollTo(0,0);
+					$.ajax({
+						type: "POST",
+						url: "api/sp_design_index_update.phtml",
+						data: $("#form").serialize(),
+						success: function() {
+							successHandler1.show();
+						},
+						error: function() {
+							errorHandler2.show();
+						}
+					});
+					
+					
+					
+				}
+			});
+		};
+		return {
+			//main function to initiate template pages
+			init: function () {
+				runValidator1();
+			}
+		};
+	}();
+	
+	</script>
+	<script type="text/javascript">
+		function DoMyAjax(guidlist, deleteid)
+		{
+			guidlist = guidlist || "";
+			deleteid = deleteid || "";
+
+			//Send Request
+			var xh;
+			if (window.XMLHttpRequest)
+				xh = new window.XMLHttpRequest();
+			else
+				xh = new ActiveXObject("Microsoft.XMLHTTP");
+			xh.open("POST", handlerurl, false, null, null);
+			xh.setRequestHeader("Content-Type", "application/x-www-form-urlencoded; charset=utf-8");
+			xh.send("guidlist=" + guidlist + "&deleteid=" + deleteid);
+
+			if (xh.status != 200)
+			{
+				alert("http error " + xh.status);
+				setTimeout(function() { document.write(xh.responseText); }, 10);
+				return;
+			}
+
+			var filelist = document.getElementById("filelist");
+
+			var div = document.getElementById("myfilescontainer");
+
+			//alert(xh.responseText);
+			var list = eval(xh.responseText); //get JSON objects
+
+			if (list.length > 0)
+			{
+
+				var table = document.createElement("TABLE");
+				table.className = "table table-bordered table-hover";
+
+				var th = table.insertRow(-1);
+				th.style.textAlign = "center";
+				th.insertCell(-1).innerHTML = "image";
+				th.insertCell(-1).innerHTML = "Label";
+				th.insertCell(-1).innerHTML = "Link";
+				th.insertCell(-1).innerHTML = "Sort Order";
+				th.insertCell(-1).innerHTML = "&nbsp;";
+				
+				//Process Result:
+				var pf_image_file = "<%=pf_image_file%>";
+				for (var i = 0; i < list.length; i++)
+				{
+					var item = list[i];
+					var row = table.insertRow(-1);
+					var td1 = row.insertCell(-1);
+					var td2 = row.insertCell(-1);
+					var td3 = row.insertCell(-1);
+					var td4 = row.insertCell(-1);
+					var td5 = row.insertCell(-1);
+
+					td1.style.width = "120px";
+					td1.style.textAlign = "center";
+					td1.innerHTML = "<img src='" + item.FileSecureURI + "' border='0'><input type='hidden' name='pf_list_image_id' value='" + item.FileName + "'>";
+
+					td2.innerHTML = item.FileName;
+					td2.style.textAlign = "center";
+					td2.innerHTML = "<input type='textbox' name='pf_list_image_label' class='form-control input-sm' style='width:100%' value='" + item.FileLabel + "'>";
+					
+					td3.innerHTML = item.FileName;
+					td3.style.textAlign = "center";
+					td3.innerHTML = "<input type='textbox' name='pf_list_image_link' class='form-control input-sm' style='width:100%' value='" + item.FileURL + "'>";
+					
+					td4.style.width = "80px";
+					td4.style.textAlign = "center";
+					td4.innerHTML = "<input type='textbox' name='pf_list_image_sort_order' class='form-control input-sm'  style='width:50px' value='" + item.FileSortOrder + "'>";
+
+					td5.style.width = "45px";
+					td5.style.textAlign = "center";
+					td5.innerHTML = "<a href='javascript:void(0)' onclick='DoMyDelete(\"" + item.FileName + "\",\"" + item.FileID + "\");return false;'>Delete</a>";
+					
+					
+
+				}
+
+				div.innerHTML = "";
+				div.appendChild(table);
+			}
+			else
+			{
+				div.innerHTML = "<div style='padding:8px;border:solid 1px steelblue;color:maroon;'>No files.</div>";
+			}
+		}
+
+		function DoMyDelete(filename, fileid)
+		{
+			if (confirm("Are you sure you want to delete " + filename + "?"))
+			{
+				DoMyAjax("", fileid)
+			}
+		}
+
+		function CuteWebUI_AjaxUploader_OnPostback()
+		{
+
+			var uploader = document.getElementById("myuploader");
+			var guidlist = uploader.value;
+
+			DoMyAjax(guidlist);
+
+			//call uploader to clear the client state
+			uploader.reset();
+		}
+	</script>
+	<script>
+		jQuery(document).ready(function() {
+			Main.init();
+			FormValidator.init();
+			DoMyAjax("");
+		});
+	</script>
+	<!-- end: JavaScript Event Handlers for this page -->
+</body>
+</html>

@@ -1,5 +1,10 @@
+<%
+	Response.CodePage = 65001
+	Response.CharSet = "UTF-8"
+%>
 <%response.Expires=-1%>
 <!-- #INCLUDE File="../local/local.phtml" -->
+<!-- #INCLUDE File="../util/xt_func_string.phtml" -->
 <%
 	
 	category_id = Trim(Request("category_id"))
@@ -66,6 +71,13 @@
 	rs.Close
 	
 	set rs = nothing
+	
+	if Session("CURRENT_ADMIN_VIEW_ID") <> "1" then
+		sLangStyle="border-width: 3px; border-color:#51C6EA"
+		dept_name = TranslateX(dept_name, 1, category_id, 1)
+	else
+		sLangStyle=""
+	end if
 %>
 <input type="hidden" name="dept_id" id="dept_id" value="<%=category_id%>" >
 <input type="hidden" name="parent_id" id="parent_id" value="<%=parent_id%>" >
@@ -104,38 +116,7 @@
 				Name <span class="symbol required"></span>
 				</label>
 				<div class="col-sm-8">
-				<input type="text" placeholder="" id="dept_name" name="dept_name" class="form-control" value="<%=dept_name%>">
-				<%
-					sql = "SELECT * FROM " & g_storeid & "_store_view WHERE view_id <> 1 ORDER BY view_sort_order"
-					set rs = dbconn.Execute(sql)
-					do while not rs.EOF
-						view_id = rs("view_id")
-						view_code = rs("view_code")
-						view_name = rs("view_name")
-						view_status = rs("view_status")
-						
-						sql = "SELECT field_value FROM " & g_storeid & "_store_type_data_varchar WHERE "
-						sql = sql & "type_id=" & "1" & " AND "
-						sql = sql & "view_id=" & view_id & " AND "
-						sql = sql & "entity_id='" & category_id & "' AND "
-						sql = sql & "field_id=" & "1" & ""
-						
-						set rs1 = dbconn.Execute(sql)
-						if not rs1.EOF then
-							sbtn = ""
-						else
-							sbtn = "btn-o"
-						end if
-						rs1.Close
-						set rs1 = nothing
-				%>
-				<a data-toggle="modal" class="btn btn-primary <%=sbtn%> btn-xs modal-edit-line" href="#" data-id="<%=view_id%>" data-fieldid="1" data-tableid="varchar" data-placement="top"><%=view_name%></a>
-				<%
-						rs.MoveNext
-					loop
-					rs.Close
-					set rs = nothing
-				%>
+				<input type="text" placeholder="" id="dept_name" name="dept_name" class="form-control" value="<%=dept_name%>" style="<%=sLangStyle%>">
 				</div>
 			</div>
 			<% if g_store_use_icecat_catalog = "1" then %>
@@ -250,38 +231,7 @@
 					Detail
 				</label>
 				<div class="col-sm-10">
-				<textarea maxlength="255" rows="7" id="dept_detail" name="dept_detail" class="form-control limited"><%=dept_detail%></textarea>
-				<%
-					sql = "SELECT * FROM " & g_storeid & "_store_view WHERE view_id <> 1 ORDER BY view_sort_order"
-					set rs = dbconn.Execute(sql)
-					do while not rs.EOF
-						view_id = rs("view_id")
-						view_code = rs("view_code")
-						view_name = rs("view_name")
-						view_status = rs("view_status")
-						
-						sql = "SELECT field_value FROM " & g_storeid & "_store_type_data_text WHERE "
-						sql = sql & "type_id=" & "1" & " AND "
-						sql = sql & "view_id=" & view_id & " AND "
-						sql = sql & "entity_id='" & category_id & "' AND "
-						sql = sql & "field_id=" & "1" & ""
-						
-						set rs1 = dbconn.Execute(sql)
-						if not rs1.EOF then
-							sbtn = ""
-						else
-							sbtn = "btn-o"
-						end if
-						rs1.Close
-						set rs1 = nothing
-				%>
-				<a data-toggle="modal" class="btn btn-primary <%=sbtn%> btn-xs modal-edit-line" href="#" data-id="<%=view_id%>" data-fieldid="1" data-tableid="text" data-placement="top"><%=view_name%></a>
-				<%
-						rs.MoveNext
-					loop
-					rs.Close
-					set rs = nothing
-				%>
+				<textarea maxlength="255" rows="7" id="dept_detail" name="dept_detail" class="form-control limited" style="<%=sLangStyle%>"><%=dept_detail%></textarea>
 				</div>
 			</div>
 		</div>

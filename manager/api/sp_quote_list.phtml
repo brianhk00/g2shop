@@ -1,0 +1,253 @@
+<%@ Language=VBScript %>
+<%
+	Response.CodePage = 65001
+	Response.CharSet = "UTF-8"
+%>
+<%
+	Response.Expires = -1
+%>
+<!-- #INCLUDE File="../local/local.phtml" -->
+<!-- #INCLUDE File="../util/xt_func_util.phtml" -->
+<!-- #INCLUDE File="../util/xt_func_string.phtml" -->
+<%
+	sEcho = Cint(Request("sEcho"))
+	iDisplayLength = Cint(Request("iDisplayLength"))
+	iDisplayStart = Cint(Request("iDisplayStart"))
+	sSearch = Trim(Request("sSearch"))
+	v1 = Trim(Request("v1"))
+	v2 = Trim(Request("v2")) 'Status
+
+	index_date = DateAdd("d", -30, Date())
+	Select case v1
+	case "0"
+		str_filter = "(date_created > '" & index_date & "' AND quote_owner='" & Session("AdminID") & "')"
+	case "1"
+		str_filter = "(quote_owner='" & Session("AdminID") & "')"
+	case "2"
+		str_filter = "(date_created > '" & index_date & "')"
+	case "3"
+		str_filter = ""
+	case else
+		str_filter = ""
+	end select
+	
+	'-------------------------------------------------------------------------
+	sMin = Trim(Request("min"))
+	sMax = Trim(Request("max"))
+
+	sDateRange = ""
+
+	if IsDate(sMin) then
+		if IsDate(sMax) then
+			dMax = CDate(sMax)
+			dMax = DateAdd("d", 1, dMax)
+			sMax = FormatDateTime(dMax,0)
+			sDateRange = "(date_updated between '" & sMin & "' AND '" & sMax & "')"
+		else
+			'dMin = CDate(sMin)
+			dMax = Date()
+			dMax = DateAdd("d", 1, dMax)
+			sMax = FormatDateTime(dMax,0)
+			sDateRange = "(date_updated between '" & sMin & "' AND '" & sMax & "')"
+		end if
+	else
+		if IsDate(sMax) then
+			dMax = CDate(sMax)
+			dMax = DateAdd("d", 1, dMax)
+			sMax = FormatDateTime(dMax,0)
+			sDateRange = "(date_updated between '1/1/1970' AND '" & sMax & "')"
+		end if
+	end if
+	'---------------------------------------------------------------------------------------------------
+
+
+	'SEARCH - here we make the Where clause that will be used in the SQL querry. You only put here the fields you want to search 
+	if IsNumeric(sSearch) then
+		strWhere = " (quote_id LIKE '%" & sSearch & "%' OR "
+	else
+		strWhere = " ("
+	end if
+	strWhere = strWhere &  " company_name LIKE '%" & sSearch & "%' OR "
+	strWhere = strWhere &  " shopper_firstname LIKE '%" & sSearch & "%' OR "
+	strWhere = strWhere &  " shopper_lastname LIKE '%" & sSearch & "%' OR "
+	strWhere = strWhere &  " date_updated LIKE '%" & sSearch & "%' OR "
+	strWhere = strWhere &  " quote_name LIKE '%" & sSearch & "%' OR "
+	strWhere = strWhere &  " quote_status LIKE '%" & sSearch & "%')"
+	
+	if Len(sDateRange) > 0 then
+		strWhere = strWhere &  " AND " & sDateRange
+	end if
+	
+	if Len(str_filter) > 0 then
+		strWhere  = strWhere & " AND " & str_filter
+	end if
+	
+	if v2 = "" OR v2= "All" then
+	else
+		strWhere = strWhere & " AND quote_status=" & v2 & ""
+	end if
+
+	'=======================================================================================
+	'ORDERING
+	'passes through all cols and first check if the column is sortable, if yes then construct
+	'the variable "order" that list in order the sequence of ordering
+	for k = 0 to 7
+		if Request("bSortable_" & k)="true" then
+			order = order & Request("iSortCol_" & k) & " " & Request("sSortDir_" & k)
+		end if
+	next
+	'here we replace the number corresponding the column position by the corresponding name of the column in the database
+	order =	Replace(order,"0",", quote_id")
+	order =	Replace(order,"1",", company_name")
+	order =	Replace(order,"2",", shopper_lastname")
+	order =	Replace(order,"3",", quote_status")
+	order =	Replace(order,"4",", quote_name")
+	order =	Replace(order,"5",", quote_amount")
+	order =	Replace(order,"6",", date_updated")
+	order =	Replace(order,"7",", order_id")
+	order =	Replace(order,"8",", quote_owner")
+
+	'here we eliminate the first comma of the variable "order"
+	if Len(order) > 0 then
+		order = Right(order, Len(order)-1)
+	else
+		order = "quote_id DESC"
+	end if
+
+	'here we create the variable "strOrderBy" that will be used in the SQL querry
+	strOrderBy = "ORDER BY " & order
+
+	'======================================================================================
+
+
+	Set dbconnx=server.CreateObject("ADODB.Connection")
+	dbconnx.Open g_connection_string
+
+	sql = "SELECT * FROM " & g_storeid & "_quotes WHERE " & strWhere & " " & strOrderBy
+	sqlx = "SELECT COUNT(quote_id) FROM " & g_storeid & "_quotes WHERE " & strWhere 
+
+	set rs = dbconnx.Execute(sql)
+
+	iTotalDisplayRecords = 0
+	iTotalRecords = 50
+	set rs1 = dbconnx.Execute(sqlx)
+	if not rs1.EOF then
+		iTotalDisplayRecords = rs1(0)
+		iTotalRecords = rs1(0)
+	else
+	end if
+	rs1.Close
+
+	'iTotalDisplayRecords = 50
+
+	'iTotalRecords = 50
+
+	%>
+	{"sEcho": <%=sEcho%>, "iTotalRecords": <%=iTotalRecords%>, "iTotalDisplayRecords": <%=iTotalDisplayRecords%>, "aaData": [ 
+	<%
+	i = 0
+
+	if rs.eof = false then
+		rs.move(iDisplayStart)
+		do while i < iDisplayLength and not rs.eof
+			
+			s_quote_id = rs("quote_id")
+			s_quote_owner = rs("quote_owner")
+			s_quote_amount = FormatNumber(rs("quote_amount"),2)
+			
+			quote_status = rs("quote_status")
+			select case quote_status
+			case 0
+				s_quote_status = "Pending"
+			case 1
+				s_quote_status = "Closed"
+			case 2
+				s_quote_status = "Approved(M)"
+			case 3
+				s_quote_status = "Converted"
+			case 4
+				s_quote_status = "Converted"
+			case else
+				s_quote_status = "Pending"
+			end select
+			
+			lead_quality = rs("lead_quality")
+			s_date_created = rs("date_created")
+			s_date_updated = rs("date_updated")
+			
+			s_date_created = ConvertToTimeZone(s_date_created)
+			s_date_updated = ConvertToTimeZone(s_date_updated)
+			
+			s_company_name = rs("company_name")
+			s_shopper_firstname = rs("shopper_firstname")
+			s_shopper_lastname = rs("shopper_lastname")
+			s_shopper = s_shopper_lastname & ", " & s_shopper_firstname
+			
+			If Len(s_shopper) > 0 Then
+				s_shopper = Replace(s_shopper, "'", "&#39")
+			End if
+			If Len(s_company_name) > 0 Then
+				s_company_name = Replace(s_company_name, "'", "&#39")
+			End if
+			
+			s_order_id = Trim(rs("order_id"))
+			
+			s_quote_notes = Trim(rs("notes"))
+			if Len(s_quote_notes) > 20 then
+				s_quote_notes = Left(s_quote_notes,20) & "..."
+			end if
+			If Len(s_quote_notes) > 0 Then
+				s_quote_notes = Replace(s_quote_notes, "'", "&#39")
+				s_quote_notes = Replace(s_quote_notes, VbCrLf, " ")
+				s_quote_notes = Replace(s_quote_notes, VbLf, " ")
+				s_quote_notes = Replace(s_quote_notes, VbCr, " ")
+				s_quote_notes = Replace(s_quote_notes, """", "&#34;")
+			End if
+			
+			
+			s_quote_name = rs("quote_name")
+			If Len(s_quote_name) > 0 Then
+				s_quote_name = Replace(s_quote_name, "'", "&#39")
+				s_quote_name = Replace(s_quote_name, """", "&#34;")
+			End if
+			
+			aaData = aaData & "['"
+			if quote_status = 1 or quote_status = 4 or quote_status = 3 then
+				aaData = aaData & "<a href=\'javascript:OpenPrintInvoice(" & s_quote_id & ")\'>" & s_quote_id & "</a>','" 
+			else
+				aaData = aaData & "<a href=\'sales_quotation_detail.phtml?quote_id=" & s_quote_id & "\'>" & s_quote_id & "</a>','" 
+			end if
+			aaData = aaData & s_company_name & "','" 
+			aaData = aaData & s_shopper & "','" 
+			aaData = aaData & s_quote_status & "','" 
+			aaData = aaData & s_quote_name & "','" 
+			aaData = aaData & s_quote_amount & "','"
+			aaData = aaData & s_date_created & "','"
+			if Len(s_order_id) > 0 then
+				aaData = aaData & "<a href=\'v2_order.asp?so_id=" & s_order_id & "\'>" & s_order_id & "</a>','"
+			else
+				aaData = aaData & "" & "','"
+			end if
+			aaData = aaData & s_quote_owner & "','"
+			aaData = aaData & s_quote_notes & "','"
+			aaData = aaData & "<a class=\'btn btn-blue btn-xs btn-o\' href=\'javascript:OpenPrintInvoice(" & s_quote_id & ")\'><i class=\'fa fa-print\'></i></a>','"
+			'aaData = aaData & "<input type=checkbox name=\'delete_quote\' value=\'" & s_quote_id & "\'>" &  "','"
+			aaData = aaData & "<a class=\'btn btn-blue btn-xs btn-o\' href=\'javascript:CopyQuote(" & s_quote_id & ")\'><i class=\'fa fa-copy\'></i></a>'],"
+			
+			
+			aaData = Replace(aaData,"'",chr(34))
+			rs.MoveNext
+			i=i+1
+		loop
+		rs.Close
+		if Len(aaData) > 0 then
+			aaData = Left(aaData, Len(aaData)-1)
+		else
+			aaData = ""
+		end if
+	else
+		aaData = ""
+	end if
+	response.write aaData & "] }"
+
+%>

@@ -1,0 +1,190 @@
+<%@ Language=VBScript %>
+<%
+	Response.CodePage = 65001
+	Response.CharSet = "UTF-8"
+%>
+<%
+  Response.Expires = -1
+%>
+<!-- #INCLUDE File="../local/local.phtml" -->
+<!-- #INCLUDE File="../util/xt_func_util.phtml" -->
+<!-- #INCLUDE File="../util/xt_func_string.phtml" -->
+<%
+	sEcho = Trim(Request("sEcho"))
+	iDisplayLength = Trim(Request("iDisplayLength"))
+	iDisplayStart = Trim(Request("iDisplayStart"))
+
+	sEcho = FilterStringEx(sEcho, "[^0-9]")
+	iDisplayLength = FilterStringEx(iDisplayLength, "[^0-9]")
+	iDisplayStart = FilterStringEx(iDisplayStart, "[^0-9]")
+
+	sEcho = Cint(sEcho)
+	iDisplayLength = Cint(iDisplayLength)
+	iDisplayStart = Cint(iDisplayStart)
+
+	'sEcho = Cint(Request("sEcho"))
+	'iDisplayLength = Cint(Request("iDisplayLength"))
+	'iDisplayStart = Cint(Request("iDisplayStart"))
+
+	sMin = Trim(Request("min"))
+	sMax = Trim(Request("max"))
+
+	sDateRange = ""
+
+	if IsDate(sMin) then
+		if IsDate(sMax) then
+			dMax = CDate(sMax)
+			dMax = DateAdd("d", 1, dMax)
+			sMax = FormatDateTime(dMax,0)
+			sDateRange = "(page_date_created between '" & sMin & "' AND '" & sMax & "')"
+		else
+	'dMin = CDate(sMin)
+			dMax = Date()
+			dMax = DateAdd("d", 1, dMax)
+			sMax = FormatDateTime(dMax,0)
+			sDateRange = "(page_date_created between '" & sMin & "' AND '" & sMax & "')"
+		end if
+	else
+		if IsDate(sMax) then
+			dMax = CDate(sMax)
+			dMax = DateAdd("d", 1, dMax)
+			sMax = FormatDateTime(dMax,0)
+			sDateRange = "(page_date_created between '1/1/1970' AND '" & sMax & "')"
+		end if
+	end if
+
+	sSearch = Trim(Request("sSearch"))
+	sSearch = FilterStringEx(sSearch, "[^0-9a-zA-Z _/-]")
+
+	v1 = Trim(Request("v1")) 'Sales Rep
+	v2 = Trim(Request("v2")) 'Status
+
+
+	index_date = DateAdd("d", -30, Date())
+
+
+	if Len(sSearch) > 0 then
+		sSearchDate = Replace(sSearch, "*", "%")
+	end if
+
+	'SEARCH - here we make the Where clause that will be used in the SQL querry. You only put here the fields you want to search 
+	if IsNumeric(sSearch) then
+		strWhere = " (page_id LIKE '%" & sSearch & "%' OR "
+	else
+		strWhere = " ("
+	end if
+	strWhere = strWhere &  "page_title LIKE '%" & sSearch & "%') "
+
+	if Len(sDateRange) > 0 then
+		strWhere = strWhere &  " AND " & sDateRange
+	end if
+
+
+	for k = 0 to 5
+		if Request("bSortable_" & k)="true" then
+			order = order & Request("iSortCol_" & k) & " " & Request("sSortDir_" & k)
+		end if
+	next
+	'here we replace the number corresponding the column position by the corresponding name of the column in the database
+	order =	Replace(order,"0",", page_id")
+	order =	Replace(order,"1",", page_title")
+	order =	Replace(order,"2",", page_date_created")
+	order =	Replace(order,"3",", page_date_modified")
+	order =	Replace(order,"4",", page_size")
+
+	'here we eliminate the first comma of the variable "order"
+	if Len(order) > 0 then
+		order = Right(order, Len(order)-1)
+	else
+		order = "page_id DESC"
+	end if
+
+	'here we create the variable "strOrderBy" that will be used in the SQL querry
+	strOrderBy = "ORDER BY " & order
+
+	'======================================================================================
+
+
+	'Set dbconn=server.CreateObject("ADODB.Connection")
+	'dbconn.Open Session("ConnectionString")
+
+	sql = "SELECT * FROM " & g_storeid & "_pages WHERE " & strWhere & " " & strOrderBy
+	sqlx = "SELECT COUNT(page_id) FROM " & g_storeid & "_pages WHERE " & strWhere 
+
+	'response.write(sql)
+	'response.End
+
+	set rs = dbconn.Execute(sql)
+
+	iTotalDisplayRecords = 0
+	iTotalRecords = 50
+	set rs1 = dbconn.Execute(sqlx)
+	if not rs1.EOF then
+		iTotalDisplayRecords = rs1(0)
+		iTotalRecords = rs1(0)
+	else
+	end if
+	rs1.Close
+
+	'iTotalDisplayRecords = 50
+
+	'iTotalRecords = 50
+
+	%>
+	{"sEcho": <%=sEcho%>, "iTotalRecords": <%=iTotalRecords%>, "iTotalDisplayRecords": <%=iTotalDisplayRecords%>, "aaData": [ 
+	<%
+	i = 0
+
+	if rs.eof = false then
+		rs.move(iDisplayStart)
+		do while i < iDisplayLength and not rs.eof
+			
+			s_page_id = Trim(rs("page_id"))
+			s_page_title = rs("page_title")
+			s_date_created = rs("page_date_created")
+			s_date_modified = rs("page_date_modified")
+			s_page_url_key = rs("page_url_key")
+			
+			s_date_created = ConvertToTimeZone(s_date_created)
+			s_date_modified = ConvertToTimeZone(s_date_modified)
+			
+			s_page_size = rs("page_size")
+
+
+			If Len(s_page_title) > 0 Then
+				s_page_title = Replace(s_page_title, "'", "&#39")
+				s_page_title = Replace(s_page_title, """", "&#34;")
+			End If
+						
+			
+			
+			aaData = aaData & "['"
+			aaData = aaData & "<a href=\'design_cms_page_edit.phtml?pid=" & s_page_id & "\'>" & s_page_id & "</a>','" 
+			aaData = aaData & s_page_title & "','" 
+			aaData = aaData & s_date_created & "','" 
+			aaData = aaData & s_date_modified & "','"
+			aaData = aaData & s_page_size & "','"
+			'aaData = aaData & "<input type=checkbox name=\'delete_page\' value=\'" & s_page_id & "\'>" & "','"
+			if Len(s_page_url_key) > 0 then
+				aaData = aaData & "<a href=\'"& g_store_url & "" & s_page_url_key & ".html\' target=\'_FRN\'>Preview</a>" &  "'],"
+			else
+				aaData = aaData & "<a href=\'" & g_store_url & "page.phtml?pid=" & s_page_id & "\' target=\'_FRN\'>Preview</a>" &  "'],"
+			end if
+	
+			
+			aaData = Replace(aaData,"'",chr(34))
+			rs.MoveNext
+			i=i+1
+		loop
+		rs.Close
+		if Len(aaData) > 0 then
+			aaData = Left(aaData, Len(aaData)-1)
+		else
+			aaData = ""
+		end if
+	else
+		aaData = ""
+	end if
+	response.write aaData & "] }"
+
+%>

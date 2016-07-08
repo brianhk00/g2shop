@@ -1,0 +1,428 @@
+<SCRIPT LANGUAGE=VBScript RUNAT=Server>
+Function FilterString(strng)
+	Dim regEx, patrn
+	
+	if Len(strng) > 0 then
+		patrn = "[^0-9a-zA-Z_]"
+	
+		Set regEx = New RegExp
+		regEx.Pattern = patrn
+		regEx.IgnoreCase = False
+		regEx.Global = True
+		FilterString = regEx.Replace(strng, "")
+	else
+		FilterString = strng
+	end if
+
+End Function
+
+Function FilterStringSP(strng)
+	Dim regEx, patrn
+	
+	if Len(strng) > 0 then
+		patrn = "[^0-9a-zA-Z _]"
+	
+		Set regEx = New RegExp
+		regEx.Pattern = patrn
+		regEx.IgnoreCase = False
+		regEx.Global = True
+		FilterStringSP = regEx.Replace(strng, "")
+	else
+		FilterStringSP = strng
+	end if
+
+End Function
+
+Function FilterEmailString(strng)
+	Dim regEx, patrn
+	
+	if Len(strng) > 0 then
+		patrn = "[^0-9a-zA-Z_@,.-]"
+	
+		Set regEx = New RegExp
+		regEx.Pattern = patrn
+		regEx.IgnoreCase = False
+		regEx.Global = True
+		FilterEmailString = regEx.Replace(strng, "")
+	else
+		FilterEmailString = strng
+	end if
+
+End Function
+
+Function FilterPassword(strng)
+	Dim regEx, patrn
+	
+	if Len(strng) > 0 then
+		patrn = "[^0-9a-zA-Z!@#$*-+_,.><]"
+	
+		Set regEx = New RegExp
+		regEx.Pattern = patrn
+		regEx.IgnoreCase = False
+		regEx.Global = True
+		FilterPassword = regEx.Replace(strng, "")
+	else
+		FilterPassword = strng
+	end if
+
+End Function
+
+Function FilterSKUString(strng)
+	Dim regEx, patrn
+	
+	if Len(strng) > 0 then
+		patrn = "[^0-9a-zA-Z +_,.#/-]"
+	
+		Set regEx = New RegExp
+		regEx.Pattern = patrn
+		regEx.IgnoreCase = False
+		regEx.Global = True
+		FilterSKUString = regEx.Replace(strng, "")
+	else
+		FilterSKUString = strng
+	end if
+
+End Function
+
+Function FilterSessionString(strng)
+	Dim regEx, patrn
+	
+	if Len(strng) > 0 then
+		patrn = "[^0-9a-zA-Z-{}]"
+	
+		Set regEx = New RegExp
+		regEx.Pattern = patrn
+		regEx.IgnoreCase = False
+		regEx.Global = True
+		FilterSessionString = regEx.Replace(strng, "")
+	else
+		FilterSessionString = strng
+	end if
+
+End Function
+
+
+Function FilterStringEx(strng, patrn)
+	Dim regEx
+	
+	if Len(strng) > 0 AND Len(patrn) > 0 then	
+		Set regEx = New RegExp
+		regEx.Pattern = patrn
+		regEx.IgnoreCase = False
+		regEx.Global = True
+		FilterStringEx = regEx.Replace(strng, "")
+	else
+		FilterStringEx = strng
+	end if
+
+End Function
+
+Function FilterStringSEO(strng)
+	Dim regEx, patrn
+	
+	if Len(strng) > 0 then
+		patrn = "[^0-9a-zA-Z_]"
+	
+		Set regEx = New RegExp
+		regEx.Pattern = patrn
+		regEx.IgnoreCase = False
+		regEx.Global = True
+		FilterStringSEO = regEx.Replace(strng, "_")
+	else
+		FilterStringSEO = strng
+	end if
+
+End Function
+
+
+Function stripHTML(strHTML)
+'Strips the HTML tags from strHTML
+
+  Dim objRegExp, strOutput
+  Set objRegExp = New Regexp
+
+  objRegExp.IgnoreCase = True
+  objRegExp.Global = True
+  objRegExp.Pattern = "<(.|\n)+?>"
+
+  'Replace all HTML tag matches with the empty string
+  strOutput = objRegExp.Replace(strHTML, "")
+  
+  'Replace all < and > with &lt; and &gt;
+  strOutput = Replace(strOutput, "<", "&lt;")
+  strOutput = Replace(strOutput, ">", "&gt;")
+  
+  stripHTML = strOutput    'Return the value of strOutput
+
+  Set objRegExp = Nothing
+End Function
+
+Function FilterXSS(strng)
+
+  dim strOutput
+  strOutput = Replace(strng, "<", "&lt;")
+  strOutput = Replace(strOutput, ">", "&gt;")
+  strOutput = Replace(strOutput, "(", "&#40;")
+  strOutput = Replace(strOutput, ")", "&#41;")
+  strOutput = Replace(strOutput, "#", "&#35;")
+  
+  FilterXSS = strOutput
+
+End Function
+
+Function TranslateX(string, strTypeId, strEntityId, strFieldId)
+	
+	'=======================================================================
+	' TYPE_ID : 1: category 2: product
+	' FIELD_ID : 1 : name (1, 2)
+	'=======================================================================
+	xstring = string
+	
+	current_view_id = "4"
+	current_view_id = Session("CURRENT_ADMIN_VIEW_ID")
+	
+	sql = "SELECT field_value FROM " & g_storeid & "_store_type_data_varchar WHERE "
+	sql = sql & "type_id=" & strTypeId & " AND "
+	sql = sql & "view_id=" & current_view_id & " AND "
+	sql = sql & "entity_id='" & strEntityId & "' AND "
+	sql = sql & "field_id=" & strFieldId & ""
+	
+	set rsx = dbconn.Execute(sql)
+	if not rsx.EOF then
+		xstring = rsx(0)
+	end if
+	rsx.Close
+	set rsx = nothing
+	TranslateX = xstring
+	
+End Function
+
+Function SaveX(entity_id, type_id, table_id, field_id, field_value)
+
+	view_id = Session("CURRENT_ADMIN_VIEW_ID")
+	
+	sql = "SELECT lang_id FROM " & g_storeid & "_store_type_data_" &  table_id & " WHERE "
+	sql = sql & " entity_id='" & entity_id & "' "
+	sql = sql & " AND type_id=" & type_id & " "
+	sql = sql & " AND view_id=" & view_id & " "
+	sql = sql & " AND field_id=" & field_id & " "
+	
+	set rsLang = dbconn.Execute(sql)
+	if not rsLang.EOF then
+		lang_id = rsLang(0)
+	else
+		lang_id = 0
+	end if
+	rsLang.Close
+	set rsLang = nothing
+	
+	if Len(field_value) > 0 then
+	
+		if lang_id = 0 then
+			Set rsLangUpdate = Server.CreateObject("ADODB.Recordset")
+			with rsLangUpdate
+				.ActiveConnection = dbconn
+				.CursorLocation = 3
+				.CursorType = 1
+				.LockType = 3
+				.Source = g_storeid & "_store_type_data_" &  table_id & " WHERE lang_id=0"
+				.Open
+				.AddNew
+			end with
+			
+			rsLangUpdate("entity_id") = entity_id
+			rsLangUpdate("type_id") = type_id
+			rsLangUpdate("view_id") = view_id
+			rsLangUpdate("field_id") = field_id
+		else
+			Set rsLangUpdate = Server.CreateObject("ADODB.Recordset")
+			with rsLangUpdate
+				.ActiveConnection = dbconn
+				.CursorLocation = 3
+				.CursorType = 1
+				.LockType = 3
+				.Source = g_storeid & "_store_type_data_" &  table_id & " WHERE lang_id=" & lang_id
+				.Open
+			end with
+		
+		end if
+		
+
+		rsLangUpdate("field_value") = field_value
+		
+		If dbconn.Errors.Count > 0 Then
+			dbconn.Errors.Clear
+			rsLangUpdate.CancelUpdate
+		else
+			rsLangUpdate.Update
+		End If
+		
+		rsLangUpdate.Close
+		set rsLangUpdate = nothing
+	
+	else
+		
+		sql = "DELETE FROM " & g_storeid & "_store_type_data_" &  table_id & " WHERE lang_id=" & lang_id
+		dbconn.Execute(sql)
+		
+	end if
+	
+End Function
+</SCRIPT>
+
+<%
+	
+'Added by Jihoon
+Function replaceCharacterEntity(strValue)
+  
+  If Len(strValue) > 0 Then
+		
+		'Convert basic 5 entity for xml documents
+    strValue = Replace(strValue, "&", "&amp;")
+    strValue = Replace(strValue, "'", "&apos;")
+    strValue = Replace(strValue, """", "&quot;")
+    strValue = Replace(strValue, "<", "&lt;")
+    strValue = Replace(strValue, ">", "&gt;")
+
+		'For Flashecom clients
+    strValue = Replace(strValue, "’", "&apos;")
+		strValue = Replace(strValue, "…", "&#8230;")
+		strValue = Replace(strValue, "“", "&apos;")
+		strValue = Replace(strValue, "”", "&apos;")
+		strValue = Replace(strValue, "–", "&#8211;")
+		strValue = Replace(strValue, "•", "&#8226;")
+		strValue = Replace(strValue, "/", "&#8260;")
+		strValue = Replace(strValue, "™", "&#8482;")
+		'strValue = Replace(strValue, "8", "&#8734;")
+		strValue = Replace(strValue, "~", "&#8764;")
+		strValue = Replace(strValue, "~", "&#8764;")
+		strValue = Replace(strValue, "˜", "&#8776;")
+		strValue = Replace(strValue, "ß", "&#946;")
+		strValue = Replace(strValue, "ˆ", "&#710;")
+		strValue = Replace(strValue, "—", "&#710;")
+		strValue = Replace(strValue, "‘", "&#8216;")
+		strValue = Replace(strValue, "†", "&#8224;")
+		strValue = Replace(strValue, "‡", "&#8225;")
+		strValue = Replace(strValue, "‰", "&#8240;")
+		strValue = Replace(strValue, "€", "&#8364;")
+
+		'List of special characters(ISO 8859-1) from http://www.evolt.org/article/ala/17/21234/
+		strValue = Replace(strValue, "¡", "&#161;")
+		strValue = Replace(strValue, "¢", "&#162;")
+		strValue = Replace(strValue, "£", "&#163;")
+		strValue = Replace(strValue, "¤", "&#164;")
+		strValue = Replace(strValue, "¥", "&#165;")
+		strValue = Replace(strValue, "¦", "&#166;")
+		strValue = Replace(strValue, "§", "&#167;")
+		strValue = Replace(strValue, "¨", "&#168;")
+		strValue = Replace(strValue, "©", "&#169;")
+		strValue = Replace(strValue, "ª", "&#170;")
+		strValue = Replace(strValue, "«", "&#171;")
+		strValue = Replace(strValue, "¬", "&#172;")
+		strValue = Replace(strValue, "­", "&#173;")
+		strValue = Replace(strValue, "®", "&#174;")
+		strValue = Replace(strValue, "¯", "&#175;")
+		strValue = Replace(strValue, "°", "&#176;")
+		strValue = Replace(strValue, "±", "&#177;")
+		strValue = Replace(strValue, "²", "&#178;")
+		strValue = Replace(strValue, "³", "&#179;")
+		strValue = Replace(strValue, "´", "&#180;")
+		strValue = Replace(strValue, "µ", "&#181;")
+		strValue = Replace(strValue, "¶", "&#182;")
+		strValue = Replace(strValue, "·", "&#183;")
+		strValue = Replace(strValue, "¸", "&#184;")
+		strValue = Replace(strValue, "¹", "&#185;")
+		strValue = Replace(strValue, "º", "&#186;")
+		strValue = Replace(strValue, "»", "&#187;")
+		strValue = Replace(strValue, "¼", "&#188;")
+		strValue = Replace(strValue, "½", "&#189;")
+		strValue = Replace(strValue, "¾", "&#190;")
+		strValue = Replace(strValue, "¿", "&#191;")
+		strValue = Replace(strValue, "À", "&#192;")
+		strValue = Replace(strValue, "Á", "&#193;")
+		strValue = Replace(strValue, "Â", "&#194;")
+		strValue = Replace(strValue, "Ã", "&#195;")
+		strValue = Replace(strValue, "Ä", "&#196;")
+		strValue = Replace(strValue, "Å", "&#197;")
+		strValue = Replace(strValue, "Æ", "&#198;")
+		strValue = Replace(strValue, "Ç", "&#199;")
+		strValue = Replace(strValue, "È", "&#200;")
+		strValue = Replace(strValue, "É", "&#201;")
+		strValue = Replace(strValue, "Ê", "&#202;")
+		strValue = Replace(strValue, "Ë", "&#203;")
+		strValue = Replace(strValue, "Ì", "&#204;")
+		strValue = Replace(strValue, "Í", "&#205;")
+		strValue = Replace(strValue, "Î", "&#206;")
+		strValue = Replace(strValue, "Ï", "&#207;")
+		strValue = Replace(strValue, "Ð", "&#208;")
+		strValue = Replace(strValue, "Ñ", "&#209;")
+		strValue = Replace(strValue, "Ò", "&#210;")
+		strValue = Replace(strValue, "Ó", "&#211;")
+		strValue = Replace(strValue, "Ô", "&#212;")
+		strValue = Replace(strValue, "Õ", "&#213;")
+		strValue = Replace(strValue, "Ö", "&#214;")
+		strValue = Replace(strValue, "×", "&#215;")
+		strValue = Replace(strValue, "Ø", "&#216;")
+		strValue = Replace(strValue, "Ù", "&#217;")
+		strValue = Replace(strValue, "Ú", "&#218;")
+		strValue = Replace(strValue, "Û", "&#219;")
+		strValue = Replace(strValue, "Ü", "&#220;")
+		strValue = Replace(strValue, "Ý", "&#221;")
+		strValue = Replace(strValue, "Þ", "&#222;")
+		strValue = Replace(strValue, "ß", "&#223;")
+		strValue = Replace(strValue, "à", "&#224;")
+		strValue = Replace(strValue, "á", "&#225;")
+		strValue = Replace(strValue, "â", "&#226;")
+		strValue = Replace(strValue, "ã", "&#227;")
+		strValue = Replace(strValue, "ä", "&#228;")
+		strValue = Replace(strValue, "å", "&#229;")
+		strValue = Replace(strValue, "æ", "&#230;")
+		strValue = Replace(strValue, "ç", "&#231;")
+		strValue = Replace(strValue, "è", "&#232;")
+		strValue = Replace(strValue, "é", "&#233;")
+		strValue = Replace(strValue, "ê", "&#234;")
+		strValue = Replace(strValue, "ë", "&#235;")
+		strValue = Replace(strValue, "ì", "&#236;")
+		strValue = Replace(strValue, "í", "&#237;")
+		strValue = Replace(strValue, "î", "&#238;")
+		strValue = Replace(strValue, "ï", "&#239;")
+		strValue = Replace(strValue, "ð", "&#240;")
+		strValue = Replace(strValue, "ñ", "&#241;")
+		strValue = Replace(strValue, "ò", "&#242;")
+		strValue = Replace(strValue, "ó", "&#243;")
+		strValue = Replace(strValue, "ô", "&#244;")
+		strValue = Replace(strValue, "õ", "&#245;")
+		strValue = Replace(strValue, "ö", "&#246;")
+		strValue = Replace(strValue, "÷", "&#247;")
+		strValue = Replace(strValue, "ø", "&#248;")
+		strValue = Replace(strValue, "ù", "&#249;")
+		strValue = Replace(strValue, "ú", "&#250;")
+		strValue = Replace(strValue, "û", "&#251;")
+		strValue = Replace(strValue, "ü", "&#252;")
+		strValue = Replace(strValue, "ý", "&#253;")
+		strValue = Replace(strValue, "þ", "&#254;")
+		strValue = Replace(strValue, "ÿ", "&#255;")
+
+  End If
+  
+  replaceCharacterEntity = strValue
+  
+End Function
+
+Function CreateURLKey(strng)
+	Dim regEx, patrn
+	
+	if Len(strng) > 0 then
+		patrn = "[^0-9a-zA-Z_]"
+	
+		Set regEx = New RegExp
+		regEx.Pattern = patrn
+		regEx.IgnoreCase = False
+		regEx.Global = True
+		CreateURLKey = regEx.Replace(LCase(strng), "-")
+	else
+		CreateURLKey = strng
+	end if
+
+End Function
+	%>

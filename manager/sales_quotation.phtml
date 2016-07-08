@@ -1,0 +1,516 @@
+<%
+	Response.CodePage = 65001
+	Response.CharSet = "UTF-8"
+%>
+<!-- #INCLUDE File="local/local.phtml" -->
+<!-- #INCLUDE File="../util/xt_func_util.phtml" -->
+<!-- #INCLUDE File="../util/xt_func_string.phtml" -->
+<!-- #INCLUDE File="../util/xt_func_user_access.phtml" -->
+<!-- #INCLUDE File="include/i_login.phtml" -->
+<%
+	'ACCESS ROUTINE (TODO)==========================================
+	'if GetAccessFlagEx(flagSalesOrder) = 0 then
+		'Response.Redirect("dashboard.asp?err_msg=You don't have access to sales order.")
+	'end if
+	'bPageAccess = GetAccessFlagEx(flagSalesOrder)
+	'=========================================================
+
+	view_all_quotes_flag = GetUserAccessVariables("VIEW_ALL_QUOTES")
+	v1 = Trim(Request("v1"))
+
+	if Len(Request("quote_display")) > 0 then
+		quote_display = Request("quote_display")
+	else
+		if view_all_quotes_flag = "1" then
+			quote_display = "3"
+		else
+			quote_display = "1"
+		end if
+	end if
+
+	index_date = DateAdd("d", -30, Date())
+	Select case quote_display
+	case "0"
+		str_filter = " WHERE date_created > '" & index_date & "' AND quote_owner='" & Session("AdminID") & "'"
+	case "1"
+		str_filter = " WHERE quote_owner='" & Session("AdminID") & "'"
+	case "2"
+		str_filter = " WHERE date_created > '" & index_date & "'"
+	case "3"
+		str_filter = ""
+	end select
+
+	sql = "SELECT quote_print_mode FROM " & g_storeid & "_profile2"
+	set rsProf2 = dbconn.Execute(sql)
+	if not rsProf2.EOF then
+		quote_print_mode = rsProf2(0)
+	else
+		quote_print_mode = 0 
+	end if
+	rsProf2.Close
+
+	sql = "SELECT Count(*), SUM(quote_amount) FROM :9_quotes" & str_filter
+	sql = Replace(sql, ":9", g_storeid)
+
+	set rs = dbconn.Execute(sql)
+
+	if not rs.EOF then
+		quotes_count = rs(0)
+		if not isNumeric(rs(1)) then
+			quotes_amount = 0
+		else
+			quotes_amount = rs(1)
+		end if
+	end if
+	rs.Close
+
+	op = Trim(Request("op"))
+	delete_quote = Trim(Request("delete_quote"))
+
+	if op = "-" then
+		if Len(delete_quote) > 0 then
+			sql = "DELETE FROM :9_quotes WHERE quote_id IN(" & delete_quote & ")"
+			sql = Replace(sql, ":9", g_storeid)
+			dbconn.Execute sql
+			
+			sql = "DELETE FROM :9_quote_item WHERE quote_id IN(" & delete_quote & ")"
+			sql = Replace(sql, ":9", g_storeid)
+			dbconn.Execute sql
+			
+		end if
+	end if
+
+%>
+<!--#INCLUDE FILE="include/doctype.phtml"-->
+<head>
+<!--#INCLUDE FILE="include/head.phtml"-->
+<!-- start: CSS REQUIRED FOR THIS PAGE ONLY -->
+<link href="vendor/bootstrap-touchspin/jquery.bootstrap-touchspin.min.css" rel="stylesheet" media="screen">
+<link href="vendor/select2/select2.min.css" rel="stylesheet" media="screen">
+<link href="vendor/bootstrap-datepicker/bootstrap-datepicker3.standalone.min.css" rel="stylesheet" media="screen">
+<link href="vendor/bootstrap-timepicker/bootstrap-timepicker.min.css" rel="stylesheet" media="screen">
+<link href="vendor/DataTables/css/jquery.dataTables.css" rel="stylesheet" media="screen">
+<link href="vendor/DataTables/css/DT_bootstrap.css" rel="stylesheet" media="screen">
+<!-- end: CSS REQUIRED FOR THIS PAGE ONLY -->
+<link rel="stylesheet" href="assets/css/custom.css">
+</head>	
+<body>
+	<div id="app">
+		<!--#INCLUDE FILE="include/sidebar.phtml"-->
+		<div class="app-content">
+			<!--#INCLUDE FILE="include/header.phtml"-->
+			<div class="main-content" >
+				<div class="wrap-content container" id="container">
+					<!-- start: TITLE -->
+					<section id="page-title" class="padding-top-15 padding-bottom-15">
+						<div class="row">
+							<div class="col-sm-8">
+								<h1 class="mainTitle">Quotations</h1>
+								<span class="mainDescription">overview &amp; list </span>
+							</div>
+							<ol class="breadcrumb">
+								<a class="btn btn-green btn-sm" data-toggle="modal" style="float:right" href="#stack2"><i class="ti-plus"></i> Add New Quote</a>
+							</ol>
+						</div>
+					</section>
+					<!-- end: TITLE -->
+					<div class="container-fluid container-fullw bg-white">
+					
+						<div class="content-header-floating" style="display: block;">
+							<div class="content-header">
+								<h3 class="mainTitle">Quotations</h3>
+								<p class="content-buttons form-buttons">
+									<a class="btn btn-green btn-sm" data-toggle="modal" style="float:right" href="#stack2"><i class="ti-plus"></i> Add New Quote</a>
+								</p>	
+							</div>
+						</div>
+						<div class="row">
+							<div class="col-md-3">
+							</div>
+							<div class="col-md-6">
+								<div class="row">
+									<div class="col-md-9">		
+										<div class="input-group input-daterange datepicker">
+											<span class="input-group-addon bg-info">Date Range <i class="fa fa-calendar"></i> </span>
+											<input type="text" id="min" class="form-control input-sm"/>
+											<span class="input-group-addon bg-info">to</span>
+											<input type="text" id="max" class="form-control input-sm" />
+										</div>
+									</div>
+									<div class="col-md-3 margin-top-5">
+									<button id="btnDateFilter" type="button" class="btn btn-blue btn-block btn-sm">
+										Filter
+									</button>
+									</div>
+								</div>
+							</div>
+							<div class="col-md-3">
+							</div>
+						</div>
+						<div class="row">
+							<div class="col-md-12">
+								<table class="table table-striped table-bordered table-hover table-full-width" id="sample_1">
+									<thead>
+									<!--
+									<tr>
+										<th colspan="2">
+											<select id="filterStatus"class="form-control input-sm" style="width:160px;">
+												<option value="0" <%if q_filter="0" then%>Selected<%end if%>>Pending</option>
+												<option value="2" <%if q_filter="2" then%>Selected<%end if%>>Approved</option>
+												<option value="1" <%if q_filter="1" then%>Selected<%end if%>>Closed</option>
+												<option value="3" <%if q_filter="3" then%>Selected<%end if%>>Converted</option>
+												<option value=""  <%if q_filter="" then%>Selected<%end if%>>All Quotes</option>
+											</select>
+										</th>
+										<th colspan="7" class="text-right">
+										</th>
+										<th colspan="4" class="text-right">
+											<select id="filterView" class="form-control input-sm" >
+												<option value="0" <%if quote_display="0" then%>selected<%end if%>>Show My Quotes only (less than 30 days old)</option>
+												<option value="1" <%if quote_display="1" then%>selected<%end if%>>Show My Quotes only (all)</option>
+												<% if view_all_quotes_flag = "1" then %>
+												<option value="2" <%if quote_display="2" then%>selected<%end if%>>Show all quotes (less than 30 days old)</option>
+												<option value="3" <%if quote_display="3" then%>selected<%end if%>>Show all quotes (all)</option>
+												<% end if %>
+											</select>
+										</th>
+									</tr>
+									-->
+									<tr>
+										<th></th>
+										<th></th>
+										<th></th>
+										<th></th>
+										<th></th>
+										<th></th>
+										<th></th>
+										<th></th>
+										<th></th>
+										<th></th>
+										<th></th>
+										<th></th>
+									</tr>
+									<tr>
+										<th>Quote ID</th>
+										<th>Company</th>
+										<th>Contact</th>
+										<th>Status</th>
+										<th>Description</th>
+										<th>Amount</th>
+										<th>
+										Created
+										<%
+											  SELECT CASE Session("STORETIMEZONE")
+											  CASE "0"
+												  Response.Write("(PST)")
+											  CASE "1"
+												  Response.Write("(MST)")
+											  CASE "2"
+												  Response.Write("(CST)")
+											  CASE "3"
+												  Response.Write("(EST)")
+											  CASE ELSE
+												  Response.Write("(PST)")
+											  END SELECT
+										  %>
+										</th>
+										<th>S.O. #</th>
+										<th>Drafted By</th>
+										<th>Memo</th>
+										<th width="2%">Print</th>
+										<th width="2%">Copy</th>
+									</tr>
+									
+									</thead>
+									<tbody>
+										<tr>
+											<td colspan="11" class="dataTables_empty">Loading data from server</td>
+										</tr>
+									</tbody>
+								</table>	
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+		<!--#INCLUDE FILE="include/footer.phtml"-->
+	</div>
+	
+	<div class="modal fade " id="stack2" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+		<div class="modal-dialog modal-lg">
+			<div class="modal-content">
+				<div class="modal-header">
+					<button type="button" class="close" data-dismiss="modal" aria-label="Close">
+						<span aria-hidden="true">&times;</span>
+					</button>
+					<h4 class="modal-title" id="myModalLabel">Customer Search</h4>
+				</div>
+				<div class="modal-body">
+					<input id="s_sku" name="s_sku" class="form-control" data-tabindex="1" type="hidden">
+					<div class="row">
+						<div class="col-sm-12">
+							<div class="tabbable">
+								<ul id="myTab11" class="nav nav-tabs tab-green">
+									<li class="active">
+										<a href="#panel_tab11_example1" data-toggle="tab">
+											<i class="fa fa-users"></i> Customers
+										</a>
+									</li>
+								</ul>
+								<div class="tab-content">
+									<div class="tab-pane active" id="panel_tab11_example1">
+										<table class="table table-striped table-bordered table-hover table-full-width" id="sample_2">
+											<thead>
+											
+											<tr>
+												<th>ID</th>
+												<th>First Name</th>
+												<th>Last Name</th>
+												<th>Email</th>
+												<th>Customer Since</th>
+												<th>Status</th>
+												<th></th>
+											</tr>
+											</thead>
+											<tbody>
+												<tr>
+													<td colspan="8" class="dataTables_empty">Loading data from server</td>
+												</tr>
+											</tbody>
+										</table>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+				
+			</div>
+		</div>
+	</div>
+	<!--#INCLUDE FILE="include/js.phtml"-->
+	<!-- start: JAVASCRIPTS REQUIRED FOR THIS PAGE ONLY -->
+	<script src="vendor/maskedinput/jquery.maskedinput.min.js"></script>
+	<script src="vendor/bootstrap-touchspin/jquery.bootstrap-touchspin.min.js"></script>
+	<script src="vendor/autosize/autosize.min.js"></script>
+	<script src="vendor/selectFx/classie.js"></script>
+	<script src="vendor/selectFx/selectFx.js"></script>
+	<script src="vendor/select2/select2.min.js"></script>
+	<script src="vendor/bootstrap-datepicker/bootstrap-datepicker.min.js"></script>
+	<script src="vendor/bootstrap-timepicker/bootstrap-timepicker.min.js"></script>
+	<script src="vendor/DataTables/jquery.dataTables.min.js"></script>
+	<script src="vendor/DataTables/jquery.dataTables.columnFilter.js"></script>
+	<!-- end: JAVASCRIPTS REQUIRED FOR THIS PAGE ONLY -->
+	<script src="assets/js/main.js"></script>
+	<script src="assets/js/form-elements.js"></script>
+	<!-- start: JavaScript Event Handlers for this page -->
+	<%
+		order_display = "3"
+		order_filter = "All"
+	%>
+	<script type="text/javascript">
+	
+	
+	var oTable;
+	var oTable2;
+	var v1 = "All";
+	var v2 = "All";
+	var v3 = "All";
+	
+	var TableData = function () {
+		//function to initiate DataTable
+		//DataTable is a highly flexible tool, based upon the foundations of progressive enhancement, 
+		//which will add advanced interaction controls to any HTML table
+		//For more information, please visit https://datatables.net/
+		var runDataTable = function () {
+			oTable = $('#sample_1').dataTable({
+				"bProcessing": true,
+				"bStateSave": false,
+				"bJQueryUI": false,
+				"iDisplayLength": 20,
+				"bServerSide": true,
+				"bAutoWidth": false,
+				"sAjaxSource": "api/sp_quote_list.phtml",
+				"aoColumns": [ 
+					/* Quote ID */  { "sClass": "center" },
+					/* Company */  { "sClass": "center" },
+					/* Contact */  { "sClass": "center" },
+					/* Status */  { "sClass": "center" },
+					/* Description */  { "sClass": "center" },
+					/* Quote Amount */  { "sClass": "text-right" },
+					/* Last Updated */ { "sClass": "center" },
+					/* QUOTE # */ { "sClass": "center","bSortable": false },
+					/* PO # */ { "sClass": "center","bSortable": false },
+					/* Drafted By */ { "sClass": "center" },
+					/* CVV */ { "sClass": "center","bSortable": false },
+					/* Memo */ { "sClass": "center","bSortable": false }
+				  ],
+				  
+				"aaSorting": [[0, 'desc']],
+				"aLengthMenu": [
+					[10, 20, 30, 40, 50, 100],
+					[10, 20, 30, 40, 50, 100] // change per page values here
+				],
+				
+				"oLanguage": {
+					"sLengthMenu": "Show _MENU_ Rows",
+					"sSearch": "",
+					"sProcessing": '<img src="assets/images/ajax-loader-primary.gif"/>',
+					"oPaginate": {
+						"sPrevious": "",
+						"sNext": ""
+					}
+				},
+				
+				'fnServerData' : function ( sSource, aoData, fnCallback ) {
+					aoData.push( { 'name' : 'min', 'value' : $("#min").val() } );
+					aoData.push( { 'name' : 'max', 'value' : $("#max").val() } );
+					aoData.push( { 'name' : 'v1', 'value' : $("#filterView").val() } );
+					aoData.push( { 'name' : 'v2', 'value' : $("#filterStatus").val() } );
+					$.ajax({
+						'dataType' : 'json',
+						'data' : aoData,
+						'type' : 'GET',
+						'url' : sSource,
+						'success' : fnCallback
+					});
+				} 
+			})
+			/*
+			.columnFilter({ 	sPlaceHolder: "head:before",
+						aoColumns: [ null,
+									null,null,null,null,null,
+													{ type: "date-range" }
+							]
+
+			});
+			*/
+			
+			$('#sample_1').on( 'draw.dt', function () {
+				//UIModals.init();
+				var $modal = $('#ajax-modal');
+				$('.ajax .demo').on('click', function () {
+					// create the backdrop and wait for next modal to be triggered
+					$('body').modalmanager('loading');
+					modal_order_id = $(this).data('id');
+					setTimeout(function () {
+						$modal.load('modal_ajax_order_email.phtml?order_id=' + modal_order_id, '', function () {
+							$modal.modal();
+						});
+					}, 1000);
+				});
+			} );
+			
+			$('#sample_1_wrapper .dataTables_filter input').addClass("form-control input-sm").attr("placeholder", "Search");
+			// modify table search input
+			$('#sample_1_wrapper .dataTables_length select').addClass("m-wrap small");
+			// modify table per page dropdown
+			$('#sample_1_wrapper .dataTables_length select').select2();
+			// initialzie select2 dropdown
+		};
+		
+		var runDataTable2 = function () {
+			oTable2 = $('#sample_2').dataTable({
+				"bProcessing": true,
+				"bStateSave": false,
+				"bJQueryUI": false,
+				"iDisplayLength": 20,
+				"bServerSide": true,
+				"bAutoWidth": false,
+				"responsive": true,
+				"sAjaxSource": "api/sp_customer_list_2.phtml?v1=" + v1 + "&v2=" + v2 + "&v3=" + v3 + "&z1=",
+				"aoColumns": [ 
+					/* ID */  { "sClass": "left" },
+					/* First Name */  { "sClass": "left"},
+					/* Last Name */  { "sClass": "left" },
+					/* Email */  { "sClass": "left"},
+					/* Customer Since */  { "sClass": "left"},
+					/* Status */ { "sClass": "center" ,"bSortable": false},
+					/* Action */  { "sClass": "left"}
+				  ],
+				  
+				"aaSorting": [[0, 'desc']],
+				
+				"aLengthMenu": [
+					[10, 20, 30, 40, 50],
+					[10, 20, 30, 40, 50] // change per page values here
+				],
+				
+				"oLanguage": {
+					"sLengthMenu": "Show _MENU_ Rows",
+					"sSearch": "",
+					"sProcessing": '<img src="assets/images/ajax-loader-primary.gif"/>',
+					"oPaginate": {
+						"sPrevious": "",
+						"sNext": ""
+					}
+				},
+				
+			});
+			
+			$('#sample_1_wrapper .dataTables_filter input').addClass("form-control input-sm").attr("placeholder", "Search");
+			// modify table search input
+			$('#sample_1_wrapper .dataTables_length select').addClass("m-wrap small");
+			// modify table per page dropdown
+			$('#sample_1_wrapper .dataTables_length select').select2();
+			// initialzie select2 dropdown
+		};
+		
+		return {
+			//main function to initiate template pages
+			init: function () {
+				runDataTable();
+				runDataTable2();
+			},
+			
+			reload: function(theURL) {
+				if ( theURL ) {
+					oTable.fnReloadAjax(theURL);
+				}
+				else {
+					oTable.fnReloadAjax('sp_order_list.phtml?v1=<%=order_display%>&v2=<%=order_filter%>&z1=');
+				}
+			}
+		};
+	}();
+	
+	function StatusFilter (theObj)
+	{
+		oTable.fnReloadAjax('sp_order_list.phtml?v1=<%=order_display%>&v2=' + theObj.value + '&z1=');
+	}
+	function DateFilter()
+	{
+		oTable.fnReloadAjax('sp_order_list.phtml?v1=<%=order_display%>&v2=<%=order_filter%>&DF=' + document.getElementById('DateRange').value + '&z1=');
+	}
+	
+	$('#daterange').on('apply.daterangepicker', function(ev, picker) { 
+		oTable.fnReloadAjax('sp_order_list.phtml?v1=<%=order_display%>&v2=<%=order_filter%>&DF=' + document.getElementById('DateRange').value + '&z1=');
+		//do something, like clearing an input
+	 $('#daterange').val(''); 
+	}); 
+
+	</script>
+	
+	<script>
+		jQuery(document).ready(function() {
+			Main.init();
+			FormElements.init();
+			TableData.init();
+			
+			$("#btnDateFilter").click(function() {
+			  oTable.fnFilter( $('#min').val(), 0 );
+			});
+			
+			$("#filterView").change(function() {
+			  oTable.fnFilter( $('#min').val(), 0 );
+			});
+			
+			$("#filterStatus").change(function() {
+			  oTable.fnFilter( $('#min').val(), 0 );
+			});
+		});
+	</script>
+	<!-- end: JavaScript Event Handlers for this page -->
+</body>
+</html>

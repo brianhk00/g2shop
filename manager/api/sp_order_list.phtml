@@ -1,0 +1,507 @@
+<%@ Language=VBScript %>
+<%
+  Response.Expires = -1
+%>
+<!-- #INCLUDE File="../local/local.phtml" -->
+<!-- #INCLUDE File="../util/xt_func_util.phtml" -->
+<!-- #INCLUDE File="../util/xt_func_string.phtml" -->
+<%
+	'====================================================
+	strPath = Server.MapPath("..\docs")
+	guid = GetUniqueLongIntegerID()
+	'====================================================
+	sEcho = Trim(Request("sEcho"))
+	iDisplayLength = Trim(Request("iDisplayLength"))
+	iDisplayStart = Trim(Request("iDisplayStart"))
+
+	sEcho = FilterStringEx(sEcho, "[^0-9]")
+	iDisplayLength = FilterStringEx(iDisplayLength, "[^0-9]")
+	iDisplayStart = FilterStringEx(iDisplayStart, "[^0-9]")
+
+	sEcho = Cint(sEcho)
+	iDisplayLength = Cint(iDisplayLength)
+	iDisplayStart = Cint(iDisplayStart)
+
+	'sEcho = Cint(Request("sEcho"))
+	'iDisplayLength = Cint(Request("iDisplayLength"))
+	'iDisplayStart = Cint(Request("iDisplayStart"))
+
+	sMin = Trim(Request("min"))
+	sMax = Trim(Request("max"))
+
+	sDateRange = ""
+
+	if IsDate(sMin) then
+		if IsDate(sMax) then
+			dMax = CDate(sMax)
+			dMax = DateAdd("d", 1, dMax)
+			sMax = FormatDateTime(dMax,0)
+			sDateRange = "(date_changed between '" & sMin & "' AND '" & sMax & "')"
+		else
+			'dMin = CDate(sMin)
+			dMax = Date()
+			dMax = DateAdd("d", 1, dMax)
+			sMax = FormatDateTime(dMax,0)
+			sDateRange = "(date_changed between '" & sMin & "' AND '" & sMax & "')"
+		end if
+	else
+		if IsDate(sMax) then
+			dMax = CDate(sMax)
+			dMax = DateAdd("d", 1, dMax)
+			sMax = FormatDateTime(dMax,0)
+			sDateRange = "(date_changed between '1/1/1970' AND '" & sMax & "')"
+		end if
+	end if
+
+	sSearch = Trim(Request("sSearch"))
+	sSearch = FilterStringEx(sSearch, "[^0-9a-zA-Z _/-]")
+
+	v1 = Trim(Request("v1")) 'Sales Rep
+	v2 = Trim(Request("v2")) 'Status
+
+	'iDisplayLength = 25
+	' iDisplayStart = 1
+
+	index_date = DateAdd("d", -30, Date())
+
+	Select case v1
+	case "1"
+		str_filter = "(salesrep_id='" & Session("AdminID") & "')"
+	case else
+		str_filter = ""
+	end select
+
+	if Len(sSearch) > 0 then
+		sSearchDate = Replace(sSearch, "*", "%")
+	end if
+
+	'SEARCH - here we make the Where clause that will be used in the SQL querry. You only put here the fields you want to search 
+	if IsNumeric(sSearch) then
+		strWhere = " (order_id LIKE '%" & sSearch & "%' OR "
+	else
+		strWhere = " ("
+	end if
+	strWhere = strWhere &  " company_name LIKE '%" & sSearch & "%' OR "
+	strWhere = strWhere &  " shopper_firstname LIKE '%" & sSearch & "%' OR "
+	strWhere = strWhere &  " shopper_lastname LIKE '%" & sSearch & "%' OR "
+	if Len(sDateRange) > 0 then
+	else
+		strWhere = strWhere &  " date_changed LIKE '%" & sSearchDate & "%' OR "
+	end if
+	strWhere = strWhere &  " order_name LIKE '%" & sSearch & "%' OR "
+	strWhere = strWhere &  " status LIKE '%" & sSearch & "%')"
+
+	if Len(sDateRange) > 0 then
+		strWhere = strWhere &  " AND " & sDateRange
+	end if
+
+	if Len(str_filter) > 0 then
+		strWhere  = strWhere & " AND " & str_filter
+	end if
+
+	if v2 = "All" then
+	else
+		strWhere = strWhere & " AND status='" & v2 & "'"
+	end if
+
+	'Response.Write(strWhere)
+	'=======================================================================================
+	'ORDERING
+	'passes through all cols and first check if the column is sortable, if yes then construct
+	'the variable "order" that list in order the sequence of ordering
+	for k = 0 to 7
+		if Request("bSortable_" & k)="true" then
+			order = order & Request("iSortCol_" & k) & " " & Request("sSortDir_" & k)
+		end if
+	next
+	'here we replace the number corresponding the column position by the corresponding name of the column in the database
+	order =	Replace(order,"0",", order_id")
+	order =	Replace(order,"1",", company_name")
+	order =	Replace(order,"2",", shopper_lastname")
+	order =	Replace(order,"3",", status")
+	order =	Replace(order,"4",", order_name")
+	order =	Replace(order,"5",", total")
+	order =	Replace(order,"6",", date_changed")
+	order =	Replace(order,"7",", order_id")
+	order =	Replace(order,"8",", order_id")
+	order =	Replace(order,"9",", salesrep_id")
+
+	'here we eliminate the first comma of the variable "order"
+	if Len(order) > 0 then
+		order = Right(order, Len(order)-1)
+	else
+		order = "order_id DESC"
+	end if
+
+	'here we create the variable "strOrderBy" that will be used in the SQL querry
+	strOrderBy = "ORDER BY " & order
+
+	'======================================================================================
+
+
+	Set dbconnx=server.CreateObject("ADODB.Connection")
+	dbconnx.Open g_connection_string
+
+	sql = "SELECT * FROM " & g_storeid & "_order WHERE " & strWhere & " " & strOrderBy
+
+	sqlx = "SELECT COUNT(order_id) FROM " & g_storeid & "_order WHERE " & strWhere 
+
+	set rs = dbconnx.Execute(sql)
+
+	iTotalDisplayRecords = 0
+	iTotalRecords = 50
+	set rs1 = dbconnx.Execute(sqlx)
+	if not rs1.EOF then
+		iTotalDisplayRecords = rs1(0)
+		iTotalRecords = rs1(0)
+	else
+	end if
+	rs1.Close
+
+	'iTotalDisplayRecords = 50
+
+	'iTotalRecords = 50
+
+	%>
+	{"sEcho": <%=sEcho%>, "iTotalRecords": <%=iTotalRecords%>, "iTotalDisplayRecords": <%=iTotalDisplayRecords%>, "aaData": [ 
+	<%
+	i = 0
+
+	if rs.eof = false then
+		rs.move(iDisplayStart)
+		do while i < iDisplayLength and not rs.eof
+			
+			s_order_id = rs("order_id")
+			s_order_owner = rs("salesrep_id")
+			s_order_amount = FormatNumber(rs("total"),2)
+			
+			s_order_status = rs("status")
+			auth_number = rs("AuthNumber")
+			CybercashResponse = Trim(rs("CybercashResponse"))
+			
+			s_date_created = rs("date_entered")
+			s_date_updated = rs("date_changed")
+			
+			s_date_created = ConvertToTimeZone(s_date_created)
+			s_date_updated = ConvertToTimeZone(s_date_updated)
+			
+			s_company_name = rs("bill_company")
+			s_shopper = rs("CardName")
+			s_shopper_firstname = rs("bill_contact_firstname")
+			s_shopper_lastname = rs("bill_contact_lastname")
+			
+			cardtype = rs("CardType")
+			cvv2_flag = rs("CVV2_flag")
+			avs_flag = rs("AVS_flag")
+			export_flag = rs("export_flag")
+			
+			if Len(s_shopper) > 0 then
+			else
+				s_shopper = s_shopper_lastname & ", " & s_shopper_firstname
+			end if
+			
+			
+			If Len(s_shopper) > 0 Then
+				s_shopper = Replace(s_shopper, "'", "&#39")
+			End if
+			If Len(s_company_name) > 0 Then
+				s_company_name = Replace(s_company_name, "'", "&#39")
+			End if
+			
+			s_order_id = Trim(rs("order_id"))
+			
+			s_order_notes = Trim(rs("notes"))
+			if Len(s_order_notes) > 20 then
+				s_order_notes = Left(s_order_notes,20) & "..."
+			end if
+			If Len(s_order_notes) > 0 Then
+				s_order_notes = Replace(s_order_notes, "'", "&#39")
+				s_order_notes = Replace(s_order_notes, VbCrLf, " ")
+				s_order_notes = Replace(s_order_notes, VbLf, " ")
+				s_order_notes = Replace(s_order_notes, VbCr, " ")
+				s_order_notes = Replace(s_order_notes, """", "&#34;")
+				s_order_notes = Replace(s_order_notes, "\", "")
+			End if
+			
+			
+			s_order_name = rs("order_name")
+			If Len(s_order_name) > 0 Then
+				s_order_name = Replace(s_order_name, "'", "&#39")
+				s_order_name = Replace(s_order_name, """", "&#34;")
+			End if
+			
+			aaData = aaData & "['"
+			aaData = aaData & "<a href=\'sales_orders_detail.phtml?so_id=" & s_order_id & "\'>" & s_order_id & "</a>"
+			if cardtype = "GCheckout" Then
+				aaData = aaData & " <img src=\'images/OrderGCheckout.gif\' border=\'0\'>"
+			End If
+			aaData = aaData & "','" 
+			aaData = aaData & s_company_name & "','" 
+			aaData = aaData & s_shopper & "','" 
+			aaData = aaData & s_order_status & "','" 
+			aaData = aaData & s_order_name & "','" 
+			aaData = aaData & s_order_amount & "','"
+			aaData = aaData & s_date_updated & "','"
+			
+			'==================================================================================================
+			sql = "SELECT quote_id, quote_status FROM " & g_storeid & "_quotes WHERE order_id='" & s_order_id & "'"
+			set rsQuote = dbconnx.Execute(sql)
+			s_quote_num = ""
+			do while not rsQuote.EOF
+				if rsQuote(0) > 0 then
+					if rsQuote(1) = 1 or rsQuote(1) = 4 or rsQuote(1) = 3 then
+						s_quote_num = s_quote_num & "<a href=\'javascript:OpenQuoteInvoice(" & rsQuote(0) & ")\'>" & rsQuote(0) & "</a>"
+					else
+						s_quote_num = s_quote_num & "<a href=\'v2_quote.asp?quote_id=" & rsQuote(0) & "\'>" & rsQuote(0) & "</a>"
+					end if
+				end if
+				rsQuote.MoveNext
+			loop
+			rsQuote.Close
+			'==================================================================================================
+			
+			aaData = aaData & s_quote_num & "','"
+			
+			'==================================================================================================
+			'purchase order...
+			sql = "SELECT DISTINCT item_po FROM " & g_storeid & "_order_item WHERE order_id='" & s_order_id & "'"
+			set rsPO = dbconnx.Execute(sql)
+			s_po_num = ""
+			do while not rsPO.EOF
+				if rsPO(0) > 0 then
+					s_po_num = s_po_num & "<a href=\'v2_po.asp?po_id=" & rsPO(0) & "\'>" & rsPO(0) & "</a><br>"
+				end if
+				rsPO.MoveNext
+			loop
+			rsPO.Close
+			'==================================================================================================
+			aaData = aaData & s_po_num & "','"
+			
+			aaData = aaData & s_order_owner & "','"
+			
+			If (Session("CYBERCASH_PROVIDER") = "2" OR Session("CYBERCASH_PROVIDER") = "5" OR Session("CYBERCASH_PROVIDER") = "6" OR Session("CYBERCASH_PROVIDER") = "9") AND (rs("PaymentMethod") = "GCheckout") THEN
+				SELECT CASE cvv2_flag
+				CASE 1
+					aaData = aaData & "<img src=\'assets/images/flag_white.gif\' alt=\'Card code matches\' title=\'Card code matches\' border=0>" & "','"
+				CASE 2
+					aaData = aaData & "<img src=\'assets/images/flag_red.gif\' alt=\'Card code not matches\' title=\'Card code not matches\' border=0>" & "','"
+				CASE 3
+					aaData = aaData & "<img src=\'assets/images/flag_yellow.gif\' alt=\'Card code not supported\' title=\'Card code not supported\' border=0>" & "','"
+				CASE 4
+					aaData = aaData & "<img src=\'assets/images/flag_red.gif\' alt=\'Error\' title=\'Error\' border=0>" & "','"
+				CASE ELSE
+					aaData = aaData & "" & "','"
+				END SELECT
+				SELECT CASE avs_flag
+				CASE 1
+					aaData = aaData & "<img src=\'assets/images/flag_white.gif\' alt=\'Exact Match\' title=\'Exact Match\' border=0>" & "','"
+				CASE 2
+					aaData = aaData & "<img src=\'assets/images/flag_white.gif\' alt=\'Zip match\' title=\'Zip match\' border=0>" & "','"
+				CASE 3
+					aaData = aaData & "<img src=\'assets/images/flag_white.gif\' alt=\'Street Num Match\' title=\'Street Num Match\' border=0>" & "','"
+				CASE 4
+					aaData = aaData & "<img src=\'assets/images/flag_red.gif\' alt=\'No Match\' title=\'No Match\' border=0>" & "','"
+				CASE 5
+					aaData = aaData & "<img src=\'assets/images/flag_yellow.gif\' alt=\'Not Support\' title=\'Not Support\' border=0>" & "','"
+				CASE ELSE
+					aaData = aaData & "" & "','"
+				END SELECT
+			Elseif Session("CYBERCASH_PROVIDER") = "2" OR Session("CYBERCASH_PROVIDER") = "5" THEN
+				
+				SELECT CASE cvv2_flag
+				CASE 0
+					if LCase(cardtype) = "paypal" then
+						aaData = aaData & "" & "','"
+					else 
+						if Len(auth_number) > 0 then 
+							aaData = aaData & "<img src=\'assets/images/flag_yellow.gif\' border=0>" & "','"
+						else
+							aaData = aaData & "" & "','"
+						end if 
+					end if 
+				CASE 1
+					aaData = aaData & "<img src=\'assets/images/flag_white.gif\' border=0>" & "','"
+				CASE 2
+					aaData = aaData & "<img src=\'assets/images/flag_red.gif\' border=0>" & "','"
+				CASE ELSE
+					if Len(auth_number) > 0 then 
+						if CybercashResponse = "Approved" then 
+							aaData = aaData & "<img src=\'assets/images/flag_white.gif\' border=0>" & "','"
+						else 
+							if CybercashResponse = "CSCDECLINED" then 
+								aaData = aaData & "<img src=\'assets/images/flag_red.gif\' border=0>" & "','"
+							else 
+								aaData = aaData & "<img src=\'assets/images/flag_yellow.gif\' border=0>" & "','"
+							end if 
+						end if
+					else
+						aaData = aaData & "" & "','"
+					end if 
+				END SELECT
+				
+				SELECT CASE avs_flag
+				CASE 0
+					if LCase(cardtype) = "paypal" then
+						aaData = aaData & "" & "','"
+					else 
+						if Len(auth_number) > 0 then 
+							aaData = aaData & "<img src=\'assets/images/flag_yellow.gif\' border=0>" & "','"
+						else
+							aaData = aaData & "" & "','"
+						end if 
+					end if 
+				CASE 1
+					aaData = aaData & "<img src=\'assets/images/flag_white.gif\' border=0>" & "','"
+				CASE 2
+					aaData = aaData & "<img src=\'assets/images/flag_red.gif\' border=0>" & "','"
+				CASE ELSE
+					if Len(auth_number) > 0 then 
+						if CybercashResponse = "Approved" then 
+							aaData = aaData & "<img src=\'assets/images/flag_white.gif\' border=0>" & "','"
+						else 
+							if CybercashResponse = "AVSDECLINED" then 
+								aaData = aaData & "<img src=\'assets/images/flag_red.gif\' border=0>" & "','"
+							else 
+								aaData = aaData & "<img src=\'assets/images/flag_yellow.gif\' border=0>" & "','"
+							end if 
+						end if
+					else
+						aaData = aaData & "" & "','"
+					end if 
+				END SELECT
+			Elseif Session("CYBERCASH_PROVIDER") = "6" THEN
+				SELECT CASE cvv2_flag
+				CASE 0
+					aaData = aaData & "&nbsp;" & "','"
+				CASE 13 'M
+					aaData = aaData & "<img src=\'assets/images/flag_white.gif\' border=0 alt=\'Card code matches\' title=\'Card code matches\'>" & "','"
+				CASE 14 'N
+					aaData = aaData & "<img src=\'assets/images/flag_red.gif\' border=0 alt=\'Card code does not match\' title=\'Card code does not match\'>" & "','"
+				CASE 16 'P
+					aaData = aaData & "<img src=\'assets/images/flag_yellow.gif\' border=0 alt=\'Card code was not processed\' title=\'Card code was not processed\'>" & "','"
+				CASE 19 'S
+					aaData = aaData & "<img src=\'assets/images/flag_yellow.gif\' border=0 alt=\'Card code should be on card but was not indicated\' title=\'Card code should be on card but was not indicated\'>" & "','"
+				CASE 21 'U
+					aaData = aaData & "<img src=\'assets/images/flag_yellow.gif\' border=0 alt=\'Issuer was not certified for Card Code\' title=\'Issuer was not certified for Card Code\'>" & "','"
+				CASE ELSE
+					aaData = aaData & "&nbsp;" & "','"
+				END SELECT
+				SELECT CASE avs_flag
+				CASE 0
+					aaData = aaData & "&nbsp;" & "','"
+				CASE 1 'A
+					aaData = aaData & "<img src=\'assets/images/flag_white.gif\' border=0 alt=\'Address (Street) matches, ZIP does not\' title=\'Address (Street) matches, ZIP does not\'>" & "','"
+				CASE 2 'B
+					aaData = aaData & "<img src=\'assets/images/flag_yellow.gif\' border=0 alt=\'Address information not provided for AVS check\' title=\'Address information not provided for AVS check\'>" & "','"
+				CASE 5 'E
+					aaData = aaData & "<img src=\'assets/images/flag_red.gif\' border=0 alt=\'AVS Error\' title=\'AVS Error\'>" & "','"
+				CASE 7 'G
+					aaData = aaData & "<img src=\'assets/images/flag_yellow.gif\' border=0 alt=\'Non-U.S. Card Issuing Bank\' title=\'Non-U.S. Card Issuing Bank\'>" & "','"
+				CASE 12 'N
+					aaData = aaData & "<img src=\'assets/images/flag_red.gif\' border=0 alt=\'No match on Address (street) or ZIP\' title=\'No match on Address (street) or ZIP\'>" & "','"
+				CASE 16 'P
+					aaData = aaData & "<img src=\'assets/images/flag_yellow.gif\' border=0 alt=\'AVS not applicable for this transaction\' title=\'AVS not applicable for this transaction\'>" & "','"
+				CASE 18 'R
+					aaData = aaData & "<img src=\'assets/images/flag_yellow.gif\' border=0 alt=\'Retry - System unavailable or timed out\' title=\'Retry - System unavailable or timed out\'>" & "','"
+				CASE 19 'S
+					aaData = aaData & "<img src=\'assets/images/flag_yellow.gif\' border=0 alt=\'Service not supported by issuer\' title=\'Service not supported by issuer\'>" & "','"
+				CASE 21 'U
+					aaData = aaData & "<img src=\'assets/images/flag_yellow.gif\' border=0 alt=\'Address information is unavailable\' title=\'Address information is unavailable\'>" & "','"
+				CASE 23 'W
+					aaData = aaData & "<img src=\'assets/images/flag_white.gif\' border=0 alt=\'9 digist ZIP matches, Address(Street) does not\' title=\'9 digist ZIP matches, Address(Street) does not\'>" & "','"
+				CASE 24 'X
+					aaData = aaData & "<img src=\'assets/images/flag_white.gif\' border=0 alt=\'Address (Street) and 9 digit ZIP match\' title=\'Address (Street) and 9 digit ZIP match\'>" & "','"
+				CASE 25 'Y
+					aaData = aaData & "<img src=\'assets/images/flag_white.gif\' border=0 alt=\'Address (Street) and 5 digit ZIP match\' title=\'Address (Street) and 5 digit ZIP match\'>" & "','"
+				CASE 26 'Z
+					aaData = aaData & "<img src=\'assets/images/flag_white.gif\' border=0 alt=\'5 digit ZIP matches, Address(street) does not\' title=\'5 digit ZIP matches, Address(street) does not\'>" & "','"
+				CASE ELSE
+					aaData = aaData & "&nbsp;" & "','"
+				END SELECT
+			Elseif Session("CYBERCASH_PROVIDER") = "9" THEN
+				SELECT CASE cvv2_flag
+				CASE 0
+					aaData = aaData & "&nbsp;" & "','"
+				CASE 13 'M
+					aaData = aaData & "<img src=\'assets/images/flag_white.gif\' border=0 alt=\'Card code matches\' title=\'Card code matches\'>" & "','"
+				CASE 14 'N
+					aaData = aaData & "<img src=\'assets/images/flag_red.gif\' border=0 alt=\'Card code does not match\' title=\'Card code does not match\'>" & "','"
+				CASE 16 'P
+					aaData = aaData & "<img src=\'assets/images/flag_yellow.gif\' border=0 alt=\'Card code was not processed\' title=\'Card code was not processed\'>" & "','"
+				CASE 19 'S
+					aaData = aaData & "<img src=\'assets/images/flag_yellow.gif\' border=0 alt=\'Card code should be on card but was not indicated\' title=\'Card code should be on card but was not indicated\'>" & "','"
+				CASE 21 'U
+					aaData = aaData & "<img src=\'assets/images/flag_yellow.gif\' border=0 alt=\'Issuer was not certified for Card Code\' title=\'Issuer was not certified for Card Code\'>" & "','"
+				CASE ELSE
+					aaData = aaData & "&nbsp;" & "','"
+				END SELECT
+				SELECT CASE avs_flag
+				CASE 0
+					aaData = aaData & "&nbsp;" & "','"
+				CASE 1 'A
+					aaData = aaData & "<img src=\'assets/images/flag_white.gif\' border=0 alt=\'Address (Street) matches, ZIP does not\' title=\'Address (Street) matches, ZIP does not\'>" & "','"
+				CASE 2 'B
+					aaData = aaData & "<img src=\'assets/images/flag_yellow.gif\' border=0 alt=\'Address (Street) matches, Postal Code does not (International)\' title=\'Address (Street) matches, Postal Code does not (International)\'>" & "','"
+				CASE 5 'E
+					aaData = aaData & "<img src=\'assets/images/flag_red.gif\' border=0 alt=\'Not allowed for MOTO transactions\' title=\'Not allowed for MOTO transactions\'>" & "','"
+				CASE 7 'G
+					aaData = aaData & "<img src=\'assets/images/flag_yellow.gif\' border=0 alt=\'Non-U.S. Card Issuing Bank\' title=\'Non-U.S. Card Issuing Bank\'>" & "','"
+				CASE 12 'N
+					aaData = aaData & "<img src=\'assets/images/flag_red.gif\' border=0 alt=\'No match on Address (street) or ZIP\' title=\'No match on Address (street) or ZIP\'>" & "','"
+				CASE 16 'P
+					aaData = aaData & "<img src=\'assets/images/flag_yellow.gif\' border=0 alt=\'Postal Code only (International)\' title=\'Postal Code only (International)\'>" & "','"
+				CASE 18 'R
+					aaData = aaData & "<img src=\'assets/images/flag_yellow.gif\' border=0 alt=\'Retry - System unavailable or timed out\' title=\'Retry - System unavailable or timed out\'>" & "','"
+				CASE 19 'S
+					aaData = aaData & "<img src=\'assets/images/flag_yellow.gif\' border=0 alt=\'Service not supported by issuer\' title=\'Service not supported by issuer\'>" & "','"
+				CASE 21 'U
+					aaData = aaData & "<img src=\'assets/images/flag_yellow.gif\' border=0 alt=\'Address information is unavailable\' title=\'Address information is unavailable\'>" & "','"
+				CASE 23 'W
+					aaData = aaData & "<img src=\'assets/images/flag_white.gif\' border=0 alt=\'9 digist ZIP matches, Address(Street) does not\' title=\'9 digist ZIP matches, Address(Street) does not\'>" & "','"
+				CASE 24 'X
+					aaData = aaData & "<img src=\'assets/images/flag_white.gif\' border=0 alt=\'Address (Street) and 9 digit ZIP match\' title=\'Address (Street) and 9 digit ZIP match\'>" & "','"
+				CASE 25 'Y
+					aaData = aaData & "<img src=\'assets/images/flag_white.gif\' border=0 alt=\'Address (Street) and 5 digit ZIP match\' title=\'Address (Street) and 5 digit ZIP match\'>" & "','"
+				CASE 26 'Z
+					aaData = aaData & "<img src=\'assets/images/flag_white.gif\' border=0 alt=\'5 digit ZIP matches, Address(street) does not\' title=\'5 digit ZIP matches, Address(street) does not\'>" & "','"
+				CASE ELSE
+					aaData = aaData & "&nbsp;" & "','"
+				END SELECT
+			Else
+				aaData = aaData & "" & "','"
+				aaData = aaData & "" & "','"
+			end if
+			
+			aaData = aaData & s_order_notes & "','"
+			if export_flag = 1 then
+				aaData = aaData & "<img src=\'assets/images/icons/tick.png\' border=0 alt=\'exported\' title=\'exported\'>" & "','"
+			else
+				aaData = aaData & "" & "','"
+			end if
+			aaData = aaData & "<input type=checkbox name=\'new_export_flag\' value=\'" & s_order_id & "\'>" &  "','"
+			
+			dim fs
+			set fs=Server.CreateObject("Scripting.FileSystemObject")
+			if fs.FileExists(strPath & "\\order" & s_order_id & ".pdf") then
+			  aaData = aaData & "<a class=\'btn btn-blue btn-xs btn-o\' href=\'docs/order" &  s_order_id & ".pdf?=" & guid & "\' target=\'_blank\'><i class=\'fa fa-print\'></i></a>','"
+			else
+			  aaData = aaData & "<a class=\'btn btn-blue btn-xs btn-o\' href=\'javascript:OpenInvoice(" & s_order_id & ")\'><i class=\'fa fa-print\'></i></a>','"
+			end if
+			set fs=nothing
+			
+			'aaData = aaData & "<input type=checkbox name=\'delete_orders\' value=\'" & s_order_id & "\'>" &  "','"
+			aaData = aaData & "<a class=\'btn btn-blue btn-xs btn-o\' href=\'javascript:CopySO(" & s_order_id & ")\'><i class=\'fa fa-copy\'></i></a>'],"
+			aaData = Replace(aaData,"'",chr(34))
+			rs.MoveNext
+			i=i+1
+		loop
+		rs.Close
+		aaData = Left(aaData, Len(aaData)-1)
+	else
+		aaData = ""
+	end if
+	response.write aaData & "] }"
+
+%>
+
+

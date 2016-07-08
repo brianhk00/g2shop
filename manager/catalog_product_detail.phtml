@@ -1,6 +1,11 @@
 <%
 	Response.CodePage = 65001
 	Response.CharSet = "UTF-8"
+	
+	storeviewid = Trim(Request("storeviewid"))
+	if Len(storeviewid) > 0 then
+		Session("CURRENT_ADMIN_VIEW_ID")  = storeviewid
+	end if
 %>
 <!-- #INCLUDE File="local/local.phtml" -->
 <!-- #INCLUDE File="util/xt_func_util.phtml" -->
@@ -108,6 +113,7 @@
 	
 	
 	set rsProduct = nothing
+	
 	
 	'===============================================================================================
 	' GET CATEGORY INFORMATION - Multi Ready
@@ -335,6 +341,16 @@
 		objFSO.CreateFolder(strRootFolder & "/media/catalog/product/" & pf_id)
 	End If
 	
+	
+	if Session("CURRENT_ADMIN_VIEW_ID") <> "1" then
+		sLangStyle="border-width: 3px; border-color:#51C6EA"
+		pf_name = TranslateX(pf_name, 2, pf_id, 1)
+		pf_description = TranslateX(pf_description, 2, pf_id, 2)
+		pf_detail  = TranslateX(pf_detail, 2, pf_id, 3)
+	else
+		sLangStyle=""
+	end if
+	
 %>
 <!--#INCLUDE FILE="include/doctype.phtml"-->
 <head>
@@ -362,7 +378,7 @@ ul.dynatree-container {
 	
 </head>	
 <body>
-	<div id="app" class="app-sidebar-closed">
+	<div id="app">
 	<!--#INCLUDE FILE="include/sidebar.phtml"-->
 	<div class="app-content">
 		<!--#INCLUDE FILE="include/header.phtml"-->
@@ -499,7 +515,7 @@ ul.dynatree-container {
 									<div class="tab-pane active" id="panel_tab4_example1">
 										<div class="row">
 											<div class="col-sm-9">
-												<div class="panel panel-blue">
+												<div class="panel panel-dark-primary">
 													<div class="panel-heading">
 														<h4 class="panel-title">General</h4>
 														<div class="panel-tools" >
@@ -539,38 +555,7 @@ ul.dynatree-container {
 																Name <span class="symbol required"></span> 
 															</label>
 															<div class="col-sm-10">
-																<input type="text" placeholder="" id="pf_name" name="pf_name" class="form-control input-sm" value="<%=pf_name%>">
-																<%
-																	sql = "SELECT * FROM " & g_storeid & "_store_view WHERE view_id <> 1 ORDER BY view_sort_order"
-																	set rs = dbconn.Execute(sql)
-																	do while not rs.EOF
-																		view_id = rs("view_id")
-																		view_code = rs("view_code")
-																		view_name = rs("view_name")
-																		view_status = rs("view_status")
-																		
-																		sql = "SELECT field_value FROM " & g_storeid & "_store_type_data_varchar WHERE "
-																		sql = sql & "type_id=" & "2" & " AND "
-																		sql = sql & "view_id=" & view_id & " AND "
-																		sql = sql & "entity_id='" & pf_id & "' AND "
-																		sql = sql & "field_id=" & "1" & ""
-																		
-																		set rs1 = dbconn.Execute(sql)
-																		if not rs1.EOF then
-																			sbtn = ""
-																		else
-																			sbtn = "btn-o"
-																		end if
-																		rs1.Close
-																		set rs1 = nothing
-																%>
-																<a data-toggle="modal" class="btn btn-primary <%=sbtn%> btn-xs modal-edit-line" href="#" data-id="<%=view_id%>" data-fieldid="1" data-tableid="varchar" data-placement="top"><%=view_name%></a>
-																<%
-																		rs.MoveNext
-																	loop
-																	rs.Close
-																	set rs = nothing
-																%>
+																<input type="text" placeholder="" id="pf_name" name="pf_name" class="form-control input-sm" value="<%=pf_name%>" style="<%=sLangStyle%>">
 															</div>
 														</div>
 														<div class="form-group">
@@ -578,38 +563,7 @@ ul.dynatree-container {
 																Description 
 															</label>
 															<div class="col-sm-10">
-																<textarea rows="3" maxlength="1024" id="pf_description" name="pf_description" class="form-control input-sm limited"><%=pf_description%></textarea>
-																<%
-																	sql = "SELECT * FROM " & g_storeid & "_store_view WHERE view_id <> 1 ORDER BY view_sort_order"
-																	set rs = dbconn.Execute(sql)
-																	do while not rs.EOF
-																		view_id = rs("view_id")
-																		view_code = rs("view_code")
-																		view_name = rs("view_name")
-																		view_status = rs("view_status")
-																		
-																		sql = "SELECT field_value FROM " & g_storeid & "_store_type_data_varchar WHERE "
-																		sql = sql & "type_id=" & "2" & " AND "
-																		sql = sql & "view_id=" & view_id & " AND "
-																		sql = sql & "entity_id='" & pf_id & "' AND "
-																		sql = sql & "field_id=" & "2" & ""
-																		
-																		set rs1 = dbconn.Execute(sql)
-																		if not rs1.EOF then
-																			sbtn = ""
-																		else
-																			sbtn = "btn-o"
-																		end if
-																		rs1.Close
-																		set rs1 = nothing
-																%>
-																<a data-toggle="modal" class="btn btn-primary <%=sbtn%> btn-xs modal-edit-line" href="#" data-id="<%=view_id%>" data-fieldid="2" data-tableid="varchar" data-placement="top"><%=view_name%></a>
-																<%
-																		rs.MoveNext
-																	loop
-																	rs.Close
-																	set rs = nothing
-																%>
+																<textarea rows="3" maxlength="1024" id="pf_description" name="pf_description" class="form-control input-sm limited"  style="<%=sLangStyle%>"><%=pf_description%></textarea>
 																<button class="btn btn-primary btn-xs" type="button" id="wysiwyg_description" data-id="2">
 																<i class="fa fa-file-code-o"></i>
 																WYSIWYG Editor
@@ -638,11 +592,13 @@ ul.dynatree-container {
 																	<div class="col-sm-8">
 																		<div class="input-group">
 																			<input type="text" placeholder="" id="pf_manu_part_number" name="pf_manu_part_number" class="form-control input-sm" value="<%=pf_manu_part_number%>">
+																			<% if store_use_icecat_catalog = "1" then %>
 																			<span class="input-group-btn">
 																				<a class="demo btn btn-primary btn-sm" data-toggle="modal" href="#stack1">
 																					<i class="fa fa-search"></i>
 																				</a>
 																			</span>
+																			<% end if %>
 																		</div>
 																	</div>
 																</div>
@@ -776,38 +732,8 @@ ul.dynatree-container {
 																Detail
 															</label>
 															<div class="col-sm-10">
-															<textarea rows="5" id="pf_detail" name="pf_detail" class="form-control input-sm limited"><%=pf_detail%></textarea>
-															<%
-																sql = "SELECT * FROM " & g_storeid & "_store_view WHERE view_id <> 1 ORDER BY view_sort_order"
-																set rs = dbconn.Execute(sql)
-																do while not rs.EOF
-																	view_id = rs("view_id")
-																	view_code = rs("view_code")
-																	view_name = rs("view_name")
-																	view_status = rs("view_status")
-																	
-																	sql = "SELECT field_value FROM " & g_storeid & "_store_type_data_text WHERE "
-																	sql = sql & "type_id=" & "2" & " AND "
-																	sql = sql & "view_id=" & view_id & " AND "
-																	sql = sql & "entity_id='" & pf_id & "' AND "
-																	sql = sql & "field_id=" & "3" & ""
-																	
-																	set rs1 = dbconn.Execute(sql)
-																	if not rs1.EOF then
-																		sbtn = ""
-																	else
-																		sbtn = "btn-o"
-																	end if
-																	rs1.Close
-																	set rs1 = nothing
-															%>
-															<a data-toggle="modal" class="btn btn-primary <%=sbtn%> btn-xs modal-edit-line" href="#" data-id="<%=view_id%>" data-fieldid="3" data-tableid="text" data-placement="top"><%=view_name%></a>
-															<%
-																	rs.MoveNext
-																loop
-																rs.Close
-																set rs = nothing
-															%>
+															<textarea rows="5" id="pf_detail" name="pf_detail" class="form-control input-sm limited" style="<%=sLangStyle%>"><%=pf_detail%></textarea>
+															
 															<button class="btn btn-primary btn-xs" type="button" id="wysiwyg_detail" data-id="3">
 															<i class="fa fa-file-code-o"></i>
 															WYSIWYG Editor
@@ -1067,7 +993,7 @@ ul.dynatree-container {
 												</div>
 											</div>
 											<div class="col-sm-3">
-												<div class="panel panel-blue">
+												<div class="panel panel-dark-primary">
 													<div class="panel-heading">
 														<h4 class="panel-title">Categories</h4>
 														<div class="panel-tools" >
@@ -1091,7 +1017,7 @@ ul.dynatree-container {
 												for ix = 1 to 6 
 											%>
 											<div class="col-sm-6">
-												<div class="panel panel-blue">
+												<div class="panel panel-dark-primary">
 													<div class="panel-heading">
 														<h4 class="panel-title">Custom Option <%=ix%></h4>
 														<div class="panel-tools" >
@@ -1218,7 +1144,7 @@ ul.dynatree-container {
 										<div class="row">
 											<div class="col-sm-9">
 												<% if g_store_use_icecat_catalog = "1" then %>
-												<div class="panel panel-blue">
+												<div class="panel panel-dark-primary">
 													<div class="panel-heading">
 														<h4 class="panel-title">Settings</h4>
 														<div class="panel-tools" >
@@ -1253,7 +1179,7 @@ ul.dynatree-container {
 										</div>
 										<div class="row">
 											<div class="col-sm-9">
-												<div class="panel panel-blue">
+												<div class="panel panel-dark-primary">
 													<div class="panel-heading">
 														<h4 class="panel-title">Images</h4>
 														<div class="panel-tools" >
@@ -1292,7 +1218,7 @@ ul.dynatree-container {
 									<div class="tab-pane" id="panel_tab4_example2">
 										<div class="row">
 											<div class="col-sm-12">
-												<div class="panel panel-blue">
+												<div class="panel panel-dark-primary">
 													<div class="panel-heading">
 														<h4 class="panel-title">Meta Information</h4>
 														<div class="panel-tools" >
@@ -1354,7 +1280,7 @@ ul.dynatree-container {
 										<div class="row">
 										<% end if %>
 										<div class="col-sm-6">
-											<div class="panel panel-blue">
+											<div class="panel panel-dark-primary">
 												<div class="panel-heading">
 													<h4 class="panel-title">Tab <%=jj%></h4>
 													<div class="panel-tools" >

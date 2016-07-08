@@ -211,9 +211,36 @@ End Function
 		end with
 	end if
 	
-	rsUpdate("name") = pf_name
 	rsUpdate("sku") = pf_sku
-	rsUpdate("description") = pf_description
+	
+	if Session("CURRENT_ADMIN_VIEW_ID") = "1" then
+		rsUpdate("name") = pf_name
+		rsUpdate("description") = pf_description
+		rsUpdate("details") = pf_detail
+	else
+		x = rsUpdate("name")
+		if x = pf_name then
+			r = SaveX(pf_id, 2, "varchar", 1, "")
+		else
+			r = SaveX(pf_id, 2, "varchar", 1, pf_name)
+		end if
+		
+		x = rsUpdate("description")
+		if x = pf_description then
+			r = SaveX(pf_id, 2, "varchar", 2, "")
+		else
+			r = SaveX(pf_id, 2, "varchar", 2, pf_description)
+		end if
+		
+		x = rsUpdate("details")
+		if x = pf_detail then
+			r = SaveX(pf_id, 2, "text", 3, "")
+		else
+			r = SaveX(pf_id, 2, "text", 3, pf_detail)
+		end if
+		
+	end if
+	
 	
 	rsUpdate("IM_part_num") = pf_IM_part_number
 	rsUpdate("SN_part_num") = pf_SN_part_number
@@ -239,7 +266,7 @@ End Function
 	rsUpdate("url_key") = pf_url_key
 	rsUpdate("vendor_number") = pf_vendor_number
 	rsUpdate("weight") = pf_weight
-	rsUpdate("details") = pf_detail
+	
 	
 	rsUpdate("image_file") = pf_productimage
 	rsUpdate("include_icecat_specdata")  = pf_include_icecat_specdata

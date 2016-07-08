@@ -1,0 +1,1096 @@
+<%
+	Response.CodePage = 65001
+	Response.CharSet = "UTF-8"
+%>
+<!-- #INCLUDE File="local/local.phtml" -->
+<!-- #INCLUDE File="util/xt_func_util.phtml" -->
+<!-- #INCLUDE File="util/xt_func_string.phtml" -->
+<!-- #INCLUDE File="include/i_login.phtml" -->
+<%
+	sql = "SELECT * FROM " & g_storeid & "_distributor_info"
+	set rsOrder = dbconn.Execute(sql)	
+	if not rsOrder.EOF then
+		im_enabled= rsOrder("IM_ACTIVE")
+		ingram_account= rsOrder("IM_ACCT_NUM")
+		mustang_userid=rsOrder("IM_XML_ID")
+		mustang_password=rsOrder("IM_XML_PWD")
+		IMFTP_UserID=rsOrder("IM_FTP_ID")
+		IMFTP_Pwd=rsOrder("IM_FTP_PWD")
+		IMFTP_Home_Directory=rsOrder("IM_FTP_DIR")
+		IMFTP_File_Name=rsOrder("IM_FTP_FILE")
+		IMFTP_File_Date = rsOrder("IM_FTP_FILE_DATE")
+		Last_Update=rsOrder("IM_LAST_UPDATE")
+		td_enabled=rsOrder("TD_ACTIVE")
+		td_account_number=rsOrder("TD_ACCT_NUM")
+		tdxml_userid=rsOrder("TD_XML_ID")
+		tdxml_password=rsOrder("TD_XML_PWD")
+		techdata_userid=rsOrder("TD_FTP_ID")
+		techdata_password=rsOrder("TD_FTP_PWD")
+		TDFTP_File_Date=rsOrder("TD_FTP_FILE_DATE")
+		Last_Update2=rsOrder("TD_LAST_UPDATE")
+		sn_enabled=rsOrder("SYN_ACTIVE")
+		sn_account_number=rsOrder("SYN_ACCT_NUM")
+		snxml_userid=rsOrder("SYN_FTP_ID")
+		snxml_password=rsOrder("SYN_FTP_PWD")
+		sn_File_Name=rsOrder("SYN_FTP_FILE")
+		SNFTP_File_Date=rsOrder("SYN_FTP_FILE_DATE")
+		web_userid=rsOrder("SYN_WEB_ID")
+		web_password=rsOrder("SYN_WEB_PWD")
+		web_payterm=rsOrder("SYN_PAY_TERM")
+		Last_Update3=rsOrder("SYN_LAST_UPDATE")
+		dh_enabled=rsOrder("DH_ACTIVE")
+		dhxml_userid=rsOrder("DH_FTP_ID")
+		dhxml_password=rsOrder("DH_FTP_PWD")
+		dh_File_Name=rsOrder("DH_FTP_FILE")
+		File_Date4=rsOrder("DH_FTP_FILE_DATE")
+		dh_web_userid=rsOrder("DH_WEB_ID")
+		dh_web_password=rsOrder("DH_WEB_PWD")
+		Last_Update4=rsOrder("DH_LAST_UPDATE")
+	end if
+	rsOrder.Close
+	set rsOrder = nothing
+%>
+<%
+
+%>
+<!--#INCLUDE FILE="include/doctype.phtml"-->
+<head>
+<!--#INCLUDE FILE="include/head.phtml"-->
+<!-- start: CSS REQUIRED FOR THIS PAGE ONLY -->
+<link href="vendor/select2/select2.min.css" rel="stylesheet" media="screen">
+<link href="vendor/bootstrap-datepicker/bootstrap-datepicker3.standalone.min.css" rel="stylesheet" media="screen">
+<link href="vendor/bootstrap-timepicker/bootstrap-timepicker.min.css" rel="stylesheet" media="screen">
+<link href="vendor/DataTables/css/DT_bootstrap.css" rel="stylesheet" media="screen">
+<!-- end: CSS REQUIRED FOR THIS PAGE ONLY -->
+<link rel="stylesheet" href="assets/css/custom.css">
+</head>	
+<body>
+	<div id="app">
+	<!--#INCLUDE FILE="include/sidebar.phtml"-->
+	<div class="app-content">
+		<!--#INCLUDE FILE="include/header.phtml"-->
+		<div class="main-content" >
+			<div class="wrap-content container" id="container">
+				<!-- start: TITLE -->
+				<form role="form" class="form-horizontal" id="form">
+				<section id="page-title" class="padding-top-15 padding-bottom-15">
+					<div class="row">
+						<div class="col-sm-8">
+							<h1 class="mainTitle">Distributors</h1>
+							<span class="mainDescription">overview &amp; list </span>
+						</div>
+						<ol class="breadcrumb">
+							<button class="btn btn-blue btn-sm" type="submit">
+							<i class="fa fa-check-square"></i>
+							Save
+							</button>
+						</ol>
+					</div>
+				</section>
+				<!-- end: TITLE -->
+				<div class="container-fluid container-fullw bg-white">
+					<div class="content-header-floating" style="display: block;">
+						<div class="content-header">
+							<h3 class="mainTitle">
+							Distributors
+							</h3>
+							<p class="content-buttons form-buttons">
+								<button class="btn btn-blue btn-sm" type="submit">
+								<i class="fa fa-check-square"></i>
+								Save
+								</button>
+							</p>	
+						</div>
+					</div>
+					<div class="row">
+						<div class="col-md-12">
+							<div id="errorHandler1" class="errorHandler alert alert-danger" style="display:none;">
+								<button type="button" class="close" aria-label="Close">
+									<span aria-hidden="true">&times;</span>
+								</button>
+								<i class="fa fa-times-sign"></i> You have some form errors. Please check below.
+							</div>
+							<div id="errorHandler2" class="errorHandler alert alert-danger" style="display:none;">
+								<button type="button" class="close" aria-label="Close">
+									<span aria-hidden="true">&times;</span>
+								</button>
+								<i class="fa fa-times-sign"></i> The information has not been saved properly. Please contact system administrator.
+							</div>
+							<div class="successHandler alert alert-success" style="display:none;">
+								<button type="button" class="close" aria-label="Close">
+									<span aria-hidden="true">&times;</span>
+								</button>
+								<i class="fa fa-check-square-o"></i> The information has been saved.
+								
+							</div>
+						</div>
+					</div>
+					<div class="row">
+						<div class="col-md-12">
+							<div class="tabbable">
+								<ul id="myTab3" class="nav nav-tabs tab-green">
+									<li class="active">
+										<a href="#panel_distributortab_example1" data-toggle="tab">
+											<i class="pink fa fa-info"></i> Ingram Micro
+										</a>
+									</li>
+									<li class="">
+										<a href="#panel_distributortab_example2" data-toggle="tab">
+											<i class="blue fa fa-comment"></i> Tech Data
+										</a>
+									</li>
+									<li class="">
+										<a href="#panel_distributortab_example3" data-toggle="tab">
+											<i class="blue fa fa-file-image-o"></i> Synnex
+										</a>
+									</li>
+									<li class="">
+										<a href="#panel_distributortab_example4" data-toggle="tab">
+											<i class="blue fa fa-plus"></i> D & H
+										</a>
+									</li>
+									<li class="">
+										<a href="#panel_distributortab_example5" data-toggle="tab">
+											<i class="blue fa fa-folder-open-o"></i> My Distributors
+										</a>
+									</li>
+								</ul>
+								<div class="tab-content">
+									<div class="tab-pane active" id="panel_distributortab_example1">
+										<div class="panel panel-blue">
+											<div class="panel-heading">
+												<h4 class="panel-title">Account & XML information</h4>
+												<div class="panel-tools" >
+													<a data-original-title="Collapse" data-toggle="tooltip" data-placement="top" class="btn btn-transparent btn-sm panel-collapse" href="#"><i class="ti-minus collapse-off"></i><i class="ti-plus collapse-on"></i></a>
+												</div>
+											</div>
+											<div class="panel-body partition-white">
+												<div class="form-group">
+													<label class="col-sm-2 control-label" for="im_enabled">
+														Enable
+													</label>
+													<div class="col-sm-8">
+														<select class="form-control input-sm" name="im_enabled" id="im_enabled">
+															<option value="0" <%if im_enabled="0" then%>selected<%end if%>>No</option>
+															<option value="1" <%if im_enabled="1" then%>selected<%end if%>>Yes</option>
+														</select>
+													</div>
+												</div>
+												<div class="form-group">
+													<label class="col-sm-2 control-label" for="ingram_account">
+														Account Number <span class="symbol required"></span> 
+													</label>
+													<div class="col-sm-10">
+														<div class="input-group">
+															<input type="text" id="ingram_account" name="ingram_account" value="<%=ingram_account%>" class="form-control input-mask-imaccount">
+															<span class="input-group-addon"> <i class="fa fa-key"></i> </span>
+														</div>
+													</div>
+												</div>
+												<div class="form-group">
+													<label class="col-sm-2 control-label" for="mustang_userid">
+														XML User ID <span class="symbol required"></span> 
+													</label>
+													<div class="col-sm-10">
+														<input type="text" placeholder="" id="mustang_userid" name="mustang_userid" class="form-control input-sm" value="<%=mustang_userid%>">
+													</div>
+												</div>
+												<div class="form-group">
+													<label class="col-sm-2 control-label" for="mustang_password">
+														XML Password <span class="symbol required"></span> 
+													</label>
+													<div class="col-sm-10">
+														<input type="text" placeholder="" id="mustang_password" name="mustang_password" class="form-control input-sm" value="<%=mustang_password%>">
+													</div>
+												</div>
+												<div class="form-group">
+													<label class="col-sm-2 control-label" for="Last_Update">
+														Last Updated On:
+													</label>
+													<div class="col-sm-10">
+														<input type="text" placeholder="" id="Last_Update" name="Last_Update" class="form-control input-sm" value="<%=Last_Update%>">
+													</div>
+												</div>
+											</div>
+										</div>
+										<div class="panel panel-blue">
+											<div class="panel-heading">
+												<h4 class="panel-title">Price File FTP</h4>
+												<div class="panel-tools" >
+													<a data-original-title="Collapse" data-toggle="tooltip" data-placement="top" class="btn btn-transparent btn-sm panel-collapse" href="#"><i class="ti-minus collapse-off"></i><i class="ti-plus collapse-on"></i></a>
+												</div>
+											</div>
+											<div class="panel-body partition-white">
+												<div class="form-group">
+													<label class="col-sm-2 control-label" for="IMFTP_UserID">
+														FTP User ID <span class="symbol required"></span> 
+													</label>
+													<div class="col-sm-10">
+														<input type="text" placeholder="" id="IMFTP_UserID" name="IMFTP_UserID" class="form-control input-sm" value="<%=IMFTP_UserID%>">
+													</div>
+												</div>
+												<div class="form-group">
+													<label class="col-sm-2 control-label" for="IMFTP_Pwd">
+														FTP Password <span class="symbol required"></span> 
+													</label>
+													<div class="col-sm-10">
+														<input type="text" placeholder="" id="IMFTP_Pwd" name="IMFTP_Pwd" class="form-control input-sm" value="<%=IMFTP_Pwd%>">
+													</div>
+												</div>
+												<div class="form-group">
+													<label class="col-sm-2 control-label" for="IMFTP_Home_Directory">
+														FTP Directory <span class="symbol required"></span> 
+													</label>
+													<div class="col-sm-10">
+														<input type="text" placeholder="" id="IMFTP_Home_Directory" name="IMFTP_Home_Directory" class="form-control input-sm" value="<%=IMFTP_Home_Directory%>">
+													</div>
+												</div>
+												<div class="form-group">
+													<label class="col-sm-2 control-label" for="IMFTP_File_Name">
+														Price File <span class="symbol required"></span> 
+													</label>
+													<div class="col-sm-10">
+														<input type="text" placeholder="" id="IMFTP_File_Name" name="IMFTP_File_Name" class="form-control input-sm" value="<%=IMFTP_File_Name%>">
+													</div>
+												</div>
+												<div class="form-group">
+													<label class="col-sm-2 control-label" for="IMFTP_File_Date">
+														File Date: 
+													</label>
+													<div class="col-sm-10">
+														<input type="text" placeholder="" id="IMFTP_File_Date" name="IMFTP_File_Date" class="form-control input-sm" value="<%=IMFTP_File_Date%>">
+													</div>
+												</div>
+											</div>
+										</div>
+									</div>
+									<div class="tab-pane" id="panel_distributortab_example2">
+										<div class="panel panel-blue">
+											<div class="panel-heading">
+												<h4 class="panel-title">Account & XML information</h4>
+												<div class="panel-tools" >
+													<a data-original-title="Collapse" data-toggle="tooltip" data-placement="top" class="btn btn-transparent btn-sm panel-collapse" href="#"><i class="ti-minus collapse-off"></i><i class="ti-plus collapse-on"></i></a>
+												</div>
+											</div>
+											<div class="panel-body partition-white">
+												<div class="form-group">
+													<label class="col-sm-2 control-label" for="td_enabled">
+														Enable
+													</label>
+													<div class="col-sm-8">
+														<select class="form-control input-sm" name="td_enabled" id="td_enabled">
+															<option value="0" <%if td_enabled="0" then%>selected<%end if%>>No</option>
+															<option value="1" <%if td_enabled="1" then%>selected<%end if%>>Yes</option>
+														</select>
+													</div>
+												</div>
+												<div class="form-group">
+													<label class="col-sm-2 control-label" for="td_account_number">
+														Account Number <span class="symbol required"></span> 
+													</label>
+													<div class="col-sm-10">
+														<div class="input-group">
+															<input type="text" id="td_account_number" name="td_account_number" value="<%=td_account_number%>" class="form-control input-sm">
+															<span class="input-group-addon"> <i class="fa fa-key"></i> </span>
+														</div>
+													</div>
+												</div>
+												<div class="form-group">
+													<label class="col-sm-2 control-label" for="tdxml_userid">
+														User ID <span class="symbol required"></span> 
+													</label>
+													<div class="col-sm-10">
+														<input type="text" placeholder="" id="tdxml_userid" name="tdxml_userid" class="form-control input-sm" value="<%=tdxml_userid%>">
+													</div>
+												</div>
+												<div class="form-group">
+													<label class="col-sm-2 control-label" for="tdxml_password">
+														Password <span class="symbol required"></span> 
+													</label>
+													<div class="col-sm-10">
+														<input type="text" placeholder="" id="tdxml_password" name="tdxml_password" class="form-control input-sm" value="<%=tdxml_password%>">
+													</div>
+												</div>
+												<div class="form-group">
+													<label class="col-sm-2 control-label" for="Last_Update2">
+														Last Updated On:
+													</label>
+													<div class="col-sm-10">
+														<input type="text" placeholder="" id="Last_Update2" name="Last_Update2" class="form-control input-sm" value="<%=Last_Update2%>">
+													</div>
+												</div>
+											</div>
+										</div>
+										<div class="panel panel-blue">
+											<div class="panel-heading">
+												<h4 class="panel-title">Price File</h4>
+												<div class="panel-tools" >
+													<a data-original-title="Collapse" data-toggle="tooltip" data-placement="top" class="btn btn-transparent btn-sm panel-collapse" href="#"><i class="ti-minus collapse-off"></i><i class="ti-plus collapse-on"></i></a>
+												</div>
+											</div>
+											<div class="panel-body partition-white">
+												<div class="form-group">
+													<label class="col-sm-2 control-label" for="techdata_userid">
+														User ID <span class="symbol required"></span> 
+													</label>
+													<div class="col-sm-10">
+														<input type="text" placeholder="" id="techdata_userid" name="techdata_userid" class="form-control input-sm" value="<%=techdata_userid%>">
+													</div>
+												</div>
+												<div class="form-group">
+													<label class="col-sm-2 control-label" for="techdata_password">
+														Password <span class="symbol required"></span> 
+													</label>
+													<div class="col-sm-10">
+														<input type="text" placeholder="" id="techdata_password" name="techdata_password" class="form-control input-sm" value="<%=techdata_password%>">
+													</div>
+												</div>
+												<div class="form-group">
+													<label class="col-sm-2 control-label" for="TDFTP_File_Date">
+														File Date: 
+													</label>
+													<div class="col-sm-10">
+														<input type="text" placeholder="" id="TDFTP_File_Date" name="TDFTP_File_Date" class="form-control input-sm" value="<%=TDFTP_File_Date%>">
+													</div>
+												</div>
+											</div>
+										</div>
+									</div>
+									<div class="tab-pane" id="panel_distributortab_example3">
+										<div class="panel panel-blue">
+											<div class="panel-heading">
+												<h4 class="panel-title">Account & XML information</h4>
+												<div class="panel-tools" >
+													<a data-original-title="Collapse" data-toggle="tooltip" data-placement="top" class="btn btn-transparent btn-sm panel-collapse" href="#"><i class="ti-minus collapse-off"></i><i class="ti-plus collapse-on"></i></a>
+												</div>
+											</div>
+											<div class="panel-body partition-white">
+												<div class="form-group">
+													<label class="col-sm-2 control-label" for="sn_enabled">
+														Enable
+													</label>
+													<div class="col-sm-8">
+														<select class="form-control input-sm" name="sn_enabled" id="sn_enabled">
+															<option value="0" <%if sn_enabled="0" then%>selected<%end if%>>No</option>
+															<option value="1" <%if sn_enabled="1" then%>selected<%end if%>>Yes</option>
+														</select>
+													</div>
+												</div>
+												<div class="form-group">
+													<label class="col-sm-2 control-label" for="sn_account_number">
+														Account Number <span class="symbol required"></span> 
+													</label>
+													<div class="col-sm-10">
+														<div class="input-group">
+															<input type="text" id="sn_account_number" name="sn_account_number" value="<%=sn_account_number%>" class="form-control input-sm">
+															<span class="input-group-addon"> <i class="fa fa-key"></i> </span>
+														</div>
+													</div>
+												</div>
+												<div class="form-group">
+													<label class="col-sm-2 control-label" for="snxml_userid">
+														User ID <span class="symbol required"></span> 
+													</label>
+													<div class="col-sm-10">
+														<input type="text" placeholder="" id="snxml_userid" name="snxml_userid" class="form-control input-sm" value="<%=snxml_userid%>">
+													</div>
+												</div>
+												<div class="form-group">
+													<label class="col-sm-2 control-label" for="snxml_password">
+														Password <span class="symbol required"></span> 
+													</label>
+													<div class="col-sm-10">
+														<input type="text" placeholder="" id="snxml_password" name="snxml_password" class="form-control input-sm" value="<%=snxml_password%>">
+													</div>
+												</div>
+												<div class="form-group">
+													<label class="col-sm-2 control-label" for="sn_File_Name">
+														Price File <span class="symbol required"></span> 
+													</label>
+													<div class="col-sm-10">
+														<input type="text" placeholder="" id="sn_File_Name" name="sn_File_Name" class="form-control input-sm" value="<%=sn_File_Name%>">
+													</div>
+												</div>
+												<div class="form-group">
+													<label class="col-sm-2 control-label" for="SNFTP_File_Date">
+														File Date: 
+													</label>
+													<div class="col-sm-10">
+														<input type="text" placeholder="" id="SNFTP_File_Date" name="SNFTP_File_Date" class="form-control input-sm" value="<%=SNFTP_File_Date%>">
+													</div>
+												</div>
+												<div class="form-group">
+													<label class="col-sm-2 control-label" for="Last_Update3">
+														Last Updated On:
+													</label>
+													<div class="col-sm-10">
+														<input type="text" placeholder="" id="Last_Update3" name="Last_Update3" class="form-control input-sm" value="<%=Last_Update3%>">
+													</div>
+												</div>
+											</div>
+										</div>
+										<div class="panel panel-blue">
+											<div class="panel-heading">
+												<h4 class="panel-title">Web</h4>
+												<div class="panel-tools" >
+													<a data-original-title="Collapse" data-toggle="tooltip" data-placement="top" class="btn btn-transparent btn-sm panel-collapse" href="#"><i class="ti-minus collapse-off"></i><i class="ti-plus collapse-on"></i></a>
+												</div>
+											</div>
+											<div class="panel-body partition-white">
+												<div class="form-group">
+													<label class="col-sm-2 control-label" for="web_userid">
+														User ID <span class="symbol required"></span> 
+													</label>
+													<div class="col-sm-10">
+														<input type="text" placeholder="" id="web_userid" name="web_userid" class="form-control input-sm" value="<%=web_userid%>">
+													</div>
+												</div>
+												<div class="form-group">
+													<label class="col-sm-2 control-label" for="web_password">
+														Password <span class="symbol required"></span> 
+													</label>
+													<div class="col-sm-10">
+														<input type="text" placeholder="" id="web_password" name="web_password" class="form-control input-sm" value="<%=web_password%>">
+													</div>
+												</div>
+												<div class="form-group">
+													<label class="col-sm-2 control-label" for="web_payterm">
+														Pay Term <span class="symbol required"></span> 
+													</label>
+													<div class="col-sm-10">
+														<input type="text" placeholder="" id="web_payterm" name="web_payterm" class="form-control input-sm" value="<%=web_payterm%>">
+													</div>
+												</div>
+											</div>
+										</div>
+									</div>
+									<div class="tab-pane" id="panel_distributortab_example4">
+										<div class="panel panel-blue">
+											<div class="panel-heading">
+												<h4 class="panel-title">Account & XML information</h4>
+												<div class="panel-tools" >
+													<a data-original-title="Collapse" data-toggle="tooltip" data-placement="top" class="btn btn-transparent btn-sm panel-collapse" href="#"><i class="ti-minus collapse-off"></i><i class="ti-plus collapse-on"></i></a>
+												</div>
+											</div>
+											<div class="panel-body partition-white">
+												<div class="form-group">
+													<label class="col-sm-2 control-label" for="dh_enabled">
+														Enable
+													</label>
+													<div class="col-sm-8">
+														<select class="form-control input-sm" name="dh_enabled" id="dh_enabled">
+															<option value="0" <%if dh_enabled="0" then%>selected<%end if%>>No</option>
+															<option value="1" <%if dh_enabled="1" then%>selected<%end if%>>Yes</option>
+														</select>
+													</div>
+												</div>
+												<div class="form-group">
+													<label class="col-sm-2 control-label" for="dhxml_userid">
+														User ID <span class="symbol required"></span> 
+													</label>
+													<div class="col-sm-10">
+														<input type="text" placeholder="" id="dhxml_userid" name="dhxml_userid" class="form-control input-sm" value="<%=dhxml_userid%>">
+													</div>
+												</div>
+												<div class="form-group">
+													<label class="col-sm-2 control-label" for="dhxml_password">
+														Password <span class="symbol required"></span> 
+													</label>
+													<div class="col-sm-10">
+														<input type="text" placeholder="" id="dhxml_password" name="dhxml_password" class="form-control input-sm" value="<%=dhxml_password%>">
+													</div>
+												</div>
+												<div class="form-group">
+													<label class="col-sm-2 control-label" for="dh_File_Name">
+														Price File <span class="symbol required"></span> 
+													</label>
+													<div class="col-sm-10">
+														<input type="text" placeholder="" id="dh_File_Name" name="dh_File_Name" class="form-control input-sm" value="<%=dh_File_Name%>">
+													</div>
+												</div>
+												<div class="form-group">
+													<label class="col-sm-2 control-label" for="Last_Update4">
+														Last Updated On:
+													</label>
+													<div class="col-sm-10">
+														<input type="text" placeholder="" id="Last_Update4" name="Last_Update4" class="form-control input-sm" value="<%=Last_Update4%>">
+													</div>
+												</div>
+												<div class="form-group">
+													<label class="col-sm-2 control-label" for="File_Date4">
+														File Date:
+													</label>
+													<div class="col-sm-10">
+														<input type="text" placeholder="" id="File_Date4" name="File_Date4" class="form-control input-sm" value="<%=File_Date4%>">
+													</div>
+												</div>
+											</div>
+										</div>
+										<div class="panel panel-blue">
+											<div class="panel-heading">
+												<h4 class="panel-title">Web</h4>
+												<div class="panel-tools" >
+													<a data-original-title="Collapse" data-toggle="tooltip" data-placement="top" class="btn btn-transparent btn-sm panel-collapse" href="#"><i class="ti-minus collapse-off"></i><i class="ti-plus collapse-on"></i></a>
+												</div>
+											</div>
+											<div class="panel-body partition-white">
+												<div class="form-group">
+													<label class="col-sm-2 control-label" for="dh_web_userid">
+														User ID <span class="symbol required"></span> 
+													</label>
+													<div class="col-sm-10">
+														<input type="text" placeholder="" id="dh_web_userid" name="dh_web_userid" class="form-control input-sm" value="<%=dh_web_userid%>">
+													</div>
+												</div>
+												<div class="form-group">
+													<label class="col-sm-2 control-label" for="dh_web_password">
+														Password <span class="symbol required"></span> 
+													</label>
+													<div class="col-sm-10">
+														<input type="text" placeholder="" id="dh_web_password" name="dh_web_password" class="form-control input-sm" value="<%=dh_web_password%>">
+													</div>
+												</div>
+											</div>
+										</div>
+									</div>
+									<div class="tab-pane" id="panel_distributortab_example5">
+									<section id="page-title" class="padding-top-15 padding-bottom-15">
+										<div class="row">
+											<div class="col-sm-8">
+												<h1 class="mainTitle">CMS Pages</h1>
+												<span class="mainDescription">overview &amp; list </span>
+											</div>
+											<ol class="breadcrumb">
+												<a class="btn btn-green btn-sm" style="float:right" href="/manager/sp_mydistributor_add_page_edit.phtml">
+													<i class="ti-plus"></i> Add New Page
+												</a>
+											</ol>
+										</div>
+									</section>
+										<div class="container-fluid container-fullw bg-white">
+											<div class="row">
+												<div class="col-md-12">
+												<table class="table table-striped table-bordered table-hover table-full-width" id="sample_1">
+													<thead>
+														<tr>
+															<th width="5%">ID</th>
+															<th>Name</th>
+															<th>address</th>
+															<th>city</th>
+															<th>state</th>
+															<th>zip</th>
+															<th>phone</th>
+															<th>fax</th>
+															<th>contact</th>
+															<th width="2%" nowrap>email</th>
+															<th width="2%">url</th>
+														</tr>
+													</thead>
+														<tbody>
+															<tr>
+																<td colspan="11" class="dataTables_empty">Loading data from server</td>
+															</tr>
+														</tbody>
+												</table>
+											</div>
+										</div>
+
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+			</form>
+		</div>
+	</div>
+	</div>
+	<!--#INCLUDE FILE="include/footer.phtml"-->
+	</div>
+	<!--#INCLUDE FILE="include/js.phtml"-->
+	<!-- start: JAVASCRIPTS REQUIRED FOR THIS PAGE ONLY -->
+	<script src="vendor/maskedinput/jquery.maskedinput.min.js"></script>
+	<script src="vendor/jquery-validation/jquery.validate.min.js"></script>
+	<!-- end: JAVASCRIPTS REQUIRED FOR THIS PAGE ONLY -->
+	<script src="assets/js/main.js"></script>
+	<!-- start: JavaScript Event Handlers for this page -->
+	<script src="vendor/autosize/autosize.min.js"></script>
+	<script src="vendor/selectFx/classie.js"></script>
+	<script src="vendor/selectFx/selectFx.js"></script>
+	<script src="vendor/select2/select2.min.js"></script>
+	<script src="vendor/bootstrap-datepicker/bootstrap-datepicker.min.js"></script>
+	<script src="vendor/bootstrap-timepicker/bootstrap-timepicker.min.js"></script>
+	<script src="vendor/DataTables/jquery.dataTables.min.js"></script>
+	<script language="css">
+	
+	</script>
+	<script>
+	var FormElements = function() {"use strict";
+
+		//function to initiate jquery.maskedinput
+		var maskInputHandler = function() {
+			$.mask.definitions['~'] = '[+-]';
+			$('.input-mask-date').mask('99/99/9999');
+			$('.input-mask-imaccount').mask('99-999999');
+			$('.input-mask-phone').mask('(999) 999-9999');
+			$('.input-mask-eyescript').mask('~9.99 ~9.99 999');
+		};
+		
+		return {
+			//main function to initiate template pages
+			init: function() {
+				maskInputHandler();
+			}
+		};
+	}();
+	</script>
+	<script language="javascript">
+	var FormValidator = function () {
+	// function to initiate Validation Sample 1
+		var runValidator1 = function () {
+			var form1 = $('#form');
+			var errorHandler1 = $('#errorHandler1', form1);
+			var errorHandler2 = $('#errorHandler2', form1);
+			var successHandler1 = $('.successHandler', form1);
+			
+			$.validator.addMethod("FullDate", function () {
+				//if all values are selected
+				if ($("#dd").val() != "" && $("#mm").val() != "" && $("#yyyy").val() != "") {
+					return true;
+				} else {
+					return false;
+				}
+			}, 'Please select a day, month, and year');
+			$('#form').validate({
+				errorElement: "span", // contain the error msg in a span tag
+				errorClass: 'help-block',
+				errorPlacement: function (error, element) { // render error placement for each input type
+					if (element.attr("type") == "radio" || element.attr("type") == "checkbox") { // for chosen elements, need to insert the error after the chosen container
+						error.insertAfter($(element).closest('.form-group').children('div').children().last());
+					} else if (element.attr("name") == "dd" || element.attr("name") == "mm" || element.attr("name") == "yyyy") {
+						error.insertAfter($(element).closest('.form-group').children('div'));
+					} else {
+						error.insertAfter(element);
+						// for other inputs, just perform default behavior
+					}
+				},
+				ignore: "",
+				
+				//RULES
+				rules: 
+				{
+					ingram_account: 
+					{
+						 required: function(element) 
+						 {
+							if ($('#im_enabled').val() == '1') 
+							{
+								return true;
+							} else {
+								return false;
+							}
+						}
+					},
+					mustang_userid: 
+					{
+						 required: function(element) 
+						 {
+							if ($('#im_enabled').val() == '1') 
+							{
+								return true;
+							} else
+							{
+								return false;
+							}
+						}
+					},
+					mustang_password: {
+						 required: function(element) {
+							if ($('#im_enabled').val() == '1') {
+								return true;
+							} else {
+								return false;
+							}
+						}
+					},
+					IMFTP_UserID: {
+						 required: function(element) {
+							if ($('#im_enabled').val() == '1') {
+								return true;
+							} else {
+								return false;
+							}
+						}
+					},
+					IMFTP_Pwd: {
+						 required: function(element) {
+							if ($('#im_enabled').val() == '1') {
+								return true;
+							} else {
+								return false;
+							}
+						}
+					},
+					IMFTP_Home_Directory: {
+						 required: function(element) {
+							if ($('#im_enabled').val() == '1') {
+								return true;
+							} else {
+								return false;
+							}
+						}
+					},
+					IMFTP_File_Name: {
+						 required: function(element) {
+							if ($('#im_enabled').val() == '1') {
+								return true;
+							} else {
+								return false;
+							}
+						}
+					},
+					td_account_number: {
+						 required: function(element) {
+							if ($('#td_enabled').val() == '1') {
+								return true;
+							} else {
+								return false;
+							}
+						}
+					},
+					tdxml_userid: {
+						 required: function(element) {
+							if ($('#td_enabled').val() == '1') {
+								return true;
+							} else {
+								return false;
+							}
+						}
+					},
+					tdxml_password: {
+						 required: function(element) {
+							if ($('#td_enabled').val() == '1') {
+								return true;
+							} else {
+								return false;
+							}
+						}
+					},
+					techdata_userid: {
+						 required: function(element) {
+							if ($('#td_enabled').val() == '1') {
+								return true;
+							} else {
+								return false;
+							}
+						}
+					},
+					techdata_password: {
+						 required: function(element) {
+							if ($('#td_enabled').val() == '1') {
+								return true;
+							} else {
+								return false;
+							}
+						}
+					},
+					sn_account_number: {
+						 required: function(element) {
+							if ($('#sn_enabled').val() == '1') {
+								return true;
+							} else {
+								return false;
+							}
+						}
+					},
+					snxml_userid: {
+						 required: function(element) {
+							if ($('#sn_enabled').val() == '1') {
+								return true;
+							} else {
+								return false;
+							}
+						}
+					},
+					snxml_password: {
+						 required: function(element) {
+							if ($('#sn_enabled').val() == '1') {
+								return true;
+							} else {
+								return false;
+							}
+						}
+					},
+					sn_File_Name: {
+						 required: function(element) {
+							if ($('#sn_enabled').val() == '1') {
+								return true;
+							} else {
+								return false;
+							}
+						}
+					},
+					web_userid: {
+						 required: function(element) {
+							if ($('#sn_enabled').val() == '1') {
+								return true;
+							} else {
+								return false;
+							}
+						}
+					},
+					web_password: {
+						 required: function(element) {
+							if ($('#sn_enabled').val() == '1') {
+								return true;
+							} else {
+								return false;
+							}
+						}
+					},
+					web_payterm: {
+						 required: function(element) {
+							if ($('#sn_enabled').val() == '1') {
+								return true;
+							} else {
+								return false;
+							}
+						}
+					},
+					dhxml_userid: {
+						 required: function(element) {
+							if ($('#dh_enabled').val() == '1') {
+								return true;
+							} else {
+								return false;
+							}
+						}
+					},
+					dhxml_password: {
+						 required: function(element) {
+							if ($('#dh_enabled').val() == '1') {
+								return true;
+							} else {
+								return false;
+							}
+						}
+					},
+					dh_File_Name: {
+						 required: function(element) {
+							if ($('#dh_enabled').val() == '1') {
+								return true;
+							} else {
+								return false;
+							}
+						}
+					},
+					dh_web_userid: {
+						 required: function(element) {
+							if ($('#dh_enabled').val() == '1') {
+								return true;
+							} else {
+								return false;
+							}
+						}
+					},
+					dh_web_password: {
+						 required: function(element) {
+							if ($('#dh_enabled').val() == '1') {
+								return true;
+							} else {
+								return false;
+							}
+						}
+					},
+					pf_name: {
+						minlength: 2,
+						required: true
+					},
+				},
+				
+				
+				//END OF RULES
+				
+				invalidHandler: function (event, validator) { //display error alert on form submit
+					successHandler1.hide();
+					errorHandler1.show();
+				},
+				highlight: function (element) {
+					$(element).closest('.help-block').removeClass('valid');
+					$(element).closest('.form-group').removeClass('has-success').addClass('has-error').find('.symbol').removeClass('ok').addClass('required');
+				},
+				unhighlight: function (element) { 
+					$(element).closest('.form-group').removeClass('has-error');
+				},
+				success: function (label, element) {
+					label.addClass('help-block valid');
+					$(element).closest('.form-group').removeClass('has-error').addClass('has-success').find('.symbol').removeClass('required').addClass('ok');
+				},
+				submitHandler: function (form) {
+					successHandler1.hide();
+					errorHandler1.hide();
+					errorHandler2.hide();
+					
+					$.ajax({
+						type: "POST",
+						url: "api/sp_store_distributors_update.phtml",
+						data: $("#form").serialize(),
+						success: function() {
+							successHandler1.show();
+						},
+						error: function() {
+							errorHandler2.show();
+						}
+					});
+					
+					
+					
+				}
+			});
+		};
+		return {
+			//main function to initiate template pages
+			init: function () {
+				runValidator1();
+			}
+		};
+	}();
+	
+	var oTable;
+	var v1 = "All";
+	var v2 = "All";
+	var v3 = "All";
+	
+	var TableData = function () {
+		//function to initiate DataTable
+		//DataTable is a highly flexible tool, based upon the foundations of progressive enhancement, 
+		//which will add advanced interaction controls to any HTML table
+		//For more information, please visit https://datatables.net/
+		var runDataTable = function () 
+		{
+			oTable = $('#sample_1').dataTable
+			({
+				"bProcessing": true,
+				"bStateSave": false,
+				"bJQueryUI": false,
+				"iDisplayLength": 20,
+				"bServerSide": true,
+				"bAutoWidth": false,
+				"sAjaxSource": "api/sp_mydistributor.phtml",
+				"aoColumns": [ 
+					/* ID */  { "sClass": "center" },
+					/* name */  { "sClass": "left" },
+					/* address */  { "sClass": "center" },
+					/* city */ { "sClass": "center" },
+					/* state */ { "sClass": "center" },
+					/* zip */ { "sClass": "center"},
+					/* phone */ { "sClass": "center"},
+					/* fax */ { "sClass": "center"},
+					/* contact */ { "sClass": "center"},
+					/* email */ { "sClass": "center"},
+					/* url */ { "sClass": "center"}
+				  ],
+				  
+				"aaSorting": [[0, 'desc']],
+				"aLengthMenu": [
+					[10, 20, 30, 40, 50, 100],
+					[10, 20, 30, 40, 50, 100] // change per page values here
+				],
+				
+				"oLanguage": {
+					"sLengthMenu": "Show _MENU_ Rows",
+					"sSearch": "",
+					"sProcessing": '<img src="assets/images/ajax-loader-primary.gif"/>',
+					"oPaginate": {
+						"sPrevious": "",
+						"sNext": ""
+					}
+				},
+				
+				'fnServerData' : function ( sSource, aoData, fnCallback ) {
+					aoData.push( { 'name' : 'min', 'value' : $("#min").val() } );
+					aoData.push( { 'name' : 'max', 'value' : $("#max").val() } );
+					$.ajax({
+						'dataType' : 'json',
+						'data' : aoData,
+						'type' : 'GET',
+						'url' : sSource,
+						'success' : fnCallback
+					});
+				} 
+			});
+			
+			$('#sample_1').on( 'draw.dt', function () {
+				//UIModals.init();
+				var $modal = $('#ajax-modal');
+				$('.ajax .demo').on('click', function () {
+					// create the backdrop and wait for next modal to be triggered
+					$('body').modalmanager('loading');
+					modal_po_id = $(this).data('id');
+					setTimeout(function () {
+						$modal.load('modal_ajax_po_email.phtml?po_id=' + modal_po_id, '', function () {
+							$modal.modal();
+						});
+					}, 1000);
+				});
+			} );
+			
+			$('#sample_1_wrapper .dataTables_filter input').addClass("form-control input-sm").attr("placeholder", "Search");
+			// modify table search input
+			$('#sample_1_wrapper .dataTables_length select').addClass("m-wrap small");
+			// modify table per page dropdown
+			$('#sample_1_wrapper .dataTables_length select').select2();
+			// initialzie select2 dropdown
+		};
+
+		return {
+			//main function to initiate template pages
+			init: function () {
+				runDataTable();
+			},
+			
+			reload: function(theURL) {
+				if ( theURL ) {
+					oTable.fnReloadAjax(theURL);
+				}
+				else {
+					oTable.fnReloadAjax('sp_cms.phtml?v1=&v2=&z1=');
+				}
+			}
+		};
+	}();
+
+	function StatusFilter (theObj)
+	{
+		oTable.fnReloadAjax('api/sp_cms.phtml?v1=&v2=' + theObj.value + '&z1=');
+	}
+	function DateFilter()
+	{
+		oTable.fnReloadAjax('api/sp_cms.phtml?v1=&v2=&DF=' + document.getElementById('DateRange').value + '&z1=');
+	}
+	
+	$('#daterange').on('apply.daterangepicker', function(ev, picker) { 
+		oTable.fnReloadAjax('api/sp_cms.phtml?v1=&v2=&DF=' + document.getElementById('DateRange').value + '&z1=');
+		//do something, like clearing an input
+	 $('#daterange').val(''); 
+	}); 
+	function DeletePages()
+	{
+		if(confirm("You are about to delete these pages.  Do you want to continue?"))
+			document.pageDelete.submit();
+		else
+			return false;
+	}
+	</script>
+	<script>
+		jQuery(document).ready(function() {
+			Main.init();
+			FormElements.init();
+			FormValidator.init();
+			TableData.init();
+		});
+	</script>
+	<!-- end: JavaScript Event Handlers for this page -->
+</body>
+</html>

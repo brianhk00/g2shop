@@ -1,0 +1,167 @@
+<%response.Expires=-1%>
+<!-- #INCLUDE File="../local/local.phtml" -->
+
+<!-- #INCLUDE File="../util/xt_func_util.phtml" -->
+<!-- #INCLUDE File="../util/xt_func_string.phtml" -->
+<%
+	order_id = Trim(Request("order_id"))
+	infotype = Trim(Request("infotype"))
+	
+	sql = "SELECT * FROM " & g_storeid & "_order WHERE order_id='" & order_id & "'"
+	set rsOrder = dbconn.Execute(sql)
+	if not rsOrder.EOF then
+		
+		order_date = rsOrder("date_entered")
+		order_date = ConvertToTimeZone(order_date)
+		order_status = rsOrder("status")
+		order_ip = rsOrder("order_ip_addr")
+		
+		order_email = rsOrder("shopper_email")
+		
+		order_billing_company = rsOrder("bill_company")
+		order_billing_address = rsOrder("CardAddress")
+		order_billing_city = rsOrder("CardCity")
+		order_billing_state = rsOrder("CardState")
+		order_billing_zip = rsOrder("CardZip")
+		order_billing_country = rsOrder("CardCountry")
+		order_billing_phone = rsOrder("bill_phone")
+		order_billing_contact_firstname = Trim(rsOrder("bill_contact_firstname"))
+		order_billing_contact_lastname = Trim(rsOrder("bill_contact_lastname"))
+		order_billing_name = order_billing_contact_firstname & " " & order_billing_contact_lastname
+		
+		order_shipping_firstname = rsOrder("ShipFirstName")
+		order_shipping_lastname = rsOrder("ShipLastName")
+		order_shipping_company = rsOrder("ship_company")
+		order_shipping_address = rsOrder("ShipAddress")
+		order_shipping_city = rsOrder("ShipCity")
+		order_shipping_state = rsOrder("ShipState")
+		order_shipping_zip = rsOrder("ShipZip")
+		order_shipping_country = rsOrder("ShipCountry")
+		order_shipping_phone = rsOrder("ShipPhone")
+		order_shipping_name = order_shipping_firstname & " " & order_shipping_lastname
+		
+		order_payment_method = rsOrder("PaymentMethod")
+		order_payment_card_type = rsOrder("CardType")
+		order_payment_card_number = rsOrder("CardNumber")
+		order_customer_card_name = rsOrder("CardName")
+		order_customer_card_exp_month = rsOrder("CardExpirationMonth")
+		order_customer_card_exp_year = rsOrder("CardExpirationYear")
+		
+		order_shipping_sh_method = rsOrder("SH_method")
+		order_shipping_sh = rsOrder("SH")
+		order_shipping_sh = FormatNumber(order_shipping_sh)
+		
+		order_comment = rsOrder("Order_Comments")
+		order_notes = rsOrder("notes")
+		
+		order_tax = rsOrder("tax")
+		order_tax = FormatNumber(order_tax)
+		order_total = rsOrder("total")
+		order_total = FormatNumber(order_total)
+		
+		if Len(order_comment) > 0 then
+		else
+			order_comment = "..."
+		end if
+	
+		if Len(order_notes) > 0 then
+		else
+			order_notes = "..."
+		end if
+		
+		'TODO...
+		SELECT CASE order_payment_method
+		CASE "visa"
+			order_payment_method = "Credit Card"
+		CASE "master"
+			order_payment_method = "Credit Card"
+		CASE "discover"
+			order_payment_method = "Credit Card"
+		CASE "amex"
+			order_payment_method = "Credit Card"
+		CASE "cod"
+			order_payment_method = "COD"
+		END SELECT
+		
+	end if
+	rsOrder.Close
+	set rsOrder = nothing
+	
+	Select Case infotype
+		Case "billing_address"
+			s_edit = ""
+			s_edit = s_edit & "<div class=\""row\"">"
+			s_edit = s_edit & "<label class=\""col-sm-12\"">"
+			s_edit = s_edit & order_billing_name
+			s_edit = s_edit & "</label>"
+			s_edit = s_edit & "</div>"
+			s_edit = s_edit & "<div class=\""row\"">"
+			s_edit = s_edit & "<label class=\""col-sm-12\"">"
+			s_edit = s_edit & order_billing_company
+			s_edit = s_edit & "</label>"
+			s_edit = s_edit & "</div>"
+			s_edit = s_edit & "<div class=\""row\"">"
+			s_edit = s_edit & "<label class=\""col-sm-12\"">"
+			s_edit = s_edit & order_billing_address
+			s_edit = s_edit & "</label>"
+			s_edit = s_edit & "</div>"
+			s_edit = s_edit & "<div class=\""row\"">"
+			s_edit = s_edit & "<label class=\""col-sm-12\"">"
+			s_edit = s_edit & order_billing_city & ","  & "&nbsp;"
+			s_edit = s_edit & order_billing_state & "&nbsp;"
+			s_edit = s_edit & order_billing_zip
+			s_edit = s_edit & "</label>"
+			s_edit = s_edit & "</div>"
+			s_edit = s_edit & "<div class=\""row\"">"
+			s_edit = s_edit & "<label class=\""col-sm-12\"">"
+			s_edit = s_edit & order_billing_country
+			s_edit = s_edit & "</label>"
+			s_edit = s_edit & "</div>"
+			s_edit = s_edit & "<div class=\""row\"">"
+			s_edit = s_edit & "<label class=\""col-sm-12\"">"
+			s_edit = s_edit & "<i class=\""fa fa-phone\""></i>&nbsp;" & order_billing_phone
+			s_edit = s_edit & "</label>"
+			s_edit = s_edit & "</div>"
+		Case "shipping_address"
+			s_edit = ""
+			s_edit = s_edit & "<div class=\""row\"">"
+			s_edit = s_edit & "<label class=\""col-sm-12\"">"
+			s_edit = s_edit & order_shipping_name
+			s_edit = s_edit & "</label>"
+			s_edit = s_edit & "</div>"
+			s_edit = s_edit & "<div class=\""row\"">"
+			s_edit = s_edit & "<label class=\""col-sm-12\"">"
+			s_edit = s_edit & order_shipping_company
+			s_edit = s_edit & "</label>"
+			s_edit = s_edit & "</div>"
+			s_edit = s_edit & "<div class=\""row\"">"
+			s_edit = s_edit & "<label class=\""col-sm-12\"">"
+			s_edit = s_edit & order_shipping_address
+			s_edit = s_edit & "</label>"
+			s_edit = s_edit & "</div>"
+			s_edit = s_edit & "<div class=\""row\"">"
+			s_edit = s_edit & "<label class=\""col-sm-12\"">"
+			s_edit = s_edit & order_shipping_city & "," & "&nbsp;" 
+			s_edit = s_edit & order_shipping_state & "&nbsp;"
+			s_edit = s_edit & order_shipping_zip
+			s_edit = s_edit & "</label>"
+			s_edit = s_edit & "</div>"
+			s_edit = s_edit & "<div class=\""row\"">"
+			s_edit = s_edit & "<label class=\""col-sm-12\"">"
+			s_edit = s_edit & order_shipping_country
+			s_edit = s_edit & "</label>"
+			s_edit = s_edit & "</div>"
+			s_edit = s_edit & "<div class=\""row\"">"
+			s_edit = s_edit & "<label class=\""col-sm-12\"">"
+			s_edit = s_edit & "<i class=\""fa fa-phone\""></i>&nbsp;" & order_shipping_phone
+			s_edit = s_edit & "</label>"
+			s_edit = s_edit & "</div>"
+		Case Else
+	End Select
+	
+%>
+{
+"OrderInfo" : [
+{"id" : "<%=order_id%>","detail" : "<%=s_edit%>"}
+]
+}

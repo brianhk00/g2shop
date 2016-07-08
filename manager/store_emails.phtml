@@ -1,0 +1,65 @@
+<%
+	Response.CodePage = 65001
+	Response.CharSet = "UTF-8"
+%>
+<!-- #INCLUDE File="local/local.phtml" -->
+<!-- #INCLUDE File="util/xt_func_util.phtml" -->
+<!-- #INCLUDE File="util/xt_func_string.phtml" -->
+<!-- #INCLUDE File="include/i_login.phtml" -->
+<!--#INCLUDE FILE="include/doctype.phtml"-->
+<head>
+<!--#INCLUDE FILE="include/head.phtml"-->
+<!-- start: CSS REQUIRED FOR THIS PAGE ONLY -->
+<!-- end: CSS REQUIRED FOR THIS PAGE ONLY -->
+</head>	
+<body>
+	<div id="app">
+		<!--#INCLUDE FILE="include/sidebar.phtml"-->
+		<div class="app-content">
+			<!--#INCLUDE FILE="include/header.phtml"-->
+			<div class="main-content" >
+				<div class="wrap-content container" id="container">
+					<!-- start: TITLE -->
+					<section id="page-title" class="padding-top-15 padding-bottom-15">
+						<div class="row">
+							<div class="col-sm-8">
+								<h1 class="mainTitle">Store Emails</h1>
+								<span class="mainDescription">overview &amp; list </span>
+							</div>
+							<ol class="breadcrumb">
+								<li>
+									<span>System</span>
+								</li>
+								<li class="active">
+									<span>Store Emails</span>
+								</li>
+							</ol>
+						</div>
+					</section>
+					<!-- end: TITLE -->
+					<div class="container-fluid container-fullw bg-white">
+						<div class="row">
+							<div class="col-md-12">
+								
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+		<!--#INCLUDE FILE="include/footer.phtml"-->
+	</div>
+	<!--#INCLUDE FILE="include/js.phtml"-->
+	<!-- start: JAVASCRIPTS REQUIRED FOR THIS PAGE ONLY -->
+	<!-- end: JAVASCRIPTS REQUIRED FOR THIS PAGE ONLY -->
+	<script src="assets/js/main.js"></script>
+	<!-- start: JavaScript Event Handlers for this page -->
+	
+	<script>
+		jQuery(document).ready(function() {
+			Main.init();
+		});
+	</script>
+	<!-- end: JavaScript Event Handlers for this page -->
+</body>
+</html>

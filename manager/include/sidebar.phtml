@@ -1,0 +1,366 @@
+<%
+	'GET CURRENT MENU LOCATION
+	current_path = Request.ServerVariables("SCRIPT_NAME")
+	array_path = Split(current_path, "/")
+	current_menu = array_path(Ubound(array_path))
+	
+%>
+<div class="sidebar app-aside" id="sidebar">
+	<div class="sidebar-container perfect-scrollbar">
+		<nav>
+			<!-- start: SEARCH FORM -->
+			<!--
+			<div class="search-form">
+				<a class="s-open" href="#">
+					<i class="ti-search"></i>
+				</a>
+				<form class="navbar-form" role="search">
+					<a class="s-remove" href="<%=g_store_url%>" target=".navbar-form">
+						<i class="ti-close"></i>
+					</a>
+					<div class="form-group">
+						<input type="text" class="form-control" placeholder="Search...">
+						<button class="btn search-button" type="submit">
+							<i class="ti-search"></i>
+						</button>
+					</div>
+				</form>
+			</div>
+			-->
+			<!-- end: SEARCH FORM -->
+			<!-- start: DOCUMENTATION BUTTON -->
+			<!--
+			<div class="wrapper">
+				<a href="<%=g_store_url%>" class="button-o" target="_blank">
+					<i class="ti-home"></i>
+					<span>Store Preview</span>
+				</a>
+			</div>
+			-->
+			<!-- end: DOCUMENTATION BUTTON -->
+			
+			<!-- start: MAIN NAVIGATION MENU -->
+			
+			<ul class="main-navigation-menu">
+				<li <% if current_menu = "dashboard.phtml" then%>class="active open"<% end if %>>
+					<a href="dashboard.phtml">
+						<div class="item-content">
+							<div class="item-media">
+								<i class="ti-stats-up"></i>
+							</div>
+							<div class="item-inner">
+								<span class="title"> Dashboard </span>
+							</div>
+						</div>
+					</a>
+				</li>
+				<li <% if InStr(current_menu,"sales_") then%>class="active open"<% end if %>>
+					<a href="javascript:void(0)">
+						<div class="item-content">
+							<div class="item-media">
+								<i class="ti-shopping-cart-full"></i>
+							</div>
+							<div class="item-inner">
+								<span class="title"> Transactions </span><i class="icon-arrow"></i>
+							</div>
+						</div>
+					</a>
+					<ul class="sub-menu">
+						<li <% if InStr(current_menu,"sales_quotation") then%>class="active"<% end if %>>
+							<a href="sales_quotation.phtml">
+								<span class="title"> Quotations </span>
+							</a>
+						</li>
+						<li <% if InStr(current_menu,"sales_order") then%>class="active"<% end if %>>
+							<a href="sales_order.phtml">
+								<span class="title"> Orders </span>
+							</a>
+						</li>
+						<li <% if InStr(current_menu,"sales_purchase_order") then%>class="active"<% end if %>>
+							<a href="sales_purchase_order.phtml">
+								<span class="title"> Purchase Orders </span>
+							</a>
+						</li>
+					</ul>
+				</li>
+				<li <% if InStr(current_menu,"catalog_") then%>class="active open"<% end if %>>
+					<a href="javascript:void(0)">
+						<div class="item-content">
+							<div class="item-media">
+								<i class="ti-package"></i>
+							</div>
+							<div class="item-inner">
+								<span class="title"> Catalog </span><i class="icon-arrow"></i>
+							</div>
+						</div>
+					</a>
+					<ul class="sub-menu">
+						<li <% if InStr(current_menu,"catalog_product") then%>class="active"<% end if %>>
+							<a href="catalog_product.phtml">
+								<span class="title">Manage Products</span>
+							</a>
+						</li>
+						<li <% if InStr(current_menu,"catalog_category") then%>class="active"<% end if %>>
+							<a href="catalog_category.phtml">
+								<span class="title">Manage Categories</span>
+							</a>
+						</li>
+						<% if g_store_use_system = "1" then %>
+						<li <% if InStr(current_menu,"catalog_system") then%>class="active"<% end if %>>
+							<a href="catalog_system.phtml">
+								<span class="title">System Configurator</span>
+							</a>
+						</li>
+						<% end if %>
+						<% if g_store_use_icecat_catalog = "1" then %>
+						<li <% if InStr(current_menu,"catalog_icecat") then%>class="active"<% end if %>>
+							<a href="catalog_icecat.phtml">
+								<span class="title">ICECAT Browser</span>
+							</a>
+						</li>
+						<% end if %>
+						<li <% if InStr(current_menu,"catalog_attribute") then%>class="active"<% end if %>>
+							<a href="catalog_attribute.phtml">
+								<span class="title">Filter Attributes</span>
+							</a>
+						</li>
+					</ul>
+				</li>
+				<li <% if InStr(current_menu,"customer_") then%>class="active open"<% end if %>>
+					<a href="javascript:void(0)">
+						<div class="item-content">
+							<div class="item-media">
+								<i class="ti-user"></i>
+							</div>
+							<div class="item-inner">
+								<span class="title"> Customers </span><i class="icon-arrow"></i>
+							</div>
+						</div>
+					</a>
+					<ul class="sub-menu">
+						<li <% if InStr(current_menu,"customer_manage_customer") then%>class="active open"<% end if %>>
+							<a href="customer_manage_customer.phtml">
+								<span class="title">Manage Customers</span>
+							</a>
+						</li>
+					</ul>
+				</li>
+				<li <% if InStr(current_menu,"design_") then%>class="active open"<% end if %>>
+					<a href="javascript:void(0)">
+						<div class="item-content">
+							<div class="item-media">
+								<i class="ti-wand"></i>
+							</div>
+							<div class="item-inner">
+								<span class="title"> Design </span><i class="icon-arrow"></i>
+							</div>
+						</div>
+					</a>
+					<ul class="sub-menu">
+						<li <% if InStr(current_menu,"design_template") then%>class="active"<% end if %>>
+							<a href="design_template.phtml">
+								<span class="title"> Templates </span>
+							</a>
+						</li>
+						<li <% if InStr(current_menu,"design_setting") then%>class="active"<% end if %>>
+							<a href="design_setting.phtml">
+								<span class="title"> Design Settings </span>
+							</a>
+						</li>
+						<li <% if InStr(current_menu,"design_file_manager") then%>class="active"<% end if %>>
+							<a href="design_file_manager.phtml">
+								<span class="title"> File Manager </span>
+							</a>
+						</li>
+						<li <% if InStr(current_menu,"design_cms") then%>class="active"<% end if %>>
+							<a href="design_cms.phtml">
+								<span class="title">CMS Pages</span>
+							</a>
+						</li>
+						<li <% if InStr(current_menu,"design_index") then%>class="active"<% end if %>>
+							<a href="design_index.phtml">
+								<span class="title">Index Page</span>
+							</a>
+						</li>
+						<li <% if InStr(current_menu,"design_staticblocks") then%>class="active"<% end if %>>
+							<a href="design_staticblocks.phtml">
+								<span class="title">Static Blocks</span>
+							</a>
+						</li>
+						<li <% if InStr(current_menu,"design_404") then%>class="active"<% end if %>>
+							<a href="design_404.phtml">
+								<span class="title">404 pages</span>
+							</a>
+						</li>
+					</ul>
+				</li>
+				<li <% if InStr(current_menu,"tool_") then%>class="active open"<% end if %>>
+					<a href="javascript:void(0)">
+						<div class="item-content">
+							<div class="item-media">
+								<i class="ti-briefcase"></i>
+							</div>
+							<div class="item-inner">
+								<span class="title"> Tools </span><i class="icon-arrow"></i>
+							</div>
+						</div>
+					</a>
+					<ul class="sub-menu">
+						<li <% if InStr(current_menu,"tool_form_builder") then%>class="active"<% end if %>>
+							<a href="tool_form_builder.phtml">
+								<span class="title">Form Builder</span>
+							</a>
+						</li>
+					</ul>
+				</li>
+				<li <% if InStr(current_menu,"marketing_") then%>class="active open"<% end if %>>
+					<a href="javascript:void(0)">
+						<div class="item-content">
+							<div class="item-media">
+								<i class="ti-rss-alt"></i>
+							</div>
+							<div class="item-inner">
+								<span class="title"> Marketing </span><i class="icon-arrow"></i>
+							</div>
+						</div>
+					</a>
+					<ul class="sub-menu">
+						<li <% if InStr(current_menu,"marketing_coupons") then%>class="active"<% end if %>>
+							<a href="marketing_coupons.phtml">
+								<span class="title">Coupon / Discounts</span>
+							</a>
+						</li>
+					</ul>
+				</li>
+				
+				<li <% if InStr(current_menu,"reports_") then%>class="active open"<% end if %>>
+					<a href="javascript:void(0)">
+						<div class="item-content">
+							<div class="item-media">
+								<i class="ti-bar-chart"></i>
+							</div>
+							<div class="item-inner">
+								<span class="title"> Reports </span><i class="icon-arrow"></i>
+							</div>
+						</div>
+					</a>
+					<ul class="sub-menu">
+						<li <% if InStr(current_menu,"reports_sales_") then%>class="active open"<% end if %>>
+							<a href="javascript:;">
+								<span>Sales</span> <i class="icon-arrow"></i>
+							</a>
+							<ul class="sub-menu">
+								<li <%if InStr(current_menu,"reports_sales_orders") then%>class="active open"<% end if %>>
+									<a href="reports_sales_orders.phtml">
+										<span class="title"> Sales by Date </span>
+									</a>
+								</li>
+								<li <%if InStr(current_menu,"reports_sales_products") then%>class="active open"<% end if %>>
+									<a href="reports_sales_products.phtml">
+										<span class="title"> Sales by Product </span>
+									</a>
+								</li>
+								<li <%if InStr(current_menu,"reports_sales_quaterly") then%>class="active open"<% end if %>>
+									<a href="reports_sales_quaterly.phtml">
+										<span class="title"> Quarterly </span>
+									</a>
+								</li>
+								<li <%if InStr(current_menu,"reports_sales_monthly") then%>class="active open"<% end if %>>
+									<a href="reports_sales_monthly.phtml">
+										<span class="title"> Monthly </span>
+									</a>
+								</li>
+							</ul>
+						</li>
+						<li <% if InStr(current_menu,"reports_products_") then%>class="active open"<% end if %>>
+							<a href="javascript:;">
+								<span>Products</span> <i class="icon-arrow"></i>
+							</a>
+							<ul class="sub-menu">
+								<li <%if InStr(current_menu,"reports_products_best_sellers") then%>class="active open"<% end if %>>
+									<a href="reports_products_best_sellers.phtml">
+										Best Sellers
+									</a>
+								</li>
+								<li <%if InStr(current_menu,"reports_products_most_viewed") then%>class="active open"<% end if %>>
+									<a href="reports_products_most_viewed.phtml">
+										Most Viewed
+									</a>
+								</li>
+							</ul>
+						</li>
+						
+					</ul>
+				</li>
+				<li <% if InStr(current_menu,"importexport_") then%>class="active open"<% end if %>>
+					<a href="javascript:void(0)">
+						<div class="item-content">
+							<div class="item-media">
+								<i class="ti-import"></i>
+							</div>
+							<div class="item-inner">
+								<span class="title"> Import/Export </span><i class="icon-arrow"></i>
+							</div>
+						</div>
+					</a>
+					<ul class="sub-menu">
+						<li <% if InStr(current_menu,"importexport_import") then%>class="active"<% end if %>>
+							<a href="importexport_import.phtml">
+								<span class="title">Import</span>
+							</a>
+						</li>
+						<li <% if InStr(current_menu,"importexport_export") then%>class="active"<% end if %>>
+							<a href="importexport_export.phtml">
+								<span class="title">Export</span>
+							</a>
+						</li>
+					</ul>
+				</li>
+				<li <% if InStr(current_menu,"store_") then%>class="active open"<% end if %>>
+					<a href="javascript:void(0)">
+						<div class="item-content">
+							<div class="item-media">
+								<i class="ti-settings"></i>
+							</div>
+							<div class="item-inner">
+								<span class="title"> System </span><i class="icon-arrow"></i>
+							</div>
+						</div>
+					</a>
+					<ul class="sub-menu">
+						<li <% if InStr(current_menu,"store_information") then%>class="active"<% end if %>>
+							<a href="store_information.phtml">
+								<span class="title">Store Information</span>
+							</a>
+						</li>
+						<li <% if InStr(current_menu,"store_configuration") then%>class="active"<% end if %>>
+							<a href="store_configuration.phtml">
+								<span class="title">Configuration</span>
+							</a>
+						</li>
+						<li <% if InStr(current_menu,"store_distributors") then%>class="active"<% end if %>>
+							<a href="store_distributors.phtml">
+								<span class="title">Distributors</span>
+							</a>
+						</li>
+						<li <% if InStr(current_menu,"store_users") then%>class="active"<% end if %>>
+							<a href="store_users.phtml">
+								<span class="title">User Accounts / Security</span>
+							</a>
+						</li>
+						<li <% if InStr(current_menu,"store_emails") then%>class="active"<% end if %>>
+							<a href="store_emails.phtml">
+								<span class="title">Emails</span>
+							</a>
+						</li>
+					</ul>
+				</li>
+				
+				
+			</ul>
+			<!-- end: MAIN NAVIGATION MENU -->
+			
+			
+		</nav>
+	</div>
+</div>

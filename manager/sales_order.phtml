@@ -1,0 +1,637 @@
+<%
+	Response.CodePage = 65001
+	Response.CharSet = "UTF-8"
+%>
+<!-- #INCLUDE File="local/local.phtml" -->
+<!-- #INCLUDE File="../util/xt_func_util.phtml" -->
+<!-- #INCLUDE File="../util/xt_func_string.phtml" -->
+<!-- #INCLUDE File="../util/xt_func_user_access.phtml" -->
+<!-- #INCLUDE File="include/i_login.phtml" -->
+<%
+	'ACCESS ROUTINE (TODO)==========================================
+	'if GetAccessFlagEx(flagSalesOrder) = 0 then
+		'Response.Redirect("dashboard.asp?err_msg=You don't have access to sales order.")
+	'end if
+	'bPageAccess = GetAccessFlagEx(flagSalesOrder)
+	'=========================================================
+
+	view_all_orders_flag = GetUserAccessVariables("VIEW_ALL_ORDERS")
+
+	if (Len(Request("OrderFilter")) > 0 ) then
+		Order_filter = Request("OrderFilter")
+	else
+		Order_filter = "Pending"
+	end if
+
+	order_search = Request("order_search")
+	order_month = Request("order_month")
+	order_year = Request("order_year")
+	strID = Request("strID")
+
+
+	Select case Order_filter
+	case "Pending"
+		title_filter = "New or Pending"
+	case "Authorized"
+		title_filter = "Authorized"
+	case "Shipped"
+		title_filter = "Shipped"
+	case "Incomplete"
+		title_filter = "Incomplete"
+	case "Failed"
+		title_filter = "Failed"
+	case "Canceled"
+		title_filter = "Canceled"
+	case "Ready for Pickup"
+		title_filter = "Ready for Pickup"
+	case "Partial"
+		title_filter = "Partially Shipped"
+	case "All"
+		title_filter = "All"
+	end select
+
+	if Len(Request("order_display")) > 0 then
+		order_display = Request("order_display")
+	else
+		if view_all_orders_flag = "1" then
+			order_display = "3"
+		else
+			order_display = "1"
+		end if
+	end if
+
+	index_date = DateAdd("d", -90, Date())
+	op = Request("op")
+	delete_orders = Trim(Request("delete_orders"))
+	if Len(delete_orders) > 0 then
+		delete_orders = Replace(delete_orders, ", ", "','")
+	end if
+
+	export_flag = Trim(Request("export_flag"))
+	if Len(export_flag) > 0 then
+		export_flag = Replace(export_flag, ", ", "','")
+	end if
+
+	order_id = Trim(Request("order_id"))
+	if Len(order_id) > 0 then
+		order_id = Replace(order_id, ", ", "','")
+	end if
+
+	new_export_flag = Trim(Request("new_export_flag"))
+	if Len(new_export_flag) > 0 then
+		new_export_flag = Replace(new_export_flag, " ", "")
+	end if
+
+	Set Conn = Server.CreateObject("ADODB.Connection")
+	Conn.open Session("ConnectionString")
+
+	Select Case op
+		
+	Case "Delete Orders"
+		delSQL = "DELETE FROM " & g_storeid & "_order WHERE order_id in ('" & delete_orders & "')"
+		conn.execute delSQL
+	CASE "SAVE"
+		ssql = "UPDATE " & g_storeid & "_order SET export_flag=0 WHERE order_id in ('" & order_id & "')"
+		conn.execute ssql
+		ssql = "UPDATE " & g_storeid & "_order SET export_flag=1 WHERE order_id in ('" & export_flag & "')"
+		conn.execute ssql
+			  
+	CASE "EXPORT"
+		Response.Redirect("export_main.asp?so=" & new_export_flag)
+	End Select
+
+	if order_search = "none" or order_search="ID" or order_search="" then
+		order_month = ""
+		order_year = ""
+	end if
+
+	if len(order_month)>0 then
+		strDATE = " AND date_entered Between ':1/1/:2' And ':3/1/:4'"
+		index_date = "1/1/1900"
+	end if
+
+	if len(strID)>0 then
+		strORDERID = " AND order_id like '"&strID&"%'"
+	end if
+
+	if order_display = "1" then
+		repFilter = " AND salesrep_id='" & Session("AdminID") & "'"
+	else
+		repFilter = ""
+	end if
+
+	'Get orders...
+	select case order_filter
+		
+	case "All"
+		index_date = "01/01/1970"
+		strSQL = "SELECT TOP 200 * FROM :9_order WHERE date_entered >'"& index_date & "'" & strDATE & strORDERID & repFilter & " ORDER BY date_entered DESC"
+		strSQL2 = "SELECT Count(*), SUM(total) FROM :9_order WHERE date_entered >'"& index_date& "'" & strDATE & strORDERID
+	case "Pending"
+		index_date = "01/01/1970"
+		strSQL = "SELECT TOP 200 * FROM :9_order WHERE status='"& order_filter & "'" & strDATE & strORDERID & repFilter & " ORDER BY date_entered DESC"
+		strSQL2 = "SELECT Count(*), SUM(total) FROM :9_order WHERE status='"& order_filter &"'"& strDATE & strORDERID
+	case "Authorized"
+		strSQL = "SELECT TOP 200 * FROM :9_order WHERE status='"& order_filter & "'" & strDATE & strORDERID & repFilter & " ORDER BY date_changed DESC"
+		strSQL2 = "SELECT Count(*), SUM(total) FROM :9_order WHERE status='"& order_filter &"'"& strDATE & strORDERID 
+	case "Ready for Pickup"
+		strSQL = "SELECT TOP 200 * FROM :9_order WHERE status='"& order_filter & "'" & strDATE & strORDERID & repFilter & " ORDER BY date_changed DESC"
+		strSQL2 = "SELECT Count(*), SUM(total) FROM :9_order WHERE status='"& order_filter &"'"& strDATE & strORDERID 
+	case else
+		strSQL = "SELECT TOP 200 * FROM :9_order WHERE status='"& order_filter & "' AND date_entered > '" & index_date & "'" & strDATE & strORDERID & repFilter & " ORDER BY date_entered DESC"
+		strSQL2 = "SELECT Count(*), SUM(total) FROM :9_order WHERE status='"& order_filter & "' AND date_entered > '" & index_date & "'"& strDATE & strORDERID
+		
+	end select
+
+	strSQL2 = Replace(strSQL2, ":9", g_storeid)
+	strSQL2 = Replace(strSQL2 , ":1", order_month)
+	strSQL2 = Replace(strSQL2 , ":2", order_year)
+
+	if order_filter = "All" then
+		strSQL2 = "SELECT Count(*), SUM(total) FROM " & g_storeid & "_order "
+	else
+		strSQL2 = "SELECT Count(*), SUM(total) FROM " & g_storeid & "_order WHERE status='"& order_filter & "'"
+	end if
+
+
+
+	if order_search = "none" or order_search = "ID" or order_search="" then
+	else
+		order_month2 = CStr(CInt(order_month) + 1)
+		if(order_month2 = "13") then
+		order_month2 = "1"
+		order_year2 = CStr(CInt(order_year) + 1)
+	else
+		order_year2 = order_year
+	end if
+
+	strSQL2 = Replace(strSQL2 , ":3", order_month2)
+	strSQL2 = Replace(strSQL2 , ":4", order_year2)
+	end if
+
+	Set rsOrder2 = Conn.Execute(strSQL2)
+	order_count = rsOrder2(0)
+	order_amount = rsOrder2(1)
+	rsOrder2.Close
+
+
+	strSQL = Replace(strSQL, ":9", g_storeid)
+	strSQL = Replace(strSQL , ":1", order_month)
+	strSQL = Replace(strSQL , ":2", order_year)
+
+	if order_search = "none" or order_search = "ID" or order_search="" then
+	else
+	order_month2 = CStr(CInt(order_month) + 1)
+	if(order_month2 = "13") then
+	order_month2 = "1"
+	order_year2 = CStr(CInt(order_year) + 1)
+	else
+	order_year2 = order_year
+	end if
+
+	strSQL = Replace(strSQL , ":3", order_month2)
+	strSQL = Replace(strSQL , ":4", order_year2)
+	end if
+
+	Set rsOrder = Server.CreateObject("ADODB.RecordSet")
+	rsOrder.Open strSQL,Session("ConnectionString"),1,1
+
+	if not IsNumeric(order_amount) then
+	order_amount = 0
+	end if
+  
+	
+	
+%>
+<!--#INCLUDE FILE="include/doctype.phtml"-->
+<head>
+<!--#INCLUDE FILE="include/head.phtml"-->
+<!-- start: CSS REQUIRED FOR THIS PAGE ONLY -->
+<link href="vendor/bootstrap-touchspin/jquery.bootstrap-touchspin.min.css" rel="stylesheet" media="screen">
+<link href="vendor/select2/select2.min.css" rel="stylesheet" media="screen">
+<link href="vendor/bootstrap-datepicker/bootstrap-datepicker3.standalone.min.css" rel="stylesheet" media="screen">
+<link href="vendor/bootstrap-timepicker/bootstrap-timepicker.min.css" rel="stylesheet" media="screen">
+<link href="vendor/DataTables/css/jquery.dataTables.css" rel="stylesheet" media="screen">
+<link href="vendor/DataTables/css/DT_bootstrap.css" rel="stylesheet" media="screen">
+<!-- end: CSS REQUIRED FOR THIS PAGE ONLY -->
+<link rel="stylesheet" href="assets/css/custom.css">
+</head>	
+<body>
+	<div id="app">
+		<!--#INCLUDE FILE="include/sidebar.phtml"-->
+		<div class="app-content">
+			<!--#INCLUDE FILE="include/header.phtml"-->
+			<div class="main-content" >
+				<div class="wrap-content container" id="container">
+					<!-- start: TITLE -->
+					<section id="page-title" class="padding-top-15 padding-bottom-15">
+						<div class="row">
+							<div class="col-sm-8">
+								<h1 class="mainTitle">Sales Orders</h1>
+								<span class="mainDescription">overview &amp; list </span>
+							</div>
+							<ol class="breadcrumb">
+								<a class="btn btn-green btn-sm" data-toggle="modal" style="float:right" href="#stack2"><i class="ti-plus"></i> Add New Order</a>
+							</ol>
+						</div>
+					</section>
+					<!-- end: TITLE -->
+					<div class="container-fluid container-fullw bg-white">
+						<div class="content-header-floating" style="display: block;">
+							<div class="content-header">
+								<h3 class="mainTitle">Sales Orders</h3>
+								<p class="content-buttons form-buttons">
+									<a class="btn btn-green btn-sm" data-toggle="modal" style="float:right" href="#stack2"><i class="ti-plus"></i> Add New Order</a>
+								</p>	
+							</div>
+						</div>
+						<div class="row">
+							<div class="col-md-3">
+							</div>
+							<div class="col-md-6">
+								<div class="row">
+									<div class="col-md-9">		
+										<div class="input-group input-daterange datepicker">
+											<span class="input-group-addon bg-info">Date Range <i class="fa fa-calendar"></i> </span>
+											<input type="text" id="min" class="form-control input-sm"/>
+											<span class="input-group-addon bg-info">to</span>
+											<input type="text" id="max" class="form-control input-sm" />
+										</div>
+									</div>
+									<div class="col-md-3 margin-top-5">
+									<button id="btnDateFilter" type="button" class="btn btn-blue btn-block btn-sm">
+										Filter
+									</button>
+									</div>
+								</div>
+							</div>
+							<div class="col-md-3">
+							</div>
+						</div>
+						<div class="row">
+							<div class="col-md-12">
+								<table class="table table-striped table-bordered table-hover table-full-width" id="sample_1">
+									<thead>
+									<tr>
+										<th colspan="2">
+											<select id="filterStatus"class="form-control input-sm" style="width:160px;">
+												<option value="Pending" <%if order_filter="Pending" or order_filter="" then%>Selected<%end if%>>New or Pending</option>
+												<option value="Authorized" <%if order_filter="Authorized" then%>Selected<%end if%>>Authorized</option>
+												<option value="Onhold" <%if order_filter="Onhold" then%>Selected<%end if%>>On Hold</option>
+												<option value="Ready for Pickup" <%if order_filter="Ready for Pickup" then%>Selected<%end if%>>Ready for Pickup</option>
+												<option value="Shipped" <%if order_filter="Shipped" then%>Selected<%end if%>>Shipped</option>
+												<option value="Partial" <%if order_filter="Partial" then%>Selected<%end if%>>Partially Shipped</option>
+												<option value="Incomplete" <%if order_filter="Incomplete" then%>Selected<%end if%>>Incompleted</option>
+												<option value="Canceled" <%if order_filter="Canceled" then%>Selected<%end if%>>Cancelled</option>
+												<option value="All" <%if order_filter="All" then%>Selected<%end if%>>All Orders</option>
+											</select>
+										</th>
+										<th colspan="11" class="center">
+										
+										</th>
+										<th colspan="4" class="text-right">
+											<select id="filterView" class="form-control input-sm" >
+												<option value="1" <%if order_display="1" then%>selected<%end if%>>-- Show My Orders only --</option>
+												<% if view_all_orders_flag = "1" then %>
+												<option value="3" <%if order_display="3" then%>selected<%end if%>>-- Show all orders --</option>
+												<% end if %>
+											</select>
+										</th>
+									</tr>
+									<tr>
+										<th>Order ID</th>
+										<th>Company</th>
+										<th>Contact</th>
+										<th>Status</th>
+										<th>Description</th>
+										<th>Amount</th>
+										<th>
+										Last Updated
+										<%
+										  SELECT CASE Session("STORETIMEZONE")
+										  CASE "0"
+											  Response.Write("(PST)")
+										  CASE "1"
+											  Response.Write("(MST)")
+										  CASE "2"
+											  Response.Write("(CST)")
+										  CASE "3"
+											  Response.Write("(EST)")
+										  CASE ELSE
+											  Response.Write("(PST)")
+										  END SELECT
+										%>
+										</th>
+										<th>Quote #</th>
+										<th>P.O. #</th>
+										<th>Drafted By</th>
+										<th>CVV2</th>
+										<th>AVS</th>
+										<th>Memo</th>
+										<th width="2%">Exported</th>
+										<th width="2%">Export</th>
+										<th width="2%">Print</th>
+										<th width="2%">Copy</th>
+									</tr>
+									
+									</thead>
+									<tbody>
+										<tr>
+											<td colspan="11" class="dataTables_empty">Loading data from server</td>
+										</tr>
+									</tbody>
+								</table>	
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+		<!--#INCLUDE FILE="include/footer.phtml"-->
+	</div>
+	
+	<div class="modal fade " id="stack2" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+		<div class="modal-dialog modal-lg">
+			<div class="modal-content">
+				<div class="modal-header">
+					<button type="button" class="close" data-dismiss="modal" aria-label="Close">
+						<span aria-hidden="true">&times;</span>
+					</button>
+					<h4 class="modal-title" id="myModalLabel">Customer Search</h4>
+				</div>
+				<div class="modal-body">
+					<input id="s_sku" name="s_sku" class="form-control" data-tabindex="1" type="hidden">
+					<div class="row">
+						<div class="col-sm-12">
+							<div class="tabbable">
+								<ul id="myTab11" class="nav nav-tabs tab-green">
+									<li class="active">
+										<a href="#panel_tab11_example1" data-toggle="tab">
+											<i class="fa fa-users"></i> Customers
+										</a>
+									</li>
+								</ul>
+								<div class="tab-content">
+									<div class="tab-pane active" id="panel_tab11_example1">
+										<table class="table table-striped table-bordered table-hover table-full-width" id="sample_2">
+											<thead>
+											
+											<tr>
+												<th>ID</th>
+												<th>First Name</th>
+												<th>Last Name</th>
+												<th>Email</th>
+												<th>Customer Since</th>
+												<th>Status</th>
+												<th></th>
+											</tr>
+											</thead>
+											<tbody>
+												<tr>
+													<td colspan="8" class="dataTables_empty">Loading data from server</td>
+												</tr>
+											</tbody>
+										</table>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+				
+			</div>
+		</div>
+	</div>
+	<!--#INCLUDE FILE="include/js.phtml"-->
+	<!-- start: JAVASCRIPTS REQUIRED FOR THIS PAGE ONLY -->
+	<script src="vendor/maskedinput/jquery.maskedinput.min.js"></script>
+	<script src="vendor/bootstrap-touchspin/jquery.bootstrap-touchspin.min.js"></script>
+	<script src="vendor/autosize/autosize.min.js"></script>
+	<script src="vendor/selectFx/classie.js"></script>
+	<script src="vendor/selectFx/selectFx.js"></script>
+	<script src="vendor/select2/select2.min.js"></script>
+	<script src="vendor/bootstrap-datepicker/bootstrap-datepicker.min.js"></script>
+	<script src="vendor/bootstrap-timepicker/bootstrap-timepicker.min.js"></script>
+	<script src="vendor/DataTables/jquery.dataTables.min.js"></script>
+	<!-- end: JAVASCRIPTS REQUIRED FOR THIS PAGE ONLY -->
+	<script src="assets/js/main.js"></script>
+	<script src="assets/js/form-elements.js"></script>
+	<!-- start: JavaScript Event Handlers for this page -->
+	<%
+		order_display = "3"
+		order_filter = "All"
+	%>
+	<script type="text/javascript">
+	
+	
+	var oTable;
+	var oTabel2;
+	var v1 = "All";
+	var v2 = "All";
+	var v3 = "All";
+	
+	var TableData = function () {
+		//function to initiate DataTable
+		//DataTable is a highly flexible tool, based upon the foundations of progressive enhancement, 
+		//which will add advanced interaction controls to any HTML table
+		//For more information, please visit https://datatables.net/
+		var runDataTable = function () {
+			oTable = $('#sample_1').dataTable({
+				"bProcessing": true,
+				"bStateSave": false,
+				"bJQueryUI": false,
+				"iDisplayLength": 20,
+				"bServerSide": true,
+				"bAutoWidth": false,
+				"sAjaxSource": "api/sp_order_list.phtml",
+				"aoColumns": [ 
+					/* Quote ID */  { "sClass": "center" },
+					/* Company */  { "sClass": "center" },
+					/* Contact */  { "sClass": "center" },
+					/* Status */  { "sClass": "center" },
+					/* Description */  { "sClass": "center" },
+					/* Quote Amount */  { "sClass": "text-right" },
+					/* Last Updated */ { "sClass": "center" },
+					/* QUOTE # */ { "sClass": "center","bSortable": false },
+					/* PO # */ { "sClass": "center","bSortable": false },
+					/* Drafted By */ { "sClass": "center" },
+					/* CVV */ { "sClass": "center","bSortable": false },
+					/* AVS */ { "sClass": "center","bSortable": false },
+					/* Memo */ { "sClass": "center","bSortable": false },
+					/* Exported */ { "sClass": "center","bSortable": false },
+					/* Export */ { "sClass": "center","bSortable": false },
+					/* print */ { "sClass": "center","bSortable": false },
+					/* Copy */ { "sClass": "center","bSortable": false }
+				  ],
+				"aaSorting": [[0, 'desc']],
+				"aLengthMenu": [
+					[10, 20, 30, 40, 50, 100],
+					[10, 20, 30, 40, 50, 100] // change per page values here
+				],
+				
+				"oLanguage": {
+					"sLengthMenu": "Show _MENU_ Rows",
+					"sSearch": "",
+					"sProcessing": '<img src="assets/images/ajax-loader-primary.gif"/>',
+					"oPaginate": {
+						"sPrevious": "",
+						"sNext": ""
+					}
+				},
+				
+				'fnServerData' : function ( sSource, aoData, fnCallback ) {
+					aoData.push( { 'name' : 'min', 'value' : $("#min").val() } );
+					aoData.push( { 'name' : 'max', 'value' : $("#max").val() } );
+					aoData.push( { 'name' : 'v1', 'value' : $("#filterView").val() } );
+					aoData.push( { 'name' : 'v2', 'value' : $("#filterStatus").val() } );
+					$.ajax({
+						'dataType' : 'json',
+						'data' : aoData,
+						'type' : 'GET',
+						'url' : sSource,
+						'success' : fnCallback
+					});
+				} 
+			});
+			//$("div.dataTables_length").after('<div><b>Custom tool bar! Text/images etc.</b></div>');
+			
+			$('#sample_1_wrapper .dataTables_filter input').addClass("form-control input-sm").attr("placeholder", "Search");
+			// modify table search input
+			$('#sample_1_wrapper .dataTables_length select').addClass("m-wrap small");
+			// modify table per page dropdown
+			$('#sample_1_wrapper .dataTables_length select').select2();
+			// initialzie select2 dropdown
+		};
+		
+		var runDataTable2 = function () {
+			oTable1 = $('#sample_2').dataTable({
+				"bProcessing": true,
+				"bStateSave": false,
+				"bJQueryUI": false,
+				"iDisplayLength": 20,
+				"bServerSide": true,
+				"bAutoWidth": false,
+				"responsive": true,
+				"sAjaxSource": "api/sp_customer_list_2.phtml?v1=" + v1 + "&v2=" + v2 + "&v3=" + v3 + "&z1=",
+				"aoColumns": [ 
+					/* ID */  { "sClass": "left" },
+					/* First Name */  { "sClass": "left"},
+					/* Last Name */  { "sClass": "left" },
+					/* Email */  { "sClass": "left"},
+					/* Customer Since */  { "sClass": "left"},
+					/* Status */ { "sClass": "center" ,"bSortable": false},
+					/* Action */  { "sClass": "left"}
+				  ],
+				  
+				"aaSorting": [[0, 'desc']],
+				
+				"aLengthMenu": [
+					[10, 20, 30, 40, 50],
+					[10, 20, 30, 40, 50] // change per page values here
+				],
+				
+				"oLanguage": {
+					"sLengthMenu": "Show _MENU_ Rows",
+					"sSearch": "",
+					"oPaginate": {
+						"sPrevious": "",
+						"sNext": ""
+					}
+				},
+				
+			});
+			
+			$('#sample_1_wrapper .dataTables_filter input').addClass("form-control input-sm").attr("placeholder", "Search");
+			// modify table search input
+			$('#sample_1_wrapper .dataTables_length select').addClass("m-wrap small");
+			// modify table per page dropdown
+			$('#sample_1_wrapper .dataTables_length select').select2();
+			// initialzie select2 dropdown
+		};
+		
+		return {
+			//main function to initiate template pages
+			init: function () {
+				runDataTable();
+				runDataTable2();
+			},
+			
+			reload: function(theURL) {
+				if ( theURL ) {
+					oTable.fnReloadAjax(theURL);
+				}
+				else {
+					oTable.fnReloadAjax('sp_order_list.phtml?v1=<%=order_display%>&v2=<%=order_filter%>&z1=');
+				}
+			}
+		};
+	}();
+	
+	function StatusFilter (theObj)
+	{
+		oTable.fnReloadAjax('sp_order_list.phtml?v1=<%=order_display%>&v2=' + theObj.value + '&z1=');
+	}
+	function DateFilter()
+	{
+		oTable.fnReloadAjax('api/sp_order_list.phtml?v1=<%=order_display%>&v2=<%=order_filter%>&DF=' + document.getElementById('DateRange').value + '&z1=');
+	}
+	
+	$('#daterange').on('apply.daterangepicker', function(ev, picker) { 
+		oTable.fnReloadAjax('sp_order_list.phtml?v1=<%=order_display%>&v2=<%=order_filter%>&DF=' + document.getElementById('DateRange').value + '&z1=');
+		//do something, like clearing an input
+	 $('#daterange').val(''); 
+	}); 
+
+	</script>
+	
+	<script>
+		jQuery(document).ready(function() {
+			Main.init();
+			FormElements.init();
+			TableData.init();
+			
+			$("#btnDateFilter").click(function() {
+			  oTable.fnFilter( $('#min').val(), 0 );
+			});
+			
+			$("#filterView").change(function() {
+			  oTable.fnFilter( $('#min').val(), 0 );
+			});
+			
+			$("#filterStatus").change(function() {
+			  oTable.fnFilter( $('#min').val(), 0 );
+			});
+		});
+	</script>
+	
+	<script type="text/javascript">
+		function getSearchResult(shopper_id) {
+			window.location.href= "api/tp_sales_orders_detail.phtml?so_id=0&shopper_id=" + shopper_id;
+		}
+	</script>
+	<script language="JavaScript">
+	function OpenInvoice(theOrder)
+	{	
+		var print_file;
+		
+		print_file = "order_print.phtml?order_id=" + theOrder;
+		lwin = open(print_file, '_newOrderInvoice', 'width=600, height=400, scrollbars=yes, resizable=yes, menubar=yes');
+		lwin.focus();
+		return;
+	}
+	function CopySO(theSO)
+	{
+		if (confirm("Would you like to create a copy of sale order #" + theSO))
+		{
+			//document.location.href = "v2_order.asp?so_id=0&c_so_id=" + theSO + "&ql=order_list.asp?page=<%=page%>%26OrderFilter=<%=OrderFilter%>%26order_display=<%=order_display%>";
+		}
+		else
+		{
+			return;
+		}
+	}
+	</script>
+	
+	<!-- end: JavaScript Event Handlers for this page -->
+</body>
+</html>

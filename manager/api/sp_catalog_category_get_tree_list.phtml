@@ -1,5 +1,10 @@
+<%
+	Response.CodePage = 65001
+	Response.CharSet = "UTF-8"
+%>
 <%response.Expires=-1%>
 <!-- #INCLUDE File="../local/local.phtml" -->
+<!-- #INCLUDE File="../util/xt_func_string.phtml" -->
 <%
 	pf_id = Trim(Request("pf_id"))
 	
@@ -25,6 +30,9 @@
 		do while not rs.EOF
 			category_id = rs("dept_id")
 			category_name = rs("dept_name")
+			if Session("CURRENT_ADMIN_VIEW_ID") <> "1" then
+				category_name = TranslateX(category_name, 1, category_id, 1)
+			end if
 			
 			s_tree = s_tree & "{"
 			s_tree = s_tree & """title"": """ & category_name & """ , "
@@ -52,6 +60,9 @@
 				do while not rs1.EOF
 					category_id = rs1("dept_id")
 					category_name = rs1("dept_name")
+					if Session("CURRENT_ADMIN_VIEW_ID") <> "1" then
+						category_name = TranslateX(category_name, 1, category_id, 1)
+					end if
 					
 					s_tree_sub_1 = s_tree_sub_1 & "{"
 					s_tree_sub_1 = s_tree_sub_1 & """title"": """ & category_name & """ , "
@@ -78,6 +89,10 @@
 						do while not rs2.EOF
 							category_id = rs2("dept_id")
 							category_name = rs2("dept_name")
+							
+							if Session("CURRENT_ADMIN_VIEW_ID") <> "1" then
+								category_name = TranslateX(category_name, 1, category_id, 1)
+							end if
 							
 							s_tree_sub_2 = s_tree_sub_2 & "{"
 							s_tree_sub_2 = s_tree_sub_2 & """title"": """ & category_name & """ , "

@@ -1,3 +1,7 @@
+<%
+	Response.CodePage = 65001
+	Response.CharSet = "UTF-8"
+%>
 <!-- #INCLUDE File="local/local.phtml" -->
 <!-- #INCLUDE File="util/xt_func_util.phtml" -->
 <!-- #INCLUDE File="util/xt_func_string.phtml" -->
@@ -19,7 +23,7 @@
 <link rel="stylesheet" href="assets/css/custom.css">
 </head>	
 <body>
-	<div id="app" class="app-sidebar-closed">
+	<div id="app">
 		<!--#INCLUDE FILE="include/sidebar.phtml"-->
 		<div class="app-content">
 			<!--#INCLUDE FILE="include/header.phtml"-->
@@ -69,14 +73,16 @@
 								<div class="row">
 									<div class="col-md-12">
 									<!-- start: DEFAULT TREE PANEL -->
-									<div class="panel panel-blue">
+									<div class="panel panel-dark-primary">
 										<div class="panel-heading">
 											<h4 class="panel-title">Categories</h4>
 											<div class="panel-tools" >
 												<a data-original-title="Collapse" data-toggle="tooltip" data-placement="top" class="btn btn-transparent btn-sm panel-collapse" href="#"><i class="ti-minus collapse-off"></i><i class="ti-plus collapse-on"></i></a>
 											</div>
 										</div>
+										
 										<div class="panel-body partition-white">
+											<% if Session("CURRENT_ADMIN_VIEW_ID") = "1" then %>
 											<div class="row" style="padding-bottom: 10px;">
 												<div class="col-md-12">
 													<a data-toggle="modal" class="btn btn-primary btn-sm" role="button" href="#myModal1">
@@ -85,15 +91,17 @@
 													<i class="clip-plus-circle"></i> Add Sub</a>
 												</div>
 											</div>
+											<% end if %>
 											<div id="tree3"></div>
 										</div>
+										
 									</div>
 									<!-- end: DEFAULT TREE PANEL -->
 									</div>
 								</div>
 							</div>
 							<div class="col-md-9 no-padding">
-								<div class="panel panel-blue">
+								<div class="panel panel-dark-primary">
 									<div class="panel-heading">
 										<h4 class="panel-title">Category Detail</h4>
 										<div class="panel-tools" >

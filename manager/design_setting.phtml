@@ -1,0 +1,78 @@
+<%
+	Response.CodePage = 65001
+	Response.CharSet = "UTF-8"
+%>
+<!-- #INCLUDE File="local/local.phtml" -->
+<!-- #INCLUDE File="util/xt_func_util.phtml" -->
+<!-- #INCLUDE File="util/xt_func_string.phtml" -->
+<!-- #INCLUDE File="include/i_login.phtml" -->
+<%
+	g_access_key = "04-b"
+	
+	sql = "SELECT setting_values FROM " &  g_storeid & "_setting WHERE setting_type='THEME_TEMPLATE'"
+	Set rsSetting = dbconn.Execute(sql)
+	if not rsSetting.EOF then
+		THEME_TEMPLATE = Trim(rsSetting(0))
+	else
+		THEME_TEMPLATE = "porto"
+	end if
+	rsSetting.Close
+	THEME_TEMPLATE = "nle"
+%>
+<!--#INCLUDE FILE="include/doctype.phtml"-->
+<head>
+<!--#INCLUDE FILE="include/head.phtml"-->
+<!-- start: CSS REQUIRED FOR THIS PAGE ONLY -->
+<!-- end: CSS REQUIRED FOR THIS PAGE ONLY -->
+</head>	
+<body>
+	<div id="app">
+		<!--#INCLUDE FILE="include/sidebar.phtml"-->
+		<div class="app-content">
+			<!--#INCLUDE FILE="include/header.phtml"-->
+			<div class="main-content" >
+				<div class="wrap-content container" id="container">
+					<!-- start: TITLE -->
+					<section id="page-title" class="padding-top-15 padding-bottom-15">
+						<div class="row">
+							<div class="col-sm-8">
+								<h1 class="mainTitle">Design Settings</h1>
+								<span class="mainDescription">overview &amp; list </span>
+							</div>
+							<ol class="breadcrumb">
+								<li>
+									<span>Design</span>
+								</li>
+								<li class="active">
+									<span>Design Settings</span>
+								</li>
+							</ol>
+						</div>
+					</section>
+					<!-- end: TITLE -->
+					<div class="container-fluid container-fullw bg-white">
+						<div class="row">
+							<div class="col-md-12">
+								<iframe src="theme/<%=THEME_TEMPLATE%>/config.phtml" width="100%" height="400" frameborder="0" style="border:1px solid #333333"></iframe>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+		<!--#INCLUDE FILE="include/footer.phtml"-->
+	</div>
+	<!--#INCLUDE FILE="include/js.phtml"-->
+	<!-- start: JAVASCRIPTS REQUIRED FOR THIS PAGE ONLY -->
+	<!-- end: JAVASCRIPTS REQUIRED FOR THIS PAGE ONLY -->
+	<script src="assets/js/main.js"></script>
+	<!-- start: JavaScript Event Handlers for this page -->
+	
+	<script>
+		jQuery(document).ready(function() {
+			Main.init();
+		});
+	</script>
+	<!-- end: JavaScript Event Handlers for this page -->
+</body>
+</html>

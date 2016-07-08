@@ -1,0 +1,290 @@
+<%
+	Response.CodePage = 65001
+	Response.CharSet = "UTF-8"
+%>
+<!-- #INCLUDE File="local/local.phtml" -->
+<!-- #INCLUDE File="util/xt_func_util.phtml" -->
+<!-- #INCLUDE File="util/xt_func_string.phtml" -->
+<!-- #INCLUDE File="include/i_login.phtml" -->
+<script language="VBScript" runat="Server">
+function GetSettingValue(strKey, strDefault)
+  
+	sReturnValue = ""
+  
+	sql = "SELECT setting_values FROM " & g_storeid & "_setting WHERE setting_type='"& strKey & "'"
+	set rsSetting1 = dbconn.Execute(sql)
+	if not rsSetting1.EOF then
+	  sReturnValue = rsSetting1(0)
+	else
+	  sReturnValue = strDefault
+	end if
+	rsSetting1.Close
+	dbconn.Close
+	GetSettingValue = sReturnValue
+	
+end function
+
+function CheckTemplateStatus(strName)
+	
+	Filepath = Server.MapPath("..\theme\" & strName)
+	Set objFSO = CreateObject("Scripting.FileSystemObject")
+	If objFSO.FolderExists(Filepath) Then
+		CheckTemplateStatus = true
+	Else
+		CheckTemplateStatus = false
+	End If
+	
+end function
+
+</script>
+<!--#INCLUDE FILE="include/doctype.phtml"-->
+<head>
+<!--#INCLUDE FILE="include/head.phtml"-->
+<!-- start: CSS REQUIRED FOR THIS PAGE ONLY -->
+<!-- end: CSS REQUIRED FOR THIS PAGE ONLY -->
+<link rel="stylesheet" href="assets/css/custom.css">
+<style>
+.item-info{
+	text-align:center;
+}
+.item-info h2 a{
+	font-size:14px;
+	text-transform:uppercase;
+	color:#000;
+}
+.item-info h2 a:hover{
+	text-decoration:none;
+	color:#41ade2;
+}
+.item-info .name-item{
+	margin-bottom:5px;
+}
+.item-info .list-color{
+	margin-bottom:15px;
+}
+.item-info .list-color li{
+	display:inline-block;
+}
+.item-info .list-color li a{
+	display:inline-block;
+	width:18px;
+	height:18px;
+	border-radius:50%;
+	background-color:#666;
+	overflow:hidden;
+	text-indent:-9999px;
+	margin:0 3px;
+	transition:all 0.3s ease 0s;
+	-webkit-transition:all 0.3s ease 0s;
+	-moz-transition:all 0.3s ease 0s;
+}
+.item-info .list-color li a:hover{
+	/* box-shadow:0 0 3px rgba(0,0,0,0.3); */
+}
+.item-info .list-color li.blue a{
+	background-color:#41ade2;
+}
+.item-info .list-color li.grapefruit a{
+	background-color:#ed5565;
+}
+.item-info .list-color li.yellow a{
+	background-color:#fbc02d;
+}
+.item-info .list-color li.green a{
+	background-color:#65d31f;
+}
+.item-info .list-color li.lavender a{
+	background-color:#967adc;
+}
+.item-info .list-color li.orange a{
+	background-color:#ff9100;
+}
+.item-info .list-color li.pinkrose a{
+	background-color:#ec87c0;
+}
+.item-info .list-color li.deepgrass a{
+	background-color:#05e05d;
+}
+.item-info .list-color li.cyan_red a{
+	background:url(assets/templates/cyan_red.png) top center;
+}
+.item-info .list-color li.green_yellow a{
+	background:url(assets/templates/green_yellow.png) top center;
+}
+.item-info .list-color li.lavender_pink a{
+	background:url(assets/templates/lavender_pink.png) top center;
+}
+.item-info .list-color li.green_cyan a{
+	background:url(assets/templates/green_cyan.png) top center;
+}
+</style>
+</head>	
+<body>
+	<div id="app">
+		<!--#INCLUDE FILE="include/sidebar.phtml"-->
+		<div class="app-content">
+			<!--#INCLUDE FILE="include/header.phtml"-->
+			<div class="main-content" >
+				<div class="wrap-content container" id="container">
+					<!-- start: TITLE -->
+					<section id="page-title" class="padding-top-15 padding-bottom-15">
+						<div class="row">
+							<div class="col-sm-8">
+								<h1 class="mainTitle">Templates</h1>
+								<span class="mainDescription">overview &amp; list </span>
+							</div>
+							<ol class="breadcrumb">
+								<button class="btn btn-blue btn-sm" type="submit">
+									<i class="fa fa-check-square"></i> Apply Template 
+								</button>
+							</ol>
+						</div>
+					</section>
+					<!-- end: TITLE -->
+					<div class="container-fluid container-fullw bg-white">
+						<div class="content-header-floating" style="display: block;">
+							<div class="content-header">
+								<h3 class="mainTitle">Templates</h3>
+								<p class="content-buttons form-buttons">
+									<button class="btn btn-blue btn-sm" type="submit">
+										<i class="fa fa-check-square"></i> Apply Template 
+									</button>
+								</p>	
+							</div>
+						</div>
+						<div class="row">
+							<div class="col-md-12">
+							<form role="form" class="form-horizontal" id="form">
+								<div class="row">
+									<div class="col-md-12">
+										<div id="errorHandler1" class="errorHandler alert alert-danger no-display">
+											<i class="fa fa-times-sign"></i> You have some form errors. Please check below.
+										</div>
+										<div id="errorHandler2" class="errorHandler alert alert-danger no-display">
+											<i class="fa fa-times-sign"></i> The information has not been saved properly. Please contact system administrator.
+										</div>
+										<div class="successHandler alert alert-success no-display">
+											<i class="fa fa-ok"></i> The information has been saved.
+										</div>
+									</div>
+								</div>
+								<div class="row">
+									<div class="col-sm-3 item-info center">
+										<img src="assets/templates/home-style1.png" border="0" width="100%" /><br><br>
+										<ul class="list-color">
+											<li class="blue"><a title="Blue">Blue</a></li>
+											<li class="grapefruit"><a title="Grapefruit">Grapefruit</a></li>
+											<li class="yellow"><a title="Yellow">Yellow</a></li>
+											<li class="green"><a title="Green">Green</a></li>
+											<li class="lavender"><a title="Lavender">Lavender</a></li>
+											<li class="orange"><a title="Orange">Orange</a></li>
+											<li class="pinkrose"><a title="Pinkrose">Pinkrose</a></li>
+											<li class="deepgrass"><a title="Deepgrass">Deepgrass</a></li>
+										</ul>
+										<%
+											'check ...
+											if CheckTemplateStatus("templatemela") then
+										%>
+										<input type="radio" id="template_id" name="template_id" value="templatemela" <%if THEME_TEMPLATE = "templatemela" then%>checked<%end if%>> G2SHOP Style 1 - Full Width
+										<br><br><a class="btn btn-warning btn-block btn-sm" href="tp_download_template.phtml?templateid=templatemela">Re-Download<i class="fa fa-arrow-circle-right"></i></a>
+										<%
+											else
+										%>
+										
+										<input type="radio" id="template_id" name="template_id" value="templatemela" disabled> G2SHOP Style 1 - Full Width
+										<br><br><a class="btn btn-primary btn-block btn-sm" href="tp_download_template.phtml?templateid=templatemela">Download <i class="fa fa-arrow-circle-right"></i></a>
+										<%
+											end if
+										%>
+									</div>
+									<div class="col-sm-1">
+									</div>
+									<div class="col-sm-3 item-info center">
+										<img src="assets/templates/home-style2.png" border="0" width="100%" /><br><br>
+										<ul class="list-color">
+											<li class="cyan_red"><a title="Cyan - Red">Cyan - Red</a></li>
+											<li class="green_yellow"><a title="Green - Yellow">Green - Yellow</a></li>
+											<li class="lavender_pink"><a title="Lavender - Pink">Lavender - Pink</a></li>
+											<li class="green_cyan"><a title="Green - Cyan">Green - Cyan</a></li>
+										</ul>
+										
+										<%
+											'check ...
+											if CheckTemplateStatus("porto") then
+										%>
+										<input type="radio" id="template_id" name="template_id" value="porto" <%if THEME_TEMPLATE = "porto" then%>checked<%end if%>> G2SHOP Style 2 - Full Width
+										<br><br><a class="btn btn-warning btn-block btn-sm" href="tp_download_template.phtml?templateid=porto">Re-Download<i class="fa fa-arrow-circle-right"></i></a>
+										<%
+											else
+										%>
+										<input type="radio" id="template_id" name="template_id" value="porto" disabled> G2SHOP Style 2 - Full Width
+										<br><br><a class="btn btn-primary btn-block btn-sm" href="tp_download_template.phtml?templateid=porto">Download <i class="fa fa-arrow-circle-right"></i></a>
+										<%
+											end if
+										%>
+									</div>
+									<div class="col-sm-1">
+									</div>
+									<div class="col-sm-3 item-info center">
+										<img src="assets/templates/home-style1-boxed.png" border="0" width="100%" /><br><br>
+										<ul class="list-color">
+											<li class="blue"><a title="Blue">Blue</a></li>
+											<li class="grapefruit"><a title="Grapefruit">Grapefruit</a></li>
+											<li class="yellow"><a title="Yellow">Yellow</a></li>
+											<li class="green"><a title="Green">Green</a></li>
+											<li class="lavender"><a title="Lavender">Lavender</a></li>
+											<li class="orange"><a title="Orange">Orange</a></li>
+											<li class="pinkrose"><a title="Pinkrose">Pinkrose</a></li>
+											<li class="deepgrass"><a title="Deepgrass">Deepgrass</a></li>
+										</ul>
+										
+										<input type="radio" id="template_id" name="template_id" value="krowel" checked> G2SHOP Style 1 - Boxed
+										<br><br><a class="btn btn-warning btn-block btn-sm" href="tp_download_template.phtml?templateid=krowel">Re-Download<i class="fa fa-arrow-circle-right"></i></a>
+										
+									</div>
+									<div class="col-sm-1">
+									</div>
+								</div>
+								<br><br>
+								<div class="row">
+									<div class="col-sm-3 item-info center">
+										<img src="assets/templates/home-style2-boxed.png" border="0" width="100%" /><br><br>
+										<ul class="list-color">
+											<li class="cyan_red"><a title="Cyan - Red">Cyan - Red</a></li>
+											<li class="green_yellow"><a title="Green - Yellow">Green - Yellow</a></li>
+											<li class="lavender_pink"><a title="Lavender - Pink">Lavender - Pink</a></li>
+											<li class="green_cyan"><a title="Green - Cyan">Green - Cyan</a></li>
+										</ul>
+										
+										<input type="radio" id="template_id" name="template_id" value="templatemela"> G2SHOP Style 2 - Boxed
+										<br><br><a class="btn btn-warning btn-block btn-sm" href="tp_download_template.phtml?templateid=templatemela">Re-Download<i class="fa fa-arrow-circle-right"></i></a>
+										
+									</div>
+									<div class="col-sm-1">
+									</div>
+								</div>
+								
+								</form>
+								
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+		<!--#INCLUDE FILE="include/footer.phtml"-->
+	</div>
+	<!--#INCLUDE FILE="include/js.phtml"-->
+	<!-- start: JAVASCRIPTS REQUIRED FOR THIS PAGE ONLY -->
+	<!-- end: JAVASCRIPTS REQUIRED FOR THIS PAGE ONLY -->
+	<script src="assets/js/main.js"></script>
+	<!-- start: JavaScript Event Handlers for this page -->
+	
+	<script>
+		jQuery(document).ready(function() {
+			Main.init();
+		});
+	</script>
+	<!-- end: JavaScript Event Handlers for this page -->
+</body>
+</html>

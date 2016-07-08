@@ -1,0 +1,131 @@
+<%
+	storeviewid = Trim(Request("storeviewid"))
+	if Len(storeviewid) > 0 then
+		Session("CURRENT_ADMIN_VIEW_ID")  = storeviewid
+	end if
+%>
+	
+<header class="navbar navbar-default navbar-static-top">
+	<!-- start: NAVBAR HEADER -->
+	<div class="navbar-header">
+		<a href="#" class="sidebar-mobile-toggler pull-left hidden-md hidden-lg" class="btn btn-navbar sidebar-toggle" data-toggle-class="app-slide-off" data-toggle-target="#app" data-toggle-click-outside="#sidebar">
+			<i class="ti-align-justify"></i>
+		</a>
+		<a class="navbar-brand" href="dashboard.phtml">
+			<img src="assets/images/g2shop_logo2a.png" border="0" height="30">
+		</a>
+		<a href="#" class="sidebar-toggler pull-right visible-md visible-lg" data-toggle-class="app-sidebar-closed" data-toggle-target="#app">
+			<i class="ti-align-justify"></i>
+		</a>
+		<a class="pull-right menu-toggler visible-xs-block" id="menu-toggler" data-toggle="collapse" href=".navbar-collapse">
+			<span class="sr-only">Toggle navigation</span>
+			<i class="ti-view-grid"></i>
+		</a>
+	</div>
+	<!-- end: NAVBAR HEADER -->
+	<!-- start: NAVBAR COLLAPSE -->
+	<div class="navbar-collapse collapse">
+		<ul class="nav navbar-right">
+			<!-- start: ACTIVITIES DROPDOWN -->
+			<li class="dropdown">
+				<a href="<%=g_store_url%>"  class="dropdown-toggle" target="_blank">
+					<i class="ti-home"></i> <span>Store</span>
+				</a>
+			</li>
+			<!-- start: LANGUAGE SWITCHER -->
+			<li class="dropdown">
+				<%
+					sql = "SELECT * FROM " & g_storeid & "_store_view WHERE view_id = " & Session("CURRENT_ADMIN_VIEW_ID") 
+					set rs = dbconn.Execute(sql)
+					if not rs.EOF then
+						view_id = rs("view_id")
+						view_code = rs("view_code")
+						view_name = rs("view_name")
+						view_status = rs("view_status")
+				%>
+				<a href class="dropdown-toggle" data-toggle="dropdown">
+					<i class="ti-world"></i> <%=view_name%>
+				</a>
+				<%
+					end if
+				%>
+				<ul role="menu" class="dropdown-menu dropdown-light fadeInUpShort">
+					<%
+						sql = "SELECT * FROM " & g_storeid & "_store_view WHERE view_id <> " & Session("CURRENT_ADMIN_VIEW_ID") & " ORDER BY view_sort_order"
+						set rs = dbconn.Execute(sql)
+						do while not rs.EOF
+							view_id = rs("view_id")
+							view_code = rs("view_code")
+							view_name = rs("view_name")
+							view_status = rs("view_status")
+							q = Request.Querystring
+							view_page ="http://" & Request.ServerVariables("SERVER_NAME") & Request.ServerVariables("URL") '& "?" & Request.Querystring 
+							
+							if InStr(q,"&storeviewid=") then
+								lang_pos = InStr(q,"&storeviewid=")
+								if lang_pos > 0 then
+									q = Replace(q, Mid(q, lang_pos), "")
+								end if
+							end if
+							if InStr(q,"storeviewid=") then
+								lang_pos = InStr(q,"storeviewid=")
+								if lang_pos > 0 then
+									q = Replace(q, Mid(q, lang_pos), "")
+								end if
+							end if
+							
+							if Len(q) > 1 then
+								view_page = view_page & "?" & q & "&storeviewid=" & view_id
+							else
+								view_page = view_page & "?" & "storeviewid=" & view_id
+							end if
+					%>
+					<li>
+						<a href="<%=view_page%>" class="menu-toggler">
+							<%=view_name%>
+						</a>
+					</li>
+					<%
+							rs.MoveNext
+						loop
+						rs.close
+						set rs = nothing
+					%>
+				</ul>
+			</li>
+			<!-- start: LANGUAGE SWITCHER -->
+			<!-- start: USER OPTIONS DROPDOWN -->
+			<li class="dropdown current-user">
+				<a href class="dropdown-toggle" data-toggle="dropdown">
+					<img src="assets/images/avatar-10.png" alt="<%=Session("AdminID")%>"> <span class="username"><%=Session("AdminID")%> <i class="ti-angle-down"></i></i></span>
+				</a>
+				<ul class="dropdown-menu dropdown-dark">
+					<li>
+						<a href="myaccount.phtml">
+							My Account
+						</a>
+					</li>
+					<li>
+						<a href="login_lockscreen.phtml?userid=<%=Session("AdminID")%>">
+							Lock Screen
+						</a>
+					</li>
+					<li>
+						<a href="login.phtml?logoff=1">
+							Log Out
+						</a>
+					</li>
+				</ul>
+			</li>
+			<!-- end: USER OPTIONS DROPDOWN -->
+		</ul>
+		<!-- start: MENU TOGGLER FOR MOBILE DEVICES -->
+		<div class="close-handle visible-xs-block menu-toggler" data-toggle="collapse" href=".navbar-collapse">
+			<div class="arrow-left"></div>
+			<div class="arrow-right"></div>
+		</div>
+		<!-- end: MENU TOGGLER FOR MOBILE DEVICES -->
+	</div>
+	
+	<!-- end: NAVBAR COLLAPSE -->
+</header>

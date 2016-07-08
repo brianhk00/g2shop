@@ -1,0 +1,385 @@
+<%
+	Response.CodePage = 65001
+	Response.CharSet = "UTF-8"
+%>
+<%response.Expires=-1%>
+<!-- #INCLUDE File="../local/local.phtml" -->
+<!-- #INCLUDE File="../util/xt_func_util.phtml" -->
+<!-- #INCLUDE File="../util/xt_func_string.phtml" -->
+<%
+	'--POST DATA------------------------------------------
+	mode = Trim(Request("mode"))
+	dept_id = Trim(Request("dept_id"))
+	parent_id = Trim(Request("parent_id"))
+	dept_detail = Trim(Request("dept_detail"))
+	dept_image = Trim(Request("dept_image"))
+	dept_is_hidden = Trim(Request("dept_is_hidden"))	
+	dept_list_num = Trim(Request("dept_list_num"))
+	dept_list_view = Trim(Request("dept_list_view"))
+	dept_markup_A = Trim(Request("dept_markup_A"))	
+	dept_markup_B = Trim(Request("dept_markup_B"))
+	dept_markup_C = Trim(Request("dept_markup_C"))
+	dept_markup_D = Trim(Request("dept_markup_D"))
+	dept_name = Trim(Request("dept_name"))	
+	dept_show_mfg = Trim(Request("dept_show_mfg"))
+	dept_sort_order = Trim(Request("dept_sort_order"))
+	dept_title_name = Trim(Request("dept_title_name"))
+	meta_text = Trim(Request("meta_text"))
+	warranty_id = Trim(Request("warranty_id"))
+	use_markup = Trim(Request("use_markup"))
+	include_topnav = Trim(Request("include_topnav"))
+	
+	'icecat_category = Trim(Request("icecat_category"))
+	icecat_category1 = Trim(Request("icecat_category1"))
+	icecat_category2 = Trim(Request("icecat_category2"))
+	icecat_category3 = Trim(Request("icecat_category3"))
+	icecat_category4 = Trim(Request("icecat_category4"))
+	
+	url_key = Trim(Request("url_key"))
+	if Len(url_key) > 1 then
+	else
+		url_key = CreateURLKey(dept_name)
+	end if
+	
+	if Len(icecat_category1) > 0 then
+		icecat_category = icecat_category1
+	end if
+	if Len(icecat_category2) > 0 then
+		icecat_category = icecat_category2
+	end if
+	if Len(icecat_category3) > 0 then
+		icecat_category = icecat_category3
+	end if
+	if Len(icecat_category4) > 0 then
+		icecat_category = icecat_category4
+	end if
+	
+	skey= Trim(Request("skey"))
+    dkey= Trim(Request("dkey"))
+	
+	if mode = "gsort" then
+		sql = "SELECT dept_row, parent_dept FROM " & g_storeid & "_dept WHERE dept_id='" & skey & "'"
+        set rs1 = dbconn.Execute(sql)
+        if not rs1.EOF then
+            source_sort_order = rs1(0)
+			source_parent_dept = rs1(1)
+        end if
+        rs1.Close
+        set rs1 = nothing
+        
+        sql = "SELECT dept_row FROM " & g_storeid & "_dept WHERE dept_id='" & dkey & "'"
+        set rs1 = dbconn.Execute(sql)
+        if not rs1.EOF then
+            dest_sort_order = rs1(0)
+        end if
+        rs1.Close
+        set rs1 = nothing
+		
+		if source_sort_order > dest_sort_order then
+		
+			sql = "SELECT * FROM " & g_storeid & "_dept WHERE parent_dept = '" & source_parent_dept & "' "
+			sql = sql & " AND dept_row >= " & dest_sort_order 
+			sql = sql & " AND dept_row <= " & source_sort_order 
+			sql = sql & " ORDER BY dept_row"
+			
+			set rs1 = dbconn.Execute(sql)
+			do while not rs1.EOF
+				sql = "UPDATE " & g_storeid & "_dept SET dept_row = dept_row + 1 WHERE dept_id='" & rs1("dept_id") & "'"
+				dbconn.Execute(sql)
+				rs1.MoveNext
+			loop
+			rs1.Close
+			set rs1 = nothing
+			
+			sql2 = "UPDATE " & g_storeid & "_dept SET dept_row = " & dest_sort_order & " WHERE dept_id='" & skey & "'"
+			dbconn.Execute(sql2)
+		else
+			sql = "SELECT * FROM " & g_storeid & "_dept WHERE parent_dept = '" & source_parent_dept & "' "
+			sql = sql & " AND dept_row >= " & source_sort_order 
+			sql = sql & " AND dept_row <= " & dest_sort_order 
+			sql = sql & " ORDER BY dept_row"
+			set rs1 = dbconn.Execute(sql)
+			do while not rs1.EOF
+				sql = "UPDATE " & g_storeid & "_dept SET dept_row = dept_row - 1 WHERE dept_id='" & rs1("dept_id") & "'"
+				dbconn.Execute(sql)
+				rs1.MoveNext
+			loop
+			rs1.Close
+			set rs1 = nothing
+			sql2 = "UPDATE " & g_storeid & "_dept SET dept_row = " & dest_sort_order & " WHERE dept_id='" & skey & "'"
+			dbconn.Execute(sql2)
+			
+		end if
+		Response.Write("{""Success"" : []}")
+		
+	else
+		'====================================================================================================================
+		'UPDATE _dept table....
+		'====================================================================================================================
+		
+		if dept_id = "0" then
+			Set rsUpdate = Server.CreateObject("ADODB.Recordset")
+			with rsUpdate
+				.ActiveConnection = dbconn
+				.CursorLocation = 3
+				.CursorType = 1
+				.LockType = 3
+				.Source = g_storeid & "_dept WHERE dept_id='0'"
+				.Open
+				.AddNew
+			end with
+			
+			'-------------------------------------------------------------------------------------
+			'GET NEW DEPT_ID
+			if parent_id = "0" then
+				sql = "SELECT * FROM " & g_storeid & "_dept WHERE parent_dept='0' ORDER BY dept_id"
+				set rsx = dbconn.Execute(sql)
+				bok = false
+				i = 1
+				do while not ( bok or rsx.EOF)
+					currentID = rsx("dept_id")
+					if(i <> CInt(currentID)) then
+						bok = true
+					end if
+					i = i + 1
+					rsx.MoveNext
+				loop
+				rsx.Close
+				set rsx = nothing
+			
+				if(bok) then
+					i = i - 1
+				end if
+			
+				if(i > 9) then
+					new_deptid = CStr(i)
+				else
+					new_deptid = "0" + CStr(i)
+				end if
+				
+				dept_id = new_deptid
+				
+				sql = "SELECT MAX(dept_row) FROM " & g_storeid & "_dept WHERE parent_dept='0'"
+				set rsx = dbconn.Execute(sql)
+				
+				if(not rsx.EOF) then
+					if rsx(0) > 0 then
+						new_row = rsx(0) + 1
+					else
+						new_row = 1
+					end if
+				else
+					new_row = 1
+				end if
+				rsx.Close
+				set rsx = nothing
+				
+			else
+				
+				sql = "SELECT * FROM " & g_storeid & "_dept WHERE parent_dept='" & parent_id & "' ORDER BY dept_id"
+				set rsx = dbconn.Execute(sql)
+				bok = false
+				i = 1
+				do while not ( bok or rsx.EOF)
+					currentID = Right(rsx("dept_id"),3)
+					if(i <> CInt(currentID)) then
+						bok = true
+					end if
+					i = i + 1
+					rsx.MoveNext
+				loop
+				rsx.Close
+				set rsx = nothing
+			
+				if bok then
+					i = i - 1
+				end if
+				if(i > 9) then
+					new_deptid = "0" + CStr(i)
+				else
+					new_deptid = "00" + CStr(i)
+				end if
+			
+				new_deptid = parent_id & "-" & new_deptid
+				dept_id = new_deptid
+				
+				sql = "SELECT MAX(dept_row) FROM " & g_storeid & "_dept WHERE parent_dept='" & parent_dept & "'"
+				set rsx = dbconn.Execute(sql)
+				
+				if(not rsx.EOF) then
+					if rsx(0) > 0 then
+						new_row = rsx(0) + 1
+					else
+						new_row = 1
+					end if
+				else
+					new_row = 1
+				end if
+				rsx.Close
+				set rsx = nothing
+				
+			end if
+			
+			'-------------------------------------------------------------------------------------
+			rsUpdate("dept_id") = dept_id
+			rsUpdate("parent_dept") = parent_id
+			rsUpdate("dept_row") = new_row
+			
+		else
+			Set rsUpdate = Server.CreateObject("ADODB.Recordset")
+			with rsUpdate
+				.ActiveConnection = dbconn
+				.CursorLocation = 3
+				.CursorType = 1
+				.LockType = 3
+				.Source = g_storeid & "_dept WHERE dept_id='" & dept_id & "'"
+				.Open
+			end with
+		end if
+		
+		
+		dept_detail = Trim(Request("dept_detail"))
+		dept_image = Trim(Request("dept_image"))
+		dept_is_hidden = Trim(Request("dept_is_hidden"))	
+		dept_list_num = Trim(Request("dept_list_num"))
+		dept_list_view = Trim(Request("dept_list_view"))
+		dept_markup_A = Trim(Request("dept_markup_A"))	
+		dept_markup_B = Trim(Request("dept_markup_B"))
+		dept_markup_C = Trim(Request("dept_markup_C"))
+		dept_markup_D = Trim(Request("dept_markup_D"))
+		dept_name = Trim(Request("dept_name"))	
+		dept_show_mfg = Trim(Request("dept_show_mfg"))
+		dept_sort_order = Trim(Request("dept_sort_order"))
+		dept_title_name = Trim(Request("dept_title_name"))
+		meta_text = Trim(Request("meta_text"))
+		warranty_id = Trim(Request("warranty_id"))
+		use_markup = Trim(Request("use_markup"))
+		include_topnav = Trim(Request("include_topnav"))
+		
+		if use_markup = "1" then
+		else
+			use_markup = "0"
+		end if
+		
+		if Session("CURRENT_ADMIN_VIEW_ID") = "1" then
+			rsUpdate("dept_name") = dept_name
+			rsUpdate("dept_detail") = dept_detail
+		else
+			'rsUpdate("dept_name") = dept_name
+			'rsUpdate("dept_detail") = dept_detail
+			r = SaveX(dept_id, 1, "varchar", 1, dept_name)
+			r = SaveX(dept_id, 1, "text", 2, dept_detail)
+			
+		end if
+		
+		rsUpdate("dept_image") = dept_image
+		rsUpdate("is_hidden") = dept_is_hidden
+		rsUpdate("dept_list_num") = dept_list_num
+		rsUpdate("dept_show_mfg") = dept_show_mfg
+		rsUpdate("dept_sort_order") = dept_sort_order
+		rsUpdate("dept_title_name") = dept_title_name
+		'rsUpdate("meta_text") = meta_text
+		rsUpdate("warranty_id") = warranty_id
+		rsUpdate("use_markup") = use_markup
+		rsUpdate("include_topnav") = include_topnav
+		
+		rsUpdate("icecat_category") = icecat_category
+		rsUpdate("icecat_category1") = icecat_category1
+		rsUpdate("icecat_category2") = icecat_category2
+		rsUpdate("icecat_category3") = icecat_category3
+		rsUpdate("icecat_category4") = icecat_category4
+		
+		rsUpdate("url_key") = url_key
+		
+		
+		if IsNumeric(dept_markup_A) then
+			rsUpdate("markup_A") = dept_markup_A
+		else
+			rsUpdate("markup_A") = 0
+		end if
+		
+		if IsNumeric(dept_markup_B) then
+			rsUpdate("markup_B") = dept_markup_B
+		else
+			rsUpdate("markup_B") = 0
+		end if
+		
+		if IsNumeric(dept_markup_C) then
+			rsUpdate("markup_C") = dept_markup_C
+		else
+			rsUpdate("markup_C") = 0
+		end if
+		
+		if IsNumeric(dept_markup_D) then
+			rsUpdate("markup_D") = dept_markup_D
+		else
+			rsUpdate("markup_D") = 0
+		end if
+		
+		If dbconn.Errors.Count > 0 Then
+			dbconn.Errors.Clear
+			rsUpdate.CancelUpdate
+		else
+			rsUpdate.Update
+		End If
+		
+		rsUpdate.Close
+		set rsUpdate = nothing
+		
+		'====================================================================================================================
+		'UPDATE _rewrite table....
+		'====================================================================================================================
+		
+		sql = "SELECT rewrite_id FROM " & g_storeid & "_rewrite WHERE rewrite_system_id='" & dept_id & "' AND rewrite_system_type = 1"
+		set rsRewrite = dbconn.Execute(sql)
+		if not rsRewrite.EOF then
+			rewrite_id = rsRewrite("rewrite_id")
+		else
+			rewrite_id = 0
+		end if
+		
+		rsRewrite.Close
+		set rsRewrite = nothing
+		
+		if rewrite_id = 0 then
+			Set rsUpdate = Server.CreateObject("ADODB.Recordset")
+			with rsUpdate
+				.ActiveConnection = dbconn
+				.CursorLocation = 3
+				.CursorType = 1
+				.LockType = 3
+				.Source = g_storeid & "_rewrite WHERE rewrite_id=0"
+				.Open
+				.AddNew
+			end with
+		else
+			Set rsUpdate = Server.CreateObject("ADODB.Recordset")
+			with rsUpdate
+				.ActiveConnection = dbconn
+				.CursorLocation = 3
+				.CursorType = 1
+				.LockType = 3
+				.Source = g_storeid & "_rewrite WHERE rewrite_id=" & rewrite_id
+				.Open
+			end with
+		end if
+		
+		rsUpdate("rewrite_type") = 1
+		rsUpdate("rewrite_system_type") = 1
+		rsUpdate("rewrite_system_id") = dept_id
+		rsUpdate("rewrite_redirect_type") = ""
+		rsUpdate("rewrite_request_path") = url_key
+		
+		If dbconn.Errors.Count > 0 Then
+			dbconn.Errors.Clear
+			rsUpdate.CancelUpdate
+		else
+			rsUpdate.Update
+		End If
+		
+		rsUpdate.Close
+		set rsUpdate = nothing
+		
+	end if
+	
+%>
