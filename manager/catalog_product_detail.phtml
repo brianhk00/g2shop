@@ -328,7 +328,30 @@
 		option_data(kk) = s_data
 	next
 	
+	'===============================================================================================
+	' FILTER
+	'===============================================================================================
+	dim pf_attribute(10)
+	dim pf_attribute_option(10)
 	
+	for iix = 1 to 10
+		pf_attribute(iix) = ""
+		pf_attribute_option(iix) = ""
+	next
+	
+	iix = 1
+	sql = "SELECT TOP 10 * FROM " & g_storeid & "_product_entity_varchar WHERE entity_id='" &  pf_id & "'"
+	set rsOptions = dbconn.Execute(sql)
+	do while not rsOptions.EOF
+		pf_attribute(iix) = rsOptions("attribute_id")
+		pf_attribute_option(iix) = Trim(rsOptions("value"))
+		iix = iix + 1
+		rsOptions.MoveNext
+	loop
+	rsOptions.Close
+	set rsOptions = nothing
+	
+	t_filter_number = iix
 	
 	'===============================================================================================
 	' CHECK FOLDER
@@ -341,7 +364,9 @@
 		objFSO.CreateFolder(strRootFolder & "/media/catalog/product/" & pf_id)
 	End If
 	
-	
+	'===============================================================================================
+	' X
+	'===============================================================================================
 	if Session("CURRENT_ADMIN_VIEW_ID") <> "1" then
 		sLangStyle="border-width: 3px; border-color:#51C6EA"
 		pf_name = TranslateX(pf_name, 2, pf_id, 1)
@@ -1093,8 +1118,6 @@ ul.dynatree-container {
 														</div>
 														<div class="row">
 															<div class="col-md-12">
-																<div class="row">
-															<div class="col-md-12">
 																<a class="btn btn-green btn-xs" role="button" id="btnAddX<%=ix%>">
 																<i class="fa fa-plus"></i> Add New 
 																</a>
@@ -1119,11 +1142,6 @@ ul.dynatree-container {
 																		</tbody>
 																	</table>
 																</div>
-															</div>
-															<input type="hidden" name="pf_att<%=ix%>_skus" id="pf_att<%=ix%>_skus" value="">
-															<input type="hidden" name="pf_att<%=ix%>_values" id="pf_att<%=ix%>_values" value="">
-															<input type="hidden" name="pf_att<%=ix%>_prices" id="pf_att<%=ix%>_prices" value="">
-														</div>
 															</div>
 															<input type="hidden" name="pf_att<%=ix%>_skus" id="pf_att<%=ix%>_skus" value="">
 															<input type="hidden" name="pf_att<%=ix%>_values" id="pf_att<%=ix%>_values" value="">
@@ -1270,8 +1288,33 @@ ul.dynatree-container {
 											<input type="hidden" name="pf_related_items" id="pf_related_items" value="">
 										</div>
 									</div>
+									
 									<div class="tab-pane" id="panel_tab4_example7">
-									7
+										<% for jj = 1 to 10 %>
+										<div class="row" id="pf_filter_row_<%=jj%>">
+											<div class="col-sm-6">
+												<div class="form-group">
+													<label class="col-sm-2 control-label" for="pf_filter_<%=jj%>">
+														Filter
+													</label>
+													<div class="col-sm-10">
+														<select id="pf_filter_<%=jj%>" name="pf_filter_<%=jj%>" class="form-control input-sm">
+														<option value="">None</option>
+														</select>
+													</div>
+												</div>
+												<div class="form-group">
+													<label class="col-sm-2 control-label" for="pf_filter_option_<%=jj%>">
+														Selection
+													</label>
+													<div class="col-sm-10">
+														<select id="pf_filter_option_<%=jj%>" name="pf_filter_option_<%=jj%>" class="form-control input-sm" size="10" multiple="multiple">
+														</select>
+													</div>
+												</div>
+											</div>
+										</div>
+										<% next %>
 									</div>
 									<div class="tab-pane" id="panel_tab4_example4">
 										
@@ -2416,6 +2459,220 @@ ul.dynatree-container {
 			$("#dialog-optionx-<%=kk%>").dialog("open");
 		});
 		
+	});
+	</script>
+	<% next %>
+	
+	<% for kk = 1 to 10 %>
+	<script>
+	$(document).ready(function () {
+		
+	<% if t_filter_number >= kk then %>
+		$("#pf_filter_row_<%=kk%>").show();
+		//Get filter list
+		jQuery.ajax({
+			type:"post",
+			url: "api/sp_catalog_eav_attribute.phtml",
+			data: {'isAjax':true},
+			dataType: 'json',
+			success: function(data) {
+				var listItems= "";
+				var sid = "<%=pf_attribute(kk)%>";
+				for (var i = 0; i < data.Subcategories.length; i++){
+					if (data.Subcategories[i].id == sid)
+					{
+						listItems+= "<option value='" + data.Subcategories[i].id + "' selected>" + data.Subcategories[i].name + "</option>";
+					}
+					else
+					{
+						listItems+= "<option value='" + data.Subcategories[i].id + "'>" + data.Subcategories[i].name + "</option>";
+					}
+				}
+				var select = jQuery("#pf_filter_<%=kk%>");
+				select.empty(); 
+				select.append(listItems);
+			}
+		});
+		
+		//Populate options
+		
+		<% if Len(pf_attribute(kk)) > 0 then %>
+		jQuery.ajax({
+			type:"post",
+			url: "api/sp_catalog_eav_attribute_options.phtml",
+			data: {attribute_id: '<%=pf_attribute(kk)%>', 'isAjax':true},
+			dataType: 'json',
+			success: function(data) {
+				var listItems= "";
+				var sid = "<%=pf_attribute_option(kk)%>,";
+				for (var i = 0; i < data.Subcategories.length; i++){
+					//if (data.Subcategories[i].id == sid)
+					if( sid.indexOf( data.Subcategories[i].id + "," ) !== -1 )
+					{
+						listItems+= "<option value='" + data.Subcategories[i].id + "' selected>" + data.Subcategories[i].name + "</option>";
+					}
+					else
+					{
+						listItems+= "<option value='" + data.Subcategories[i].id + "'>" + data.Subcategories[i].name + "</option>";
+					}
+				}
+				var select = jQuery("#pf_filter_option_<%=kk%>");
+				select.empty(); 
+				select.append(listItems);
+			}
+		});
+		<% end if %>
+		//onchange ...
+		
+		jQuery( "#pf_filter_<%=kk%>" ).change(function() {
+		  jQuery.ajax({
+				type:"post",
+				url: "api/sp_catalog_eav_attribute_options.phtml",
+				data: {attribute_id: jQuery('#pf_filter_<%=kk%>').val(), 'isAjax':true},
+				dataType: 'json',
+				success: function(data) {
+					var listItems= "";
+					var sid = "<%=pf_attribute_option(kk)%>,";
+					for (var i = 0; i < data.Subcategories.length; i++){
+						//if (data.Subcategories[i].id == sid)
+						if( sid.indexOf( data.Subcategories[i].id + "," ) !== -1 )
+						{
+							listItems+= "<option value='" + data.Subcategories[i].id + "' selected>" + data.Subcategories[i].name + "</option>";
+						}
+						else
+						{
+							listItems+= "<option value='" + data.Subcategories[i].id + "'>" + data.Subcategories[i].name + "</option>";
+						}
+					}
+					var select = jQuery("#pf_filter_option_<%=kk%>");
+					select.empty(); 
+					select.append(listItems);
+					
+					xii = 1;
+					yii = "0";
+					for (ii = 1; ii <= 10; ii++)
+					{
+						if( jQuery("#pf_filter_row_" + ii).is(':visible') )
+						{
+							if (jQuery("#pf_filter_" + ii).val() == "")
+							{
+								yii = "1";
+							}
+						}
+						else
+						{
+							if (xii > 1)
+							{
+								
+							}
+							else
+							{
+								xii = ii;
+							}
+						}
+					}
+					
+					if (yii == "0")
+					{
+						jQuery("#pf_filter_row_" + xii).show();
+						jQuery.ajax({
+							type:"post",
+							url: "api/sp_catalog_eav_attribute.phtml",
+							data: {'isAjax':true},
+							dataType: 'json',
+							success: function(data) {
+								var listItems= "";
+								var sid = "";
+								for (var i = 0; i < data.Subcategories.length; i++){
+									if (data.Subcategories[i].id == sid)
+									{
+										listItems+= "<option value='" + data.Subcategories[i].id + "' selected>" + data.Subcategories[i].name + "</option>";
+									}
+									else
+									{
+										listItems+= "<option value='" + data.Subcategories[i].id + "'>" + data.Subcategories[i].name + "</option>";
+									}
+								}
+								var select = jQuery("#pf_filter_" + xii);
+								select.empty(); 
+								select.append(listItems);
+							}
+						});
+					}
+					else
+					{
+						
+					}
+				}
+			});
+		});
+		
+	<% else %>
+		$("#pf_filter_row_<%=kk%>").hide();
+		
+		//onchange ...
+		
+		jQuery( "#pf_filter_<%=kk%>" ).change(function() {
+		  jQuery.ajax({
+				type:"post",
+				url: "api/sp_catalog_eav_attribute_options.phtml",
+				data: {attribute_id: jQuery('#pf_filter_<%=kk%>').val(), 'isAjax':true},
+				dataType: 'json',
+				success: function(data) {
+					var listItems= "";
+					var sid = $("#pf_markup_category_temp").val();
+					for (var i = 0; i < data.Subcategories.length; i++){
+						if (data.Subcategories[i].id == sid)
+						{
+							listItems+= "<option value='" + data.Subcategories[i].id + "' selected>" + data.Subcategories[i].name + "</option>";
+						}
+						else
+						{
+							listItems+= "<option value='" + data.Subcategories[i].id + "'>" + data.Subcategories[i].name + "</option>";
+						}
+					}
+					var select = jQuery("#pf_filter_option_<%=kk%>");
+					select.empty(); 
+					select.append(listItems);
+					
+					xii = 1;
+					yii = "0";
+					for (ii = 1; ii <= 10; ii++)
+					{
+						if( jQuery("#pf_filter_row_" + ii).is(':visible') )
+						{
+							if (jQuery("#pf_filter_" + ii).val() === "")
+							{
+								yii = "1";
+							}
+						}
+						else
+						{
+							if (xii > 1)
+							{
+								
+							}
+							else
+							{
+								xii = ii;
+							}
+						}
+					}
+					
+					
+					if (yii == "0")
+					{
+						jQuery("#pf_filter_row_" + xii).show();
+					}
+					else
+					{
+						
+					}
+				}
+			});
+		});
+	<% end if %>
+	
 	});
 	</script>
 	<% next %>

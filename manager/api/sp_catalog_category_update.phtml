@@ -380,6 +380,106 @@
 		rsUpdate.Close
 		set rsUpdate = nothing
 		
+		
+		'====================================================================================================================
+		'UPDATE markup prices.....
+		'====================================================================================================================
+		sql = "SELECT * FROM " & g_storeid & "_dept WHERE dept_id='" & dept_id & "'"
+		set rsSub=dbconn.Execute(sql)
+		if not rsSub.EOF then
+			pri_markup_A = rsSub("markup_A")
+			pri_markup_B = rsSub("markup_B")
+			pri_markup_C = rsSub("markup_C")
+			pri_markup_D = rsSub("markup_D")
+			dept_use_markup = rsSub("use_markup")
+		end if
+		rsSub.Close
+		set rsSub = nothing
+		
+		
+		if (dept_use_markup) then
+		else
+			dept_level = Len(Trim(dept_id))
+				  
+			Select case dept_level
+					  
+			case 2
+				sql = "SELECT * FROM " & g_storeid & "_profile"
+				set rsGlobal= dbconn.Execute(sql)
+				if not rsGlobal.EOF then
+					pri_markup_A = rsGlobal("pri_markup_A")
+					pri_markup_B = rsGlobal("pri_markup_B")
+					pri_markup_C = rsGlobal("pri_markup_C")
+					pri_markup_D = rsGlobal("pri_markup_D")
+				end if
+				rsGlobal.close
+				set rsGlobal = nothing
+			case 6
+				sql = "SELECT  * FROM " & g_storeid & "_dept WHERE dept_id IN ('" & Left(dept_id, 2) & "','" & dept_id & "') AND use_markup=1 ORDER BY dept_id DESC"
+				Set rsSub = dbconn.Execute(sql)
+							
+				if rsSub.EOF then
+					sql = "SELECT * FROM " & g_storeid & "_profile"
+					set rsGlobal= dbconn.Execute(sql)
+					if not rsGlobal.EOF then
+						pri_markup_A = rsGlobal("pri_markup_A")
+						pri_markup_B = rsGlobal("pri_markup_B")
+						pri_markup_C = rsGlobal("pri_markup_C")
+						pri_markup_D = rsGlobal("pri_markup_D")
+					end if
+					rsGlobal.close
+					set rsGlobal = nothing
+				else
+					pri_markup_A = rsSub("markup_A")
+					pri_markup_B = rsSub("markup_B")
+					pri_markup_C = rsSub("markup_C")
+					pri_markup_D = rsSub("markup_D")
+				end if
+							
+				rsSub.Close
+				set rsSub = nothing
+			
+			case 10
+				sql = "SELECT * FROM " & g_storeid & "_dept WHERE dept_id IN ('" & Left(dept_id, 2) & "','" & Left(dept_id,6) & "','" & dept_id & "') AND use_markup=1 ORDER BY dept_id DESC"
+				Set rsSub = dbconn.Execute(sql)
+							
+				if rsSub.EOF then
+					sql = "SELECT * FROM " & g_storeid & "_profile"
+					set rsGlobal= dbconn.Execute(sql)
+					if not rsGlobal.EOF then
+						pri_markup_A = rsGlobal("pri_markup_A")
+						pri_markup_B = rsGlobal("pri_markup_B")
+						pri_markup_C = rsGlobal("pri_markup_C")
+						pri_markup_D = rsGlobal("pri_markup_D")
+					end if
+					rsGlobal.close
+					set rsGlobal = nothing
+				else
+					pri_markup_A = rsSub("markup_A")
+					pri_markup_B = rsSub("markup_B")
+					pri_markup_C = rsSub("markup_C")
+					pri_markup_D = rsSub("markup_D")
+				end if
+							
+				rsSub.Close
+				set rsSub = nothing
+				
+			End Select
+			
+		end if
+		
+		'UPDATE PRICES....
+		sql = "UPDATE " & g_storeid & "_product SET "
+		sql = sql & " price_A = list_price + (list_price * " & pri_markup_A/100  & "),"
+		sql = sql & " price_B = list_price + (list_price * " & pri_markup_B/100  & "),"
+		sql = sql & " price_C = list_price + (list_price * " & pri_markup_C/100  & "),"
+		sql = sql & " price_D = list_price + (list_price * " & pri_markup_D/100  & ") "
+		sql = sql & " WHERE markup_category='" & dept_id & "' AND "
+		sql = sql & " use_price = 0 "
+		
+		Response.Write(sql)
+		dbconn.Execute(sql)
+		
 	end if
 	
 %>

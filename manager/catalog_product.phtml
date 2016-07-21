@@ -55,7 +55,7 @@
 						</div>
 						<div class="row">
 							<div class="col-md-12">
-								<table class="table table-striped table-bordered table-hover table-full-width" id="sample_1">
+								<table class="table table-striped table-bordered table-hover table-full-width" id="catalog_product_1">
 									<thead>
 									<tr>
 										<th>Product ID</th>
@@ -107,9 +107,10 @@
 		//which will add advanced interaction controls to any HTML table
 		//For more information, please visit https://datatables.net/
 		var runDataTable = function () {
-			oTable = $('#sample_1').dataTable({
+			oTable = $('#catalog_product_1').dataTable({
 				"bProcessing": true,
-				"bStateSave": false,
+				"searchDelay": 800,
+				"bStateSave": true,
 				"bJQueryUI": false,
 				"iDisplayLength": 20,
 				"bServerSide": true,
@@ -156,11 +157,11 @@
 				} 
 			});
 			
-			$('#sample_1_wrapper .dataTables_filter input').addClass("form-control input-sm").attr("placeholder", "Search");
+			$('#catalog_product_1_wrapper .dataTables_filter input').addClass("form-control input-sm").attr("placeholder", "Search");
 			// modify table search input
-			$('#sample_1_wrapper .dataTables_length select').addClass("m-wrap small");
+			$('#catalog_product_1_wrapper .dataTables_length select').addClass("m-wrap small");
 			// modify table per page dropdown
-			$('#sample_1_wrapper .dataTables_length select').select2();
+			$('#catalog_product_1_wrapper .dataTables_length select').select2();
 			// initialzie select2 dropdown
 		};
 		

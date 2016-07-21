@@ -40,7 +40,6 @@
 			<!-- end: DOCUMENTATION BUTTON -->
 			
 			<!-- start: MAIN NAVIGATION MENU -->
-			
 			<ul class="main-navigation-menu">
 				<li <% if current_menu = "dashboard.phtml" then%>class="active open"<% end if %>>
 					<a href="dashboard.phtml">
@@ -359,7 +358,37 @@
 				
 			</ul>
 			<!-- end: MAIN NAVIGATION MENU -->
-			
+			<!-- start: CORE FEATURES -->
+			<div class="navbar-title">
+				<span>Shortcuts</span>
+			</div>
+			<ul class="folders">
+				<li>
+					<a href="sales_order.phtml">
+						<div class="item-content">
+							<div class="item-media">
+								<span class="fa-stack"> <i class="fa fa-square fa-stack-2x"></i> <i class="fa fa-cart-plus fa-stack-1x fa-inverse"></i> </span>
+							</div>
+							<div class="item-inner">
+								<span class="title"> Sales Order </span>
+							</div>
+						</div>
+					</a>
+				</li>
+				<li>
+					<a href="catalog_product.phtml">
+						<div class="item-content">
+							<div class="item-media">
+								<span class="fa-stack"> <i class="fa fa-square fa-stack-2x"></i> <i class="fa fa-cube fa-stack-1x fa-inverse"></i> </span>
+							</div>
+							<div class="item-inner">
+								<span class="title"> Products </span>
+							</div>
+						</div>
+					</a>
+				</li>
+			</ul>
+			<!-- end: CORE FEATURES -->
 			
 		</nav>
 	</div>

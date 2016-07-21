@@ -251,8 +251,8 @@ h5.over-title {
     overflow: hidden;
     z-index: 2;
     position: absolute;
-    -webkit-transform: translate3d(260px, 0, 0);
-    transform: translate3d(260px, 0, 0);
+    -webkit-transform: translate3d(200px, 0, 0);
+    transform: translate3d(200px, 0, 0);
     -moz-transition: -moz-transform 300ms ease 0s;
     -o-transition: -o-transform 300ms ease 0s;
     -webkit-transition: -webkit-transform 300ms ease;
@@ -260,8 +260,8 @@ h5.over-title {
     transition: transform 300ms ease 0s;
   }
   #app.app-slide-off > #off-sidebar {
-    -webkit-transform: translate3d(260px, 0, 0);
-    transform: translate3d(260px, 0, 0);
+    -webkit-transform: translate3d(200px, 0, 0);
+    transform: translate3d(200px, 0, 0);
     -moz-transition: -moz-transform 300ms ease 0s;
     -o-transition: -o-transform 300ms ease 0s;
     -webkit-transition: -webkit-transform 300ms ease;
@@ -273,8 +273,8 @@ h5.over-title {
     overflow: hidden;
     z-index: 2;
     position: absolute;
-    -webkit-transform: translate3d(-260px, 0, 0);
-    transform: translate3d(-260px, 0, 0);
+    -webkit-transform: translate3d(-200px, 0, 0);
+    transform: translate3d(-200px, 0, 0);
     -moz-transition: -moz-transform 300ms ease 0s;
     -o-transition: -o-transform 300ms ease 0s;
     -webkit-transition: -webkit-transform 300ms ease;
@@ -369,7 +369,7 @@ h5.over-title {
 }
 @media (min-width: 768px) {
   .navbar .navbar-header {
-    width: 260px;
+    width: 200px;
   }
 }
 @media (min-width: 992px) {
@@ -425,7 +425,7 @@ h5.over-title {
 }
 @media (min-width: 768px) {
   .navbar .navbar-collapse {
-    margin-left: 260px;
+    margin-left: 200px;
     height: 65px !important;
   }
   .navbar .navbar-collapse .nav {
@@ -869,7 +869,7 @@ h5.over-title {
 /*  Sidebar
 /* ---------------------------------------------------------------------- */
 #sidebar {
-  width: 260px;
+  width: 200px;
   float: left;
   left: 0;
   bottom: 0;
@@ -899,7 +899,7 @@ h5.over-title {
 }
 @media (min-width: 992px) {
   #sidebar {
-    margin-top: 65px;
+    margin-top: 55px;
   }
 }
 @media (min-width: 992px) and (min-width: 992px) {
@@ -938,8 +938,8 @@ h5.over-title {
     left: 0;
     z-index: 0;
     float: none;
-    -webkit-transform: translate3d(-260px, 0, 0);
-    transform: translate3d(-260px, 0, 0);
+    -webkit-transform: translate3d(-200px, 0, 0);
+    transform: translate3d(-200px, 0, 0);
     -moz-transition: -moz-transform 300ms ease 0s;
     -o-transition: -o-transform 300ms ease 0s;
     -webkit-transition: -webkit-transform 300ms ease;
@@ -1166,7 +1166,7 @@ ul.sub-menu li ul.sub-menu li ul.sub-menu li a {
     overflow-x: visible;
     height: auto;
     bottom: auto;
-    width: 260px;
+    width: 200px;
     z-index: 1050;
     display: none;
   }
@@ -1231,12 +1231,12 @@ ul.sub-menu li ul.sub-menu li ul.sub-menu li a {
     content: "\e64b";
   }
   .app-sidebar-closed .app-aside > .item-inner {
-    width: 260px;
+    width: 200px;
     left: 70px;
     top: 0;
     padding: 13px 0;
     border-bottom: none !important;
-    width: 260px;
+    width: 200px;
     background: #efeff0;
     margin-left: 0;
     z-index: 1051;
@@ -1285,7 +1285,7 @@ ul.sub-menu li ul.sub-menu li ul.sub-menu li a {
     display: none;
   }
   .app-sidebar-closed .app-aside > ul.sub-menu {
-    width: 260px;
+    width: 200px;
     display: block !important;
     overflow: auto;
     padding: 0;
@@ -1352,7 +1352,7 @@ ul.sub-menu li ul.sub-menu li ul.sub-menu li a {
     padding: 13px 0;
     bottom: 0;
     border-bottom: none !important;
-    width: 260px;
+    width: 200px;
     background: #efeff0;
     margin-left: 0;
   }
@@ -1425,7 +1425,7 @@ ul.sub-menu li ul.sub-menu li ul.sub-menu li a {
   letter-spacing: 0.2px;
   padding-left: 15px !important;
   padding-right: 15px !important;
-  padding-top: 20px !important;
+  padding-top: 5px !important;
   padding-bottom: 5px !important;
   text-transform: uppercase;
 }
@@ -1502,7 +1502,7 @@ ul.sub-menu li ul.sub-menu li ul.sub-menu li a {
 @media (min-width: 992px) {
   .main-content {
     margin-top: 65px;
-    margin-left: 260px;
+    margin-left: 200px;
   }
   .app-navbar-fixed .main-content {
     margin-top: 0;
@@ -1545,7 +1545,7 @@ ul.sub-menu li ul.sub-menu li ul.sub-menu li a {
 }
 @media (min-width: 992px) {
   #app > footer {
-    margin-left: 260px;
+    margin-left: 200px;
   }
   #app.app-sidebar-closed > footer {
     margin-left: 70px;
@@ -1826,14 +1826,14 @@ ul.sub-menu li ul.sub-menu li ul.sub-menu li a {
 #off-sidebar {
   bottom: 0;
   position: fixed;
-  right: -260px;
+  right: -200px;
   top: 64px;
   -moz-transition: all 0.3s !important 0s;
   -o-transition: all 0.3s !important 0s;
   -webkit-transition: all 0.3s !important;
   -webkit-transition-delay: 0s;
   transition: all 0.3s !important 0s;
-  width: 260px;
+  width: 200px;
   z-index: 1091;
   background: #ffffff;
   border-left: 1px solid #c8c7cc;
@@ -1853,8 +1853,8 @@ ul.sub-menu li ul.sub-menu li ul.sub-menu li a {
     top: 0;
     right: 0;
     z-index: 0;
-    -webkit-transform: translate3d(260px, 0, 0);
-    transform: translate3d(260px, 0, 0);
+    -webkit-transform: translate3d(200px, 0, 0);
+    transform: translate3d(200px, 0, 0);
     -moz-transition: -moz-transform 300ms ease 0s;
     -o-transition: -o-transform 300ms ease 0s;
     -webkit-transition: -webkit-transform 300ms ease;
@@ -1941,12 +1941,12 @@ ul.sub-menu li ul.sub-menu li ul.sub-menu li a {
   right: 0 !important;
 }
 #off-sidebar #users.chat-open {
-  right: 260px;
+  right: 200px;
 }
 
 #off-sidebar #users .user-chat {
   position: relative;
-  left: 260px;
+  left: 200px;
   top: 0;
   height: 100%;
 }
@@ -3299,6 +3299,9 @@ a.text-light:hover {
 }
 .nav-tabs > li.active a, .nav-tabs > li.active a:hover, .nav-tabs > li.active a:focus {
   border-width: 0;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #333333;
 }
 .nav-tabs > .active a, .nav-tabs > .active a:hover, .nav-tabs > .active a:focus {
   border: 0 none;
@@ -11207,7 +11210,7 @@ td.small-width {
 /*  Page Title
 /* ---------------------------------------------------------------------- */
 #page-title {
-  border-bottom: 1px solid #eee;
+  border-bottom: 1px solid #007aff;/*#eee;*/
   padding: 50px 0;
   position: relative;
   margin-left: -15px;
@@ -11309,7 +11312,7 @@ td.small-width {
   float: left;
   margin: 20px;
   position: relative;
-  width: 260px;
+  width: 200px;
 }
 
 /* ---------------------------------------------------------------------- */

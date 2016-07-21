@@ -1,11 +1,3 @@
-<%@ Language=VBScript %>
-<%
-	Response.CodePage = 65001
-	Response.CharSet = "UTF-8"
-%>
-<%
-  Response.Expires = -1
-%>
 <!-- #INCLUDE File="../local/local.phtml" -->
 <!-- #INCLUDE File="../util/xt_func_util.phtml" -->
 <!-- #INCLUDE File="../util/xt_func_string.phtml" -->
@@ -14,6 +6,7 @@
   iDisplayLength = Trim(Request("iDisplayLength"))
   iDisplayStart = Trim(Request("iDisplayStart"))
   
+  category_id = Trim(Request("category_id"))
   sEcho = FilterStringEx(sEcho, "[^0-9]")
   iDisplayLength = FilterStringEx(iDisplayLength, "[^0-9]")
   iDisplayStart = FilterStringEx(iDisplayStart, "[^0-9]")
@@ -63,9 +56,7 @@
  
   if Len(sSearch) > 0 then
     sSearchDate = Replace(sSearch, "*", "%")
-  end If
-  
-	Dim ar_sSearch
+  end if
   
   'SEARCH - here we make the Where clause that will be used in the SQL querry. You only put here the fields you want to search 
   'if IsNumeric(sSearch) then
@@ -74,31 +65,14 @@
   'strWhere = " ("
   'end if
   strWhere = " (pf_id LIKE '%" & sSearch & "%' OR "
-  strWhere = strWhere &  " sku LIKE '%" & sSearch & "%' OR "
-  strWhere = strWhere &  " manu_part_num LIKE '%" & sSearch & "%' OR "
-  strWhere = strWhere &  " espec_sku LIKE '%" & sSearch & "%' OR "
-	strWhere = strWhere &  " name LIKE '%" & sSearch & "%' OR "
-	If Len(sSearch) > 0 then
-		ar_sSearch = Split(sSearch, " ")
-
-		i = 0
-		strWhere2 = "("
-
-		For i = 0 To UBound(ar_sSearch)
-			strWhere2 = strWhere2 &  "name LIKE '%" & ar_sSearch(i) & "%' AND "
-		Next
-
-		strWhere2 = Left(strWhere2, Len(strWhere2)-5)
-		strWhere2 = strWhere2 & ") OR"
-
-		strWhere = strWhere & strWhere2
-	End If
-
+  'strWhere = strWhere &  " company_name LIKE '%" & sSearch & "%' OR "
+  strWhere = strWhere &  " name LIKE '%" & sSearch & "%' OR "
   'strWhere = strWhere &  " shopper_lastname LIKE '%" & sSearch & "%' OR "
   'if Len(sDateRange) > 0 then
   'else
   'strWhere = strWhere &  " date_entered LIKE '%" & sSearchDate & "%' OR "
   'end if
+  'strWhere = strWhere &  " order_name LIKE '%" & sSearch & "%' OR "
   strWhere = strWhere &  " description LIKE '%" & sSearch & "%')"
   
   if Len(sDateRange) > 0 then
@@ -107,6 +81,10 @@
   
   if Len(str_filter) > 0 then
     strWhere  = strWhere & " AND " & str_filter
+  end if
+  
+  if Len(category_id) > 0 then
+    strWhere  = strWhere & " AND pf_id IN (SELECT pf_id FROM " & g_storeid & "_dept_prod WHERE dept_id='" & category_id & "') "
   end if
   
   v1 = Trim(Request("v1")) 'type
@@ -167,7 +145,7 @@
 	
 	sql = "SELECT * FROM " & g_storeid & "_product WHERE " & strWhere & " " & strOrderBy
 	
-	'response.write(sql)
+	
 	sqlx = "SELECT COUNT(pf_id) FROM " & g_storeid & "_product WHERE " & strWhere 
 		
 	set rs = dbconn.Execute(sql)
@@ -189,92 +167,77 @@
 %>
 {"sEcho": <%=sEcho%>, "iTotalRecords": <%=iTotalRecords%>, "iTotalDisplayRecords": <%=iTotalDisplayRecords%>, "aaData": [ 
 <%
-	i = 0
-	if rs.eof = false then
-		rs.move(iDisplayStart)
-		do while i < iDisplayLength and not rs.eof
-
-			s_pf_id = rs("pf_id")
-			s_name = Trim(rs("name"))
+  i = 0
+  
+  if rs.eof = false then
+    rs.move(iDisplayStart)
+    do while i < iDisplayLength and not rs.eof
+    
+		s_pf_id = rs("pf_id")
+		s_name = Trim(rs("name"))
+		sku = Trim(rs("sku"))
+		
+		If Len(s_name) > 0 Then
+			s_name = Replace(s_name, "'", "&#39")
+			s_name = Replace(s_name, """", "&#34;")
+		End if
 			
-			if Session("CURRENT_ADMIN_VIEW_ID") <> "1" then
-				s_name = TranslateX(s_name, 2, s_pf_id, 1)
-			end if
-			sku = Trim(rs("sku"))
-			
-			If Len(s_name) > 0 Then
-				s_name = Replace(s_name, "'", "&#39")
-				s_name = Replace(s_name, """", "&#34;")
-			End if
-				
-			s_price = FormatNumber(rs("list_price"),2)
-			s_qty = rs("stock")
-			s_image_file = rs("image_file")
-			s_zoom_image = rs("zoom_image")
-			prod_mm_type = rs("mm_type")
-			prod_espec_sku = Trim(rs("espec_sku"))
-			prod_use_icecat_images = rs("use_icecat_images")
-			
-			SELECT CASE rs("item_status")
-			CASE 0
-				s_active = "Active"
-			CASE 1
-				s_active = "Call for Avaialability"
-			CASE 2
-				s_active = "Inactive"
-			END SELECT
-			
-			
-			sqlc = "SELECT d.dept_name as dept_name FROM " & g_storeid & "_dept as d INNER JOIN " & g_storeid & "_dept_prod as dp ON d.dept_id = dp.dept_id WHERE dp.pf_id='"&s_pf_id&"'"
-			set rsDN = dbconn.execute(sqlc)
-			if not rsDN.EOF then
-				dept_name = rsDN("dept_name")
-			End If
-			
-			ssImgSize = "upload/w_" & "70" & ",h_" & "70" & ",c_pad/"
-			if s_image_file = "--" then
-				cloudImg = g_noimage_url
-				ssImg = Replace(cloudImg, "upload/", ssImgSize)
-			else
-				if prod_mm_type = 1 then
-					if Len(prod_espec_sku) > 0 AND prod_use_icecat_images = 1 then
-						'USE ICECAT IMAGE
-						icecat_id = 0
-						if Session("ENABLEINT") = "2" OR Session("ENABLEINT") = "3" then
-							sql = "SELECT * FROM A_ssprice_CA WHERE sku='" & prod_espec_sku & "'"
-						else
-							sql = "SELECT * FROM A_ssprice_main WHERE sku='" & prod_espec_sku & "'"
-						end If
-
-						set rsPA = dbconn_icecat.Execute(sql)
-						if not rsPA.EOF then
-							image_published = rsPA("image_published")
-							categoryid = Trim(rsPA("CATEGORY"))
-							icecat_id = rsPA("icecat_id")
-						end if
-						rsPA.Close
-
-						sql = "SELECT cloudinary_url FROM [192.168.5.134].[icecat].dbo.cloudinary_images WHERE product_id = " & icecat_id
-						Set rsCloudImage = dbconn_icecat.Execute(sql)
-						If Not rsCloudImage.EOF Then
-							cloudImg = Trim(rsCloudImage("cloudinary_url"))
-						Else
-							sql = "SELECT * FROM " & g_storeid & "_product_image WHERE image_name = '" & prod_thumb_image & "'"
-							Set rsCloudImage2 = conn.Execute(sql)
-							If Not rsCloudImage2.EOF Then
-								cloudImg = Trim(rsCloudImage2("cloud_url"))
-							Else
-								cloudImg = g_noimage_url
-							End If
-							rsCloudImage2.Close
-							Set rsCloudImage2 = Nothing
-						End If
-						rsCloudImage.Close
-						Set rsCloudImage = Nothing
-						ssImg = Replace(cloudImg, "upload/", ssImgSize)
+		s_price = FormatNumber(rs("list_price"),2)
+		s_price_D = FormatNumber(rs("price_D"),2)
+		s_qty = rs("stock")
+		s_image_file = rs("image_file")
+		s_zoom_image = rs("zoom_image")
+		prod_mm_type = rs("mm_type")
+		prod_espec_sku = Trim(rs("espec_sku"))
+		prod_use_icecat_images = rs("use_icecat_images")
+		
+		SELECT CASE rs("item_status")
+		CASE 0
+			s_active = "Active"
+		CASE 1
+			s_active = "Call for Avaialability"
+		CASE 2
+			s_active = "Inactive"
+		END SELECT
+		
+		
+		's_type_id = Trim(rs("type_id"))
+		's_wholesaler_id = Trim(rs("wholesaler_id"))
+		's_gsin = Trim(rs("gsin_id"))
+		
+		s_store_url = g_store_url
+		s_img_pf_id = s_pf_id
+		
+		ssImgSize = "upload/w_" & "70" & ",h_" & "70" & ",c_pad/"
+		if s_image_file = "--" then
+			cloudImg = g_noimage_url
+			ssImg = Replace(cloudImg, "upload/", ssImgSize)
+		else
+			if prod_mm_type = 1 then
+				if Len(prod_espec_sku) > 0 AND prod_use_icecat_images = 1 then
+					'USE ICECAT IMAGE
+					icecat_id = 0
+					if Session("ENABLEINT") = "2" OR Session("ENABLEINT") = "3" then
+						sql = "SELECT * FROM A_ssprice_CA WHERE sku='" & prod_espec_sku & "'"
 					else
-						sql = "SELECT * FROM " & g_storeid & "_product_image WHERE image_name = '" & s_image_file & "'"
-						Set rsCloudImage2 = dbconn.Execute(sql)
+						sql = "SELECT * FROM A_ssprice_main WHERE sku='" & prod_espec_sku & "'"
+					end If
+
+					set rsPA = dbconn_icecat.Execute(sql)
+					if not rsPA.EOF then
+						image_published = rsPA("image_published")
+						categoryid = Trim(rsPA("CATEGORY"))
+						icecat_id = rsPA("icecat_id")
+					end if
+					rsPA.Close
+
+					sql = "SELECT cloudinary_url FROM [192.168.5.134].[icecat].dbo.cloudinary_images WHERE product_id = " & icecat_id
+					Set rsCloudImage = dbconn_icecat.Execute(sql)
+					If Not rsCloudImage.EOF Then
+						cloudImg = Trim(rsCloudImage("cloudinary_url"))
+					Else
+						sql = "SELECT * FROM " & g_storeid & "_product_image WHERE image_name = '" & prod_thumb_image & "'"
+						Set rsCloudImage2 = conn.Execute(sql)
 						If Not rsCloudImage2.EOF Then
 							cloudImg = Trim(rsCloudImage2("cloud_url"))
 						Else
@@ -282,47 +245,60 @@
 						End If
 						rsCloudImage2.Close
 						Set rsCloudImage2 = Nothing
-						ssImg = Replace(cloudImg, "upload/", ssImgSize)
-					end if
+					End If
+					rsCloudImage.Close
+					Set rsCloudImage = Nothing
+					ssImg = Replace(cloudImg, "upload/", ssImgSize)
 				else
-					ssImg = "http://a4.res.cloudinary.com/dd3llssvr/image/fetch/" & "w_" & "70" & ",h_" & "70" & ",c_pad/" & g_store_url & "assets/pmedia/prod_img/" & Server.URLEncode(s_image_file)
+					sql = "SELECT * FROM " & g_storeid & "_product_image WHERE image_name = '" & s_image_file & "'"
+					Set rsCloudImage2 = dbconn.Execute(sql)
+					If Not rsCloudImage2.EOF Then
+						cloudImg = Trim(rsCloudImage2("cloud_url"))
+					Else
+						cloudImg = g_noimage_url
+					End If
+					rsCloudImage2.Close
+					Set rsCloudImage2 = Nothing
+					ssImg = Replace(cloudImg, "upload/", ssImgSize)
 				end if
+			else
+				ssImg = "http://a4.res.cloudinary.com/dd3llssvr/image/fetch/" & "w_" & "70" & ",h_" & "70" & ",c_pad/" & g_store_url & "assets/pmedia/prod_img/" & Server.URLEncode(s_image_file)
 			end if
-			
-			
-			g_grid_image_url = ssImg
-			
-			aaData = aaData & "['"
-			aaData = aaData & "<a href=\'catalog_product_detail.phtml?pf_id=" & s_pf_id & "\'>" & s_pf_id & "</a>','" 
-			'aaData = aaData & "<img src=\'" & g_secure_url & "thumb_img/" & s_thumb_image & "\' width=70>','" 
-			aaData = aaData & "<img src=\'" & g_grid_image_url & "\' width=70>','" 
-			aaData = aaData & s_name & "','" 
-			aaData = aaData & sku & "','" 
-			aaData = aaData & s_price & "','"
-			aaData = aaData & s_qty & "','"
-			
-			aaData = aaData & dept_name & "','"
-			
-			SELECT CASE s_active
-			CASE "Active"
-				s_label = "label label-success"
-			CASE "Call for Avaialability"
-				s_label = "label label-warning"
-			CASE "Inactive"
-				s_label = "label label-danger"
-			END SELECT
-			
-			aaData = aaData & "<span class=\'" & s_label & "\'>" & s_active & "</span>'],"
-		'		aaData = aaData & "<input type=\'checkbox\' class=\'checkbox\' name=\'prAction\' id=\'prAction\' value=\'" & s_pf_id & "\'>'],"
-		  
-		  aaData = Replace(aaData,"'",chr(34))
-		  rs.MoveNext
-		  i=i+1
-		loop
-		rs.Close
-		aaData = Left(aaData, Len(aaData)-1)
-	else
-		aaData = ""
-	end if
-	response.write aaData & "] }"
+		end if
+		
+		
+		g_grid_image_url = ssImg
+		
+		
+		aaData = aaData & "['"
+		aaData = aaData & "<a href=\'catalog_product_detail.phtml?pf_id=" & s_pf_id & "\'>" & s_pf_id & "</a>','" 
+		'aaData = aaData & "<img src=\'" & g_secure_url & "thumb_img/" & s_thumb_image & "\' width=70>','" 
+		aaData = aaData & "<img src=\'" & g_grid_image_url & "\' width=70>','" 
+		aaData = aaData & s_name & "','" 
+		aaData = aaData & sku & "','" 
+		aaData = aaData & s_price & "','"
+		aaData = aaData & s_price_D & "','"
+		aaData = aaData & s_qty & "','"
+		
+		
+		SELECT CASE s_active
+		CASE "Enabled"
+			s_label = "label label-success"
+		CASE "Disabled"
+			s_label = "label label-warning"
+		END SELECT
+		
+		aaData = aaData & "<span class=\'" & s_label & "\'>" & s_active & "</span>'],"
+'		aaData = aaData & "<input type=\'checkbox\' class=\'checkbox\' name=\'prAction\' id=\'prAction\' value=\'" & s_pf_id & "\'>'],"
+      
+      aaData = Replace(aaData,"'",chr(34))
+      rs.MoveNext
+      i=i+1
+    loop
+    rs.Close
+    aaData = Left(aaData, Len(aaData)-1)
+  else
+    aaData = ""
+  end if
+  response.write aaData & "] }"
 %>

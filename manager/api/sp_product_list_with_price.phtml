@@ -1,0 +1,232 @@
+<!-- #INCLUDE File="../local/local.phtml" -->
+<!-- #INCLUDE File="../util/xt_func_util.phtml" -->
+<!-- #INCLUDE File="../util/xt_func_string.phtml" -->
+<%
+  sEcho = Trim(Request("sEcho"))
+  iDisplayLength = Trim(Request("iDisplayLength"))
+  iDisplayStart = Trim(Request("iDisplayStart"))
+  
+  category_id = Trim(Request("category_id"))
+  sEcho = FilterStringEx(sEcho, "[^0-9]")
+  iDisplayLength = FilterStringEx(iDisplayLength, "[^0-9]")
+  iDisplayStart = FilterStringEx(iDisplayStart, "[^0-9]")
+  
+  sEcho = Cint(sEcho)
+  iDisplayLength = Cint(iDisplayLength)
+  iDisplayStart = Cint(iDisplayStart)
+  
+  'sEcho = Cint(Request("sEcho"))
+  'iDisplayLength = Cint(Request("iDisplayLength"))
+  'iDisplayStart = Cint(Request("iDisplayStart"))
+  
+  sMin = Trim(Request("min"))
+  sMax = Trim(Request("max"))
+  
+  sDateRange = ""
+  
+  if IsDate(sMin) then
+    if IsDate(sMax) then
+      dMax = CDate(sMax)
+      dMax = DateAdd("d", 1, dMax)
+      sMax = FormatDateTime(dMax,0)
+      sDateRange = "(date_changed between '" & sMin & "' AND '" & sMax & "')"
+    else
+      'dMin = CDate(sMin)
+      dMax = Date()
+      dMax = DateAdd("d", 1, dMax)
+      sMax = FormatDateTime(dMax,0)
+      sDateRange = "(date_changed between '" & sMin & "' AND '" & sMax & "')"
+    end if
+  else
+    if IsDate(sMax) then
+      dMax = CDate(sMax)
+      dMax = DateAdd("d", 1, dMax)
+      sMax = FormatDateTime(dMax,0)
+      sDateRange = "(date_changed between '1/1/1970' AND '" & sMax & "')"
+    end if
+  end if
+  
+  sSearch = Trim(Request("sSearch"))
+  sSearch = FilterStringEx(sSearch, "[^0-9a-zA-Z _/-]")
+  
+  'iDisplayLength = 25
+ ' iDisplayStart = 1
+ 
+  index_date = DateAdd("d", -30, Date())
+ 
+  if Len(sSearch) > 0 then
+    sSearchDate = Replace(sSearch, "*", "%")
+  end if
+  
+  'SEARCH - here we make the Where clause that will be used in the SQL querry. You only put here the fields you want to search 
+  'if IsNumeric(sSearch) then
+  'strWhere = " (order_id LIKE '%" & sSearch & "%' OR "
+  'else
+  'strWhere = " ("
+  'end if
+  strWhere = " (pf_id LIKE '%" & sSearch & "%' OR "
+  'strWhere = strWhere &  " company_name LIKE '%" & sSearch & "%' OR "
+  strWhere = strWhere &  " name LIKE '%" & sSearch & "%' OR "
+  'strWhere = strWhere &  " shopper_lastname LIKE '%" & sSearch & "%' OR "
+  'if Len(sDateRange) > 0 then
+  'else
+  'strWhere = strWhere &  " date_entered LIKE '%" & sSearchDate & "%' OR "
+  'end if
+  'strWhere = strWhere &  " order_name LIKE '%" & sSearch & "%' OR "
+  strWhere = strWhere &  " description LIKE '%" & sSearch & "%')"
+  
+  if Len(sDateRange) > 0 then
+  strWhere = strWhere &  " AND " & sDateRange
+  end if
+  
+  if Len(str_filter) > 0 then
+    strWhere  = strWhere & " AND " & str_filter
+  end if
+  
+  if Len(category_id) > 0 then
+    'strWhere  = strWhere & " AND pf_id IN (SELECT pf_id FROM " & g_storeid & "_dept_prod WHERE dept_id='" & category_id & "') "
+	strWhere  = strWhere & " AND markup_category='" & category_id & "' " 'use markup category instead .. TODO : option??
+  end if
+  
+  v1 = Trim(Request("v1")) 'type
+  v2 = Trim(Request("v2")) 'visibility
+  v3 = Trim(Request("v3")) 'status
+  
+  if v1 = "All" then 'type
+  else
+    strWhere = strWhere & " AND type_id='" & v1 & "'"
+  end if
+  
+  if v2 = "All" then 'visibility
+  else
+    strWhere = strWhere & " AND Visibility='" & v2 & "'"
+  end if
+  
+  if v3 = "All" then 'status
+  else
+    strWhere = strWhere & " AND isActive=" & v3
+  end if
+  
+  '=======================================================================================
+  'ORDERING
+	'passes through all cols and first check if the column is sortable, if yes then construct
+	'the variable "order" that list in order the sequence of ordering
+	for k = 0 to 7
+		if Request("bSortable_" & k)="true" then
+			order = order & Request("iSortCol_" & k) & " " & Request("sSortDir_" & k)
+		end if
+	next
+	'here we replace the number corresponding the column position by the corresponding name of the column in the database
+	order =	Replace(order,"0",", pf_id")
+	order =	Replace(order,"1",", sku")
+	order =	Replace(order,"2",", sku")
+	order =	Replace(order,"3",", sku")
+	order =	Replace(order,"4",", sku")
+	order =	Replace(order,"5",", sku")
+	order =	Replace(order,"6",", sku")
+	order =	Replace(order,"7",", sku")
+	order =	Replace(order,"8",", sku")
+	order =	Replace(order,"9",", sku")
+	
+	'here we eliminate the first comma of the variable "order"
+	if Len(order) > 0 then
+	  order = Right(order, Len(order)-1)
+	else
+	  order = "pf_id DESC"
+	end if
+
+	'here we create the variable "strOrderBy" that will be used in the SQL querry
+	strOrderBy = "ORDER BY " & order
+	
+	'======================================================================================
+	
+
+	Set dbconn=server.CreateObject("ADODB.Connection")
+	dbconn.Open g_connection_string
+	
+	sql = "SELECT * FROM " & g_storeid & "_product WHERE " & strWhere & " " & strOrderBy
+	
+	
+	sqlx = "SELECT COUNT(pf_id) FROM " & g_storeid & "_product WHERE " & strWhere 
+		
+	set rs = dbconn.Execute(sql)
+	
+	iTotalDisplayRecords = 0
+	iTotalRecords = 50
+	set rs1 = dbconn.Execute(sqlx)
+	if not rs1.EOF then
+	  iTotalDisplayRecords = rs1(0)
+	  iTotalRecords = rs1(0)
+	else
+	end if
+	rs1.Close
+	
+	'iTotalDisplayRecords = 50
+	
+	'iTotalRecords = 50
+	
+%>
+{"sEcho": <%=sEcho%>, "iTotalRecords": <%=iTotalRecords%>, "iTotalDisplayRecords": <%=iTotalDisplayRecords%>, "aaData": [ 
+<%
+  i = 0
+  
+  if rs.eof = false then
+    rs.move(iDisplayStart)
+    do while i < iDisplayLength and not rs.eof
+    
+		s_pf_id = rs("pf_id")
+		s_name = Trim(rs("name"))
+		sku = Trim(rs("sku"))
+		
+		If Len(s_name) > 0 Then
+			s_name = Replace(s_name, "'", "&#39")
+			s_name = Replace(s_name, """", "&#34;")
+		End if
+			
+		s_price = FormatNumber(rs("list_price"),2)
+		
+		s_price_A = FormatNumber(rs("price_A"),2)
+		s_price_B = FormatNumber(rs("price_B"),2)
+		s_price_C = FormatNumber(rs("price_C"),2)
+		s_price_D = FormatNumber(rs("price_D"),2)
+		
+		if rs("use_price") then
+			use_price = true
+		else
+			use_price = false
+		end if
+		
+		aaData = aaData & "['"
+		aaData = aaData & s_pf_id & "','" 
+		aaData = aaData & sku & "','" 
+		'aaData = aaData & Left(s_name,30) & "...','" 
+		aaData = aaData & s_price & "','" 
+		aaData = aaData & s_price_A & "','" 
+		aaData = aaData & s_price_B & "','" 
+		aaData = aaData & s_price_C & "','" 
+		aaData = aaData & s_price_D & "','" 
+		
+		
+		
+		
+		if (use_price) then
+			aaData = aaData & "1" & "','" 
+			aaData = aaData & "<i class=\'fa fa-check text-red\'></i>','"
+		else
+			aaData = aaData & "0" & "','" 
+			aaData = aaData & "<i class=\'fa fa-close text-grey\'></i>','"
+		end if
+		
+		aaData = aaData & "<a href=\'#\' class=\'edit-row\'><i class=\'fa fa-pencil\'></i></a>'],"
+      
+      aaData = Replace(aaData,"'",chr(34))
+      rs.MoveNext
+      i=i+1
+    loop
+    rs.Close
+    aaData = Left(aaData, Len(aaData)-1)
+  else
+    aaData = ""
+  end if
+  response.write aaData & "] }"
+%>

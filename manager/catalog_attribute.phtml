@@ -29,7 +29,9 @@
 								<span class="mainDescription">overview &amp; list </span>
 							</div>
 							<ol class="breadcrumb">
-								
+								<% if Session("CURRENT_ADMIN_VIEW_ID") = "1" then %>
+								<a href="catalog_attribute_detail.phtml?id=0" class="btn btn-green btn-sm" role="button" style="float:right"><i class="ti-plus"></i> Add New Filter</a>
+								<% end if %>
 							</ol>
 						</div>
 					</section>
@@ -52,13 +54,16 @@
 											do while not rs.EOF
 												attribute_id = rs("attribute_id")
 												frontend_label = rs("frontend_label")
+												if Session("CURRENT_ADMIN_VIEW_ID") <> "1" then
+													frontend_label = TranslateX(frontend_label, 20, attribute_id, 1)
+												end if
 										%>
 										<tr>
 											<td class="center"><%=attribute_id%></td>
 											<td><%=frontend_label%></td>
 											<td class="center">
 											<div class="visible-md visible-lg hidden-sm hidden-xs">
-												<a href="#" class="btn btn-transparent btn-xs" tooltip-placement="top" tooltip="Edit"><i class="fa fa-pencil"></i></a>
+												<a href="catalog_attribute_detail.phtml?id=<%=attribute_id%>" class="btn btn-transparent btn-xs" tooltip-placement="top" tooltip="Edit"><i class="fa fa-pencil"></i></a>
 												<a href="#" class="btn btn-transparent btn-xs tooltips" tooltip-placement="top" tooltip="Remove"><i class="fa fa-times fa fa-white"></i></a>
 											</div>
 											<div class="visible-xs visible-sm hidden-md hidden-lg">
@@ -68,7 +73,7 @@
 													</button>
 													<ul class="dropdown-menu pull-right dropdown-light" role="menu">
 														<li>
-															<a href="#">
+															<a href="catalog_attribute_detail.phtml?id=<%=attribute_id%>">
 																Edit
 															</a>
 														</li>

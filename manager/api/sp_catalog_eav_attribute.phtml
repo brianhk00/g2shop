@@ -1,0 +1,27 @@
+<%response.Expires=-1%>
+<!-- #INCLUDE File="../local/local.phtml" -->
+<%
+	
+	
+%>
+{
+"Subcategories" : [
+<%
+	s_sub = ""
+	s_sub = s_sub & "{""id"" : """ & "" & """,""name"" : """ & "None" & """},"
+	sql = "SELECT attribute_id, frontend_label FROM " & g_storeid & "_eav_attribute"
+	set rs1 = dbconn.Execute(sql)
+	do while not rs1.EOF
+		sname = rs1(1)
+		s_sub = s_sub & "{""id"" : """ & rs1(0) & """,""name"" : """ & sname & """},"
+		rs1.MoveNext
+	loop
+	rs1.Close
+	set rs1 = nothing
+	if Len(s_sub) > 0 then
+		s_sub = Left(s_sub, Len(s_sub)-1)
+	end if
+	response.Write(s_sub)
+%>
+]
+}

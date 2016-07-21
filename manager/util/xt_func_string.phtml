@@ -173,8 +173,17 @@ End Function
 Function TranslateX(string, strTypeId, strEntityId, strFieldId)
 	
 	'=======================================================================
-	' TYPE_ID : 1: category 2: product
-	' FIELD_ID : 1 : name (1, 2)
+	' TYPE_ID : 1=category
+	' FILED ID: 1=name
+	'-----------------------------------------------------------------------
+	' TYPE_ID : 2=prouct
+	' FILED ID: 1=name	2=description 3=detail
+	'-----------------------------------------------------------------------
+	' TYPE _ID : 20= attribute
+	' FILED ID: 1=name
+	'-----------------------------------------------------------------------
+	' TYPE _ID : 21= attribute option
+	' FILED ID: 1=name
 	'=======================================================================
 	xstring = string
 	

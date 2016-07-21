@@ -1,0 +1,226 @@
+<%response.Expires=-1%>
+<!-- #INCLUDE File="../local/local.phtml" -->
+<!-- #INCLUDE File="../util/xt_func_util.phtml" -->
+<!-- #INCLUDE File="../util/xt_func_string.phtml" -->
+<%
+	pf_id = Trim(Request("pf_id"))
+	pricea = Trim(Request("pricea"))
+	priceb = Trim(Request("priceb"))
+	pricec = Trim(Request("pricec"))
+	priced = Trim(Request("priced"))
+	useprice = Trim(Request("useprice"))
+	
+	if IsNumeric(pricea) then
+	else
+		pricea = "0.00"
+	end if
+	if IsNumeric(priceb) then
+	else
+		priceb = "0.00"
+	end if
+	if IsNumeric(pricec) then
+	else
+		pricec = "0.00"
+	end if
+	if IsNumeric(priced) then
+	else
+		priced = "0.00"
+	end if
+	
+	if useprice = "true" then
+		'SAVE DATA
+		Set rsUpdate = Server.CreateObject("ADODB.Recordset")
+		with rsUpdate
+			.ActiveConnection = dbconn
+			.CursorLocation = 3
+			.CursorType = 1
+			.LockType = 3
+			.Source = g_storeid & "_product WHERE pf_id='" & pf_id & "'"
+			.Open
+		end with
+		
+		rsUpdate("price_A") = pricea
+		rsUpdate("price_B") = priceb
+		rsUpdate("price_C") = pricec
+		rsUpdate("price_D") = priced
+		rsUpdate("use_price") = 1
+	
+		If dbconn.Errors.Count > 0 Then
+			dbconn.Errors.Clear
+			rsUpdate.CancelUpdate
+		else
+			rsUpdate.Update
+		End If
+		
+		rsUpdate.Close
+		set rsUpdate = nothing
+		
+		s_pricea = FormatNumber(pricea,2)
+		s_priceb = FormatNumber(priceb,2)
+		s_pricec = FormatNumber(pricec,2)
+		s_priced = FormatNumber(priced,2)
+		s_use_price = "1"
+	
+	else
+		'RESET PRICE ACCORDING TO MARKUP
+	
+		sql = "SELECT markup_category, list_price FROM " & g_storeid & "_product WHERE pf_id='" & pf_id & "'"
+		set rs = dbconn.Execute(sql)
+		if not rs.EOF then
+			markup_category = rs(0)
+			list_price = rs(1)
+		end if
+		rs.Close
+		set rs = nothing
+		
+		pri_markup_A = 0
+		pri_markup_B = 0
+		pri_markup_C = 0
+		pri_markup_D = 0
+				
+		if markup_category = "0" then
+			sql = "SELECT * FROM " & g_storeid & "_profile"
+			set rsGlobal= dbconn.Execute(sql)
+			if not rsGlobal.EOF then
+				pri_markup_A = rsGlobal("pri_markup_A")
+				pri_markup_B = rsGlobal("pri_markup_B")
+				pri_markup_C = rsGlobal("pri_markup_C")
+				pri_markup_D = rsGlobal("pri_markup_D")
+			end if
+			rsGlobal.close
+			set rsGlobal = nothing
+		else
+	
+			sql = "SELECT * FROM " & g_storeid & "_dept WHERE dept_id='" & markup_category & "'"
+			set rsSub=dbconn.Execute(sql)
+			if not rsSub.EOF then
+				pri_markup_A = rsSub("markup_A")
+				pri_markup_B = rsSub("markup_B")
+				pri_markup_C = rsSub("markup_C")
+				pri_markup_D = rsSub("markup_D")
+				dept_use_markup = rsSub("use_markup")
+			end if
+			rsSub.Close
+			set rsSub = nothing
+			
+			
+			if (dept_use_markup) then
+			else
+				dept_level = Len(Trim(markup_category))
+					  
+				Select case dept_level
+						  
+				case 2
+					sql = "SELECT * FROM " & g_storeid & "_profile"
+					set rsGlobal= dbconn.Execute(sql)
+					if not rsGlobal.EOF then
+						pri_markup_A = rsGlobal("pri_markup_A")
+						pri_markup_B = rsGlobal("pri_markup_B")
+						pri_markup_C = rsGlobal("pri_markup_C")
+						pri_markup_D = rsGlobal("pri_markup_D")
+					end if
+					rsGlobal.close
+					set rsGlobal = nothing
+				case 6
+					sql = "SELECT  * FROM " & g_storeid & "_dept WHERE dept_id IN ('" & Left(markup_category, 2) & "','" & markup_category & "') AND use_markup=1 ORDER BY dept_id DESC"
+					Set rsSub = dbconn.Execute(sql)
+								
+					if rsSub.EOF then
+						sql = "SELECT * FROM " & g_storeid & "_profile"
+						set rsGlobal= dbconn.Execute(sql)
+						if not rsGlobal.EOF then
+							pri_markup_A = rsGlobal("pri_markup_A")
+							pri_markup_B = rsGlobal("pri_markup_B")
+							pri_markup_C = rsGlobal("pri_markup_C")
+							pri_markup_D = rsGlobal("pri_markup_D")
+						end if
+						rsGlobal.close
+						set rsGlobal = nothing
+					else
+						pri_markup_A = rsSub("markup_A")
+						pri_markup_B = rsSub("markup_B")
+						pri_markup_C = rsSub("markup_C")
+						pri_markup_D = rsSub("markup_D")
+					end if
+								
+					rsSub.Close
+					set rsSub = nothing
+				
+				case 10
+					sql = "SELECT * FROM " & g_storeid & "_dept WHERE dept_id IN ('" & Left(markup_category, 2) & "','" & Left(markup_category,6) & "','" & markup_category & "') AND use_markup=1 ORDER BY dept_id DESC"
+					Set rsSub = dbconn.Execute(sql)
+								
+					if rsSub.EOF then
+						sql = "SELECT * FROM " & g_storeid & "_profile"
+						set rsGlobal= dbconn.Execute(sql)
+						if not rsGlobal.EOF then
+							pri_markup_A = rsGlobal("pri_markup_A")
+							pri_markup_B = rsGlobal("pri_markup_B")
+							pri_markup_C = rsGlobal("pri_markup_C")
+							pri_markup_D = rsGlobal("pri_markup_D")
+						end if
+						rsGlobal.close
+						set rsGlobal = nothing
+					else
+						pri_markup_A = rsSub("markup_A")
+						pri_markup_B = rsSub("markup_B")
+						pri_markup_C = rsSub("markup_C")
+						pri_markup_D = rsSub("markup_D")
+					end if
+								
+					rsSub.Close
+					set rsSub = nothing
+					
+				End Select
+				
+			end if
+			
+		end if
+		
+		pricea = FormatNumber(list_price + list_price * (pri_markup_A/100),2)
+		priceb = FormatNumber(list_price + list_price * (pri_markup_B/100),2)
+		pricec = FormatNumber(list_price + list_price * (pri_markup_C/100),2)
+		priced = FormatNumber(list_price + list_price * (pri_markup_D/100),2)
+		
+		
+		Set rsUpdate = Server.CreateObject("ADODB.Recordset")
+		with rsUpdate
+			.ActiveConnection = dbconn
+			.CursorLocation = 3
+			.CursorType = 1
+			.LockType = 3
+			.Source = g_storeid & "_product WHERE pf_id='" & pf_id & "'"
+			.Open
+		end with
+		
+		rsUpdate("price_A") = pricea
+		rsUpdate("price_B") = priceb
+		rsUpdate("price_C") = pricec
+		rsUpdate("price_D") = priced
+		rsUpdate("use_price") = 0
+	
+		If dbconn.Errors.Count > 0 Then
+			dbconn.Errors.Clear
+			rsUpdate.CancelUpdate
+		else
+			rsUpdate.Update
+		End If
+		
+		rsUpdate.Close
+		set rsUpdate = nothing
+		
+		s_pricea = FormatNumber(pricea,2)
+		s_priceb = FormatNumber(priceb,2)
+		s_pricec = FormatNumber(pricec,2)
+		s_priced = FormatNumber(priced,2)
+		s_use_price = "0"
+	
+	end if
+	
+%>
+
+{
+"UpdateInfo" : [
+{"id" : "<%=pf_id%>","price_a" : "<%=s_pricea%>","price_b" : "<%=s_priceb%>","price_c" : "<%=s_pricec%>","price_d" : "<%=s_priced%>","use_price" : "<%=s_use_price%>"}
+]
+}

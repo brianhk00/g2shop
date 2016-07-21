@@ -1,0 +1,11 @@
+<%response.Expires=-1%>
+<!-- #INCLUDE File="../local/local.phtml" -->
+<!-- #INCLUDE File="../util/xt_func_util.phtml" -->
+<!-- #INCLUDE File="../util/xt_func_string.phtml" -->
+<%
+	shopper_id = Trim(Request("shopper_id"))
+	sql = "DELETE FROM " & g_storeid & "_shopper WHERE shopper_id='" & shopper_id & "'""
+	dbconn.execute sql
+	
+	response.redirect("../customer_manage_customer.phtml")
+%>

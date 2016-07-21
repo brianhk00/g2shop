@@ -1,0 +1,449 @@
+<%
+	Response.CodePage = 65001
+	Response.CharSet = "UTF-8"
+	
+	storeviewid = Trim(Request("storeviewid"))
+	if Len(storeviewid) > 0 then
+		Session("CURRENT_ADMIN_VIEW_ID")  = storeviewid
+	end if
+%>
+<!-- #INCLUDE File="local/local.phtml" -->
+<!-- #INCLUDE File="util/xt_func_util.phtml" -->
+<!-- #INCLUDE File="util/xt_func_string.phtml" -->
+<!-- #INCLUDE File="include/i_login.phtml" -->
+<%
+	attribute_id = Trim(Request("id"))
+	
+	sql = "SELECT * FROM " & g_storeid & "_eav_attribute WHERE attribute_id=" & attribute_id
+	set rs = dbconn.Execute(sql)
+	if not rs.EOF then
+		frontend_label = rs("frontend_label")
+	end if
+	rs.Close
+	set rs = nothing
+	
+	if Session("CURRENT_ADMIN_VIEW_ID") <> "1" then
+		frontend_label = TranslateX(frontend_label, 20, attribute_id, 1)
+	end if
+		
+	'===============================================================================================
+	'Options
+	'===============================================================================================
+	s_data = ""
+	
+	sql = "SELECT a.option_id, b.value, a.sort_order FROM " & g_storeid & "_eav_attribute_option as a, "
+	sql = sql & g_storeid & "_eav_attribute_option_value as b "
+	sql = sql & "WHERE a.option_id = b.option_id AND "
+	sql = sql & "b.view_id = " & Session("CURRENT_ADMIN_VIEW_ID") & " AND "
+	sql = sql & "a.attribute_id =" & attribute_id
+	
+	if Session("CURRENT_ADMIN_VIEW_ID") = "1" then
+		sql = "SELECT option_id, option_name, sort_order FROM " & g_storeid & "_eav_attribute_option WHERE attribute_id =" & attribute_id & " ORDER BY sort_order, option_name"
+	else
+		'sql = "SELECT option_id, (CASE WHEN b.field_value IS NULL THEN a.option_name ELSE b.field_value END) as oname, a.sort_order FROM " & g_storeid & "_eav_attribute_option as a "
+		'sql = sql & "LEFT OUTER JOIN " & g_storeid & "_store_type_data_varchar as b "
+		'sql = sql & "ON CONVERT(varchar(10), a.option_id) = b.entity_id "
+		'sql = sql & "WHERE attribute_id = 1 "
+		'sql = sql & "AND (type_id is null OR type_id=21) "
+		'sql = sql & "AND (view_id is null or view_id=" & Session("CURRENT_ADMIN_VIEW_ID") & ") "
+		'sql = sql & "ORDER BY sort_order, oname "
+		
+		sql = "SELECT option_id, (CASE WHEN b.field_value IS NULL THEN a.option_name ELSE b.field_value END) as oname, a.sort_order  "
+		sql = sql & "FROM " & g_storeid & "_eav_attribute_option as a "
+		sql = sql & "LEFT OUTER JOIN (SELECT * FROM " & g_storeid & "_store_type_data_varchar WHERE type_id=21 and view_id=" & Session("CURRENT_ADMIN_VIEW_ID") & ") as b "
+		sql = sql & "ON CONVERT(varchar(10), a.option_id) = b.entity_id "
+		sql = sql & "WHERE attribute_id = " & attribute_id & " "
+		sql = sql & "ORDER BY sort_order, oname "
+	end if
+	
+	set rsOptions = dbconn.Execute(sql)
+	attr_id = 1
+	do while not rsOptions.EOF
+		s_value = Trim(rsOptions(1))
+		'TODO : translate...
+		'if Session("CURRENT_ADMIN_VIEW_ID") <> "1" then
+			's_value = TranslateX(s_value, 21, rsOptions(0), 1)
+		'end if
+		s_data = s_data & "{ ""ID"": " & attr_id & ",  ""OptionID"": " & rsOptions(0) & ", ""Name"": """ & s_value & """, ""Position"": """ & Trim(rsOptions(2)) & """ },"
+		attr_id = attr_id + 1
+		rsOptions.MoveNext
+	loop
+	rsOptions.Close
+	set rsOptions = nothing
+	
+	if Len(s_data) > 0 then
+		s_data = Left(s_data, Len(s_data) - 1)
+	end if
+	s_data = "[" & s_data & "]"
+	s_data_option = s_data
+		
+	
+%>
+<!--#INCLUDE FILE="include/doctype.phtml"-->
+<head>
+<!--#INCLUDE FILE="include/head.phtml"-->
+<!-- start: CSS REQUIRED FOR THIS PAGE ONLY -->
+<link rel="stylesheet" href="assets/plugins/jquery-ui/jquery-ui-1.10.4.custom.min.css" />
+<link rel="stylesheet" type="text/css" href="assets/plugins/grid/grid-0.5.6.min.css" />
+<!-- end: CSS REQUIRED FOR THIS PAGE ONLY -->
+<link rel="stylesheet" href="assets/css/custom.css">
+</head>	
+<body>
+	<div id="app">
+	<!--#INCLUDE FILE="include/sidebar.phtml"-->
+	<div class="app-content">
+		<!--#INCLUDE FILE="include/header.phtml"-->
+		<div class="main-content" >
+			<div class="wrap-content container" id="container">
+				<!-- start: TITLE -->
+				<form role="form" class="form-horizontal" id="form">
+				<section id="page-title" class="padding-top-15 padding-bottom-15">
+					<div class="row">
+						<div class="col-sm-8">
+							<h1 class="mainTitle">
+							<%
+							if Len(frontend_label) > 0 then
+								Response.Write(frontend_label)
+							else
+								Response.Write("New Filter")
+							end if
+							%>
+							</h1>
+							<span class="mainDescription">overview &amp; list </span>
+						</div>
+						<ol class="breadcrumb">
+							<a href="catalog_attribute.phtml" class="btn btn-default btn-sm" role="button">
+							<i class="fa fa-arrow-circle-left"></i> Back
+							</a>
+							<button class="btn btn-blue btn-sm" type="submit">
+							<i class="fa fa-check-square"></i>
+							Save
+							</button>
+							<button class="btn btn-danger btn-sm" type="button" id="DeleteCust">
+							<i class="fa fa-times-circle"></i>
+							Delete
+							</button>
+						</ol>
+					</div>
+				</section>
+				<!-- end: TITLE -->
+				<div class="container-fluid container-fullw bg-white">
+					<div class="content-header-floating" style="display: block;">
+						<div class="content-header">
+							<h3 class="mainTitle">
+							<%
+							if Len(frontend_label) > 0 then
+								Response.Write(frontend_label)
+							else
+								Response.Write("New Filter")
+							end if
+							%>
+							</h3>
+							<p class="content-buttons form-buttons">
+								<a href="catalog_attribute.phtml" class="btn btn-default btn-sm" role="button">
+								<i class="fa fa-arrow-circle-left"></i> Back
+								</a>
+								<button class="btn btn-blue btn-sm" type="submit">
+								<i class="fa fa-check-square"></i>
+								Save
+								</button>
+								<button class="btn btn-danger btn-sm" type="button" id="DeleteCust">
+								<i class="fa fa-times-circle"></i>
+								Delete
+								</button>
+							</p>	
+						</div>
+					</div>
+					<div class="row">
+						<div class="col-md-12">
+							<div id="errorHandler1" class="errorHandler alert alert-danger" style="display:none;">
+								<button type="button" class="close" aria-label="Close">
+									<span aria-hidden="true">&times;</span>
+								</button>
+								<i class="fa fa-times-sign"></i> You have some form errors. Please check below.
+							</div>
+							<div id="errorHandler2" class="errorHandler alert alert-danger" style="display:none;">
+								<button type="button" class="close" aria-label="Close">
+									<span aria-hidden="true">&times;</span>
+								</button>
+								<i class="fa fa-times-sign"></i> The information has not been saved properly. Please contact system administrator.
+							</div>
+							<div class="successHandler alert alert-success" style="display:none;">
+								<button type="button" class="close" aria-label="Close">
+									<span aria-hidden="true">&times;</span>
+								</button>
+								<i class="fa fa-check-square-o"></i> The filter information has been saved.
+								<a href="catalog_attribute.phtml"class="btn btn-green btn-xs" role="button">
+								<i class="fa  fa-chevron-left"></i> Back to list 
+								</a>
+							</div>
+						</div>
+					</div>
+					<div class="row">
+						<div class="col-md-12">
+							<div class="tabbable">
+								<ul id="myTab3" class="nav nav-tabs tab-green">
+									<li class="active">
+										<a href="#panel_tab4_example1" data-toggle="tab">
+											<i class="pink fa fa-info"></i> Information
+										</a>
+									</li>
+									<% if attribute_id <> "0" then %>
+									<li class="">
+										<a href="#panel_tab4_example2" data-toggle="tab">
+											<i class="blue fa fa-info-circle"></i> Manage Options
+										</a>
+									</li>
+									<% end if %>
+								</ul>
+								<input type="hidden" id="attribute_id" name="attribute_id" value="<%=attribute_id%>">
+								<div class="tab-content">
+									<div class="tab-pane active" id="panel_tab4_example1">
+										<div class="row">
+											<div class="col-sm-6">
+												<div class="form-group">
+													<label class="col-sm-4 control-label" for="frontend_label">
+														Name <span class="symbol required"></span> 
+													</label>
+													<div class="col-sm-8">
+														<input type="text" placeholder="" id="frontend_label" name="frontend_label" class="form-control input-sm" value="<%=frontend_label%>">
+													</div>
+												</div>
+											</div>
+										</div>
+									</div>
+									<div class="tab-pane" id="panel_tab4_example2">
+										<div class="row">
+											<div class="col-md-8">
+												<% if Session("CURRENT_ADMIN_VIEW_ID") = "1" then %>
+												<a class="btn btn-green btn-xs" role="button" id="btnAdd0">
+												<i class="fa fa-plus"></i> Add New 
+												</a>
+												<br><br>
+												<% end if %>
+												<table id="grid0"></table>
+												<div id="dialog-option" style="display:none">
+													<input type="hidden" id="ID">
+													<input type="hidden" id="OptionID">
+													<table border="0">
+														<tbody>
+														<tr>
+															<td style="padding:5px;"><label for="OptionName">Name:</label></td>
+															<td style="padding:5px;"><input type="text" id="OptionName" style="width:300px;font-size:14px;"></td>
+														</tr>
+														<tr>
+															<td style="padding:5px;"><label for="OptionPosition">Postition:</label></td>
+															<td style="padding:5px;"><input type="text" id="OptionPosition" style="width:300px;font-size:14px;"></td>
+														</tr>
+														</tbody>
+													</table>
+												</div>
+											</div>
+											<input type="hidden" name="attribute_option_data" id="attribute_option_data" value="">
+										</div>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+				</form>
+			</div>
+		</div>
+	</div>
+	<!--#INCLUDE FILE="include/footer.phtml"-->
+	</div>
+	<!--#INCLUDE FILE="include/js.phtml"-->
+	<!-- start: JAVASCRIPTS REQUIRED FOR THIS PAGE ONLY -->
+	<script src="vendor/jquery-validation/jquery.validate.min.js"></script>
+	<script src="assets/plugins/jquery-ui/jquery-ui-1.10.1.custom.min.js" type="text/javascript"></script>
+	<script src="assets/plugins/grid/grid-0.5.6.min.js" type="text/javascript"></script>
+	<!-- end: JAVASCRIPTS REQUIRED FOR THIS PAGE ONLY -->
+	<script src="assets/js/main.js"></script>
+	<!-- start: JavaScript Event Handlers for this page -->
+	<script>
+	var data0, grid0, dialog0;
+	</script>
+	<script language="javascript">
+	var FormValidator = function () {
+	// function to initiate Validation Sample 1
+		var runValidator1 = function () {
+			var form1 = $('#form');
+			var errorHandler1 = $('#errorHandler1', form1);
+			var errorHandler2 = $('#errorHandler2', form1);
+			var successHandler1 = $('.successHandler', form1);
+			
+			$.validator.addMethod("FullDate", function () {
+				//if all values are selected
+				if ($("#dd").val() != "" && $("#mm").val() != "" && $("#yyyy").val() != "") {
+					return true;
+				} else {
+					return false;
+				}
+			}, 'Please select a day, month, and year');
+			$('#form').validate({
+				errorElement: "span", // contain the error msg in a span tag
+				errorClass: 'help-block',
+				errorPlacement: function (error, element) { // render error placement for each input type
+					if (element.attr("type") == "radio" || element.attr("type") == "checkbox") { // for chosen elements, need to insert the error after the chosen container
+						error.insertAfter($(element).closest('.form-group').children('div').children().last());
+					} else if (element.attr("name") == "dd" || element.attr("name") == "mm" || element.attr("name") == "yyyy") {
+						error.insertAfter($(element).closest('.form-group').children('div'));
+					} else {
+						error.insertAfter(element);
+						// for other inputs, just perform default behavior
+					}
+				},
+				ignore: "",
+				
+				//RULES
+				rules: {
+					
+					pf_name: {
+						minlength: 2,
+						required: true
+					}
+					
+				},
+				
+				//END OF RULES
+				
+				invalidHandler: function (event, validator) { //display error alert on form submit
+					successHandler1.hide();
+					errorHandler1.show();
+				},
+				highlight: function (element) {
+					$(element).closest('.help-block').removeClass('valid');
+					$(element).closest('.form-group').removeClass('has-success').addClass('has-error').find('.symbol').removeClass('ok').addClass('required');
+				},
+				unhighlight: function (element) { 
+					$(element).closest('.form-group').removeClass('has-error');
+				},
+				success: function (label, element) {
+					label.addClass('help-block valid');
+					$(element).closest('.form-group').removeClass('has-error').addClass('has-success').find('.symbol').removeClass('required').addClass('ok');
+				},
+				submitHandler: function (form) {
+					successHandler1.hide();
+					errorHandler1.hide();
+					errorHandler2.hide();
+					
+					window.scrollTo(0,0);
+					
+					
+					records = grid0.getAll();
+					pid = "";
+					$.each(records, function () {
+						 pid += this.record.OptionID + "||" + this.record.Name + "||" + this.record.Position + "%%";
+					});
+					$('#attribute_option_data').val(pid);
+					
+					$.ajax({
+						type: "POST",
+						url: "api/sp_catalog_attribute_update.phtml",
+						data: $("#form").serialize(),
+						success: function() {
+							successHandler1.show();
+							/*
+							setTimeout(function () {
+								window.location.replace("catalog_attribute.phtml");
+							}, 500); */
+						},
+						error: function() {
+							errorHandler2.show();
+						}
+					});
+					
+					
+					
+				}
+			});
+		};
+		return {
+			//main function to initiate template pages
+			init: function () {
+				runValidator1();
+			}
+		};
+	}();
+	
+	</script>
+	<script>
+	jQuery(document).ready(function() {
+		Main.init();
+		FormValidator.init();
+		//GRIDS
+		data0 = <%=s_data_option%>;
+		dialog0 = $("#dialog-option").dialog({
+			title: "Add/Edit Options",
+			autoOpen: false,
+			resizable: false,
+			width: '400px',
+			modal: true,
+			buttons: {
+				"Save": Save0,
+				"Cancel": function () { $(this).dialog("close"); }
+			}
+		});
+		
+		function Edit0(e) {
+			$("#ID").val(e.data.id);
+			$("#OptionID").val(e.data.record.OptionID);
+			$("#OptionName").val(e.data.record.Name);
+			$("#OptionPosition").val(e.data.record.Position);
+			$("#dialog-option").dialog("open");
+		}
+		function Delete0(e) {
+			if (confirm("Are you sure?")) {
+				grid0.removeRow(e.data.id);
+			}
+		}
+		function Save0() {
+			if ($.isNumeric($("#OptionPosition").val()))
+			{
+				sPostion = $("#OptionPosition").val();
+			}
+			else
+			{
+				sPostion = "0";
+			}
+			
+			if ($("#ID").val()) {
+				var id = parseInt($("#ID").val());
+				grid0.updateRow(id, { "ID": id, "OptionID": $("#OptionID").val(), "Name": $("#OptionName").val(), "Position": sPostion });
+			} else {
+				grid0.addRow({ "ID": grid0.count() + 1, "OptionID": $("#OptionID").val(), "Name": $("#OptionName").val(), "Position": sPostion });
+			}
+			$(this).dialog("close");
+		}
+		 
+		 
+		function Delete0(e) {
+			if (confirm("Are you sure?")) {
+				grid0.removeRow(e.data.id);
+			}
+		}
+		
+		grid0 = $("#grid0").grid({
+			dataSource: data0,
+			uiLibrary: "bootstrap",
+			columns: [
+				{ field: "Name", title: "Option Name" },
+				{ field: "Position", title: "Position", width: 80 },
+				{ title: "", width: 40, type: "icon", icon: "glyphicon-pencil", tooltip: "Edit", events: { "click": Edit0 } },
+				{ title: "", width: 40, type: "icon", icon: "glyphicon-remove", tooltip: "Delete", events: { "click": Delete0 } }
+			]
+		});
+		
+		$("#btnAdd0").on("click", function () {
+			$("#ID").val("");
+			$("#OptionID").val("0");
+			$("#OptionName").val("");
+			$("#OptionPosition").val("0");
+			$("#dialog-option").dialog("open");
+		});
+	});
+	</script>
+	<!-- end: JavaScript Event Handlers for this page -->
+</body>
+</html>

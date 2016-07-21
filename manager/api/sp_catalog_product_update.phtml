@@ -174,6 +174,91 @@ End Function
 	else
 		pf_tab5_show = "0"
 	end if
+	
+	'------------------------------
+	'Filter
+	'------------------------------
+	dim pf_filter(10)
+	dim pf_filter_option(10)
+	
+	for kk = 1 to 10
+		pf_filter(kk) = ""
+		pf_filter_option(kk) = ""
+	next
+	
+	kk = 1
+	
+	pf_filter_1 = Trim(Request("pf_filter_1"))
+	pf_filter_option_1 = Trim(Request("pf_filter_option_1"))
+	if Len(pf_filter_1) > 0 then
+		pf_filter(kk) = pf_filter_1
+		pf_filter_option(kk) = pf_filter_option_1
+		kk = kk + 1
+	end if
+	pf_filter_2 = Trim(Request("pf_filter_2"))
+	pf_filter_option_2 = Trim(Request("pf_filter_option_2"))
+	if Len(pf_filter_2) > 0 then
+		pf_filter(kk) = pf_filter_2
+		pf_filter_option(kk) = pf_filter_option_2
+		kk = kk + 1
+	end if
+	pf_filter_3 = Trim(Request("pf_filter_3"))
+	pf_filter_option_3 = Trim(Request("pf_filter_option_3"))
+	if Len(pf_filter_3) > 0 then
+		pf_filter(kk) = pf_filter_3
+		pf_filter_option(kk) = pf_filter_option_3
+		kk = kk + 1
+	end if
+	pf_filter_4 = Trim(Request("pf_filter_4"))
+	pf_filter_option_4 = Trim(Request("pf_filter_option_4"))
+	if Len(pf_filter_4) > 0 then
+		pf_filter(kk) = pf_filter_4
+		pf_filter_option(kk) = pf_filter_option_4
+		kk = kk + 1
+	end if
+	pf_filter_5 = Trim(Request("pf_filter_5"))
+	pf_filter_option_5 = Trim(Request("pf_filter_option_5"))
+	if Len(pf_filter_5) > 0 then
+		pf_filter(kk) = pf_filter_5
+		pf_filter_option(kk) = pf_filter_option_5
+		kk = kk + 1
+	end if
+	pf_filter_6 = Trim(Request("pf_filter_6"))
+	pf_filter_option_6 = Trim(Request("pf_filter_option_6"))
+	if Len(pf_filter_6) > 0 then
+		pf_filter(kk) = pf_filter_6
+		pf_filter_option(kk) = pf_filter_option_6
+		kk = kk + 1
+	end if
+	pf_filter_7 = Trim(Request("pf_filter_7"))
+	pf_filter_option_7 = Trim(Request("pf_filter_option_7"))
+	if Len(pf_filter_7) > 0 then
+		pf_filter(kk) = pf_filter_7
+		pf_filter_option(kk) = pf_filter_option_7
+		kk = kk + 1
+	end if
+	pf_filter_8 = Trim(Request("pf_filter_8"))
+	pf_filter_option_8 = Trim(Request("pf_filter_option_8"))
+	if Len(pf_filter_8) > 0 then
+		pf_filter(kk) = pf_filter_8
+		pf_filter_option(kk) = pf_filter_option_8
+		kk = kk + 1
+	end if
+	pf_filter_9 = Trim(Request("pf_filter_9"))
+	pf_filter_option_9 = Trim(Request("pf_filter_option_9"))
+	if Len(pf_filter_9) > 0 then
+		pf_filter(kk) = pf_filter_9
+		pf_filter_option(kk) = pf_filter_option_9
+		kk = kk + 1
+	end if
+	pf_filter_10 = Trim(Request("pf_filter_10"))
+	pf_filter_option_10 = Trim(Request("pf_filter_option_10"))
+	if Len(pf_filter_10) > 0 then
+		pf_filter(kk) = pf_filter_10
+		pf_filter_option(kk) = pf_filter_option_10
+		kk = kk + 1
+	end if
+
   
 	'--END OF POST DATA-----------------------------------
 	
@@ -529,12 +614,13 @@ End Function
 			rsUpdate("tab_id") = tid
 			
 		end if
-
+		
 		rsUpdate("tab_HTML") = page_text
 
 		rsUpdate.Update
 		rsUpdate.Close
 		set rsUpdate = nothing
+		
 		
 		'=============================
 		'TABLE
@@ -578,6 +664,63 @@ End Function
 					end if
 				end if
 			next	
+		end if
+		
+	next
+	
+	
+	'====================================================================================================================
+	'UPDATE filters
+	'====================================================================================================================
+	'dim pf_filter(10)
+	'dim pf_filter_option(10)
+	
+	for kk = 1 to 10
+		if pf_filter(kk) = "" OR pf_filter_option(kk) = "" then
+		else
+			bExist = false
+			sql = "SELECT value_id FROM " & g_storeid & "_product_entity_varchar WHERE entity_id='" & pf_id & "' AND attribute_id=" & pf_filter(kk)
+			set rs1 = dbconn.Execute(sql)
+			if not rs1.EOF then
+				bExist = true
+			else
+			end if
+			rs1.Close
+			set rs1 = nothing
+			
+			Set rsUpdate = Server.CreateObject("ADODB.Recordset")
+			if bExist then
+				with rsUpdate
+				.ActiveConnection = dbconn
+				.CursorLocation = 3
+				.CursorType = 1
+				.LockType = 3
+				.Source = g_storeid & "_product_entity_varchar WHERE entity_id='" & pf_id & "' AND attribute_id=" & pf_filter(kk)
+				.Open
+				end with
+				
+			else
+				with rsUpdate
+				.ActiveConnection = dbconn
+				.CursorLocation = 3
+				.CursorType = 1
+				.LockType = 3
+				.Source = g_storeid & "_product_entity_varchar WHERE entity_id='0'"
+				.Open
+				.AddNew
+				end with
+				
+				rsUpdate("attribute_id") = pf_filter(kk)
+				rsUpdate("entity_id") = pf_id
+				
+			end if
+			
+			rsUpdate("value") = pf_filter_option(kk)
+
+			rsUpdate.Update
+			rsUpdate.Close
+			set rsUpdate = nothing
+			
 		end if
 		
 	next
