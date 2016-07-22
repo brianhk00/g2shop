@@ -1,0 +1,71 @@
+<%response.Expires=-1%>
+<%
+	Response.CodePage = 65001
+	Response.CharSet = "UTF-8"
+%>
+<!--#INCLUDE FILE="../../util/xt_func_carrier.phtml"-->
+<!--#INCLUDE FILE="../util/xt_func_string.phtml"-->	
+<!-- #INCLUDE File="../local/local.phtml" -->
+<%
+	'Response.end
+		
+	mfg_id = Trim(Request("mfg_id"))
+	mfg_map_enabled = Trim(Request("mfg_map_enabled")) 
+	
+	bExit = "0"
+	sql = "SELECT manuf_filter FROM " & g_storeid & "_map_manuf WHERE dept_id='0' AND manuf_filter='" & mfg_id & "'"
+	set rs = dbconn.Execute(sql)
+	if not rs.EOF then
+		s_list = s_list & rs(0) & "|"
+		bExit = "1"
+		rs.MoveNext
+	end if
+	rs.Close
+	set rs = nothing
+	
+	if mfg_map_enabled = "1" then
+		
+		if bExit = "0" then
+		
+			Set rsUpdate = Server.CreateObject("ADODB.Recordset")
+			with rsUpdate
+				.ActiveConnection = dbconn
+				.CursorLocation = 3
+				.CursorType = 1
+				.LockType = 3
+				.Source = g_storeid & "_map_manuf"
+				.Open
+				.AddNew
+			end with
+			
+			rsUpdate("dept_id") = "0"
+			rsUpdate("manuf_filter") = mfg_id
+		
+		
+			If dbconn.Errors.Count > 0 Then
+				dbconn.Errors.Clear
+				rsUpdate.CancelUpdate
+			else
+				rsUpdate.Update
+			End If
+			
+			rsUpdate.Close
+			set rsUpdate = nothing
+		
+		end if
+		
+	else
+		
+		if bExit = "1" then
+			
+			sql = "DELETE FROM " & g_storeid & "_map_manuf WHERE dept_id='0' AND manuf_filter = '" & mfg_id & "'"
+			dbconn.Execute(sql)
+		
+		end if
+	
+	end if
+	
+	
+		
+	
+%>

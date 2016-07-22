@@ -33,8 +33,18 @@
 
 	Dim ar_sSearch
 
-	strWhere = " (mfg_id LIKE '%" & sSearch & "%' OR "
-	strWhere = strWhere &  " mfg_name LIKE '%" & sSearch & "%')"
+	strWhere = " ( "
+	strWhere = strWhere &  " supplier_name LIKE '%" & sSearch & "%')"
+	
+	s_list = "|"
+	sql = "SELECT manuf_filter FROM " & g_storeid & "_map_manuf WHERE dept_id='0'"
+	set rs = dbconn.Execute(sql)
+	do while not rs.EOF
+		s_list = s_list & rs(0) & "|"
+		rs.MoveNext
+	loop
+	rs.Close
+	set rs = nothing
 
 	'=======================================================================================
 	'ORDERING
@@ -46,14 +56,14 @@
 		end if
 	next
 	'here we replace the number corresponding the column position by the corresponding name of the column in the database
-	order =	Replace(order,"0",", mfg_id")
-	order =	Replace(order,"1",", mfg_name")
+	order =	Replace(order,"0",", supplier_id")
+	order =	Replace(order,"1",", supplier_name")
 
 	'here we eliminate the first comma of the variable "order"
 	if Len(order) > 0 then
 	  order = Right(order, Len(order)-1)
 	else
-	  order = "mfg_name"
+	  order = "supplier_name"
 	end if
 
 	'here we create the variable "strOrderBy" that will be used in the SQL querry
@@ -61,20 +71,14 @@
 
 	'======================================================================================
 
-
-	Set dbconn=server.CreateObject("ADODB.Connection")
-	dbconn.Open g_connection_string
-
-	sql = "SELECT * FROM " & g_storeid & "_mfg WHERE " & strWhere & " " & strOrderBy
-
-	'response.write(sql)
-	sqlx = "SELECT COUNT(mfg_id) FROM " & g_storeid & "_mfg WHERE " & strWhere 
+	sql = "SELECT TOP 100 * FROM A_ICECAT_Supplier WHERE " & strWhere & " " & strOrderBy
+	sqlx = "SELECT COUNT(supplier_id) FROM A_ICECAT_Supplier WHERE " & strWhere 
 		
-	set rs = dbconn.Execute(sql)
+	set rs = dbconn_icecat.Execute(sql)
 
 	iTotalDisplayRecords = 0
 	iTotalRecords = 50
-	set rs1 = dbconn.Execute(sqlx)
+	set rs1 = dbconn_icecat.Execute(sqlx)
 	if not rs1.EOF then
 	  iTotalDisplayRecords = rs1(0)
 	  iTotalRecords = rs1(0)
@@ -94,12 +98,11 @@
 		rs.move(iDisplayStart)
 		do while i < iDisplayLength and not rs.eof
 
-			s_mfg_id = rs("mfg_id")
-			s_mfg_name = Trim(rs("mfg_name"))
+			s_mfg_id = rs("supplier_id")
+			s_mfg_name = Trim(rs("supplier_name"))
 			
 			aaData = aaData & "['"
 			aaData = aaData & s_mfg_id & "','" 
-			'aaData = aaData & "<a href=\'catalog_product_detail.phtml?pf_id=" & s_mfg_id & "\'>" & s_mfg_id & "</a>','" 
 			
 			If Len(s_mfg_name) > 0 Then
 				s_mfg_name = Replace(s_mfg_name, "'", "&#39")
@@ -108,20 +111,19 @@
 			
 			aaData = aaData & s_mfg_name & "','"
 			
-			SELECT CASE rs("mfg_map_enabled")
-			CASE 0
-				s_active = "Disabled"
-				s_label = "label label-success"
-			CASE 1
+			if InStr(s_list, "|" & s_mfg_id & "|") then
 				s_active = "Enabled"
 				s_label = "label label-danger"
-			END SELECT
+			else
+				s_active = "Disabled"
+				s_label = "label label-success"
+			end if
 			
 			aaData = aaData & "<span class=\'" & s_label & "\'>" & s_active & "</span>','"
 			
 			'aaData = aaData & s_mfg_name & "','" 
 			'aaData = aaData & "<a href=\'#\' class=\'edit-row\'><i class=\'fa fa-pencil\'></i></a>'],"
-			aaData = aaData & "<a href=\'#\' class=\'btn btn-xs btn-teal tooltips modal-edit-line\'  data-toggle=\'modal\' data-id=\'" & Trim(s_mfg_id) & "\' data-placement=\'top\' data-original-title=\'Edit\'><i class=\'fa fa-edit\'></i></a>'],"
+			aaData = aaData & "<a href=\'#\' class=\'btn btn-xs btn-teal tooltips modal-edit-line2\'  data-toggle=\'modal\' data-id=\'" & Trim(s_mfg_id) & "\' data-placement=\'top\' data-original-title=\'Edit\'><i class=\'fa fa-edit\'></i></a>'],"
 		  
 		  aaData = Replace(aaData,"'",chr(34))
 		  rs.MoveNext
