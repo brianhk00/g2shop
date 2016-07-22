@@ -1,0 +1,166 @@
+<%response.Expires=-1%>
+<%
+	Response.CodePage = 65001
+	Response.CharSet = "UTF-8"
+%>
+<!-- #INCLUDE File="../local/local.phtml" -->
+<!-- #INCLUDE File="../util/xt_func_util.phtml" -->
+<!-- #INCLUDE File="../util/xt_func_string.phtml" -->
+<%
+	'--POST DATA------------------------------------------
+	formid = Trim(Request("formid"))
+	
+	SELECT CASE formid
+	CASE "pan1"
+		address	= Trim(Request("address"))
+		city	= Trim(Request("city"))
+		company	= Trim(Request("company"))
+		email	= Trim(Request("email"))
+		phone	= Trim(Request("phone"))
+		state	= Trim(Request("state"))
+		zip	= Trim(Request("zip"))
+		
+		Set rsUpdate = Server.CreateObject("ADODB.Recordset")
+		with rsUpdate
+			.ActiveConnection = dbconn
+			.CursorLocation = 3
+			.CursorType = 1
+			.LockType = 3
+			.Source = g_storeid & "_profile"
+			.Open
+		end with
+		
+		rsUpdate("Address") = address
+		rsUpdate("City") = city
+		rsUpdate("Company") = company
+		rsUpdate("Phone") = phone
+		rsUpdate("State") = state
+		rsUpdate("Zip") = zip
+		rsUpdate("Email") = email
+		
+		If dbconn.Errors.Count > 0 Then
+			dbconn.Errors.Clear
+			rsUpdate.CancelUpdate
+		else
+			rsUpdate.Update
+		End If
+		
+		rsUpdate.Close
+		set rsUpdate = nothing
+		
+	CASE "pan2"
+		'--POST DATA------------------------------------------
+		store_payment_gateway_enabled = Trim(Request("store_payment_gateway_enabled"))
+		store_payment_cc_type = Trim(Request("store_payment_cc_type"))
+		store_payment_cc_use_card_id = Trim(Request("store_payment_cc_use_card_id"))
+		
+		store_payment_authorizenet_api_login_id = Trim(Request("store_payment_authorizenet_api_login_id"))
+		store_payment_authorizenet_payment_action = Trim(Request("store_payment_authorizenet_payment_action"))
+		store_payment_authorizenet_transaction_key = Trim(Request("store_payment_authorizenet_transaction_key"))
+		
+		store_payment_paypal_payflowpro_payment_action = Trim(Request("store_payment_paypal_payflowpro_payment_action"))
+		store_payment_paypal_payflowpro_partner = Trim(Request("store_payment_paypal_payflowpro_partner"))
+		store_payment_paypal_payflowpro_user = Trim(Request("store_payment_paypal_payflowpro_user"))
+		store_payment_paypal_payflowpro_vendor = Trim(Request("store_payment_paypal_payflowpro_vendor"))
+		store_payment_paypal_payflowpro_password = Trim(Request("store_payment_paypal_payflowpro_password"))
+		
+		store_payment_paypal_payflowlink_partner = Trim(Request("store_payment_paypal_payflowlink_partner"))
+		store_payment_paypal_payflowlink_user = Trim(Request("store_payment_paypal_payflowlink_user"))
+		store_payment_paypal_payflowlink_vendor = Trim(Request("store_payment_paypal_payflowlink_vendor"))
+		store_payment_paypal_payflowlink_password = Trim(Request("store_payment_paypal_payflowlink_password"))
+		
+		store_payment_paypal_paymentpro_payment_action = Trim(Request("store_payment_paypal_paymentpro_payment_action"))
+		store_payment_paypal_paymentpro_paypal_email_address = Trim(Request("store_payment_paypal_paymentpro_paypal_email_address"))
+		store_payment_paypal_paymentpro_api_username = Trim(Request("store_payment_paypal_paymentpro_api_username"))
+		store_payment_paypal_paymentpro_api_password = Trim(Request("store_payment_paypal_paymentpro_api_password"))
+		store_payment_paypal_paymentpro_api_signature = Trim(Request("store_payment_paypal_paymentpro_api_signature"))
+		store_payment_paypal_paymentpro_sandbox_mode = Trim(Request("store_payment_paypal_paymentpro_sandbox_mode"))
+		
+		store_payment_paypal_expresscheckout_payment_action = Trim(Request("store_payment_paypal_expresscheckout_payment_action"))
+		store_payment_paypal_expresscheckout_paypal_email_address = Trim(Request("store_payment_paypal_expresscheckout_paypal_email_address"))
+		store_payment_paypal_expresscheckout_api_username = Trim(Request("store_payment_paypal_expresscheckout_api_username"))
+		store_payment_paypal_expresscheckout_api_password = Trim(Request("store_payment_paypal_expresscheckout_api_password"))
+		store_payment_paypal_expresscheckout_api_signature = Trim(Request("store_payment_paypal_expresscheckout_api_signature"))
+		store_payment_paypal_expresscheckout_sandbox_mode = Trim(Request("store_payment_paypal_expresscheckout_sandbox_mode"))
+		
+		store_payment_check_enabled = Trim(Request("store_payment_check_enabled"))
+		store_payment_check_title = Trim(Request("store_payment_check_title"))
+		
+		store_payment_purchase_order_enabled = Trim(Request("store_payment_purchase_order_enabled"))
+		store_payment_purchase_order_title = Trim(Request("store_payment_purchase_order_title"))
+		
+		'--SAVE DATA------------------------------------------
+		if SetSettingValue("store_payment_gateway_enabled", store_payment_gateway_enabled) then
+		end if
+		if SetSettingValue("store_payment_cc_type", store_payment_cc_type) then
+		end if
+		if SetSettingValue("store_payment_cc_use_card_id", store_payment_cc_use_card_id) then
+		end if
+		
+		if SetSettingValue("store_payment_authorizenet_api_login_id", store_payment_authorizenet_api_login_id) then
+		end if
+		if SetSettingValue("store_payment_authorizenet_payment_action", store_payment_authorizenet_payment_action) then
+		end if
+		if SetSettingValue("store_payment_authorizenet_transaction_key", store_payment_authorizenet_transaction_key) then
+		end if
+		
+		if SetSettingValue("store_payment_paypal_payflowpro_payment_action", store_payment_paypal_payflowpro_payment_action) then
+		end if
+		if SetSettingValue("store_payment_paypal_payflowpro_partner", store_payment_paypal_payflowpro_partner) then
+		end if
+		if SetSettingValue("store_payment_paypal_payflowpro_user", store_payment_paypal_payflowpro_user) then
+		end if
+		if SetSettingValue("store_payment_paypal_payflowpro_vendor", store_payment_paypal_payflowpro_vendor) then
+		end if
+		if SetSettingValue("store_payment_paypal_payflowpro_password", store_payment_paypal_payflowpro_password) then
+		end if
+		
+		if SetSettingValue("store_payment_paypal_payflowlink_partner", store_payment_paypal_payflowlink_partner) then
+		end if
+		if SetSettingValue("store_payment_paypal_payflowlink_user", store_payment_paypal_payflowlink_user) then
+		end if
+		if SetSettingValue("store_payment_paypal_payflowlink_vendor", store_payment_paypal_payflowlink_vendor) then
+		end if
+		if SetSettingValue("store_payment_paypal_payflowlink_password", store_payment_paypal_payflowlink_password) then
+		end if
+		
+		if SetSettingValue("store_payment_paypal_paymentpro_payment_action", store_payment_paypal_paymentpro_payment_action) then
+		end if
+		if SetSettingValue("store_payment_paypal_paymentpro_paypal_email_address", store_payment_paypal_paymentpro_paypal_email_address) then
+		end if
+		if SetSettingValue("store_payment_paypal_paymentpro_api_username", store_payment_paypal_paymentpro_api_username) then
+		end if
+		if SetSettingValue("store_payment_paypal_paymentpro_api_password", store_payment_paypal_paymentpro_api_password) then
+		end if
+		if SetSettingValue("store_payment_paypal_paymentpro_api_signature", store_payment_paypal_paymentpro_api_signature) then
+		end if
+		if SetSettingValue("store_payment_paypal_paymentpro_sandbox_mode", store_payment_paypal_paymentpro_sandbox_mode) then
+		end if
+		
+		if SetSettingValue("store_payment_paypal_expresscheckout_payment_action", store_payment_paypal_expresscheckout_payment_action) then
+		end if
+		if SetSettingValue("store_payment_paypal_expresscheckout_paypal_email_address", store_payment_paypal_expresscheckout_paypal_email_address) then
+		end if
+		if SetSettingValue("store_payment_paypal_expresscheckout_api_username", store_payment_paypal_expresscheckout_api_username) then
+		end if
+		if SetSettingValue("store_payment_paypal_expresscheckout_api_password", store_payment_paypal_expresscheckout_api_password) then
+		end if
+		if SetSettingValue("store_payment_paypal_expresscheckout_api_signature", store_payment_paypal_expresscheckout_api_signature) then
+		end if
+		if SetSettingValue("store_payment_paypal_expresscheckout_sandbox_mode", store_payment_paypal_expresscheckout_sandbox_mode) then
+		end if
+		
+		if SetSettingValue("store_payment_check_enabled", store_payment_check_enabled) then
+		end if
+		if SetSettingValue("store_payment_check_title", store_payment_check_title) then
+		end if
+		
+		if SetSettingValue("store_payment_purchase_order_enabled", store_payment_purchase_order_enabled) then
+		end if
+		if SetSettingValue("store_payment_purchase_order_title", store_payment_purchase_order_title) then
+		end if
+		
+		
+			
+	END SELECT
+%>

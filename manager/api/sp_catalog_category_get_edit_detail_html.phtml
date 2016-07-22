@@ -363,7 +363,7 @@
 					<td class="center"><input type="text" placeholder="" id="dept_markup_C" name="dept_markup_C" class="form-control input-xs text-right" value="<%=markup_C%>"></td>
 					<td class="center"><input type="text" placeholder="" id="dept_markup_D" name="dept_markup_D" class="form-control input-xs text-right" value="<%=markup_D%>"></td>
 					<td class="center">
-						<input type="checkbox" id="use_markup" name="use_markup" class="form-control" value="1" <%if use_markup then%>checked<%end if%>>
+						<input type="checkbox" id="use_markup" name="use_markup" value="1" <%if use_markup then%>checked<%end if%>>
 					</td>
 				</tr>
 				<% else %>
@@ -497,10 +497,25 @@
 		<div class="tab-pane <% if Session("catalog_category_tab") = "#panel_tab_example5" then %>active<% end if %>" id="panel_tab_example5">
 			<div class="row">
 			<div class="col-sm-12">
+			<!--
 			<table class="table table-striped table-bordered table-hover table-full-width" id="sample_1">
+			-->
+			<table class="table table-striped table-bordered table-hover table-full-width table-condensed" id="sample_1">
 				<thead>
+				<% if g_store_use_icecat_catalog = "1"  AND Len(icecat_category) > 0 then %>
 				<tr>
-					<th>Product ID</th>
+					<th>ID</th>
+					<th>Thumbnail</th>
+					<th>Name</th>
+					<th>Mfg. Part #</th>
+					<th>Cost</th>
+					<th>Price(D)</th>
+					<th>Qty</th>
+					<th>Status</th>
+				</tr>
+				<% else %>
+				<tr>
+					<th>ID</th>
 					<th>Thumbnail</th>
 					<th>Name</th>
 					<th>SKU</th>
@@ -509,10 +524,11 @@
 					<th>Qty</th>
 					<th>Status</th>
 				</tr>
+				<% end if %>
 				</thead>
 				<tbody>
 					<tr>
-						<td colspan="9" class="dataTables_empty">Loading data from server</td>
+						<td colspan="8" class="dataTables_empty">Loading data from server</td>
 					</tr>
 				</tbody>
 			</table>
@@ -545,15 +561,19 @@
 				"iDisplayLength": 20,
 				"bServerSide": true,
 				"bAutoWidth": false,
+				<% if g_store_use_icecat_catalog = "1"  AND Len(icecat_category) > 0 then %>
+				"sAjaxSource": "api/sp_icecat_product_list_by_category.phtml?category_id=" + "<%=category_id%>" + "&v1=" + v1 + "&v2=" + v2 + "&v3=" + v3 + "&z1=",
+				<% else %>
 				"sAjaxSource": "api/sp_product_list_by_category.phtml?category_id=" + "<%=category_id%>" + "&v1=" + v1 + "&v2=" + v2 + "&v3=" + v3 + "&z1=",
+				<% end if %>
 				"aoColumns": [ 
 					/* Product ID */  { "sClass": "left" },
 					/* Thumbnail */  { "sClass": "center","bSortable": false },
-					/* Name */  { "sClass": "left" },
+					/* Name */  { "sClass": "left"},
 					/* sku */  { "sClass": "center" },
 					/* Cost */  { "sClass": "right"},
 					/* Price */ { "sClass": "right"},
-					/* Qty */ { "sClass": "right"},
+					/* Qty */ { "sClass": "right","bSortable": false },
 					/* Status*/  { "sClass": "center" ,"bSortable": false}
 				  ],
 				  
@@ -569,8 +589,8 @@
 					"sSearch": "",
 					"sProcessing": '<img src="assets/images/ajax-loader-primary.gif"/>',
 					"oPaginate": {
-						"sPrevious": "",
-						"sNext": ""
+						"sPrevious": "Prev",
+						"sNext": "Next"
 					}
 				},
 				
@@ -742,7 +762,11 @@
 				"bServerSide": true,
 				"bAutoWidth": false,
 				"responsive": false,
+				<% if g_store_use_icecat_catalog = "1"  AND Len(icecat_category) > 0 then %>
+				"sAjaxSource": "api/sp_icecat_product_list_with_price.phtml?category_id=" + "<%=category_id%>" + "&v1=" + v1 + "&v2=" + v2 + "&v3=" + v3 + "&z1=",
+				<% else %>
 				"sAjaxSource": "api/sp_product_list_with_price.phtml?category_id=" + "<%=category_id%>" + "&v1=" + v1 + "&v2=" + v2 + "&v3=" + v3 + "&z1=",
+				<% end if %>
 				"aoColumns": [ 
 					/* pf_id */  { "sClass": "left" },
 					/* SKU */  { "sClass": "left" },
@@ -776,8 +800,8 @@
 					"sLengthMenu": "_MENU_",
 					"sSearch": "",
 					"oPaginate": {
-						"sPrevious": "",
-						"sNext": ""
+						"sPrevious": "Prev",
+						"sNext": "Next"
 					}
 				},
 				
@@ -1036,7 +1060,5 @@
 	});
 </script>
 <% end if  %>
-<style>
-th, td { white-space: nowrap; }
-</style>
+
 

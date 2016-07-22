@@ -11,23 +11,6 @@
 	g_access_key = "08-a"
 %>
 <!-- #INCLUDE File="include/i_access.phtml" -->
-<script language="VBScript" runat="Server">
-function GetSettingValue(strKey, strDefault)
-  
-	sReturnValue = ""
- 
-	sql = "SELECT setting_values FROM " & g_storeid & "_setting WHERE setting_type='"& strKey & "'"
-	set rsSetting1 = dbconn.Execute(sql)
-	if not rsSetting1.EOF then
-	  sReturnValue = rsSetting1(0)
-	else
-	  sReturnValue = strDefault
-	end if
-	rsSetting1.Close
-	GetSettingValue = sReturnValue
-	
-end function
-</script>
 <%
 	sql = "SELECT * FROM " & g_storeid & "_profile"
 	set rs = dbconn.Execute(sql)
@@ -135,6 +118,46 @@ end function
 	goodgree_payment_account_id = GetSettingValue("goodgree_payment_account_id", "")
 	goodgree_payment_access_token = GetSettingValue("goodgree_payment_access_token", "")
 	goodgree_payment_access_token_sandbox = GetSettingValue("goodgree_payment_access_token_sandbox", "")
+	
+	store_payment_gateway_enabled = GetSettingValue("store_payment_gateway_enabled", "0")
+	store_payment_cc_type = GetSettingValue("store_payment_cc_type", "")
+	store_payment_cc_use_card_id = GetSettingValue("store_payment_cc_use_card_id", "0")
+	
+	store_payment_authorizenet_api_login_id = GetSettingValue("store_payment_authorizenet_api_login_id", "")
+	store_payment_authorizenet_payment_action = GetSettingValue("store_payment_authorizenet_payment_action", "authorize")
+	store_payment_authorizenet_transaction_key = GetSettingValue("store_payment_authorizenet_transaction_key", "")
+	
+	store_payment_paypal_payflowpro_payment_action = GetSettingValue("store_payment_paypal_payflowpro_payment_action", "Authorization")
+	store_payment_paypal_payflowpro_partner = GetSettingValue("store_payment_paypal_payflowpro_partner", "")
+	store_payment_paypal_payflowpro_user = GetSettingValue("store_payment_paypal_payflowpro_user", "")
+	store_payment_paypal_payflowpro_vendor = GetSettingValue("store_payment_paypal_payflowpro_vendor", "")
+	store_payment_paypal_payflowpro_password = GetSettingValue("store_payment_paypal_payflowpro_password", "")
+	
+	store_payment_paypal_payflowlink_partner = GetSettingValue("store_payment_paypal_payflowlink_partner", "")
+	store_payment_paypal_payflowlink_user = GetSettingValue("store_payment_paypal_payflowlink_user", "")
+	store_payment_paypal_payflowlink_vendor = GetSettingValue("store_payment_paypal_payflowlink_vendor", "")
+	store_payment_paypal_payflowlink_password = GetSettingValue("store_payment_paypal_payflowlink_password", "")
+	
+	store_payment_paypal_paymentpro_payment_action = GetSettingValue("store_payment_paypal_paymentpro_payment_action", "Authorization")
+	store_payment_paypal_paymentpro_paypal_email_address = GetSettingValue("store_payment_paypal_paymentpro_paypal_email_address", "")
+	store_payment_paypal_paymentpro_api_username = GetSettingValue("store_payment_paypal_paymentpro_api_username", "")
+	store_payment_paypal_paymentpro_api_password = GetSettingValue("store_payment_paypal_paymentpro_api_password", "")
+	store_payment_paypal_paymentpro_api_signature = GetSettingValue("store_payment_paypal_paymentpro_api_signature", "")
+	store_payment_paypal_paymentpro_sandbox_mode = GetSettingValue("store_payment_paypal_paymentpro_sandbox_mode", "0")
+	
+	store_payment_paypal_expresscheckout_payment_action = GetSettingValue("store_payment_paypal_expresscheckout_payment_action", "0")
+	store_payment_paypal_expresscheckout_paypal_email_address = GetSettingValue("store_payment_paypal_expresscheckout_paypal_email_address", "")
+	store_payment_paypal_expresscheckout_api_username = GetSettingValue("store_payment_paypal_expresscheckout_api_username", "")
+	store_payment_paypal_expresscheckout_api_password = GetSettingValue("store_payment_paypal_expresscheckout_api_password", "")
+	store_payment_paypal_expresscheckout_api_signature = GetSettingValue("store_payment_paypal_expresscheckout_api_signature", "")
+	store_payment_paypal_expresscheckout_sandbox_mode = GetSettingValue("store_payment_paypal_expresscheckout_sandbox_mode", "0")
+	
+	store_payment_check_enabled = GetSettingValue("store_payment_check_enabled", "0")
+	store_payment_check_title = GetSettingValue("store_payment_check_title", "Check/Money Order")
+	
+	store_payment_purchase_order_enabled = GetSettingValue("store_payment_purchase_order_enabled", "0")
+	store_payment_purchase_order_title = GetSettingValue("store_payment_purchase_order_title", "Purchase Order")
+	
 
 
 %>
@@ -177,7 +200,7 @@ end function
 						<div class="row">
 							<div class="col-sm-12">
 								<!-- start: INLINE TABS PANEL -->
-								<div class="panel panel-blue">
+								<div class="panel panel-dark-primary collapses">
 									<div class="panel-heading">
 										<h4 class="panel-title">General Information</h4>
 										<div class="panel-tools" >
@@ -187,18 +210,27 @@ end function
 									<div class="panel-body partition-white">
 										<div class="row">
 											<div class="col-sm-12">
-												<form role="form" class="form-horizontal" id="form">
+												<form role="form" class="form-horizontal" id="form1">
 													<input type="hidden" id="formid" name="formid" value="pan1" />
 													<div class="row">
 														<div class="col-md-12">
-															<div id="errorHandler1" class="errorHandler alert alert-danger no-display">
+															<div id="errorHandler1_1" class="errorHandler alert alert-danger" style="display:none;">
+																<button type="button" class="close" aria-label="Close">
+																	<span aria-hidden="true">&times;</span>
+																</button>
 																<i class="fa fa-times-sign"></i> You have some form errors. Please check below.
 															</div>
-															<div id="errorHandler2" class="errorHandler alert alert-danger no-display">
+															<div id="errorHandler2_1" class="errorHandler alert alert-danger" style="display:none;">
+																<button type="button" class="close" aria-label="Close">
+																	<span aria-hidden="true">&times;</span>
+																</button>
 																<i class="fa fa-times-sign"></i> The information has not been saved properly. Please contact system administrator.
 															</div>
-															<div class="successHandler alert alert-success no-display">
-																<i class="fa fa-ok"></i> The information has been saved.
+															<div id="successHandler_1" class="successHandler alert alert-success" style="display:none;">
+																<button type="button" class="close" aria-label="Close">
+																	<span aria-hidden="true">&times;</span>
+																</button>
+																<i class="fa fa-check-square-o"></i> The information has been saved.
 															</div>
 														</div>
 														<div class="col-md-12">
@@ -207,7 +239,7 @@ end function
 																	Company <span class="symbol required"></span>
 																</label>
 																<div class="col-sm-9">
-																	<input type="text" placeholder="" class="form-control" id="company" name="company" value="<%=company%>">
+																	<input type="text" placeholder="" class="form-control input-sm" id="company" name="company" value="<%=company%>">
 																</div>
 															</div>
 															<div class="form-group">
@@ -215,7 +247,7 @@ end function
 																	Street Address <span class="symbol required"></span>
 																</label>
 																<div class="col-sm-9">
-																	<input type="text" placeholder="" id="address" name="address" class="form-control" value="<%=address%>">
+																	<input type="text" placeholder="" id="address" name="address" class="form-control input-sm" value="<%=address%>">
 																</div>
 															</div>
 															<div class="form-group">
@@ -223,7 +255,7 @@ end function
 																	City <span class="symbol required"></span>
 																</label>
 																<div class="col-sm-9">
-																	<input type="text"  id="city" name="city" class="form-control" value="<%=city%>">
+																	<input type="text"  id="city" name="city" class="form-control input-sm" value="<%=city%>">
 																</div>
 															</div>
 															<div class="form-group">
@@ -231,8 +263,7 @@ end function
 																	State / Province <span class="symbol required"></span>
 																</label>
 																<div class="col-sm-9">
-																	<select class="form-control" id="state" name="state">
-																		<option value="">&nbsp;</option>
+																	<select class="form-control input-sm" id="state" name="state">
 																		<%=GetStatesOptionTags(state)%>
 																	</select>
 																</div>
@@ -242,7 +273,7 @@ end function
 																	Zip / Postal Code <span class="symbol required"></span>
 																</label>
 																<div class="col-sm-9">
-																	<input type="text"  id="zip" name="zip" class="form-control" value="<%=zip%>">
+																	<input type="text"  id="zip" name="zip" class="form-control input-sm" value="<%=zip%>">
 																</div>
 															</div>
 															<div class="form-group">
@@ -250,7 +281,7 @@ end function
 																	Phone Number <span class="symbol required"></span>
 																</label>
 																<div class="col-sm-9">
-																	<input type="text"  id="phone" name="phone" class="form-control" value="<%=phone%>">
+																	<input type="text"  id="phone" name="phone" class="form-control input-sm" value="<%=phone%>">
 																</div>
 															</div>
 															<div class="form-group">
@@ -258,7 +289,7 @@ end function
 																	Email Address <span class="symbol required"></span>
 																</label>
 																<div class="col-sm-9">
-																	<input type="text"  id="email" name="email" class="form-control" value="<%=email%>">
+																	<input type="text"  id="email" name="email" class="form-control input-sm" value="<%=email%>">
 																</div>
 															</div>
 															<!--
@@ -285,7 +316,7 @@ end function
 														<div class="col-sm-1">
 														</div>
 														<div class="col-sm-8">
-															<button class="btn btn-blue" type="submit">
+															<button class="btn btn-blue btn-sm" type="submit">
 															<i class="fa fa-check-square"></i>
 															Save
 															</button>
@@ -302,7 +333,7 @@ end function
 						<div class="row">
 							<div class="col-sm-12">
 								<!-- start: INLINE TABS PANEL -->
-								<div class="panel panel-blue collapses">
+								<div class="panel panel-dark-primary collapses">
 									<div class="panel-heading">
 										<h4 class="panel-title">Payments</h4>
 										<div class="panel-tools" >
@@ -312,133 +343,527 @@ end function
 									<div class="panel-body partition-white">
 										<div class="row">
 											<div class="col-sm-12">
+												<form role="form"  action="tp_store_information_payment_update.phtml" class="form-horizontal" id="form2" method="post">
+												<input type="hidden" id="formid" name="formid" value="pan2" />
+												<div class="row">
+													<div class="col-md-12">
+														<div id="errorHandler1_2" class="errorHandler alert alert-danger" style="display:none;">
+															<button type="button" class="close" aria-label="Close">
+																<span aria-hidden="true">&times;</span>
+															</button>
+															<i class="fa fa-times-sign"></i> You have some form errors. Please check below.
+														</div>
+														<div id="errorHandler2_2" class="errorHandler alert alert-danger" style="display:none;">
+															<button type="button" class="close" aria-label="Close">
+																<span aria-hidden="true">&times;</span>
+															</button>
+															<i class="fa fa-times-sign"></i> The information has not been saved properly. Please contact system administrator.
+														</div>
+														<div id="successHandler_2" class="successHandler alert alert-success" style="display:none;">
+															<button type="button" class="close" aria-label="Close">
+																<span aria-hidden="true">&times;</span>
+															</button>
+															<i class="fa fa-check-square-o"></i> The information has been saved.
+														</div>
+													</div>
+												</div>
 												<div class="tabbable">
 													<ul id="myTab4" class="nav nav-tabs tab-green">
 														<li class="active">
+															<a href="#panel_tab2_example0" data-toggle="tab">
+																Settings
+															</a>
+														</li>
+														<li>
+															<a href="#panel_tab2_example2" data-toggle="tab">
+																Authorize.net
+															</a>
+														</li>
+														<li>
+															<a href="#panel_tab2_example3" data-toggle="tab">
+																Paypal
+															</a>
+														</li>
+														<li>
+															<a href="#panel_tab2_example4" data-toggle="tab">
+																Check / Money Order
+															</a>
+														</li>
+														<li>
+															<a href="#panel_tab2_example5" data-toggle="tab">
+																Purchase Order
+															</a>
+														</li>
+														<li>
 															<a href="#panel_tab2_example1" data-toggle="tab">
 																Stripe Payment
 															</a>
 														</li>
 													</ul>
-													<form role="form"  action="tp_store_information_payment_update.phtml" class="form-horizontal" id="form2" method="post">
-													<div class="tab-content">
-														<div class="tab-pane active" id="panel_tab2_example1">
-														<div class="form-group">
-															<label class="col-sm-2 control-label" for="goodgree_payment_enable">
-																Enable <span class="symbol required"></span>
-															</label>
-															<div class="col-sm-4">
-																<select id="goodgree_payment_enable" name="goodgree_payment_enable" class="form-control select">
-																	<option value="0" <% if goodgree_payment_enable = "0" then%>selected<% end if %>>No</option>
-																	<option value="1" <% if goodgree_payment_enable = "1" then%>selected<% end if %>>Yes</option>
-																</select>
-															</div>
-															<div class="col-sm-4">
-																<img src="assets/images/stripe/big.png" border="0"/>
-															</div>
-														</div>
-														<div class="form-group">
-															<label class="col-sm-2 control-label" for="goodgree_payment_mode">
-																Mode <span class="symbol required"></span>
-															</label>
-															<div class="col-sm-9">
-																<select id="goodgree_payment_mode" name="goodgree_payment_mode" class="form-control select">
-																	<option value="sandbox"  <% if goodgree_payment_mode = "sandbox" then%>selected<% end if %>>Sandbox</option>
-																	<option value="live"  <% if goodgree_payment_mode = "live" then%>selected<% end if %>>Live</option>
-																</select>
-															</div>
-														</div>
-														<!--
-														<div class="form-group">
-															<label class="col-sm-2 control-label" for="goodgree_payment_sandbox_sk">
-																Test Secret Key <span class="symbol required"></span>
-															</label>
-															<div class="col-sm-9">
-																<input type="text"  id="goodgree_payment_sandbox_sk" name="goodgree_payment_sandbox_sk" class="form-control" value="<%=goodgree_payment_sandbox_sk%>">
-															</div>
-														</div>
-														<div class="form-group">
-															<label class="col-sm-2 control-label" for="goodgree_payment_live_sk">
-																Live Secret Key <span class="symbol required"></span>
-															</label>
-															<div class="col-sm-9">
-																<input type="text"  id="goodgree_payment_live_sk" name="goodgree_payment_live_sk" class="form-control" value="<%=goodgree_payment_live_sk%>">
-															</div>
-														</div>
-														-->
-														<div class="form-group">
-															<label class="col-sm-2 control-label" for="goodgree_payment_payment_action">
-																Payment Action <span class="symbol required"></span>
-															</label>
-															<div class="col-sm-9">
-																<select id="goodgree_payment_payment_action" name="goodgree_payment_payment_action" class="form-control select">
-																	<option value="authorize" <% if goodgree_payment_payment_action = "authorize" then%>selected<% end if %>>Authorize Only</option>
-																	<option value="authorize_capture" <% if goodgree_payment_payment_action = "authorize_capture" then%>selected<% end if %>>Authorize and Capture</option>
-																</select>
-															</div>
-														</div>
-														
-														<div class="form-group">
-															<label class="col-sm-2 control-label" for="goodgree_payment_descriptor">
-																Store Descriptor (OC:xxxxxx)<span class="symbol required"></span>
-															</label>
-															<div class="col-sm-9">
-																<input type="text"  id="goodgree_payment_descriptor" name="goodgree_payment_descriptor" class="form-control" value="<%=goodgree_payment_descriptor%>">
-															</div>
-														</div>
-														
-														<div class="form-group">
-															<label class="col-sm-2 control-label" for="goodgree_payment_account_id">
-																Account ID
-															</label>
-															<div class="col-sm-9">
-																<input type="text"  id="goodgree_payment_account_id" name="goodgree_payment_account_id" class="form-control" value="<%=goodgree_payment_account_id%>" disabled>
-															</div>
-														</div>
-														
-														<div class="form-group">
-															<label class="col-sm-2 control-label" for="goodgree_payment_access_token_sandbox">
-																Access Key (sandbox)
-															</label>
-															<div class="col-sm-9">
-																<input type="text"  id="goodgree_payment_access_token_sandbox" name="goodgree_payment_access_token_sandbox" class="form-control" value="<%=goodgree_payment_access_token_sandbox%>" disabled>
-															</div>
-														</div>
-														
-														<div class="form-group">
-															<label class="col-sm-2 control-label" for="goodgree_payment_access_token">
-																Access Key (production)
-															</label>
-															<div class="col-sm-9">
-																<input type="text"  id="goodgree_payment_access_token" name="goodgree_payment_access_token" class="form-control" value="<%=goodgree_payment_access_token%>" disabled>
-															</div>
-														</div>
-														
-														<div class="form-group">
-															<label class="col-sm-2 control-label" for="goodgree_payment_account_id">
-																&nbsp;
-															</label>
-															<div class="col-sm-9">
-																<a class="stripe-connect" href="http://app.olivecommerce.com/stripe_auth.php?storeid=<%=g_storeid%>" target="_blank"><span>Connect with Stripe (sandbox)</span></a>
-																<a class="stripe-connect" href="http://app.olivecommerce.com/stripe_auth_production.php?storeid=<%=g_storeid%>" target="_blank"><span>Connect with Stripe (live)</span></a>
-															</div>
-														</div>
-														</div>
-													</div>
-													<br>
-													<div class="row">
-														<div class="col-sm-1">
-														</div>
-														<div class="col-sm-8">
-															<button class="btn btn-blue" type="submit">
-															<i class="fa fa-check-square"></i>
-															Save
-															</button>
-														</div>
-													</div>
-													</form>
 													
+													<div class="tab-content">
+														<div class="tab-pane active" id="panel_tab2_example0">
+															<div class="form-group">
+																<label class="col-sm-2 control-label" for="store_payment_gateway_enabled">
+																	Gateway Enable <span class="symbol required"></span>
+																</label>
+																<div class="col-sm-4">
+																	<select id="store_payment_gateway_enabled" name="store_payment_gateway_enabled" class="form-control select input-sm">
+																		<option value="0" <% if store_payment_gateway_enabled = "0" then%>selected<% end if %>>No</option>
+																		<option value="6" <% if store_payment_gateway_enabled = "6" then%>selected<% end if %>>Authorize.net</option>
+																		<option value="2" <% if store_payment_gateway_enabled = "2" then%>selected<% end if %>>Paypal Payflow Pro</option>
+																		<option value="5" <% if store_payment_gateway_enabled = "5" then%>selected<% end if %>>Paypal Payflow Link</option>
+																		<option value="91" <% if store_payment_gateway_enabled = "91" then%>selected<% end if %>>Paypal Payment Pro</option>
+																		<option value="18" <% if store_payment_gateway_enabled = "18" then%>selected<% end if %>>Stripe</option>
+																	</select>
+																</div>
+																<div class="col-sm-4">
+																</div>
+															</div>
+															<div class="form-group">
+																<label class="col-sm-2 control-label" for="store_payment_cc_type">
+																	Credit Card Types <span class="symbol required"></span>
+																</label>
+																<div class="col-sm-4">
+																	<select id="store_payment_cc_type" name="store_payment_cc_type" class="form-control select input-sm" size="5" multiple="multiple">
+																	<option value="AE">American Express</option>
+																	<option value="VI" selected="selected">Visa</option>
+																	<option value="MC" selected="selected">MasterCard</option>
+																	<option value="DI" selected="selected">Discover</option>
+																	<option value="OT" selected="selected">JCB Card</option>
+																	</select>
+																</div>
+															</div>
+															<div class="form-group">
+																<label class="col-sm-2 control-label" for="store_payment_cc_use_card_id">
+																	Credit Card Verification <span class="symbol required"></span>
+																</label>
+																<div class="col-sm-4">
+																	<select id="store_payment_cc_use_card_id" name="store_payment_cc_use_card_id" class="form-control select input-sm">
+																	<option value="1" <% if store_payment_cc_use_card_id = "1" then%>selected<% end if %>>Yes</option>
+																	<option value="0" <% if store_payment_cc_use_card_id = "0" then%>selected<% end if %>>No</option>
+																	</select>
+																</div>
+															</div>
+														</div>
+														<div class="tab-pane" id="panel_tab2_example1">
+															<div class="form-group">
+																<label class="col-sm-2 control-label" for="goodgree_payment_mode">
+																	Mode <span class="symbol required"></span>
+																</label>
+																<div class="col-sm-9">
+																	<select id="goodgree_payment_mode" name="goodgree_payment_mode" class="form-control select input-sm">
+																		<option value="sandbox"  <% if goodgree_payment_mode = "sandbox" then%>selected<% end if %>>Sandbox</option>
+																		<option value="live"  <% if goodgree_payment_mode = "live" then%>selected<% end if %>>Live</option>
+																	</select>
+																</div>
+															</div>
+															<!--
+															<div class="form-group">
+																<label class="col-sm-2 control-label" for="goodgree_payment_sandbox_sk">
+																	Test Secret Key <span class="symbol required"></span>
+																</label>
+																<div class="col-sm-9">
+																	<input type="text"  id="goodgree_payment_sandbox_sk" name="goodgree_payment_sandbox_sk" class="form-control" value="<%=goodgree_payment_sandbox_sk%>">
+																</div>
+															</div>
+															<div class="form-group">
+																<label class="col-sm-2 control-label" for="goodgree_payment_live_sk">
+																	Live Secret Key <span class="symbol required"></span>
+																</label>
+																<div class="col-sm-9">
+																	<input type="text"  id="goodgree_payment_live_sk" name="goodgree_payment_live_sk" class="form-control" value="<%=goodgree_payment_live_sk%>">
+																</div>
+															</div>
+															-->
+															<div class="form-group">
+																<label class="col-sm-2 control-label" for="goodgree_payment_payment_action">
+																	Payment Action <span class="symbol required"></span>
+																</label>
+																<div class="col-sm-9">
+																	<select id="goodgree_payment_payment_action" name="goodgree_payment_payment_action" class="form-control select input-sm">
+																		<option value="authorize" <% if goodgree_payment_payment_action = "authorize" then%>selected<% end if %>>Authorize Only</option>
+																		<option value="authorize_capture" <% if goodgree_payment_payment_action = "authorize_capture" then%>selected<% end if %>>Authorize and Capture</option>
+																	</select>
+																</div>
+															</div>
+															
+															<div class="form-group">
+																<label class="col-sm-2 control-label" for="goodgree_payment_descriptor">
+																	Store Descriptor (OC:xxxxxx)<span class="symbol required"></span>
+																</label>
+																<div class="col-sm-9">
+																	<input type="text"  id="goodgree_payment_descriptor" name="goodgree_payment_descriptor" class="form-control input-sm" value="<%=goodgree_payment_descriptor%>">
+																</div>
+															</div>
+															
+															<div class="form-group">
+																<label class="col-sm-2 control-label" for="goodgree_payment_account_id">
+																	Account ID
+																</label>
+																<div class="col-sm-9">
+																	<input type="text"  id="goodgree_payment_account_id" name="goodgree_payment_account_id" class="form-control input-sm" value="<%=goodgree_payment_account_id%>" disabled>
+																</div>
+															</div>
+															
+															<div class="form-group">
+																<label class="col-sm-2 control-label" for="goodgree_payment_access_token_sandbox">
+																	Access Key (sandbox)
+																</label>
+																<div class="col-sm-9">
+																	<input type="text"  id="goodgree_payment_access_token_sandbox" name="goodgree_payment_access_token_sandbox" class="form-control input-sm" value="<%=goodgree_payment_access_token_sandbox%>" disabled>
+																</div>
+															</div>
+															
+															<div class="form-group">
+																<label class="col-sm-2 control-label" for="goodgree_payment_access_token">
+																	Access Key (production)
+																</label>
+																<div class="col-sm-9">
+																	<input type="text"  id="goodgree_payment_access_token" name="goodgree_payment_access_token" class="form-control input-sm" value="<%=goodgree_payment_access_token%>" disabled>
+																</div>
+															</div>
+															
+															<div class="form-group">
+																<label class="col-sm-2 control-label" for="goodgree_payment_account_id">
+																	&nbsp;
+																</label>
+																<div class="col-sm-9">
+																	<a class="stripe-connect" href="http://app.olivecommerce.com/stripe_auth.php?storeid=<%=g_storeid%>" target="_blank"><span>Connect with Stripe (sandbox)</span></a>
+																	<a class="stripe-connect" href="http://app.olivecommerce.com/stripe_auth_production.php?storeid=<%=g_storeid%>" target="_blank"><span>Connect with Stripe (live)</span></a>
+																</div>
+															</div>
+														</div>
+														<div class="tab-pane" id="panel_tab2_example2">
+															<div class="form-group">
+																<label class="col-sm-2 control-label" for="store_payment_authorizenet_payment_action">
+																	Payment Action <span class="symbol required"></span>
+																</label>
+																<div class="col-sm-4">
+																	<select id="store_payment_authorizenet_payment_action" name="store_payment_authorizenet_payment_action" class="form-control select input-sm">
+																		<option value="authorize" <% if store_payment_authorizenet_payment_action = "authorize" then%>selected<% end if %>>Authorize Only</option>
+																		<option value="authorize_capture" <% if store_payment_authorizenet_payment_action = "authorize_capture" then%>selected<% end if %>>Authorize and Capture</option>
+																	</select>
+																</div>
+															</div>
+															<div class="form-group">
+																<label class="col-sm-2 control-label" for="store_payment_authorizenet_api_login_id">
+																	API Login ID <span class="symbol required"></span>
+																</label>
+																<div class="col-sm-9">
+																	<input type="text" placeholder="" class="form-control input-sm" id="store_payment_authorizenet_api_login_id" name="store_payment_authorizenet_api_login_id" value="<%=store_payment_authorizenet_api_login_id%>">
+																</div>
+															</div>
+															<div class="form-group">
+																<label class="col-sm-2 control-label" for="store_payment_authorizenet_transaction_key">
+																	Transaction Key <span class="symbol required"></span>
+																</label>
+																<div class="col-sm-9">
+																	<input type="text" placeholder="" class="form-control input-sm" id="store_payment_authorizenet_transaction_key" name="store_payment_authorizenet_transaction_key" value="<%=store_payment_authorizenet_transaction_key%>">
+																</div>
+															</div>
+														</div>
+														<div class="tab-pane" id="panel_tab2_example3">
+															<div class="row">
+																<div class="col-lg-12">
+																	<!--
+																	<h5 class="over-title margin-bottom-15"><span class="text-bold">Bootsrap Accordions</span></h5>
+																	<p>
+																		Extend the default collapse behavior to create an accordion with the panel component.
+																	</p>
+																	-->
+																	<div class="panel-group accordion" id="accordion">
+																		<div class="panel panel-white">
+																			<div class="panel-heading">
+																				<h5 class="panel-title">
+																				<a class="accordion-toggle" data-toggle="collapse" data-parent="#accordion" href="#collapseOne">
+																					<i class="icon-arrow"></i> Paypal Payflow Pro
+																				</a></h5>
+																			</div>
+																			<div id="collapseOne" class="panel-collapse collapse">
+																				<div class="panel-body">
+																					<div class="form-group">
+																						<label class="col-sm-2 control-label" for="store_payment_paypal_payflowpro_payment_action">
+																							Payment Action <span class="symbol required"></span>
+																						</label>
+																						<div class="col-sm-4">
+																							<select id="store_payment_paypal_payflowpro_payment_action" name="store_payment_paypal_payflowpro_payment_action" class="form-control select input-sm">
+																							<option value="Authorization" <% if store_payment_paypal_payflowpro_payment_action = "Authorization" then%>selected<% end if %>>Authorization</option>
+																							<option value="Sale" <% if store_payment_paypal_payflowpro_payment_action = "Sale" then%>selected<% end if %>>Sale</option>
+																							</select>
+																						</div>
+																					</div>
+																					<div class="form-group">
+																						<label class="col-sm-2 control-label" for="store_payment_paypal_payflowpro_partner">
+																							Partner <span class="symbol required"></span>
+																						</label>
+																						<div class="col-sm-9">
+																							<input type="text" placeholder="" class="form-control input-sm" id="store_payment_paypal_payflowpro_partner" name="store_payment_paypal_payflowpro_partner" value="<%=store_payment_paypal_payflowpro_partner%>">
+																						</div>
+																					</div>
+																					<div class="form-group">
+																						<label class="col-sm-2 control-label" for="store_payment_paypal_payflowpro_user">
+																							User <span class="symbol required"></span>
+																						</label>
+																						<div class="col-sm-9">
+																							<input type="text" placeholder="" class="form-control input-sm" id="store_payment_paypal_payflowpro_user" name="store_payment_paypal_payflowpro_user" value="<%=store_payment_paypal_payflowpro_user%>">
+																						</div>
+																					</div>
+																					<div class="form-group">
+																						<label class="col-sm-2 control-label" for="store_payment_paypal_payflowpro_vendor">
+																							Vendor <span class="symbol required"></span>
+																						</label>
+																						<div class="col-sm-9">
+																							<input type="text" placeholder="" class="form-control input-sm" id="store_payment_paypal_payflowpro_vendor" name="store_payment_paypal_payflowpro_vendor" value="<%=store_payment_paypal_payflowpro_vendor%>">
+																						</div>
+																					</div>
+																					<div class="form-group">
+																						<label class="col-sm-2 control-label" for="store_payment_paypal_payflowpro_password">
+																							Password <span class="symbol required"></span>
+																						</label>
+																						<div class="col-sm-9">
+																							<input type="text" placeholder="" class="form-control input-sm" id="store_payment_paypal_payflowpro_password" name="store_payment_paypal_payflowpro_password" value="<%=store_payment_paypal_payflowpro_password%>">
+																						</div>
+																					</div>
+																				</div>
+																			</div>
+																		</div>
+																		<div class="panel panel-white">
+																			<div class="panel-heading">
+																				<h5 class="panel-title">
+																				<a class="accordion-toggle collapsed" data-toggle="collapse" data-parent="#accordion" href="#collapseTwo">
+																					<i class="icon-arrow"></i> Paypal Payflow Link
+																				</a></h5>
+																			</div>
+																			<div id="collapseTwo" class="panel-collapse collapse">
+																				<div class="panel-body">
+																					<div class="form-group">
+																						<label class="col-sm-2 control-label" for="store_payment_paypal_payflowlink_partner">
+																							Partner <span class="symbol required"></span>
+																						</label>
+																						<div class="col-sm-9">
+																							<input type="text" placeholder="" class="form-control input-sm" id="store_payment_paypal_payflowlink_partner" name="store_payment_paypal_payflowlink_partner" value="<%=store_payment_paypal_payflowlink_partner%>">
+																						</div>
+																					</div>
+																					<div class="form-group">
+																						<label class="col-sm-2 control-label" for="store_payment_paypal_payflowlink_user">
+																							User <span class="symbol required"></span>
+																						</label>
+																						<div class="col-sm-9">
+																							<input type="text" placeholder="" class="form-control input-sm" id="store_payment_paypal_payflowlink_user" name="store_payment_paypal_payflowlink_user" value="<%=store_payment_paypal_payflowlink_user%>">
+																						</div>
+																					</div>
+																					<div class="form-group">
+																						<label class="col-sm-2 control-label" for="store_payment_paypal_payflowlink_vendor">
+																							Vendor <span class="symbol required"></span>
+																						</label>
+																						<div class="col-sm-9">
+																							<input type="text" placeholder="" class="form-control input-sm" id="store_payment_paypal_payflowlink_vendor" name="store_payment_paypal_payflowlink_vendor" value="<%=store_payment_paypal_payflowlink_vendor%>">
+																						</div>
+																					</div>
+																					<div class="form-group">
+																						<label class="col-sm-2 control-label" for="store_payment_paypal_payflowlink_password ">
+																							Password <span class="symbol required"></span>
+																						</label>
+																						<div class="col-sm-9">
+																							<input type="text" placeholder="" class="form-control input-sm" id="store_payment_paypal_payflowlink_password " name="store_payment_paypal_payflowlink_password " value="<%=store_payment_paypal_payflowlink_password %>">
+																						</div>
+																					</div>
+																				</div>
+																			</div>
+																		</div>
+																		<div class="panel panel-white">
+																			<div class="panel-heading">
+																				<h5 class="panel-title">
+																				<a class="accordion-toggle collapsed" data-toggle="collapse" data-parent="#accordion" href="#collapseThree">
+																					<i class="icon-arrow"></i> Payflow Payments Pro
+																				</a></h5>
+																			</div>
+																			<div id="collapseThree" class="panel-collapse collapse">
+																				<div class="panel-body">
+																					<div class="form-group">
+																						<label class="col-sm-2 control-label" for="store_payment_paypal_paymentpro_payment_action">
+																							Payment Action <span class="symbol required"></span>
+																						</label>
+																						<div class="col-sm-4">
+																							<select id="store_payment_paypal_paymentpro_payment_action" name="store_payment_paypal_paymentpro_payment_action" class="form-control select input-sm">
+																							<option value="Authorization" <% if store_payment_paypal_paymentpro_payment_action = "Authorization" then%>selected<% end if %>>Authorization</option>
+																							<option value="Sale" <% if store_payment_paypal_paymentpro_payment_action = "Sale" then%>selected<% end if %>>Sale</option>
+																							</select>
+																						</div>
+																					</div>
+																					<div class="form-group">
+																						<label class="col-sm-2 control-label" for="store_payment_paypal_paymentpro_paypal_email_address">
+																							Paypal Email Address <span class="symbol required"></span>
+																						</label>
+																						<div class="col-sm-9">
+																							<input type="text" placeholder="" class="form-control input-sm" id="store_payment_paypal_paymentpro_paypal_email_address" name="store_payment_paypal_paymentpro_paypal_email_address" value="<%=store_payment_paypal_paymentpro_paypal_email_address%>">
+																						</div>
+																					</div>
+																					<div class="form-group">
+																						<label class="col-sm-2 control-label" for="store_payment_paypal_paymentpro_api_username">
+																							API Username <span class="symbol required"></span>
+																						</label>
+																						<div class="col-sm-9">
+																							<input type="text" placeholder="" class="form-control input-sm" id="store_payment_paypal_paymentpro_api_username" name="store_payment_paypal_paymentpro_api_username" value="<%=store_payment_paypal_paymentpro_api_username%>">
+																						</div>
+																					</div>
+																					<div class="form-group">
+																						<label class="col-sm-2 control-label" for="store_payment_paypal_paymentpro_api_password">
+																							API Password <span class="symbol required"></span>
+																						</label>
+																						<div class="col-sm-9">
+																							<input type="text" placeholder="" class="form-control input-sm" id="store_payment_paypal_paymentpro_api_password" name="store_payment_paypal_paymentpro_api_password" value="<%=store_payment_paypal_paymentpro_api_password%>">
+																						</div>
+																					</div>
+																					<div class="form-group">
+																						<label class="col-sm-2 control-label" for="store_payment_paypal_paymentpro_api_signature">
+																							API Signature <span class="symbol required"></span>
+																						</label>
+																						<div class="col-sm-9">
+																							<input type="text" placeholder="" class="form-control input-sm" id="store_payment_paypal_paymentpro_api_signature" name="store_payment_paypal_paymentpro_api_signature" value="<%=store_payment_paypal_paymentpro_api_signature%>">
+																						</div>
+																					</div>
+																					<div class="form-group">
+																						<label class="col-sm-2 control-label" for="store_payment_paypal_paymentpro_sandbox_mode">
+																							Mode <span class="symbol required"></span>
+																						</label>
+																						<div class="col-sm-4">
+																							<select id="store_payment_paypal_paymentpro_sandbox_mode" name="store_payment_paypal_paymentpro_sandbox_mode" class="form-control select input-sm">
+																							<option value="1" <% if store_payment_paypal_paymentpro_sandbox_mode = "1" then%>selected<% end if %>>Yes</option>
+																							<option value="0" <% if store_payment_paypal_paymentpro_sandbox_mode = "0" then%>selected<% end if %>>No</option>
+																							</select>
+																						</div>
+																					</div>
+																				</div>
+																			</div>
+																		</div>
+																		<div class="panel panel-white">
+																			<div class="panel-heading">
+																				<h5 class="panel-title">
+																				<a class="accordion-toggle collapsed" data-toggle="collapse" data-parent="#accordion" href="#collapseFour">
+																					<i class="icon-arrow"></i> Payflow Express Checkout
+																				</a></h5>
+																			</div>
+																			<div id="collapseFour" class="panel-collapse collapse">
+																				<div class="panel-body">
+																					<div class="form-group">
+																						<label class="col-sm-2 control-label" for="store_payment_paypal_expresscheckout_payment_action">
+																							Payment Action <span class="symbol required"></span>
+																						</label>
+																						<div class="col-sm-4">
+																							<select id="store_payment_paypal_expresscheckout_payment_action " name="store_payment_paypal_expresscheckout_payment_action " class="form-control select input-sm">
+																							<option value="0" <% if store_payment_paypal_expresscheckout_payment_action = "0" then%>selected<% end if %>>Disable</option>
+																							<option value="Authorization" <% if store_payment_paypal_expresscheckout_payment_action = "Authorization" then%>selected<% end if %>>Authorization</option>
+																							<option value="Sale" <% if store_payment_paypal_expresscheckout_payment_action = "Sale" then%>selected<% end if %>>Sale</option>
+																							</select>
+																						</div>
+																					</div>
+																					<div class="form-group">
+																						<label class="col-sm-2 control-label" for="store_payment_paypal_expresscheckout_paypal_email_address">
+																							Paypal Email Address <span class="symbol required"></span>
+																						</label>
+																						<div class="col-sm-9">
+																							<input type="text" placeholder="" class="form-control input-sm" id="store_payment_paypal_expresscheckout_paypal_email_address" name="store_payment_paypal_expresscheckout_paypal_email_address" value="<%=store_payment_paypal_expresscheckout_paypal_email_address%>">
+																						</div>
+																					</div>
+																					<div class="form-group">
+																						<label class="col-sm-2 control-label" for="store_payment_paypal_expresscheckout_api_username">
+																							API Username <span class="symbol required"></span>
+																						</label>
+																						<div class="col-sm-9">
+																							<input type="text" placeholder="" class="form-control input-sm" id="store_payment_paypal_expresscheckout_api_username" name="store_payment_paypal_expresscheckout_api_username" value="<%=store_payment_paypal_expresscheckout_api_username%>">
+																						</div>
+																					</div>
+																					<div class="form-group">
+																						<label class="col-sm-2 control-label" for="store_payment_paypal_expresscheckout_api_password">
+																							API Password <span class="symbol required"></span>
+																						</label>
+																						<div class="col-sm-9">
+																							<input type="text" placeholder="" class="form-control input-sm" id="store_payment_paypal_expresscheckout_api_password" name="store_payment_paypal_expresscheckout_api_password" value="<%=store_payment_paypal_expresscheckout_api_password%>">
+																						</div>
+																					</div>
+																					<div class="form-group">
+																						<label class="col-sm-2 control-label" for="store_payment_paypal_expresscheckout_api_signature">
+																							API Signature <span class="symbol required"></span>
+																						</label>
+																						<div class="col-sm-9">
+																							<input type="text" placeholder="" class="form-control input-sm" id="store_payment_paypal_expresscheckout_api_signature" name="store_payment_paypal_expresscheckout_api_signature" value="<%=store_payment_paypal_expresscheckout_api_signature%>">
+																						</div>
+																					</div>
+																					<div class="form-group">
+																						<label class="col-sm-2 control-label" for="store_payment_paypal_expresscheckout_sandbox_mode">
+																							Mode <span class="symbol required"></span>
+																						</label>
+																						<div class="col-sm-4">
+																							<select id="store_payment_paypal_expresscheckout_sandbox_mode" name="store_payment_paypal_expresscheckout_sandbox_mode" class="form-control select input-sm">
+																							<option value="1" <% if store_payment_paypal_expresscheckout_sandbox_mode = "1" then%>selected<% end if %>>Yes</option>
+																							<option value="0" <% if store_payment_paypal_expresscheckout_sandbox_mode = "0" then%>selected<% end if %>>No</option>
+																							</select>
+																						</div>
+																					</div>
+																				</div>
+																			</div>
+																		</div>
+																	</div>
+																</div>
+															</div>
+														</div>
+														<div class="tab-pane" id="panel_tab2_example4">
+															<div class="form-group">
+																<label class="col-sm-2 control-label" for="store_payment_check_enabled">
+																	Enabled <span class="symbol required"></span>
+																</label>
+																<div class="col-sm-4">
+																	<select id="store_payment_check_enabled" name="store_payment_check_enabled" class="form-control select input-sm">
+																		<option value="1" <% if store_payment_check_enabled = "1" then%>selected<% end if %>>Yes</option>
+																		<option value="0" <% if store_payment_check_enabled = "0" then%>selected<% end if %>>No</option>
+																	</select>
+																</div>
+															</div>
+															<div class="form-group">
+																<label class="col-sm-2 control-label" for="store_payment_check_title">
+																	Title <span class="symbol required"></span>
+																</label>
+																<div class="col-sm-9">
+																	<input type="text" placeholder="" class="form-control input-sm" id="store_payment_check_title" name="store_payment_check_title" value="<%=store_payment_check_title%>">
+																</div>
+															</div>
+														</div>
+														<div class="tab-pane" id="panel_tab2_example5">
+															<div class="form-group">
+																<label class="col-sm-2 control-label" for="store_payment_purchase_order_enabled">
+																	Enabled <span class="symbol required"></span>
+																</label>
+																<div class="col-sm-4">
+																	<select id="store_payment_purchase_order_enabled" name="store_payment_purchase_order_enabled" class="form-control select input-sm">
+																		<option value="1" <% if store_payment_purchase_order_enabled = "1" then%>selected<% end if %>>Yes</option>
+																		<option value="0" <% if store_payment_purchase_order_enabled = "0" then%>selected<% end if %>>No</option>
+																	</select>
+																</div>
+															</div>
+															<div class="form-group">
+																<label class="col-sm-2 control-label" for="store_payment_purchase_order_title">
+																	Title <span class="symbol required"></span>
+																</label>
+																<div class="col-sm-9">
+																	<input type="text" placeholder="" class="form-control input-sm" id="store_payment_purchase_order_title" name="store_payment_purchase_order_title" value="<%=store_payment_purchase_order_title%>">
+																</div>
+															</div>
+														</div>
+													</div>
 												</div>
+												<div class="row">
+													<div class="col-sm-1">
+													</div>
+													<div class="col-sm-8">
+														<button class="btn btn-blue btn-sm" type="submit">
+														<i class="fa fa-check-square"></i>
+														Save
+														</button>
+													</div>
+												</div>
+												</form>
 											</div>
 										</div>
 									</div>
@@ -449,7 +874,7 @@ end function
 						<div class="row">
 							<div class="col-sm-12">
 								<!-- start: INLINE TABS PANEL -->
-								<div class="panel panel-blue collapses">
+								<div class="panel panel-dark-primary collapses">
 									<div class="panel-heading">
 										<h4 class="panel-title">Shipping</h4>
 										<div class="panel-tools" >
@@ -915,7 +1340,7 @@ end function
 														<div class="col-sm-1">
 														</div>
 														<div class="col-sm-8">
-															<button class="btn btn-blue" type="submit">
+															<button class="btn btn-blue btn-sm" type="submit">
 															<i class="fa fa-check-square"></i>
 															Save
 															</button>
@@ -933,7 +1358,7 @@ end function
 						<div class="row">
 							<div class="col-sm-12">
 								<!-- start: INLINE TABS PANEL -->
-								<div class="panel panel-blue collapses">
+								<div class="panel panel-dark-primary collapses">
 									<div class="panel-heading">
 										<h4 class="panel-title">Tax</h4>
 										<div class="panel-tools" >
@@ -1017,7 +1442,7 @@ end function
 											<div class="col-sm-1">
 											</div>
 											<div class="col-sm-8">
-												<button class="btn btn-blue" type="submit">
+												<button class="btn btn-blue btn-sm" type="submit">
 												<i class="fa fa-check-square"></i>
 												Save
 												</button>
@@ -1036,83 +1461,202 @@ end function
 	</div>
 	<!--#INCLUDE FILE="include/js.phtml"-->
 	<!-- start: JAVASCRIPTS REQUIRED FOR THIS PAGE ONLY -->
+	<script src="vendor/bootstrap-datepicker/bootstrap-datepicker.min.js"></script>
+	<script src="vendor/bootstrap-timepicker/bootstrap-timepicker.min.js"></script>
+	<script src="vendor/jquery-validation/jquery.validate.min.js"></script>
 	<!-- end: JAVASCRIPTS REQUIRED FOR THIS PAGE ONLY -->
 	<script src="assets/js/main.js"></script>
 	<!-- start: JavaScript Event Handlers for this page -->
+	<script language="javascript">
+	var FormValidator = function () {
+	// function to initiate Validation Sample 1
+		var runValidator1 = function () {
+			var form1 = $('#form1');
+			var errorHandler1 = $('#errorHandler1_1', form1);
+			var errorHandler2 = $('#errorHandler2_1', form1);
+			var successHandler1 = $('#successHandler_1', form1);
+			
+			$('#form1').validate({
+				errorElement: "span", // contain the error msg in a span tag
+				errorClass: 'help-block',
+				errorPlacement: function (error, element) { // render error placement for each input type
+					if (element.attr("type") == "radio" || element.attr("type") == "checkbox") { // for chosen elements, need to insert the error after the chosen container
+						error.insertAfter($(element).closest('.form-group').children('div').children().last());
+					} else if (element.attr("name") == "dd" || element.attr("name") == "mm" || element.attr("name") == "yyyy") {
+						error.insertAfter($(element).closest('.form-group').children('div'));
+					} else {
+						error.insertAfter(element);
+						// for other inputs, just perform default behavior
+					}
+				},
+				ignore: "",
+				
+				//RULES
+				rules: {
+					company: {
+						required: true
+					},
+					address: {
+						required: true
+					},
+					city: {
+						required: true
+					},
+					state: {
+						required: true
+					},
+					zip: {
+						required: true
+					},
+					phone: {
+						required: true
+					},
+					email: {
+						required: true,
+						email: true
+					}
+					
+				},
+				
+				//END OF RULES
+				
+				invalidHandler: function (event, validator) { //display error alert on form submit
+					successHandler1.hide();
+					errorHandler1.show();
+				},
+				highlight: function (element) {
+					$(element).closest('.help-block').removeClass('valid');
+					$(element).closest('.form-group').removeClass('has-success').addClass('has-error').find('.symbol').removeClass('ok').addClass('required');
+				},
+				unhighlight: function (element) { 
+					$(element).closest('.form-group').removeClass('has-error');
+				},
+				success: function (label, element) {
+					label.addClass('help-block valid');
+					$(element).closest('.form-group').removeClass('has-error').addClass('has-success').find('.symbol').removeClass('required').addClass('ok');
+				},
+				submitHandler: function (form) {
+					successHandler1.hide();
+					errorHandler1.hide();
+					errorHandler2.hide();
+					$.ajax({
+						type: "POST",
+						url: "api/sp_store_information_update.phtml",
+						data: $("#form1").serialize(),
+						success: function() {
+							successHandler1.show();
+						},
+						error: function() {
+							errorHandler2.show();
+						}
+					});
+					
+				}
+			});
+		};
+		
+		var runValidator2 = function () {
+			var form1 = $('#form2');
+			var errorHandler1 = $('#errorHandler1_2', form2);
+			var errorHandler2 = $('#errorHandler2_2', form2);
+			var successHandler1 = $('#successHandler_2', form2);
+			
+			$('#form2').validate({
+				errorElement: "span", // contain the error msg in a span tag
+				errorClass: 'help-block',
+				errorPlacement: function (error, element) { // render error placement for each input type
+					if (element.attr("type") == "radio" || element.attr("type") == "checkbox") { // for chosen elements, need to insert the error after the chosen container
+						error.insertAfter($(element).closest('.form-group').children('div').children().last());
+					} else if (element.attr("name") == "dd" || element.attr("name") == "mm" || element.attr("name") == "yyyy") {
+						error.insertAfter($(element).closest('.form-group').children('div'));
+					} else {
+						error.insertAfter(element);
+						// for other inputs, just perform default behavior
+					}
+				},
+				ignore: "",
+				
+				//RULES
+				rules: {
+					company: {
+						required: true
+					},
+					address: {
+						required: true
+					},
+					city: {
+						required: true
+					},
+					state: {
+						required: true
+					},
+					zip: {
+						required: true
+					},
+					phone: {
+						required: true
+					},
+					email: {
+						required: true,
+						email: true
+					}
+					
+				},
+				
+				//END OF RULES
+				
+				invalidHandler: function (event, validator) { //display error alert on form submit
+					successHandler1.hide();
+					errorHandler1.show();
+				},
+				highlight: function (element) {
+					$(element).closest('.help-block').removeClass('valid');
+					$(element).closest('.form-group').removeClass('has-success').addClass('has-error').find('.symbol').removeClass('ok').addClass('required');
+				},
+				unhighlight: function (element) { 
+					$(element).closest('.form-group').removeClass('has-error');
+				},
+				success: function (label, element) {
+					label.addClass('help-block valid');
+					$(element).closest('.form-group').removeClass('has-error').addClass('has-success').find('.symbol').removeClass('required').addClass('ok');
+				},
+				submitHandler: function (form) {
+					successHandler1.hide();
+					errorHandler1.hide();
+					errorHandler2.hide();
+					$.ajax({
+						type: "POST",
+						url: "api/sp_store_information_update.phtml",
+						data: $("#form2").serialize(),
+						success: function() {
+							successHandler1.show();
+						},
+						error: function() {
+							errorHandler2.show();
+						}
+					});
+					
+				}
+			});
+		};
+		
+		return {
+			//main function to initiate template pages
+			init: function () {
+				runValidator1();
+				runValidator2();
+			}
+		};
+	}();
 	
+	</script>
 	<script>
 		jQuery(document).ready(function() {
 			Main.init();
+			FormValidator.init();
 		});
 	</script>
 	<!-- end: JavaScript Event Handlers for this page -->
-	<style>
-		.stripe-connect, .button-example {
-			-moz-user-select: none;
-			background-image: linear-gradient(#28a0e5, #015e94);
-			border: 0 none;
-			border-radius: 4px;
-			box-shadow: 0 1px 0 rgba(0, 0, 0, 0.2);
-			cursor: pointer;
-			display: inline-block;
-			height: 30px;
-			margin-bottom: 1px;
-			padding: 1px;
-			text-decoration: none !important;
-		}
-		.stripe-connect span, .button-example span {
-			background: #1275ff linear-gradient(#7dc5ee, #008cdd 85%, #30a2e4) repeat scroll 0 0;
-			border-radius: 3px;
-			box-shadow: 0 1px 0 rgba(255, 255, 255, 0.25) inset;
-			color: white;
-			display: block;
-			font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;
-			font-size: 14px;
-			font-weight: bold;
-			height: 30px;
-			line-height: 30px;
-			padding: 0 12px;
-			position: relative;
-			text-shadow: 0 -1px 0 rgba(0, 0, 0, 0.2);
-		}
-		#doc #details article p.submit-note {
-			color: #999;
-			font-size: 11px;
-		}
-		#doc #details article p.button-example {
-			margin-bottom: 2px;
-		}
-		.stripe-connect span {
-			padding-left: 44px;
-		}
-		.stripe-connect span::before {
-			background-repeat: no-repeat;
-			background-size: 23px 24px;
-			content: "";
-			display: block;
-			height: 24px;
-			left: 11px;
-			margin-top: -12px;
-			position: absolute;
-			top: 50%;
-			width: 23px;
-		}
-		.stripe-connect:active, .button-example:active {
-			background: #005d93 none repeat scroll 0 0;
-		}
-		.stripe-connect:active span, .button-example:active span {
-			background: #008cdd linear-gradient(#008cdd, #008cdd 85%, #239adf) repeat scroll 0 0;
-			box-shadow: 0 1px 0 rgba(0, 0, 0, 0.1) inset;
-			color: #eee;
-		}
-		.stripe-connect span::before, .stripe-connect.blue span::before {
-			background-image: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABcAAAAYCAYAAAARfGZ1AAAKRGlDQ1BJQ0MgUHJvZmlsZQAASA2dlndUFNcXx9/MbC+0XZYiZem9twWkLr1IlSYKy+4CS1nWZRewN0QFIoqICFYkKGLAaCgSK6JYCAgW7AEJIkoMRhEVlczGHPX3Oyf5/U7eH3c+8333nnfn3vvOGQAoASECYQ6sAEC2UCKO9PdmxsUnMPG9AAZEgAM2AHC4uaLQKL9ogK5AXzYzF3WS8V8LAuD1LYBaAK5bBIQzmX/p/+9DkSsSSwCAwtEAOx4/l4tyIcpZ+RKRTJ9EmZ6SKWMYI2MxmiDKqjJO+8Tmf/p8Yk8Z87KFPNRHlrOIl82TcRfKG/OkfJSREJSL8gT8fJRvoKyfJc0WoPwGZXo2n5MLAIYi0yV8bjrK1ihTxNGRbJTnAkCgpH3FKV+xhF+A5gkAO0e0RCxIS5cwjbkmTBtnZxYzgJ+fxZdILMI53EyOmMdk52SLOMIlAHz6ZlkUUJLVlokW2dHG2dHRwtYSLf/n9Y+bn73+GWS9/eTxMuLPnkGMni/al9gvWk4tAKwptDZbvmgpOwFoWw+A6t0vmv4+AOQLAWjt++p7GLJ5SZdIRC5WVvn5+ZYCPtdSVtDP6386fPb8e/jqPEvZeZ9rx/Thp3KkWRKmrKjcnKwcqZiZK+Jw+UyL/x7ifx34VVpf5WEeyU/li/lC9KgYdMoEwjS03UKeQCLIETIFwr/r8L8M+yoHGX6aaxRodR8BPckSKPTRAfJrD8DQyABJ3IPuQJ/7FkKMAbKbF6s99mnuUUb3/7T/YeAy9BXOFaQxZTI7MprJlYrzZIzeCZnBAhKQB3SgBrSAHjAGFsAWOAFX4Al8QRAIA9EgHiwCXJAOsoEY5IPlYA0oAiVgC9gOqsFeUAcaQBM4BtrASXAOXARXwTVwE9wDQ2AUPAOT4DWYgSAID1EhGqQGaUMGkBlkC7Egd8gXCoEioXgoGUqDhJAUWg6tg0qgcqga2g81QN9DJ6Bz0GWoH7oDDUPj0O/QOxiBKTAd1oQNYSuYBXvBwXA0vBBOgxfDS+FCeDNcBdfCR+BW+Bx8Fb4JD8HP4CkEIGSEgeggFggLYSNhSAKSioiRlUgxUonUIk1IB9KNXEeGkAnkLQaHoWGYGAuMKyYAMx/DxSzGrMSUYqoxhzCtmC7MdcwwZhLzEUvFamDNsC7YQGwcNg2bjy3CVmLrsS3YC9ib2FHsaxwOx8AZ4ZxwAbh4XAZuGa4UtxvXjDuL68eN4KbweLwa3gzvhg/Dc/ASfBF+J/4I/gx+AD+Kf0MgE7QJtgQ/QgJBSFhLqCQcJpwmDBDGCDNEBaIB0YUYRuQRlxDLiHXEDmIfcZQ4Q1IkGZHcSNGkDNIaUhWpiXSBdJ/0kkwm65KdyRFkAXk1uYp8lHyJPEx+S1GimFLYlESKlLKZcpBylnKH8pJKpRpSPakJVAl1M7WBep76kPpGjiZnKRcox5NbJVcj1yo3IPdcnihvIO8lv0h+qXyl/HH5PvkJBaKCoQJbgaOwUqFG4YTCoMKUIk3RRjFMMVuxVPGw4mXFJ0p4JUMlXyWeUqHSAaXzSiM0hKZHY9O4tHW0OtoF2igdRzeiB9Iz6CX07+i99EllJWV75RjlAuUa5VPKQwyEYcgIZGQxyhjHGLcY71Q0VbxU+CqbVJpUBlSmVeeoeqryVYtVm1Vvqr5TY6r5qmWqbVVrU3ugjlE3VY9Qz1ffo35BfWIOfY7rHO6c4jnH5tzVgDVMNSI1lmkc0OjRmNLU0vTXFGnu1DyvOaHF0PLUytCq0DqtNa5N03bXFmhXaJ/RfspUZnoxs5hVzC7mpI6GToCOVGe/Tq/OjK6R7nzdtbrNug/0SHosvVS9Cr1OvUl9bf1Q/eX6jfp3DYgGLIN0gx0G3QbThkaGsYYbDNsMnxipGgUaLTVqNLpvTDX2MF5sXGt8wwRnwjLJNNltcs0UNnUwTTetMe0zg80czQRmu836zbHmzuZC81rzQQuKhZdFnkWjxbAlwzLEcq1lm+VzK32rBKutVt1WH60drLOs66zv2SjZBNmstemw+d3W1JZrW2N7w45q52e3yq7d7oW9mT3ffo/9bQeaQ6jDBodOhw+OTo5ixybHcSd9p2SnXU6DLDornFXKuuSMdfZ2XuV80vmti6OLxOWYy2+uFq6Zroddn8w1msufWzd3xE3XjeO2323Ineme7L7PfchDx4PjUevxyFPPk+dZ7znmZeKV4XXE67m3tbfYu8V7mu3CXsE+64P4+PsU+/T6KvnO9632fein65fm1+g36e/gv8z/bAA2IDhga8BgoGYgN7AhcDLIKWhFUFcwJTgquDr4UYhpiDikIxQODQrdFnp/nsE84by2MBAWGLYt7EG4Ufji8B8jcBHhETURjyNtIpdHdkfRopKiDke9jvaOLou+N994vnR+Z4x8TGJMQ8x0rE9seexQnFXcirir8erxgvj2BHxCTEJ9wtQC3wXbF4wmOiQWJd5aaLSwYOHlReqLshadSpJP4iQdT8YmxyYfTn7PCePUcqZSAlN2pUxy2dwd3Gc8T14Fb5zvxi/nj6W6pZanPklzS9uWNp7ukV6ZPiFgC6oFLzICMvZmTGeGZR7MnM2KzWrOJmQnZ58QKgkzhV05WjkFOf0iM1GRaGixy+LtiyfFweL6XCh3YW67hI7+TPVIjaXrpcN57nk1eW/yY/KPFygWCAt6lpgu2bRkbKnf0m+XYZZxl3Uu11m+ZvnwCq8V+1dCK1NWdq7SW1W4anS1/+pDa0hrMtf8tNZ6bfnaV+ti13UUahauLhxZ77++sUiuSFw0uMF1w96NmI2Cjb2b7Dbt3PSxmFd8pcS6pLLkfSm39Mo3Nt9UfTO7OXVzb5lj2Z4tuC3CLbe2emw9VK5YvrR8ZFvottYKZkVxxavtSdsvV9pX7t1B2iHdMVQVUtW+U3/nlp3vq9Orb9Z41zTv0ti1adf0bt7ugT2ee5r2au4t2ftun2Df7f3++1trDWsrD+AO5B14XBdT1/0t69uGevX6kvoPB4UHhw5FHupqcGpoOKxxuKwRbpQ2jh9JPHLtO5/v2pssmvY3M5pLjoKj0qNPv0/+/tax4GOdx1nHm34w+GFXC62luBVqXdI62ZbeNtQe395/IuhEZ4drR8uPlj8ePKlzsuaU8qmy06TThadnzyw9M3VWdHbiXNq5kc6kznvn487f6Iro6r0QfOHSRb+L57u9us9ccrt08rLL5RNXWFfarjpebe1x6Gn5yeGnll7H3tY+p772a87XOvrn9p8e8Bg4d93n+sUbgTeu3px3s//W/Fu3BxMHh27zbj+5k3Xnxd28uzP3Vt/H3i9+oPCg8qHGw9qfTX5uHnIcOjXsM9zzKOrRvRHuyLNfcn95P1r4mPq4ckx7rOGJ7ZOT437j154ueDr6TPRsZqLoV8Vfdz03fv7Db56/9UzGTY6+EL+Y/b30pdrLg6/sX3VOhU89fJ39ema6+I3am0NvWW+738W+G5vJf49/X/XB5EPHx+CP92ezZ2f/AAOY8/wRDtFgAAADQklEQVRIDbWVaUiUQRjHZ96dXY/d1fYQj1U03dJSw9YkFgy6DIkILRArQSSC7PjQjQQqVH7oQ0GHQUWgpQhKHzoNSqiUwpXcsrwIjzVtPVrzbPV9Z6bZhYV3N3WXYAeGmWeeZ37z8J95GEgpBf5oeXn1Es4fYAdzPDlM6je4RBYhR+LMU89UxiCBGiCgkUwsBYSA+SlPKLQBQAYEAZm+3j42K96z3NyOF7VOeMrp62opRcacjPW5+43rDTpNSKQ8QKZAEg7xmPCTs/O27uGJgXuNbW0pxyvLfTmAEBzthEsFZLxRvPdi5rpYo2cmUiQJDA4IVeo0obGdlvGfXUPj0Sym2zPuHxvzcWjDyVupJ/YYizKTGNjLw/HiduNTAqIRIUJ6Vpp+ky8bCSFgwQ2xgkGxFi1ioNWEBGuJB31gbLIv/2pd7SpFoGxtpCYkLSEq4ptlzIYFO7tc7w0TKkeEYg5ADnrWkkYhD8s26GPq3nW0WKxTptftPYBI4Mj3O2fHvKNZBMVSDmMwarXNjDkSF3d5kExZeiCr8M2VI+VFu9IvsPcYtzAvkfoEZkEEE45jMppq3ppbCNPFIY1nD1cpo07lbMmvOXeoDCF8BLKy9uUAAjDkBh+c6bz78mNtVVP7MwET7JBnqb4xXpdWVpC1OVzWn+ELHLCsneX/s7rkRWl1463cy1U3WroG21jhCGKJXPOtKQnpAuENvsAppgDB3TcDVIrpDHbK5Kd+y7W8iodNybHh22rOHyxUK+UaMYjZaoyp25rYL54TSihSKmwZ14v3lc3ZFxdbeywjn/tGJnkmzrydX1ApxOEACKymmXLYfXVpi1JMEOGxPi1ep18doY4r2J7uFumQQ9yGf01bMcZW8dpyc0oIjxxpuC5wuUDX+ovWrnYeg3aXvdLIqnmOvXPsfH6uA5YbTb1DX8ofvTLzTy6ZV4K6fAw+gXiATfdffmjeaUgc1UdpdWplsCooQBrEnqUw82dhdnjit/Vxc4f59tP3DRjzJvYteqrl4rmNlJIfrOwpgNklesDRNQBCHYtQAQqD2CgACNjHAJnG1EyfV/S67fZiJB5t2OGEe4n7L3fS4fpEv/2hUEATfoPbuam5v8N7nps70YTbAAAAAElFTkSuQmCC");
-		}
-		@media not all, only screen and (min--moz-device-pixel-ratio: 1.5), not all {
-		.stripe-connect span::before, .stripe-connect.blue span::before {
-			background-image: url("data:image/png;base64,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");
-		}
-	}
-	</style>
+	
 </body>
 </html>

@@ -491,7 +491,11 @@
 	}); 
 
 	</script>
-	
+	<script type="text/javascript">
+		function getSearchResult(shopper_id) {
+			window.location.href= "api/tp_sales_quote_detail.phtml?quote_id=0&shopper_id=" + shopper_id;
+		}
+	</script>
 	<script>
 		jQuery(document).ready(function() {
 			Main.init();

@@ -1,0 +1,79 @@
+<%response.Expires=-1%>
+<!-- #INCLUDE File="../local/local.phtml" -->
+<!-- #INCLUDE File="../util/xt_func_util.phtml" -->
+<!-- #INCLUDE File="../util/xt_func_string.phtml" -->
+<%
+	'--POST DATA------------------------------------------
+	pf_id = Trim(Request("pf_id"))
+	im_enabled = Request.Form("im_enabled")
+	mustang_userid= Request.Form("mustang_userid")
+	ingram_account= Request.Form("ingram_account")
+	mustang_password= Request.Form("mustang_password")
+	IMFTP_UserID= Request.Form("IMFTP_UserID")
+	IMFTP_Pwd= Request.Form("IMFTP_Pwd")
+	IMFTP_Home_Directory= Request.Form("IMFTP_Home_Directory")
+	IMFTP_File_Name= Request.Form("IMFTP_File_Name")
+	td_enabled= Request.Form("td_enabled")
+	td_account_number= Request.Form("td_account_number")
+	tdxml_userid= Request.Form("tdxml_userid")
+	tdxml_password= Request.Form("tdxml_password")
+	techdata_userid= Request.Form("techdata_userid")
+	techdata_password= Request.Form("techdata_password")
+	sn_enabled=Request.Form("sn_enabled")
+	sn_account_number=Request.Form("sn_account_number")
+	snxml_userid=Request.Form("snxml_userid")
+	snxml_password=Request.Form("snxml_password")
+	sn_File_Name=Request.Form("sn_File_Name")
+	web_userid=Request.Form("web_userid")
+	web_password=Request.Form("web_password")
+	web_payterm=Request.Form("web_payterm")
+	dh_enabled=Request.Form("dh_enabled")
+	dhxml_userid=Request.Form("dhxml_userid")
+	dhxml_password=Request.Form("dhxml_password")
+	dh_File_Name=Request.Form("dh_File_Name")
+	dh_web_userid=Request.Form("dh_web_userid")
+	dh_web_password=Request.Form("dh_web_password")
+	'--END OF POST DATA-----------------------------------
+	
+	Set rsOrder = Server.CreateObject("ADODB.Recordset")
+	with rsOrder
+		.ActiveConnection = dbconn
+		.CursorLocation = 3
+		.CursorType = 1
+		.LockType = 3
+		.Source = g_storeid & "_distributor_info"
+		.Open
+	end with
+	
+	rsOrder("IM_ACTIVE")=im_enabled
+	rsOrder("IM_ACCT_NUM")=ingram_account
+	rsOrder("IM_XML_ID")=mustang_userid
+	rsOrder("IM_XML_PWD")=mustang_password
+	rsOrder("IM_FTP_ID")=IMFTP_UserID
+	rsOrder("IM_FTP_PWD")=IMFTP_Pwd
+	rsOrder("IM_FTP_DIR")=IMFTP_Home_Directory
+	rsOrder("IM_FTP_FILE")=IMFTP_File_Name
+	rsOrder("TD_ACTIVE")=td_enabled
+	rsOrder("TD_ACCT_NUM")=td_account_number
+	rsOrder("TD_XML_ID")=tdxml_userid
+	rsOrder("TD_XML_PWD")=tdxml_password
+	rsOrder("TD_FTP_ID")=techdata_userid
+	rsOrder("TD_FTP_PWD")=techdata_password
+	rsOrder("SYN_ACTIVE")=sn_enabled
+	rsOrder("SYN_ACCT_NUM")=sn_account_number
+	rsOrder("SYN_FTP_ID")=snxml_userid
+	rsOrder("SYN_FTP_PWD")=snxml_password
+	rsOrder("SYN_FTP_FILE")=sn_File_Name
+	rsOrder("SYN_WEB_ID")=web_userid
+	rsOrder("SYN_WEB_PWD")=web_password
+	rsOrder("SYN_PAY_TERM")=web_payterm
+	rsOrder("DH_ACTIVE")=dh_enabled
+	rsOrder("DH_FTP_ID")=dhxml_userid
+	rsOrder("DH_FTP_PWD")=dhxml_password
+	rsOrder("DH_FTP_FILE")=dh_File_Name
+	rsOrder("DH_WEB_ID")=dh_web_userid
+	rsOrder("DH_WEB_PWD")=dh_web_password
+	rsOrder("IM_LAST_UPDATE")=now()
+	rsOrder("IM_FTP_FILE_DATE")=now()
+	
+%>
