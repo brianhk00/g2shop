@@ -104,6 +104,11 @@
 								<span class="title">Manage Categories</span>
 							</a>
 						</li>
+						<li <% if InStr(current_menu,"catalog_manufacturer") then%>class="active"<% end if %>>
+							<a href="catalog_manufacturer.phtml">
+								<span class="title">Manage Manufacturers</span>
+							</a>
+						</li>
 						<% if g_store_use_system = "1" then %>
 						<li <% if InStr(current_menu,"catalog_system") then%>class="active"<% end if %>>
 							<a href="catalog_system.phtml">

@@ -1,0 +1,238 @@
+<%
+	Response.CodePage = 65001
+	Response.CharSet = "UTF-8"
+%>
+<!-- #INCLUDE File="local/local.phtml" -->
+<!-- #INCLUDE File="util/xt_func_util.phtml" -->
+<!-- #INCLUDE File="util/xt_func_string.phtml" -->
+<!-- #INCLUDE File="include/i_login.phtml" -->
+
+<!--#INCLUDE FILE="include/doctype.phtml"-->
+<head>
+<!--#INCLUDE FILE="include/head.phtml"-->
+<!-- start: CSS REQUIRED FOR THIS PAGE ONLY -->
+<link href="vendor/select2/select2.min.css" rel="stylesheet" media="screen">
+<link href="vendor/DataTables/css/jquery.dataTables.css" rel="stylesheet" media="screen">
+<link href="vendor/DataTables/css/DT_bootstrap.css" rel="stylesheet" media="screen">
+<link href="assets/plugins/bootstrap-modal/css/bootstrap-modal-bs3patch.css" rel="stylesheet" type="text/css"/>
+<link href="assets/plugins/bootstrap-modal/css/bootstrap-modal.css" rel="stylesheet" type="text/css"/>
+<!-- end: CSS REQUIRED FOR THIS PAGE ONLY -->
+<link rel="stylesheet" href="assets/css/custom.css">
+</head>	
+<body>
+	<div id="app">
+	<!--#INCLUDE FILE="include/sidebar.phtml"-->
+	<div class="app-content">
+		<!--#INCLUDE FILE="include/header.phtml"-->
+		<div class="main-content" >
+			<div class="wrap-content container" id="container">
+				<!-- start: TITLE -->
+				<section id="page-title" class="padding-top-15 padding-bottom-15">
+					<div class="row">
+						<div class="col-sm-8">
+							<h1 class="mainTitle">Manufacturers</h1>
+							<span class="mainDescription">overview &amp; list </span>
+						</div>
+						<ol class="breadcrumb">
+							<li>
+								<span>Catalog</span>
+							</li>
+							<li class="active">
+								<span>Manage Manufacturer</span>
+							</li>
+						</ol>
+					</div>
+				</section>
+				<!-- end: TITLE -->
+				<div class="container-fluid container-fullw bg-white">
+					<div class="row">
+						<div class="col-md-12">
+							<div class="tabbable">
+								<ul id="myTab3" class="nav nav-tabs tab-green">
+									<li class="active">
+										<a href="#panel_tab4_example1" data-toggle="tab">
+											<i class="pink fa fa-info"></i> Maufacturers
+										</a>
+									</li>
+									<li class="">
+										<a href="#panel_tab4_example2" data-toggle="tab">
+											<i class="blue fa fa-info-circle"></i> ICECAT Manufacturers
+										</a>
+									</li>
+								</ul>
+								<div class="tab-content">
+									<div class="tab-pane active" id="panel_tab4_example1">
+										<div class="row">
+											<div class="col-md-12">
+												<table class="table table-striped table-bordered table-hover table-full-width" id="catalog_manufacturer_1">
+													<thead>
+													<tr>
+														<th>ID</th>
+														<th>Name</th>
+														<th>MAP Enabled</th>
+														<th>Action</th>
+													</tr>
+													</thead>
+													<tbody>
+														<tr>
+															<td colspan="4" class="dataTables_empty">Loading data from server</td>
+														</tr>
+													</tbody>
+												</table>
+											</div>
+										</div>
+									</div>
+									<div class="tab-pane" id="panel_tab4_example2">
+									.......
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+	<!--#INCLUDE FILE="include/footer.phtml"-->
+	</div>
+	<div id="ajax-modal3" class="modal fade" tabindex="-1" style="display: none;"></div>
+	<!--#INCLUDE FILE="include/js.phtml"-->
+	<!-- start: JAVASCRIPTS REQUIRED FOR THIS PAGE ONLY -->
+	<script src="vendor/select2/select2.min.js"></script>
+	<script src="vendor/jquery-validation/jquery.validate.min.js"></script>
+	<script src="vendor/DataTables/jquery.dataTables.min.js"></script>
+	<script src="//cdn.datatables.net/plug-ins/1.10.10/api/fnReloadAjax.js"></script>
+	<script src="assets/plugins/bootstrap-modal/js/bootstrap-modal.js"></script>
+	<script src="assets/plugins/bootstrap-modal/js/bootstrap-modalmanager.js"></script>
+	<!-- end: JAVASCRIPTS REQUIRED FOR THIS PAGE ONLY -->
+	<script src="assets/js/main.js"></script>
+	<!-- start: JavaScript Event Handlers for this page -->
+	<script type="text/javascript">
+	var oTable;
+	var v1 = "All";
+	var v2 = "All";
+	var v3 = "All";
+	
+	var TableData = function () {
+		//function to initiate DataTable
+		//DataTable is a highly flexible tool, based upon the foundations of progressive enhancement, 
+		//which will add advanced interaction controls to any HTML table
+		//For more information, please visit https://datatables.net/
+		var runDataTable = function () {
+			oTable = $('#catalog_manufacturer_1').dataTable({
+				"bProcessing": true,
+				"searchDelay": 800,
+				"bStateSave": true,
+				"bJQueryUI": false,
+				"iDisplayLength": 20,
+				"bServerSide": true,
+				"bAutoWidth": false,
+				"sAjaxSource": "api/sp_manufacturer_list.phtml",
+				"aoColumns": [ 
+					/* ID */  { "sClass": "left" },
+					/* Name */  { "sClass": "left" },
+					/* MAP*/  { "sClass": "center" ,"bSortable": false},
+					/* Action*/  { "sClass": "center" ,"bSortable": false}
+				  ],
+				  
+				"aaSorting": [[0, 'desc']],
+				
+				"aLengthMenu": [
+					[10, 20, 30, 40, 50],
+					[10, 20, 30, 40, 50] // change per page values here
+				],
+				
+				"oLanguage": {
+					"sLengthMenu": "Show _MENU_ Rows",
+					"sSearch": "",
+					"sProcessing": '<img src="assets/images/ajax-loader-primary.gif"/>',
+					"oPaginate": {
+						"sPrevious": "Prev",
+						"sNext": "Next"
+					}
+				},
+				
+				/*
+				"initComplete": function( settings, json ) {
+					var $modal3 = $('#ajax-modal3');
+					$('.modal-edit-line').on('click', function () {
+						$('body').modalmanager('loading');
+						var modal_mfg_id = $(this).data('id');
+						setTimeout(function () {
+							$modal3.load('api/modal_ajax_mfg_edit.phtml?mfg_id=' + modal_mfg_id, '', function () {
+								$modal3.modal();
+							});
+						}, 500);
+						
+					});
+				},
+				*/
+  
+				'fnServerData' : function ( sSource, aoData, fnCallback ) {
+					aoData.push( { 'name' : 'min', 'value' : $("#min").val() } );
+					aoData.push( { 'name' : 'max', 'value' : $("#max").val() } );
+					$.ajax({
+						'dataType' : 'json',
+						'data' : aoData,
+						'type' : 'GET',
+						'url' : sSource,
+						'success' : fnCallback
+					});
+				} 
+			});
+			
+			$('#catalog_manufacturer_1').on( 'draw.dt', function () {
+				var $modal3 = $('#ajax-modal3');
+				$('.modal-edit-line').on('click', function () {
+					$('body').modalmanager('loading');
+					var modal_mfg_id = $(this).data('id');
+					setTimeout(function () {
+						$modal3.load('api/modal_ajax_mfg_edit.phtml?mfg_id=' + modal_mfg_id, '', function () {
+							$modal3.modal();
+						});
+					}, 500);
+					
+				});
+			} );
+			
+			$('#catalog_manufacturer_1_wrapper .dataTables_filter input').addClass("form-control input-sm").attr("placeholder", "Search");
+			// modify table search input
+			$('#catalog_manufacturer_1_wrapper .dataTables_length select').addClass("m-wrap small");
+			// modify table per page dropdown
+			$('#catalog_manufacturer_1_wrapper .dataTables_length select').select2();
+			// initialzie select2 dropdown
+		};
+		
+		return {
+			//main function to initiate template pages
+			init: function () {
+				runDataTable();
+			},
+			
+			reload: function(theURL) {
+				if ( theURL ) {
+					oTable.fnReloadAjax(theURL);
+				}
+				else {
+					oTable.fnReloadAjax("api/sp_manufacturer_list.phtml");
+				}
+			}
+		};
+	}();
+	
+	</script>
+	<script>
+		jQuery(document).ready(function() {
+			Main.init();
+			TableData.init();
+			
+			var $modal3 = $('#ajax-modal3');
+			$modal3.on('hidden', function () {
+				TableData.reload();
+			})
+			
+		});
+	</script>
+	<!-- end: JavaScript Event Handlers for this page -->
+</body>
+</html>

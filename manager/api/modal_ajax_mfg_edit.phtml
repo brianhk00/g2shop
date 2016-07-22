@@ -1,0 +1,153 @@
+<%response.Expires=-1%>
+<%
+	Response.CodePage = 65001
+	Response.CharSet = "UTF-8"
+%>
+<!-- #INCLUDE File="../local/local.phtml" -->
+<!-- #INCLUDE File="../util/xt_func_util.phtml" -->
+<!-- #INCLUDE File="../util/xt_func_string.phtml" -->
+<%
+	mfg_id=Trim(Request("mfg_id"))
+	bNewMfg = true
+	sql = "SELECT * FROM " & g_storeid & "_mfg WHERE mfg_id='" & mfg_id & "'"
+	set rsMfg = dbconn.Execute(sql)
+	if not rsMfg.EOF then
+		mfg_name = rsMfg("mfg_name")
+		mfg_map_enabled = rsMfg("mfg_map_enabled")
+		bNewMfg = false
+	end if
+	rsMfg.Close
+	set rsMfg = nothing
+	
+%>
+<div class="modal-header">
+	<button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+	<h4>Manufacturer</h4>
+</div>
+<form role="form" id='billingform'>
+<input type="hidden" name="mfg_id" value="<%=mfg_id%>" />
+<div class="modal-body" style="padding-left: 30px;">
+	<div class="col-md-12">
+		<div id="errorHandler1" class="errorHandler alert alert-danger no-display">
+			<i class="fa fa-times-sign"></i> You have some form errors. Please check below.
+		</div>
+		<div id="errorHandler2" class="errorHandler alert alert-danger no-display">
+			<i class="fa fa-times-sign"></i> The information has not been saved properly. Please contact system administrator.
+		</div>
+		<div class="successHandler alert alert-success no-display">
+			<i class="fa fa-ok"></i> The information has been saved.
+		</div>
+	</div>
+	<div class="row">
+		<div class="form-group">
+			<label class="col-sm-3 control-label" for="mfg_name">
+				Name <span class="symbol required"></span> 
+			</label>
+			<div class="col-sm-9">
+				<input type="text" placeholder="" id="mfg_name" name="mfg_name" class="form-control input-sm" value="<%=mfg_name%>">
+			</div>
+		</div>
+		<br><br>
+		<div class="form-group">
+			<label class="col-sm-3 control-label" for="mfg_name">
+				Map Enabled <span class="symbol required"></span> 
+			</label>
+			<div class="col-sm-9">
+				<select id="mfg_map_enabled" name="mfg_map_enabled" class="form-control select input-sm">
+					<option value="0" <% if mfg_map_enabled = 0 then%>selected<% end if %>>No</option>
+					<option value="1" <% if mfg_map_enabled = 1 then%>selected<% end if %>>Yes</option>
+				</select>
+			</div>
+		</div>
+	</div>
+</div>
+<div class="modal-footer">
+	<button class="btn btn-primary btn-sm" id="billing_update_btn"><%if bNewMfg then%>Add<%else%>Update<%end if%></button>
+	<button type="button" data-dismiss="modal" class="btn btn-white btn-sm">Cancel</button>
+</div>
+</form>
+<script language="javascript">
+var FormValidator = function () {
+// function to initiate Validation Sample 1
+	var runValidator1 = function () {
+		var form1 = $('#billingform');
+		var errorHandler1 = $('#errorHandler1', form1);
+		var errorHandler2 = $('#errorHandler2', form1);
+		var successHandler1 = $('.successHandler', form1);
+		
+		$('#billingform').validate({
+			errorElement: "span", // contain the error msg in a span tag
+			errorClass: 'help-block',
+			errorPlacement: function (error, element) { // render error placement for each input type
+				if (element.attr("type") == "radio" || element.attr("type") == "checkbox") { // for chosen elements, need to insert the error after the chosen container
+					error.insertAfter($(element).closest('.form-group').children('div').children().last());
+				} else if (element.attr("name") == "dd" || element.attr("name") == "mm" || element.attr("name") == "yyyy") {
+					error.insertAfter($(element).closest('.form-group').children('div'));
+				} else {
+					error.insertAfter(element);
+					// for other inputs, just perform default behavior
+				}
+			},
+			ignore: "",
+			
+			//RULES
+			rules: {
+				mfg_name: {
+					required: true
+				}
+			},
+			
+			//END OF RULES
+			
+			invalidHandler: function (event, validator) { //display error alert on form submit
+				successHandler1.hide();
+				errorHandler1.show();
+			},
+			highlight: function (element) {
+				$(element).closest('.help-block').removeClass('valid');
+				$(element).closest('.form-group').removeClass('has-success').addClass('has-error').find('.symbol').removeClass('ok').addClass('required');
+			},
+			unhighlight: function (element) { 
+				$(element).closest('.form-group').removeClass('has-error');
+			},
+			success: function (label, element) {
+				label.addClass('help-block valid');
+				$(element).closest('.form-group').removeClass('has-error').addClass('has-success').find('.symbol').removeClass('required').addClass('ok');
+			},
+			submitHandler: function (form) {
+				successHandler1.hide();
+				errorHandler1.hide();
+				errorHandler2.hide();
+				$.ajax({
+					type: "POST",
+					url: "api/sp_catalog_manufacturer_detail_update.phtml",
+					data: $("#billingform").serialize(),
+					success: function() {
+						successHandler1.show();
+						setTimeout(function () {
+							 $('#ajax-modal3').modal('hide');
+						}, 700);
+					},
+					error: function() {
+						errorHandler2.show();
+					}
+				});
+			}
+		});
+	};
+	return {
+		//main function to initiate template pages
+		init: function () {
+			runValidator1();
+		}
+	};
+}();
+</script>
+<script type="text/javascript">
+
+	$("#billingform").submit(function (e) {
+		e.preventDefault(); //prevent default form submit
+	});
+	FormValidator.init();
+	
+</script>
