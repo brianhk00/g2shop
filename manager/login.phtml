@@ -1,0 +1,502 @@
+<%@ Language=VBScript %>
+<!-- #INCLUDE File="../local/local.phtml" -->
+<!-- #INCLUDE File="../util/xt_func_string.phtml" -->
+<!-- #INCLUDE FILE="../util/xt_func_session.phtml" -->
+<!-- #INCLUDE FILE="../util/xt_class_security.phtml" -->
+<!-- #INCLUDE FILE="../util/xt_func_util.phtml" -->
+<%
+	sessionID = Trim(Request("sessionID"))
+	sessionID = FilterSessionString(sessionID)
+	if Len(sessionID) > 0 then
+		Session("SESSIONKEY") = sessionID
+	else
+		if Len(Session("SESSIONKEY")) > 0 then
+			'session key exist
+		else
+			'no key information...
+			InitializeSession()
+		end if
+	end if
+	
+%>
+
+<script runat="server" language="VBScript">
+function SaveLoginInfo(ByRef str_db,ByRef str_storeid, ByRef str_uid,ByRef str_pwd, ByRef str_ipaddr, ByRef str_status)
+
+	dim sql,conn
+	Dim field_names,field_values,str_sql
+
+	if((str_storeid="")Or(str_db="")Or(str_uid="")) then
+		SaveLoginInfo=false
+		exit function
+	end if
+	
+	select case str_status
+		case "0"
+			status = "Administrator Log in Successful"
+		case "1"
+			status = "Master Administrator Log in Successful"
+		case "2"
+			status = "User Log in Successful"
+		case "3"
+			status = "Log in Fail"
+		case "4"
+			status = "error"
+		case else
+	end select
+	
+ 	field_names = field_names & "store_id" & ","
+ 	field_values = field_values &"'"& str_storeid & "',"
+
+ 	field_names = field_names & "user_id" & ","
+ 	field_values = field_values & "'" & str_uid & "',"
+	
+	field_names = field_names & "password" & ","
+ 	field_values = field_values & "'',"
+ 	
+	field_names = field_names & "ip_addr" & ","
+ 	field_values = field_values & "'" & Request.ServerVariables("REMOTE_ADDR") & "',"
+ 	
+	field_names = field_names & "log_date" & ","
+ 	field_values = field_values & "'" & now() & "',"
+ 	
+	field_names = field_names & "status" & ","
+ 	field_values = field_values & "'" & status & "',"
+ 	
+ 	'strip the trailing commas
+	field_names = Left(field_names,Len(field_names)-1)
+	field_values = Left(field_values,Len(field_values)-1)
+
+	sql="INSERT INTO A_MANAGER_LOG ("& field_names &") VALUES("& field_values &")"
+	
+	set conn=server.CreateObject("ADODB.Connection")
+	conn.Open str_db
+	conn.Execute sql
+		
+	SaveLoginInfo = true
+end function
+
+</script>
+<%
+	dim err_msg
+	err_msg = ""
+
+	if Request.Form("login")= "1" then
+		method = "Login"
+	end if
+
+	if Request("logoff") = "1" then
+		Session("ADMINSTATUS") = ""
+		Session("SalesMode") = "0"
+		Session("AdminName") = ""
+		Session("AdminID") = ""
+		Session("shopper_id") = ""
+		
+		UpdateSession Session("SESSIONKEY"), "sSaleMode", "0"
+
+		Response.cookies(g_storeid)("ADMINLOGIN") = ""
+		Response.cookies(g_storeid)("ADMINSESSIONKEY") = ""
+		Response.cookies(g_storeid).Expires = DateAdd("d", 1, date())
+	end if
+
+	if Len(method) > 0 then
+	else
+		method = Request("method")
+	end if
+
+	select case method
+
+	case "Login"
+	
+		Response.Write("...")
+
+		str_uid = FilterString(Trim(Request("Username")))
+		str_password = FilterPassword(Trim(Request("Password")))
+
+		chk_savelogin = Request.Form("chkSaveLogin")
+				
+		Set lconn = Server.CreateObject("ADODB.Connection")
+		lconn.open g_connection_string
+		sql = "SELECT Email FROM " & g_storeid & "_profile WHERE UserID='"& str_uid & "' AND Password='" & str_password & "'"
+		set rs = lconn.Execute(sql)
+		
+		if not rs.EOF then
+		
+		
+			if Session("use_ip_security") = "1" then
+		  
+				strSQL = "SELECT * FROM :9_ip_addr where ip_addr='"& Request.ServerVariables("REMOTE_ADDR") &"'"
+				strSQL = Replace(strSQL, ":9", g_storeid)
+				set rsStation = lconn.Execute(strSQL)
+
+				if not rsStation.EOF then 
+					Session("ADMINSTATUS") = "5"
+					Ret = 1
+					Session("SalesMode") = "1"
+					Session("AdminName") = "System Admin"
+					Session("AdminID") = "SA"
+					Session("shopper_id") = "GUEST"
+					
+					UpdateSession Session("SESSIONKEY"), "sSaleMode", "1"
+					UpdateSession Session("SESSIONKEY"), "sCID", Session("shopper_id")
+				
+					if SaveLoginInfo(g_connection_string,g_storeid,str_uid,str_password,ip_addr,"0") then
+				
+					end if
+				  
+				else
+					status_msg = "This stations is not registered."
+				end if
+
+				rsStation.Close
+				
+			else
+			  
+				Session("ADMINSTATUS") = "5"
+				Ret = 1
+				Session("SalesMode") = "1"
+				Session("AdminName") = "System Admin"
+				Session("AdminID") = "SA"
+				Session("shopper_id") = "GUEST"
+
+				UpdateSession Session("SESSIONKEY"), "sSaleMode", "1"
+				UpdateSession Session("SESSIONKEY"), "sCID", Session("shopper_id")
+
+				if SaveLoginInfo(g_connection_string,g_storeid,str_uid,str_password,ip_addr,"0") then
+
+				end if
+			  
+			end if
+				
+			
+		else
+		
+			sql = "SELECT * FROM A_Master_ID where admin_id='" & str_uid & "' and 1 = pwdcompare('" &  str_password & "', password)"
+			set rsMasterID = lconn.Execute(sql)
+			
+			if not rsMasterID.EOF then
+				Session("ADMINSTATUS") = "5"
+				Ret = 1
+				Session("SalesMode") = "1"
+				Session("AdminName") = ".."
+				Session("AdminID") = ".."
+				Session("shopper_id") = "GUEST"
+				
+				UpdateSession Session("SESSIONKEY"), "sSaleMode", "1"
+				UpdateSession Session("SESSIONKEY"), "sCID", Session("shopper_id")
+				if SaveLoginInfo(g_connection_string,g_storeid,str_uid,str_password,ip_addr,"1") then
+					
+				end if
+				
+			else
+				status_msg = "Please verify your user id and password."
+			end if
+			rsMasterID.Close
+			
+		end if
+
+		rs.Close
+		
+		if not Ret = 1 then
+			'Check for additional users...
+			sql = "SELECT user_id, LastName, FirstName, user_flag FROM " & g_storeid & "_users WHERE user_id='"& str_uid & "' AND pwd='" & str_password & "' AND user_disable=0"
+			set rs = lconn.Execute(sql)
+
+			if not rs.EOF then
+				
+				if Session("use_ip_security") = "1" then
+					strSQL = "SELECT * FROM " & g_storeid & "_ip_addr where ip_addr='"& Request.ServerVariables("REMOTE_ADDR") &"'"
+					set rsStation = lconn.Execute(strSQL)
+
+					if not rsStation.EOF then 
+						Session("ADMINSTATUS") = CStr(rs("user_flag"))
+						Ret = 1
+						status_msg = ""
+						Session("SalesMode") = "1"
+						Session("AdminName") = rs("FirstName") & " " & rs("LastName")
+						Session("AdminID") = rs("user_id")
+						Session("shopper_id") = "GUEST"
+
+						UpdateSession Session("SESSIONKEY"), "sSaleMode", "1"
+						UpdateSession Session("SESSIONKEY"), "sCID", Session("shopper_id")
+						if SaveLoginInfo(g_connection_string,g_storeid,str_uid,str_password,ip_addr,"2") then
+
+						end if
+					  
+					else
+						status_msg = "This stations is not registered."
+					end if
+
+					rsStation.Close
+				
+				else
+
+					Session("ADMINSTATUS") = CStr(rs("user_flag"))
+					Ret = 1
+					status_msg = ""
+					Session("SalesMode") = "1"
+					Session("AdminName") = rs("FirstName") & " " & rs("LastName")
+					Session("AdminID") = rs("user_id")
+					Session("shopper_id") = "GUEST"
+					
+					UpdateSession Session("SESSIONKEY"), "sSaleMode", "1"
+					UpdateSession Session("SESSIONKEY"), "sCID", Session("shopper_id")
+					if SaveLoginInfo(g_connection_string,g_storeid,str_uid,str_password,ip_addr,"2") then
+						
+					end if
+
+				end if
+
+			else
+				if SaveLoginInfo(g_connection_string,g_storeid,str_uid,str_password,ip_addr,"3") then
+					
+				end if
+				
+				if Len(status_msg) > 0 then
+				else
+				status_msg = "Please verify your user id and password."
+				end if
+			end if
+		
+			rs.close
+			
+		end if
+		
+		lconn.close
+		
+
+		if Ret = 1 AND chk_savelogin = "1" then
+			'Write login information to cookie.
+			Response.cookies(g_storeid)("ADMINLOGIN") = Session("AdminID")
+			Response.cookies(g_storeid)("ADMINSESSIONKEY") = Session("SESSIONKEY")
+			Response.cookies(g_storeid).Expires = DateAdd("d", 1, date())
+			Response.cookies(g_storeid & "**")("SAVELOGIN")  = "1"
+			Response.cookies(g_storeid & "**").Expires = DateAdd("m", 1, date())
+		else
+			Response.cookies(g_storeid)("ADMINLOGIN") = ""
+			Response.cookies(g_storeid)("ADMINSESSIONKEY") = ""
+			Response.cookies(g_storeid).Expires = DateAdd("d", 1, date())
+			Response.cookies(g_storeid & "**")("SAVELOGIN")  = "0"
+			Response.cookies(g_storeid & "**").Expires = DateAdd("m", 1, date())
+		end if
+		
+	case else
+
+		c_ADMINLOGIN = Request.cookies(g_storeid)("ADMINLOGIN")
+		c_ADMINSESSIONKEY = Request.cookies(g_storeid)("ADMINSESSIONKEY")
+
+		c_SAVELOGIN = Request.cookies(g_storeid&"**")("SAVELOGIN")
+		if c_SAVELOGIN = "" then
+			c_SAVELOGIN = "1"
+		end if
+
+		if Len(c_ADMINLOGIN) > 0 then
+			'Read login info.. set it..
+
+			SELECT CASE c_ADMINLOGIN
+			CASE "SA"
+
+				Session("ADMINSTATUS") = "5"
+				Ret = 1
+				Session("SalesMode") = "1"
+				Session("AdminName") = "System Admin"
+				Session("AdminID") = "SA"
+				Session("shopper_id") = "GUEST"
+				
+				UpdateSession c_ADMINSESSIONKEY, "sSaleMode", "1"
+				UpdateSession c_ADMINSESSIONKEY, "sCID", Session("shopper_id")
+
+			CASE ".."
+
+				Session("ADMINSTATUS") = "5"
+				Ret = 1
+				Session("SalesMode") = "1"
+				Session("AdminName") = ".."
+				Session("AdminID") = ".."
+				Session("shopper_id") = "GUEST"
+				
+				UpdateSession c_ADMINSESSIONKEY, "sSaleMode", "1"
+				UpdateSession c_ADMINSESSIONKEY, "sCID", Session("shopper_id")
+
+			CASE ELSE
+				
+				set rconn = Server.CreateObject("ADODB.Connection")
+				rconn.open g_connection_string
+
+				sql = "SELECT user_id, LastName, FirstName, user_flag FROM " & g_storeid & "_users WHERE user_id='"& c_ADMINLOGIN & "' AND user_disable=0"
+				set rs = rconn.Execute(sql)
+
+				if not rs.EOF then
+				
+					Session("ADMINSTATUS") = CStr(rs("user_flag"))
+					Ret = 1
+					status_msg = ""
+					Session("SalesMode") = "1"
+					Session("AdminName") = rs("FirstName") & " " & rs("LastName")
+					Session("AdminID") = rs("user_id")
+					Session("shopper_id") = "GUEST"
+					
+					UpdateSession c_ADMINSESSIONKEY, "sSaleMode", "1"
+					UpdateSession c_ADMINSESSIONKEY, "sCID", Session("shopper_id")
+
+				end if
+
+				rs.Close
+				rconn.close
+
+			END SELECT
+
+		else
+
+			Session("ADMINSTATUS") = ""
+			Session("shopper_id") = ""
+
+		end if
+
+	end select
+	
+	if Ret = 1 then
+		if Len(Session("REFERER_URL")) > 0 Then
+			response.redirect Session("REFERER_URL")
+		Else
+			response.redirect "dashboard.phtml"
+		End If
+	end if
+
+%>
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="ie8" lang="en"><![endif]-->
+<!--[if IE 9]><html class="ie9" lang="en"><![endif]-->
+<!--[if !IE]><!-->
+<html lang="en">
+	<!--<![endif]-->
+	<!-- start: HEAD -->
+	<!-- start: HEAD -->
+	<head>
+		<title>OliveCommerce</title>
+		<!-- start: META -->
+		<!--[if IE]><meta http-equiv='X-UA-Compatible' content="IE=edge,IE=9,IE=8,chrome=1" /><![endif]-->
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=0, minimum-scale=1.0, maximum-scale=1.0">
+		<meta name="apple-mobile-web-app-capable" content="yes">
+		<meta name="apple-mobile-web-app-status-bar-style" content="black">
+		<meta content="" name="description" />
+		<meta content="" name="author" />
+		<!-- end: META -->
+		<!-- start: GOOGLE FONTS -->
+		<link href="http://fonts.googleapis.com/css?family=Lato:300,400,400italic,600,700|Raleway:300,400,500,600,700|Crete+Round:400italic" rel="stylesheet" type="text/css" />
+		<!-- end: GOOGLE FONTS -->
+		<!-- start: MAIN CSS -->
+		<link rel="stylesheet" href="vendor/bootstrap/css/bootstrap.min.css">
+		<link rel="stylesheet" href="vendor/fontawesome/css/font-awesome.min.css">
+		<link rel="stylesheet" href="vendor/themify-icons/themify-icons.min.css">
+		<link href="vendor/animate.css/animate.min.css" rel="stylesheet" media="screen">
+		<link href="vendor/perfect-scrollbar/perfect-scrollbar.min.css" rel="stylesheet" media="screen">
+		<link href="vendor/switchery/switchery.min.css" rel="stylesheet" media="screen">
+		<!-- end: MAIN CSS -->
+		<!-- start: CLIP-TWO CSS -->
+		<link rel="stylesheet" href="assets/css/styles.css">
+		<link rel="stylesheet" href="assets/css/plugins.css">
+		<link rel="stylesheet" href="assets/css/themes/theme-1.css" id="skin_color" />
+		<!-- end: CLIP-TWO CSS -->
+		<!-- start: CSS REQUIRED FOR THIS PAGE ONLY -->
+		<!-- end: CSS REQUIRED FOR THIS PAGE ONLY -->
+	</head>
+	<!-- end: HEAD -->
+	<!-- start: BODY -->
+	<body class="login">
+		<!-- start: LOGIN -->
+		<div class="row">
+			<div class="main-login col-xs-10 col-xs-offset-1 col-sm-8 col-sm-offset-2 col-md-4 col-md-offset-4">
+				<div class="logo margin-top-30">
+					<img src="assets/images/logo.png" alt="Clip-Two"/>
+				</div>
+				<!-- start: LOGIN BOX -->
+					<div class="box-login">
+					<% if Len(status_msg) > 0 then %>
+					<div class="row">
+						<div class="col-md-12">
+							<div id="errorHandler1" class="errorHandler alert alert-danger">
+								<button type="button" class="close" aria-label="Close">
+									<span aria-hidden="true">&times;</span>
+								</button>
+								<i class="fa fa-times-sign"></i><%=status_msg%>
+							</div>
+						</div>
+					</div>
+					<% end if %>
+					<form class="form-login" method="post" action="login.phtml">
+						<input type="hidden" id="login" name="login" value="1">
+						<fieldset>
+							<legend>
+								Sign in to your account
+							</legend>
+							<p>
+								Please enter your name and password to log in.
+							</p>
+							<div class="form-group">
+								<span class="input-icon">
+									<input type="text" class="form-control" name="username" placeholder="Username">
+									<i class="fa fa-user"></i> </span>
+							</div>
+							<div class="form-group form-actions">
+								<span class="input-icon">
+									<input type="password" class="form-control password" name="password" placeholder="Password">
+									<i class="fa fa-lock"></i>
+									<a class="forgot" href="login_forgot.html">
+										forgot password
+									</a> </span>
+							</div>
+							<div class="form-actions">
+								<div class="checkbox clip-check check-primary">
+									<input type="checkbox" id="chkSaveLogin" name="chkSaveLogin" value="1">
+									<label for="chkSaveLogin">
+										Keep me signed in
+									</label>
+								</div>
+								<button type="submit" class="btn btn-primary pull-right">
+									Login <i class="fa fa-arrow-circle-right"></i>
+								</button>
+							</div>
+						</fieldset>
+					</form>
+					<!-- start: COPYRIGHT -->
+					<div class="copyright">
+						&copy; <span class="current-year"></span><span class="text-bold text-uppercase"> OliveCommerce</span>. <span>All rights reserved</span>
+					</div>
+					<!-- end: COPYRIGHT -->
+				</div>
+				<!-- end: LOGIN BOX -->
+			</div>
+		</div>
+		<!-- end: LOGIN -->
+		<!-- start: MAIN JAVASCRIPTS -->
+		<script src="vendor/jquery/jquery.min.js"></script>
+		<script src="vendor/bootstrap/js/bootstrap.min.js"></script>
+		<script src="vendor/modernizr/modernizr.js"></script>
+		<script src="vendor/jquery-cookie/jquery.cookie.js"></script>
+		<script src="vendor/perfect-scrollbar/perfect-scrollbar.min.js"></script>
+		<script src="vendor/switchery/switchery.min.js"></script>
+		<!-- end: MAIN JAVASCRIPTS -->
+		<!-- start: JAVASCRIPTS REQUIRED FOR THIS PAGE ONLY -->
+		<script src="vendor/jquery-validation/jquery.validate.min.js"></script>
+		<!-- end: JAVASCRIPTS REQUIRED FOR THIS PAGE ONLY -->
+		<!-- start: CLIP-TWO JAVASCRIPTS -->
+		<script src="assets/js/main.js"></script>
+		<!-- start: JavaScript Event Handlers for this page -->
+		<script src="assets/js/login.js"></script>
+		<script>
+			jQuery(document).ready(function() {
+				Main.init();
+				Login.init();
+				$('.close').click(function() {
+				   $('.alert').hide();
+				})
+			});
+		</script>
+		<!-- end: JavaScript Event Handlers for this page -->
+		<!-- end: CLIP-TWO JAVASCRIPTS -->
+	</body>
+	<!-- end: BODY -->
+</html>

@@ -1,0 +1,369 @@
+<%response.Expires=-1%>
+<%
+	Response.CodePage = 1252 
+	Response.CharSet = "windows-1252" 
+%>
+<!-- #INCLUDE File="../local/local.phtml" -->
+<!-- #INCLUDE File="../util/xt_func_util.phtml" -->
+<!-- #INCLUDE File="../util/xt_func_rc4.phtml" -->
+<%
+	order_id = Trim(Request("order_id"))
+	s_edit = ""
+	
+	order_shipping_sh = 0
+	order_tax = 0
+	discount_amount = 0
+	order_tax_rate = 0
+		
+	sql = "SELECT * FROM " & g_storeid & "_order WHERE order_id='" & order_id & "'"
+	set rsOrder = dbconn.Execute(sql)
+	if not rsOrder.EOF then
+		order_shipping_sh = rsOrder("SH")
+		order_tax = rsOrder("tax")
+		order_taxable = rsOrder("order_taxable")
+		order_tax_rate = rsOrder("order_tax_rate")
+		discount_amount = rsOrder("discount_amount")
+	end if
+	rsOrder.Close
+	
+	i_subtotal = 0
+	i_taxable_total = 0
+	sql = "SELECT * FROM " & g_storeid & "_order_item WHERE order_id='" & order_id & "' ORDER BY row_id"
+	set rsOrderItems = dbconn.Execute(sql)
+	do while not rsOrderItems.EOF
+		order_item_row_id = rsOrderItems("row_id")
+		order_item_description = rsOrderItems("item_description")
+		order_item_sku = rsOrderItems("sku")
+		order_item_options = rsOrderItems("options")
+		order_item_taxable = rsOrderItems("item_taxable")
+		order_item_quantity = rsOrderItems("quantity")
+		order_item_adjusted_price = FormatNumber(rsOrderItems("adjusted_price"),2)
+		order_item_cost = FormatNumber(rsOrderItems("item_cost"),2)
+		order_item_subtotal = FormatNumber(order_item_quantity * order_item_adjusted_price,2)
+		i_subtotal = i_subtotal + (order_item_quantity * order_item_adjusted_price)
+		
+		if order_item_taxable then
+			i_taxable_total = i_taxable_total + (order_item_quantity * order_item_adjusted_price)
+		end if
+		
+		rsOrderItems.MoveNext
+	loop
+	rsOrderItems.Close
+	set rsOrderItems = nothing
+	
+	if order_taxable then
+		order_tax = i_taxable_total * (order_tax_rate/100)
+	else
+		order_tax = 0
+	end if
+	
+	grandtotal = i_subtotal + order_shipping_sh + order_tax - discount_amount
+	
+	sql = "UPDATE " & g_storeid & "_order SET total = " & FormatNumber(grandtotal,2,,,0) & " WHERE order_id='" & order_id & "'"
+	dbconn.Execute(sql)
+	'Number(order_subtotal) + Number(newValue) + Number(order_tax) - Number(discount_amount);
+%>
+{
+"ORDERTOTALS" : [
+{"id" : "<%=order_id%>", "shtotal" : "<%=FormatNumber(order_shipping_sh,2)%>", "taxtotal" : "<%=FormatNumber(order_tax,2)%>", "subtotal" : "<%=FormatNumber(i_subtotal,2)%>", "grandtotal" : "<%=FormatNumber(grandtotal,2)%>"}
+]
+}
+<%
+if x = "0" then
+	'Get template to print
+	Set fs = Server.CreateObject("Scripting.FileSystemObject")
+	Set Out = fs.OpenTextFile(Server.MapPath("sales_order_template_1.html"),1,FALSE, FALSE)
+	s1 = Out.ReadAll
+	Out.close
+	
+	sql = "SELECT * FROM " & g_storeid & "_order WHERE order_id='" & order_id & "'"
+	set rsOrder = dbconn.Execute(sql)
+	if not rsOrder.EOF then
+		
+		order_date = rsOrder("date_entered")
+		order_date = ConvertToTimeZone(order_date)
+		order_status = rsOrder("status")
+		order_ip = rsOrder("order_ip_addr")
+		
+		order_email = rsOrder("shopper_email")
+		order_customer_name = rsOrder("CardName")
+		
+		order_billing_company = rsOrder("bill_company")
+		order_billing_address = rsOrder("CardAddress")
+		order_billing_city = rsOrder("CardCity")
+		order_billing_state = rsOrder("CardState")
+		order_billing_zip = rsOrder("CardZip")
+		order_billing_country = rsOrder("CardCountry")
+		order_billing_phone = rsOrder("bill_phone")
+		
+		order_shipping_company = rsOrder("ship_company")
+		order_shipping_address = rsOrder("ShipAddress")
+		order_shipping_city = rsOrder("ShipCity")
+		order_shipping_state = rsOrder("ShipState")
+		order_shipping_zip = rsOrder("ShipZip")
+		order_shipping_country = rsOrder("ShipCountry")
+		order_shipping_phone = rsOrder("ShipPhone")
+		
+		order_billing_name = rsOrder("bill_contact")
+		order_shipping_name = rsOrder("ship_contact")
+		
+		order_payment_method = rsOrder("PaymentMethod")
+		order_payment_card_type = rsOrder("CardType")
+		order_payment_card_number = rsOrder("CardNumber")
+		
+		order_payment_card_number = EnDeCrypt(order_payment_card_number, "4df0c34632bd1d69b9a00a66d0a8c9f4")
+		if Len(order_payment_card_number) > 0 then
+			order_payment_card_number = Right(order_payment_card_number, 4)
+		end if
+		
+		order_customer_card_name = rsOrder("CardName")
+		order_customer_card_exp_month = rsOrder("CardExpirationMonth")
+		order_customer_card_exp_year = rsOrder("CardExpirationYear")
+		
+		order_shipping_sh_method = rsOrder("SH_method")
+		order_shipping_sh = rsOrder("SH")
+		order_shipping_sh = FormatNumber(order_shipping_sh)
+		
+		order_comment = rsOrder("Order_Comments")
+		order_notes = rsOrder("notes")
+		
+		order_tax = rsOrder("tax")
+		order_tax = FormatNumber(order_tax)
+		order_total = rsOrder("total")
+		order_total = FormatNumber(order_total)
+		discount_amount = rsOrder("discount_amount")
+		discount_amount = FormatNumber(discount_amount)
+		
+		if Len(order_comment) > 0 then
+		else
+			order_comment = "..."
+		end if
+	
+		if Len(order_notes) > 0 then
+		else
+			order_notes = "..."
+		end if
+		
+		'TODO...
+		SELECT CASE order_payment_method
+		CASE "visa"
+			order_payment_method = "Credit Card"
+		CASE "master"
+			order_payment_method = "Credit Card"
+		CASE "discover"
+			order_payment_method = "Credit Card"
+		CASE "amex"
+			order_payment_method = "Credit Card"
+		CASE "cod"
+			order_payment_method = "COD"
+		END SELECT
+		
+		'FOR EMAIL ..
+		pf_email_to = order_email
+		pf_email_to_name = order_customer_name
+		pf_email_subject = "Order #" & order_id
+		
+		
+		AuthNumber =  rsOrder("AuthNumber")
+		
+	end if
+	rsOrder.Close
+	set rsOrder = nothing
+	
+	sql = "SELECT * FROM " & g_storeid & "_profile"
+	set rsProfile = dbconn.Execute(sql)	 
+
+	if not rsProfile.EOF then
+		m_company = Trim(rsProfile("Company"))
+		m_address_1 = Trim(rsProfile("Address"))
+		m_address_2 = Trim(rsProfile("City"))& ", " & Trim(rsProfile("State")) & " " & Trim(rsProfile("Zip"))
+		m_phone = Trim(rsProfile("Phone"))
+		profile_company = rsProfile("Company")
+		profile_email = rsProfile("Email")
+	end if
+
+	rsProfile.Close
+	
+	set rsProfile = nothing
+
+	'=============================================================================================
+	' PROCESS DATA
+	'=============================================================================================
+	'BILLING INFO...
+	
+	s_billing_info = order_billing_name & "<br>" & order_billing_address & "<br>" & order_billing_city & ", " & order_billing_state & " " & order_billing_zip & "<br>" & order_billing_country & "<br>" & order_billing_phone & "<br>"
+	s_shipping_info = order_shipping_name & "<br>" & order_shipping_address & "<br>" & order_shipping_city & ", " & order_shipping_state & " " & order_shipping_zip & "<br>" & order_shipping_country & "<br>" & order_shipping_phone & "<br>"
+
+	'=============================================================================================
+	' FILL OUT DATA I
+	'=============================================================================================
+	s1 = Replace(s1, "<!--TRANS_ID-->", order_id)
+	s1 = Replace(s1, "<!--SHOPPER_ID-->", shopper_id)
+		
+	if Len(logo2_image) > 3 then
+	s1 = Replace(s1, "<h3><!--COMPANY_NAME--></h3>", "<!--COMPANY_LOGO2--><br>")
+	s1 = Replace(s1, "<!--COMPANY_ADDRESS_LINE1-->", m_address_1)
+	s1 = Replace(s1, "<!--COMPANY_ADDRESS_LINE2-->", m_address_2)
+	s1 = Replace(s1, "<!--COMPANY_ADDRESS_PHONE-->", m_phone)
+	s1 = Replace(s1, "<!--COMPANY_LOGO2-->", "<img src=""" & Session("SecureURL") & "/logo_img/" & logo2_image & """ border=0>")
+	else
+	s1 = Replace(s1, "<!--COMPANY_NAME-->", m_company)
+	s1 = Replace(s1, "<!--COMPANY_ADDRESS_LINE1-->", m_address_1)
+	s1 = Replace(s1, "<!--COMPANY_ADDRESS_LINE2-->", m_address_2)
+	s1 = Replace(s1, "<!--COMPANY_ADDRESS_PHONE-->", m_phone)
+	end if
+
+	s1 = Replace(s1, "<!--COMPANY_NAME-->", m_company)
+	s1 = Replace(s1, "<!--COMPANY_ADDRESS_LINE1-->", m_address_1)
+	s1 = Replace(s1, "<!--COMPANY_ADDRESS_LINE2-->", m_address_2)
+	s1 = Replace(s1, "<!--COMPANY_ADDRESS_PHONE-->", m_phone)
+	
+	s1 = Replace(s1, "<!--BILLING-->", s_billing_info)
+	s1 = Replace(s1, "<!--SHIPPING-->", s_shipping_info)
+
+	s1 = Replace(s1, "<!--SH_METHOD-->", order_shipping_sh_method)
+	s1 = Replace(s1, "<!--PAYMENT_METHOD-->", payment_method)
+	
+	s1 = Replace(s1, "<!--SHOPPER_EMAIL-->",order_email)
+	s1 = Replace(s1, "<!--QUOTE_OWNER_NAME-->",trans_owner_name)
+	s1 = Replace(s1, "<!--QUOTE_OWNER_EMAIL-->",trans_owner_email)
+	s1 = Replace(s1, "<!--QUOTE_OWNER_PHONE-->",m_phone)
+
+	s1 = Replace(s1, "<!--ORDER_CREATED_DATE-->", FormatDateTime(order_date,2))
+	s1 = Replace(s1, "<!--ORDER_STATUS-->", order_status)
+
+
+	if Len(status_comments) > 0 then
+		s1 = Replace(s1, "<!--STATUS_COMMENTS-->", "(" & status_comments & ")")
+	end if 
+
+	s1 = Replace(s1, "<!--PO_NUMBER-->", po_number)
+	s1 = Replace(s1, "<!--AuthRefNumber-->", s_authref)
+	
+	ii = 0
+	subtotal = 0
+	i_system = 1
+	data_empty_cell_height = 300
+	
+	sql = "SELECT * FROM " & g_storeid & "_order_item WHERE order_id='" & order_id & "' ORDER by row_id"
+	set rsOrderItems = dbconn.Execute(sql)
+	
+	trans_subtotal = 0
+	group_total = 0
+	bPackage = 0
+	
+	item_price_total = 0
+	item_cost_total = 0
+	
+	i_subtotal = 0
+
+	do while not rsOrderItems.EOF
+	
+		order_item_description = rsOrderItems("item_description")
+		order_item_sku = rsOrderItems("sku")
+		order_item_row_id = rsOrderItems("row_id")
+		order_item_options = rsOrderItems("options")
+		order_item_quantity = rsOrderItems("quantity")
+		order_item_adjusted_price = FormatNumber(rsOrderItems("adjusted_price"),2)
+		'order_item_cost = FormatNumber(rsOrderItems("cost"),2)
+		
+		'Get More ....
+		
+		order_item_weight = 0
+		order_item_description_ex = ""
+		
+		xsql = "SELECT * FROM " & g_storeid & "_product WHERE pf_id='" & order_item_sku & "'"
+		set rsEx = dbconn.Execute(xsql)
+		if not rsEx.EOF then
+			order_item_weight = rsEx("weight")
+			order_item_description_ex = rsEx("description")
+		end if
+		rsEx.Close
+		
+		
+		if Len(order_item_sku) > 0 then
+			
+			
+			s2= "<tr class=""tr_style"">"
+			s2 = s2 & "<td class=""td_bottom_border"" style=""text-align:center;"">&nbsp;</td>"
+			s2 = s2 & "<td class=""td_bottom_border"" style=""text-align:left;"">" & order_item_description & "</td>"
+			s2 = s2 & "<td class=""td_bottom_border"">" & FormatNumber(order_item_adjusted_price, 2) & "</td>"
+			s2 = s2 & "<td class=""td_bottom_border"">" & order_item_quantity & "</td>"
+			s2 = s2 & "<td class=""td_bottom_border"">" & FormatNumber(order_item_adjusted_price * order_item_quantity, 2) & "</td>"
+			s2 = s2 & "</tr>"
+			s1 = Replace(s1, "<!--" & CStr(ii+1) & "-->", s2)
+			ii = ii + 1
+		end if
+		
+		order_item_subtotal = FormatNumber(order_item_quantity * order_item_adjusted_price,2)
+		i_subtotal = i_subtotal + (order_item_quantity * order_item_adjusted_price)
+												
+		rsOrderItems.MoveNext
+	loop
+	rsOrderItems.Close
+	set rsOrderItems = nothing
+	
+	'=============================================================================================
+	' FILL OUT DATA II
+	'=============================================================================================
+	s1 = Replace(s1, "<!--TAX_RATE-->", FormatNumber(tax_rate))
+	s1 = Replace(s1, "<!--TAX-->", FormatNumber(order_tax,2))
+	
+	s1 = Replace(s1, "<!--TOTAL-->", FormatNumber(order_total,2))
+	s1 = Replace(s1, "<!--SHIPPING_RATE-->", FormatNumber(order_shipping_sh,2))
+	s1 = Replace(s1, "<!--SUBTOTAL-->", FormatNumber(i_subtotal,2))
+	
+	if Len(trans_remark) > 0 then
+		s1 = Replace(s1, "<!--REMARK-->", "<br>*" & Replace(order_comment, chr(13), "<br>"))
+	end if
+	
+	'=============================================================================================
+	' Additonal information to send email
+	'=============================================================================================
+	if Len(profile_company) > 0 then
+		profile_company = Replace(profile_company, ",", " ")
+	end if
+
+	if Len(trans_owner_email) > 0 then
+		strFrom = profile_company & "(" & trans_owner_email & ")"
+		c1_from_email = trans_owner_email
+		c1_from = profile_company
+	else
+		strFrom = profile_company & "(" & profile_email & ")"
+		c1_from_email = profile_email
+		c1_from = profile_company
+	end if
+	
+	strPath = Server.MapPath("..\docs")	
+	Set fs = CreateObject("Scripting.FileSystemObject")
+	Set a = fs.OpenTextFile(strPath & "\\order" & order_id & ".asp", 2, True)
+	a.WriteLine(s1)		
+	a.Close
+	
+	
+	guid = createGuid()
+	
+	URL = "http://gateway.flashecom.com/convertpdf/convertpdf.aspx?pdf_url="
+    URL = URL & Replace(g_store_url, "http://", "") & "manager/docs/order" & order_id & ".asp&stream=true&storeid=" & g_storeid & "&Size=Letter" & "&guid=" & guid
+	
+	
+	Set xml = CreateObject("Microsoft.XMLHTTP")
+	xml.Open "GET", URL, False
+	xml.Send
+
+	set oStream = createobject("Adodb.Stream")
+	Const adTypeBinary = 1
+	Const adSaveCreateOverWrite = 2
+	Const adSaveCreateNotExist = 1 
+
+	oStream.type = adTypeBinary
+	oStream.open
+	oStream.write xml.responseBody
+	oStream.savetofile strPath & "\\order" & order_id & ".pdf", adSaveCreateOverWrite
+	oStream.close
+
+	set oStream = nothing
+	Set xml = Nothing
+
+end if
+%>

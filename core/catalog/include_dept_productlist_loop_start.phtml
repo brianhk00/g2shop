@@ -2,11 +2,11 @@
 	grid_items_per_row = 3
 
 	'----------------------------------------------------------
-	If Session("StoreID") = "nlesystem" then
+	If g_storeid = "nlesystem" then
 		'NLE ONLY
 		If Len(Session("shopper_id")) > 0 Then
-			sql = "SELECT apple_authorized FROM " & Session("StoreID") & "_shopper WHERE shopper_id='" & Session("shopper_id") & "'"
-			Set rsAuthorized = conn.Execute(sql)
+			sql = "SELECT apple_authorized FROM " & g_storeid & "_shopper WHERE shopper_id='" & Session("shopper_id") & "'"
+			Set rsAuthorized = dbconn.Execute(sql)
 			If Not rsAuthorized.EOF Then
 				apple_authorized = rsAuthorized(0)
 			Else
@@ -118,8 +118,8 @@
 
 				md_adjusted_price = 0
 				if Len(cc_catalog_id)> 1 then
-					sql = "SELECT adjusted_price FROM " & Session("StoreID") & "_custom_catalog_rule_item WHERE custom_catalog_id='" & cc_catalog_id & "' AND pf_id='" & pf_id & "'"
-					set rsCatalog = Conn.Execute(sql)
+					sql = "SELECT adjusted_price FROM " & g_storeid & "_custom_catalog_rule_item WHERE custom_catalog_id='" & cc_catalog_id & "' AND pf_id='" & pf_id & "'"
+					set rsCatalog = dbconn.Execute(sql)
 					if not rsCatalog.EOF then
 						md_adjusted_price = rsCatalog(0)
 					end if
@@ -187,7 +187,7 @@
 							cloudImg = Trim(rsCloudImage("cloudinary_url"))
 						Else
 							sql = "SELECT * FROM " & g_storeid & "_product_image WHERE image_name = '" & prod_thumb_image & "'"
-							Set rsCloudImage2 = conn.Execute(sql)
+							Set rsCloudImage2 = dbconn.Execute(sql)
 							If Not rsCloudImage2.EOF Then
 								cloudImg = Trim(rsCloudImage2("cloud_url"))
 							Else
@@ -201,7 +201,7 @@
 						ssImg = Replace(cloudImg, "upload/", ssImgSize)
 					else
 						sql = "SELECT * FROM " & g_storeid & "_product_image WHERE image_name = '" & prod_thumb_image & "'"
-						Set rsCloudImage2 = conn.Execute(sql)
+						Set rsCloudImage2 = dbconn.Execute(sql)
 						If Not rsCloudImage2.EOF Then
 							cloudImg = Trim(rsCloudImage2("cloud_url"))
 						Else
@@ -230,4 +230,22 @@
 		If iii Mod grid_items_per_row = 0 Then
 			grid_item_class = "last"
 		End If
+		
+		'====================================================================================
+		'THEME VALUES
+		'====================================================================================
+		g_thumb_image_link = thumb_image_link
+		g_product_link = g_product_link
+		g_pf_id = pf_id
+		g_prod_name = prod_name
+		g_prod_description = prod_description
+		g_prod_on_sale = g_prod_on_sale
+		g_prod_sale_price = prod_sale_price
+		g_prod_group_price = prod_group_price
+		g_prod_retail_price = prod_retail_price
+		'====================================================================================
+		'TRANSLATE
+		'====================================================================================
+		g_prod_name = TranslateX(g_prod_name, 2, pf_id, 1)
+		g_prod_description = TranslateX(g_prod_description, 2, pf_id, 2)
 %>

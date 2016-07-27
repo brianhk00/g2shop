@@ -1,0 +1,93 @@
+<!-- #INCLUDE File="local/local.phtml" -->
+<!-- #INCLUDE File="util/xt_func_util.phtml" -->
+<!-- #INCLUDE File="util/xt_func_string.phtml" -->
+<%
+	userid = Trim(Request("userid"))
+	
+	FirstName = ""
+	LastName = ""
+	
+	strSQL = "SELECT * FROM " & g_storeid & "_users WHERE user_id='" & userid & "'"
+	Set rsUser = dbconn.Execute(strSQL)
+		
+	if not rsUser.EOF then
+		pwd = rsUser("pwd")
+		LastName = rsUser("LastName")
+		FirstName = rsUser("FirstName")
+		description = rsUser("description")
+		user_flag = rsUser("user_flag")
+		user_disable = rsUser("user_disable")
+		user_email = rsUser("Email")
+		access_flag = Trim(rsUser("access_flag"))
+		uflag = Trim(rsUser("uflag"))
+	end if
+	rsUser.close
+	set rsUser = nothing
+	
+	Session("ADMINSTATUS") = ""
+	Session("AdminName") = ""
+	Session("AdminID") = ""
+
+	Response.cookies(g_storeid)("ADMINLOGIN") = ""
+	Response.cookies(g_storeid)("ADMINSTATUS") = ""
+	Response.cookies(g_storeid)("ADMINNAME") = ""
+	Response.cookies(g_storeid).Expires = DateAdd("d", 1, date())
+%>
+<!--#INCLUDE FILE="include/doctype.phtml"-->
+<head>
+<!--#INCLUDE FILE="include/head.phtml"-->
+<!-- start: CSS REQUIRED FOR THIS PAGE ONLY -->
+<!-- end: CSS REQUIRED FOR THIS PAGE ONLY -->
+<link rel="stylesheet" href="assets/css/custom.css">
+</head>
+<body class="login">
+	<!-- start: LOCK SCREEN -->
+	<div class="row">
+		<div class="lock-screen">
+			<div class="box-ls">
+				<img alt="" src="assets/images/avatar-10-xl.png" class="img-rounded"/>
+				<div class="user-info">
+					<h4><%=UCase(FirstName)%>&nbsp;<%=UCase(LastName)%></h4>
+					<span><%=userid%></span>
+					<form method="post" class="form-login" action="login.phtml">
+						<input type="hidden" name="rpage" value="dashboard.phtml">
+						<input type="hidden" id="login" name="login" value="1">
+						<input type="hidden" name="username" value="<%=userid%>">
+						<div class="input-group">
+							<input type="password" class="form-control password" name="password" placeholder="Password to unlock">
+							<span class="input-group-btn">
+								<button class="btn btn-primary" type="submit">
+									<i class="fa fa-chevron-right"></i>
+								</button> </span>
+						</div>
+					</form>
+				</div>
+			</div>
+		</div>
+	</div>
+	<!-- end: LOCK SCREEN -->
+	<!-- start: MAIN JAVASCRIPTS -->
+	<script src="vendor/jquery/jquery.min.js"></script>
+	<script src="vendor/bootstrap/js/bootstrap.min.js"></script>
+	<script src="vendor/modernizr/modernizr.js"></script>
+	<script src="vendor/jquery-cookie/jquery.cookie.js"></script>
+	<script src="vendor/perfect-scrollbar/perfect-scrollbar.min.js"></script>
+	<script src="vendor/switchery/switchery.min.js"></script>
+	<!-- end: MAIN JAVASCRIPTS -->
+	<!-- start: JAVASCRIPTS REQUIRED FOR THIS PAGE ONLY -->
+	<script src="vendor/jquery-validation/jquery.validate.min.js"></script>
+	<!-- end: JAVASCRIPTS REQUIRED FOR THIS PAGE ONLY -->
+	<!-- start: CLIP-TWO JAVASCRIPTS -->
+	<script src="assets/js/main.js"></script>
+	<!-- start: JavaScript Event Handlers for this page -->
+	<script src="assets/js/login.js"></script>
+	<script>
+		jQuery(document).ready(function() {
+			Main.init();
+			Login.init();
+		});
+	</script>
+	<!-- end: JavaScript Event Handlers for this page -->
+	<!-- end: CLIP-TWO JAVASCRIPTS -->
+</body>
+</html>

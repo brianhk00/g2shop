@@ -1,0 +1,605 @@
+<%response.Expires=-1%>
+<!-- #INCLUDE File="../local/local.phtml" -->
+<!-- #INCLUDE File="../util/xt_func_util.phtml" -->
+<!-- #INCLUDE File="../util/xt_func_string.phtml" -->
+<%
+	order_id=Trim(Request("order_id"))
+	quote_id=Trim(Request("quote_id"))
+	
+	if Len(order_id) > 0 then
+		sql = "SELECT * FROM " & g_storeid & "_order WHERE order_id='" & order_id & "'"
+		set rsOrder = dbconn.Execute(sql)
+		if not rsOrder.EOF then
+			
+			so_owner = Trim(rsOrder("salesrep_id"))
+			shopper_id = Trim(rsOrder("shopper_id"))
+			
+			order_date = rsOrder("date_entered")
+			order_date = ConvertToTimeZone(order_date)
+			order_status = rsOrder("status")
+			order_ip = rsOrder("order_ip_addr")
+			
+			order_email = rsOrder("shopper_email")
+			order_customer_name = rsOrder("CardName")
+			
+			order_billing_company = rsOrder("bill_company")
+			order_billing_address = rsOrder("CardAddress")
+			order_billing_city = rsOrder("CardCity")
+			order_billing_state = rsOrder("CardState")
+			order_billing_zip = rsOrder("CardZip")
+			order_billing_country = rsOrder("CardCountry")
+			order_billing_phone = rsOrder("bill_phone")
+			order_billing_contact_firstname = Trim(rsOrder("bill_contact_firstname"))
+			order_billing_contact_lastname = Trim(rsOrder("bill_contact_lastname"))
+			
+			order_shipping_company = rsOrder("ship_company")
+			order_shipping_address = rsOrder("ShipAddress")
+			order_shipping_city = rsOrder("ShipCity")
+			order_shipping_state = rsOrder("ShipState")
+			order_shipping_zip = rsOrder("ShipZip")
+			order_shipping_country = rsOrder("ShipCountry")
+			order_shipping_phone = rsOrder("ShipPhone")
+			
+			order_payment_method = rsOrder("PaymentMethod")
+			order_payment_card_type = rsOrder("CardType")
+			order_payment_card_number = rsOrder("CardNumber")
+			order_customer_card_name = rsOrder("CardName")
+			order_customer_card_exp_month = rsOrder("CardExpirationMonth")
+			order_customer_card_exp_year = rsOrder("CardExpirationYear")
+			
+			order_shipping_sh_method = rsOrder("SH_method")
+			order_shipping_sh = rsOrder("SH")
+			order_shipping_sh = FormatNumber(order_shipping_sh)
+			
+			order_comment = rsOrder("Order_Comments")
+			order_notes = rsOrder("notes")
+			
+			order_tax = rsOrder("tax")
+			order_tax = FormatNumber(order_tax)
+			order_total = rsOrder("total")
+			order_total = FormatNumber(order_total)
+			
+			if Len(order_comment) > 0 then
+			else
+				order_comment = "..."
+			end if
+		
+			if Len(order_notes) > 0 then
+			else
+				order_notes = "..."
+			end if
+			
+			'TODO...
+			SELECT CASE order_payment_method
+			CASE "visa"
+				order_payment_method = "Credit Card"
+			CASE "master"
+				order_payment_method = "Credit Card"
+			CASE "discover"
+				order_payment_method = "Credit Card"
+			CASE "amex"
+				order_payment_method = "Credit Card"
+			CASE "cod"
+				order_payment_method = "COD"
+			END SELECT
+			
+		end if
+		rsOrder.Close
+		set rsOrder = nothing
+	end if
+	if Len(quote_id) > 0 then
+		sql = "SELECT * FROM " & Session("StoreID") & "_quotes WHERE quote_id=" & quote_id
+		set rsQuote = dbconn.Execute(sql)
+		if not rsQuote.EOF then
+			shopper_id = Trim(rsQuote("shopper_id"))
+			order_billing_company = rsQuote("billing_company")
+			order_billing_address = rsQuote("billing_address")
+			order_billing_city = rsQuote("billing_city")
+			order_billing_state = rsQuote("billing_state")
+			order_billing_zip = rsQuote("billing_zip")
+			order_billing_country = rsQuote("billing_country")
+			order_billing_phone = rsQuote("billing_phone")
+			order_billing_contact_firstname = Trim(rsQuote("billing_contact_firstname"))
+			order_billing_contact_lastname = Trim(rsQuote("billing_contact_lastname"))
+			billing_contact = Trim(rsQuote("billing_contact"))
+			if Len(billing_contact_firstname) > 0 OR Len(billing_contact_lastname) > 0 then
+				'New contact name format is available .. do nothing
+			else
+				'Try this..
+				billing_contact_lastname = ""
+				billing_contact_firstname = ""
+				
+				if Len(billing_contact) > 0 then
+					ar_billing_contact = Split(billing_contact, " ")
+					for ii = 0 to UBound(ar_billing_contact)
+						if (ii = 0) then
+							billing_contact_firstname = ar_billing_contact(ii)
+						else
+							billing_contact_lastname = billing_contact_lastname & " " & ar_billing_contact(1)
+						end if
+					next
+					order_billing_contact_firstname = Trim(billing_contact_firstname)
+					order_billing_contact_lastname = Trim(billing_contact_lastname)
+				end if
+				
+			end if
+		end if
+		rsQuote.Close
+		set rsQuote = nothing
+	end if
+	
+%>
+<div class="modal-header">
+	<button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+	<h4>Billing Information</h4>
+</div>
+<form role="form" id='billingform'>
+<input type="hidden" name="name" value="billing_address" />
+<input type="hidden" name="order_id" value="<%=order_id%>" />
+<input type="hidden" name="quote_id" value="<%=quote_id%>" />
+<div class="modal-body" style="padding-left: 30px;">
+	<div class="col-md-12">
+		<div class="alert alert-danger display-hide">
+		<button class="close" data-close="alert"></button> You have some form errors. Please check below. 
+		</div>
+		<div class="alert alert-success display-hide">
+		<button class="close" data-close="alert"></button> The information has been saved.
+		</div>
+		<div class="alert alert-warning display-hide">
+		<button class="close" data-close="alert"></button> The information has not been saved properly. Please contact system administrator.
+		</div>
+	</div>
+	<div class="row"><div class="col-sm-12">
+	<div class="form-group">
+		<label class="col-sm-3 control-label" for="alt_billing">
+			Bill To <span class="symbol required"></span> 
+		</label>
+		<div class="col-sm-9">
+			<select name ="alt_billing" id="alt_billing" class="form-control input-sm">
+				<option value="">Current</option>
+				<option value="0">Default Customer Billing Information</option>
+				<%
+				xs1 = ""
+				xs2 = "Default"
+							
+				if Len(shopper_id) > 1 then
+					sql = "SELECT * FROM " & g_storeid & "_shopper_billing_address WHERE billing_shopper_id = '" & shopper_id & "'"
+					set rsBillingAddress = dbconn.Execute(sql)
+					do while not rsBillingAddress.EOF
+					
+						alt_billing_address_id = Trim(rsBillingAddress("billing_address_id"))
+						alt_billing_address_name = Trim(rsBillingAddress("billing_address_name"))
+						alt_billing_firstname = Trim(rsBillingAddress("billing_firstname"))
+						alt_billing_lastname = Trim(rsBillingAddress("billing_lastname"))
+						alt_billing_address = Trim(rsBillingAddress("billing_address"))
+						alt_billing_city = Trim(rsBillingAddress("billing_city"))
+						alt_billing_state = Trim(rsBillingAddress("billing_state"))
+						alt_billing_zip = Trim(rsBillingAddress("billing_zip"))
+						alt_billing_country = Trim(rsBillingAddress("billing_country"))
+						alt_billing_phone = Trim(rsBillingAddress("billing_phone"))
+						alt_billing_default = Trim(rsBillingAddress("billing_set_default"))
+						alt_billing_cc_type= Trim(rsBillingAddress("CC_Type"))
+						alt_billing_cc_number = Trim(rsBillingAddress("CC_Number"))
+						alt_billing_cc_expmonth = Trim(rsBillingAddress("CC_ExpMonth"))
+						alt_billing_cc_expyear = Trim(rsBillingAddress("CC_ExpYear"))
+						alt_billing_company = Trim(rsBillingAddress("bill_company"))
+						
+						if IsNumeric(alt_billing_cc_expmonth) then
+						else
+							alt_billing_cc_expmonth = "01"
+						end if
+						
+						if IsNumeric(alt_billing_cc_expyear) then
+						else
+							alt_billing_cc_expyear = "2005"
+						end if
+						
+						if Len(alt_billing_address) > 20 then
+							alt_billing_address1 = Left(alt_billing_address,20)
+						else
+							alt_billing_address1 = alt_billing_address
+						end if
+						
+						if alt_billing_address_id = billing_address_id then
+							xs1 = " selected"
+							xs2 = alt_billing_address_name
+						else
+							xs1 = ""
+						end if
+						
+				%>
+				<option value="<%=alt_billing_address_id%>" <%=xs1%>><%=alt_billing_address_name%> - <%=alt_billing_address1%></option>
+				<%
+						rsBillingAddress.MoveNext
+					loop
+					
+					rsBillingAddress.Close
+					set rsBillingAddress = nothing
+					
+				end if
+				%>
+				<!--
+				<option value="-1">New Billing Information...</option>
+				-->
+			</select>
+		</div>
+	</div>
+	<br><br>
+	<!--
+	<div class="form-group">
+		<label class="col-sm-3 control-label" for="alt_billing_name">
+			Address Nickname <span class="symbol required"></span>
+		</label>
+		<div class="col-sm-9">
+			<input type="text" placeholder="" id="alt_billing_name" name="alt_billing_name" class="form-control input-sm" value="<%=xs2%>" disabled>
+		</div>
+	</div>
+	<br><br>
+	-->
+	<div class="form-group">
+		<label class="col-sm-3 control-label" for="order_billing_company">
+			Company
+		</label>
+		<div class="col-sm-9">
+			<input type="text" placeholder="" id="order_billing_company" name="order_billing_company" class="form-control input-sm" value="<%=order_billing_company%>">
+		</div>
+	</div>
+	<br><br>
+	<div class="form-group">
+		<label class="col-sm-3 control-label" for="order_billing_contact_firstname">
+			First Name <span class="symbol required"></span> 
+		</label>
+		<div class="col-sm-9">
+			<input type="text" placeholder="" id="order_billing_contact_firstname" name="order_billing_contact_firstname" class="form-control input-sm" value="<%=order_billing_contact_firstname%>">
+		</div>
+	</div>
+	<br><br>
+	<div class="form-group">
+		<label class="col-sm-3 control-label" for="order_billing_contact_lastname">
+			Last Name <span class="symbol required"></span> 
+		</label>
+		<div class="col-sm-9">
+			<input type="text" placeholder="" id="order_billing_contact_lastname" name="order_billing_contact_lastname" class="form-control input-sm" value="<%=order_billing_contact_lastname%>">
+		</div>
+	</div>
+	<br><br>
+	<div class="form-group">
+		<label class="col-sm-3 control-label" for="order_billing_address">
+			Address <span class="symbol required"></span> 
+		</label>
+		<div class="col-sm-9">
+			<input type="text" placeholder="" id="order_billing_address" name="order_billing_address" class="form-control input-sm" value="<%=order_billing_address%>">
+		</div>
+	</div>
+	<br><br>
+	<div class="form-group">
+		<label class="col-sm-3 control-label" for="order_billing_city">
+			City <span class="symbol required"></span> 
+		</label>
+		<div class="col-sm-9">
+			<input type="text" placeholder="" id="order_billing_city" name="order_billing_city" class="form-control input-sm" value="<%=order_billing_city%>">
+		</div>
+	</div>
+	<br><br>
+	<div class="form-group">
+		<label class="col-sm-3 control-label" for="order_billing_country">
+			Country <span class="symbol required"></span> 
+		</label>
+		<div class="col-sm-9">
+			<select id="order_billing_country" name="order_billing_country" class="form-control input-sm"></select>
+		</div>
+	</div>
+	<br><br>
+	<div class="form-group">
+		<label class="col-sm-3 control-label" for="order_billing_state">
+			State <span class="symbol required"></span> 
+		</label>
+		<div class="col-sm-9">
+			<select id="order_billing_state" name="order_billing_state" class="form-control input-sm"></select>
+		</div>
+	</div>
+	<br><br>
+	<div class="form-group">
+		<label class="col-sm-3 control-label" for="order_billing_zip">
+			Zip Code <span class="symbol required"></span> 
+		</label>
+		<div class="col-sm-9">
+			<input type="text" placeholder="" id="order_billing_zip" name="order_billing_zip" class="form-control input-sm" value="<%=order_billing_zip%>">
+		</div>
+	</div>
+	<br><br>
+	<div class="form-group">
+		<label class="col-sm-3 control-label" for="order_billing_phone">
+			Phone <span class="symbol required"></span> 
+		</label>
+		<div class="col-sm-9">
+			<input type="text" placeholder="" id="order_billing_phone" name="order_billing_phone" class="form-control input-sm" value="<%=order_billing_phone%>">
+		</div>
+	</div>
+	
+	</div></div>
+</div>
+<div class="modal-footer">
+	<button class="btn btn-primary btn-sm" id="billing_update_btn btn-sm">Update</button>
+	<button type="button" data-dismiss="modal" class="btn btn-default btn-sm">Close</button>
+</div>
+</form>
+<script language="javascript">
+var FormValidatorBilling = function () {
+// function to initiate Validation Sample 1
+	var runValidatorBilling = function() {
+		// for more info visit the official plugin documentation: 
+		// http://docs.jquery.com/Plugins/Validation
+
+		var form1 = $('#billingform');
+		var error1 = $('.alert-danger', form1);
+		var success1 = $('.alert-success', form1);
+		var warning1 = $('.alert-warning', form1);
+
+		form1.validate({
+			errorElement: 'span', //default input error message container
+			errorClass: 'help-block help-block-error', // default input error message class
+			focusInvalid: false, // do not focus the last invalid input
+			ignore: "",  // validate all fields including form hidden input
+			//RULES
+			rules: {
+				order_billing_address: {
+					minlength: 2,
+					required: true
+				}
+			},
+
+			invalidHandler: function (event, validator) { //display error alert on form submit              
+				success1.hide();
+				error1.show();
+				App.scrollTo(error1, -200);
+			},
+
+			errorPlacement: function (error, element) { // render error placement for each input type
+				var cont = $(element).parent('.input-group');
+				if (cont) {
+					cont.after(error);
+				} else {
+					element.after(error);
+				}
+			},
+
+			highlight: function (element) { // hightlight error inputs
+
+				$(element)
+					.closest('.form-group').addClass('has-error'); // set error class to the control group
+			},
+
+			unhighlight: function (element) { // revert the change done by hightlight
+				$(element)
+					.closest('.form-group').removeClass('has-error'); // set error class to the control group
+			},
+
+			success: function (label) {
+				label
+					.closest('.form-group').removeClass('has-error'); // set success class to the control group
+			},
+
+			submitHandler: function (form) {
+				success1.hide();
+				error1.hide();
+				warning1.hide();
+				
+				$.ajax({
+					type: "POST",
+					<% if Len(order_id) > 0 then %>
+					url: "api/sp_sales_orders_detail_update.phtml",
+					<% end if %>
+					<% if Len(quote_id) > 0 then %>
+					url: "api/sp_sales_quotation_detail_update.phtml",
+					<% end if %>
+					data: $("#billingform").serialize(),
+					success: function() {
+						success1.show();
+						setTimeout(function () {
+							 $('#ajax-modal').modal('hide');
+						}, 700);						
+					},
+					error: function() {
+						warning1.show();
+					}
+				});
+			}
+		});
+
+	};
+	/*
+	var runValidatorBilling = function () {
+		var form1 = $('#billingform');
+		var errorHandler1 = $('#errorHandler1', form1);
+		var errorHandler2 = $('#errorHandler2', form1);
+		var successHandler1 = $('.successHandler', form1);
+		$.validator.addMethod("FullDate", function () {
+			//if all values are selected
+			if ($("#dd").val() != "" && $("#mm").val() != "" && $("#yyyy").val() != "") {
+				return true;
+			} else {
+				return false;
+			}
+		}, 'Please select a day, month, and year');
+		$('#billingform').validate({
+			errorElement: "span", // contain the error msg in a span tag
+			errorClass: 'help-block',
+			errorPlacement: function (error, element) { // render error placement for each input type
+				if (element.attr("type") == "radio" || element.attr("type") == "checkbox") { // for chosen elements, need to insert the error after the chosen container
+					error.insertAfter($(element).closest('.form-group').children('div').children().last());
+				} else if (element.attr("name") == "dd" || element.attr("name") == "mm" || element.attr("name") == "yyyy") {
+					error.insertAfter($(element).closest('.form-group').children('div'));
+				} else {
+					error.insertAfter(element);
+					// for other inputs, just perform default behavior
+				}
+			},
+			ignore: "",
+			
+			//RULES
+			rules: {
+				order_billing_address: {
+					minlength: 2,
+					required: true
+				}
+			},
+			
+			//END OF RULES
+			
+			invalidHandler: function (event, validator) { //display error alert on form submit
+				successHandler1.hide();
+				errorHandler1.show();
+			},
+			highlight: function (element) {
+				$(element).closest('.help-block').removeClass('valid');
+				$(element).closest('.form-group').removeClass('has-success').addClass('has-error').find('.symbol').removeClass('ok').addClass('required');
+			},
+			unhighlight: function (element) { 
+				$(element).closest('.form-group').removeClass('has-error');
+			},
+			success: function (label, element) {
+				label.addClass('help-block valid');
+				$(element).closest('.form-group').removeClass('has-error').addClass('has-success').find('.symbol').removeClass('required').addClass('ok');
+			},
+			submitHandler: function (form) {
+				successHandler1.hide();
+				errorHandler1.hide();
+				errorHandler2.hide();
+				$.ajax({
+					type: "POST",
+					<% if Len(order_id) > 0 then %>
+					url: "api/sp_sales_orders_detail_update.phtml",
+					<% end if %>
+					<% if Len(quote_id) > 0 then %>
+					url: "api/sp_sales_quotation_detail_update.phtml",
+					<% end if %>
+					data: $("#billingform").serialize(),
+					success: function() {
+						successHandler1.show();
+						setTimeout(function () {
+							 $('#ajax-modal').modal('hide');
+						}, 700);						
+					},
+					error: function() {
+						errorHandler2.show();
+					}
+				});
+			}
+		});
+	};
+	*/
+	return {
+		//main function to initiate template pages
+		init: function () {
+			runValidatorBilling();
+		}
+	};
+}();
+</script>
+<script type="text/javascript">
+	$("#billingform").submit(function (e) {
+		e.preventDefault(); //prevent default form submit
+	});
+	FormValidatorBilling.init();
+
+	jQuery.ajax({
+		type:"post",
+		url: "api/sp_get_country_list.phtml",
+		data: {'country_id':'<%=order_billing_country%>','isAjax':true},
+		dataType: 'json',
+		success: function(data) {
+			var listItems= "<option value=''></option>";
+			for (var i = 0; i < data.Country.length; i++){
+				if (data.Country[i].id == '<%=order_billing_country%>')
+				{
+					listItems+= "<option value='" + data.Country[i].id + "' selected>" + data.Country[i].name + "</option>";
+				}
+				else
+				{
+					listItems+= "<option value='" + data.Country[i].id + "'>" + data.Country[i].name + "</option>";
+				}
+			}
+			var select = jQuery("#order_billing_country"), options = '';
+			select.empty(); 
+			select.append(listItems);
+		}
+	});
+	
+	jQuery.ajax({
+		type:"post",
+		url: "api/sp_get_zone_list.phtml",
+		data: {country_id: '<%=order_billing_country%>', 'isAjax':true},
+		dataType: 'json',
+		success: function(data) {
+			var listItems= "<option value=''></option>";
+			for (var i = 0; i < data.Zone.length; i++){
+				if (data.Zone[i].id == '<%=order_billing_state%>')
+				{
+					listItems+= "<option value='" + data.Zone[i].id + "' selected>" + data.Zone[i].name + "</option>";
+				}
+				else
+				{
+					listItems+= "<option value='" + data.Zone[i].id + "'>" + data.Zone[i].name + "</option>";
+				}
+			}
+			var select = jQuery("#order_billing_state");
+			select.empty(); 
+			select.append(listItems);
+		}
+	});
+	
+	jQuery( "#order_billing_country" ).change(function() {
+	  jQuery.ajax({
+			type:"post",
+			url: "api/sp_get_zone_list.phtml",
+			data: {country_id: jQuery('#order_billing_country').val(), 'isAjax':true},
+			dataType: 'json',
+			success: function(data) {
+				var listItems= "<option value=''></option>";
+				for (var i = 0; i < data.Zone.length; i++){
+					if (data.Zone[i].id == '<%=order_billing_state%>')
+					{
+						listItems+= "<option value='" + data.Zone[i].id + "' selected>" + data.Zone[i].name + "</option>";
+					}
+					else
+					{
+						listItems+= "<option value='" + data.Zone[i].id + "'>" + data.Zone[i].name + "</option>";
+					}
+				}
+				var select = jQuery("#order_billing_state"), options = '';
+				select.empty(); 
+				select.append(listItems);
+			}
+		});
+	});
+	
+	jQuery( "#alt_billing" ).change(function() {
+	  jQuery.ajax({
+			type:"post",
+			url: "api/sp_get_shopper_alt_billing_information.phtml",
+			data: {address_id: jQuery('#alt_billing').val(), shopper_id: "<%=shopper_id%>", order_id: "<%=order_id%>", 'isAjax':true},
+			dataType: 'json',
+			success: function(data) {
+				for (var i = 0; i < data.Address.length; i++){
+					jQuery("#alt_billing_name").val(data.Address[i].nickname);
+					jQuery("#order_billing_company").val(data.Address[i].company);
+					jQuery("#order_billing_contact_firstname").val(data.Address[i].firstname);
+					jQuery("#order_billing_contact_lastname").val(data.Address[i].lastname);
+					jQuery("#order_billing_address").val(data.Address[i].address);
+					jQuery("#order_billing_city").val(data.Address[i].city);
+					jQuery("#order_billing_country").val(data.Address[i].country);
+					jQuery("#order_billing_state").val(data.Address[i].state);
+					jQuery("#order_billing_zip").val(data.Address[i].zipcode);
+					jQuery("#order_billing_phone").val(data.Address[i].phone);
+				}
+			}
+		});
+	});
+	
+	$('.close').click(function() {
+	   $('.alert').hide();
+	})
+				
+				
+</script>

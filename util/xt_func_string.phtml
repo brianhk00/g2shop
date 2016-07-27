@@ -175,6 +175,9 @@ Function TranslateX(string, strTypeId, strEntityId, strFieldId)
 	'=======================================================================
 	' TYPE_ID : 1: category 2: product
 	' FIELD_ID : 1 : name (1, 2)
+	'-----------------------------------------------------------------------
+	' Product (2)
+	' 1: name, 2: description, 3: detail
 	'=======================================================================
 	xstring = string
 	
@@ -194,6 +197,36 @@ Function TranslateX(string, strTypeId, strEntityId, strFieldId)
 	rsx.Close
 	set rsx = nothing
 	TranslateX = xstring
+	
+End Function
+
+Function TranslateXT(string, strTypeId, strEntityId, strFieldId)
+	
+	'=======================================================================
+	' TYPE_ID : 1: category 2: product
+	' FIELD_ID : 1 : name (1, 2)
+	'-----------------------------------------------------------------------
+	' Product (2)
+	' 1: name, 2: description, 3: detail
+	'=======================================================================
+	xstring = string
+	
+	current_view_id = "4"
+	current_view_id = Session("CURRENT_VIEW_ID")
+	
+	sql = "SELECT field_value FROM " & g_storeid & "_store_type_data_text WHERE "
+	sql = sql & "type_id=" & strTypeId & " AND "
+	sql = sql & "view_id=" & current_view_id & " AND "
+	sql = sql & "entity_id='" & strEntityId & "' AND "
+	sql = sql & "field_id=" & strFieldId & ""
+	
+	set rsx = dbconn.Execute(sql)
+	if not rsx.EOF then
+		xstring = rsx(0)
+	end if
+	rsx.Close
+	set rsx = nothing
+	TranslateXT = xstring
 	
 End Function
 

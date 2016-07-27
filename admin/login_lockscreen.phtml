@@ -1,0 +1,128 @@
+<!-- #INCLUDE File="local/local.phtml" -->
+<!-- #INCLUDE File="util/xt_func_util.phtml" -->
+<!-- #INCLUDE File="util/xt_func_string.phtml" -->
+<%
+	userid = Trim(Request("userid"))
+	
+	FirstName = ""
+	LastName = ""
+	
+	strSQL = "SELECT * FROM " & g_storeid & "_users WHERE user_id='" & userid & "'"
+	Set rsUser = dbconn.Execute(strSQL)
+		
+	if not rsUser.EOF then
+		pwd = rsUser("pwd")
+		LastName = rsUser("LastName")
+		FirstName = rsUser("FirstName")
+		description = rsUser("description")
+		user_flag = rsUser("user_flag")
+		user_disable = rsUser("user_disable")
+		user_email = rsUser("Email")
+		access_flag = Trim(rsUser("access_flag"))
+		uflag = Trim(rsUser("uflag"))
+	end if
+	rsUser.close
+	set rsUser = nothing
+	
+	Session("ADMINSTATUS") = ""
+	Session("AdminName") = ""
+	Session("AdminID") = ""
+
+	Response.cookies(g_storeid)("ADMINLOGIN") = ""
+	Response.cookies(g_storeid)("ADMINSTATUS") = ""
+	Response.cookies(g_storeid)("ADMINNAME") = ""
+	Response.cookies(g_storeid).Expires = DateAdd("d", 1, date())
+%>
+<!DOCTYPE html>
+<html lang="en">
+    <!--<![endif]-->
+    <!-- BEGIN HEAD -->
+
+    <head>
+        <meta charset="utf-8" />
+        <title>G2SHOP | Admin Lock</title>
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta content="width=device-width, initial-scale=1" name="viewport" />
+        <meta content="" name="description" />
+        <meta content="" name="author" />
+        <!-- BEGIN GLOBAL MANDATORY STYLES -->
+        <link href="http://fonts.googleapis.com/css?family=Open+Sans:400,300,600,700&subset=all" rel="stylesheet" type="text/css" />
+        <link href="../assets/global/plugins/font-awesome/css/font-awesome.min.css" rel="stylesheet" type="text/css" />
+        <link href="../assets/global/plugins/simple-line-icons/simple-line-icons.min.css" rel="stylesheet" type="text/css" />
+        <link href="../assets/global/plugins/bootstrap/css/bootstrap.min.css" rel="stylesheet" type="text/css" />
+        <link href="../assets/global/plugins/bootstrap-switch/css/bootstrap-switch.min.css" rel="stylesheet" type="text/css" />
+        <!-- END GLOBAL MANDATORY STYLES -->
+        <!-- BEGIN PAGE LEVEL PLUGINS -->
+        <!-- END PAGE LEVEL PLUGINS -->
+        <!-- BEGIN THEME GLOBAL STYLES -->
+        <link href="../assets/global/css/components.min.css" rel="stylesheet" id="style_components" type="text/css" />
+        <link href="../assets/global/css/plugins.min.css" rel="stylesheet" type="text/css" />
+        <!-- END THEME GLOBAL STYLES -->
+        <!-- BEGIN PAGE LEVEL STYLES -->
+        <link href="../assets/pages/css/lock-2.min.css" rel="stylesheet" type="text/css" />
+        <!-- END PAGE LEVEL STYLES -->
+        <!-- BEGIN THEME LAYOUT STYLES -->
+        <!-- END THEME LAYOUT STYLES -->
+        <link rel="shortcut icon" href="favicon.ico" /> </head>
+    <!-- END HEAD -->
+
+    <body class="">
+        <div class="page-lock">
+            <div class="page-logo">
+                <a class="brand" href="#">
+                    <img src="assets/images/g2shop_logo2a.png" width="106" alt="logo" class="logo-default">
+				</a>
+            </div>
+            <div class="page-body">
+                <img class="page-lock-img" src="assets/images/avatar-10-xl.png" alt="">
+                <div class="page-lock-info">
+                    <h1><%=UCase(FirstName)%>&nbsp;<%=UCase(LastName)%></h1>
+                    <span class="email"> <%=userid%> </span>
+                    <span class="locked"> Locked </span>
+                    <form method="post" class="form-login" action="login.phtml">
+						<input type="hidden" name="rpage" value="dashboard.phtml">
+						<input type="hidden" id="login" name="login" value="1">
+						<input type="hidden" name="username" value="<%=userid%>">
+                        <div class="input-group input-medium">
+                            <input type="password" class="form-control password" name="password" placeholder="Password to unlock">
+                            <span class="input-group-btn">
+                                <button type="submit" class="btn green icn-only">
+                                    <i class="m-icon-swapright m-icon-white"></i>
+                                </button>
+                            </span>
+                        </div>
+                        <!-- /input-group -->
+                        <div class="relogin">
+                            <a href="login.phtml?logoff=1"> Not <%=UCase(FirstName)%>&nbsp;<%=UCase(LastName)%> ? </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            <div class="page-footer-custom"> 2016 &copy; Olive Commerce. </div>
+        </div>
+        <!--[if lt IE 9]>
+		<script src="../assets/global/plugins/respond.min.js"></script>
+		<script src="../assets/global/plugins/excanvas.min.js"></script> 
+		<![endif]-->
+        <!-- BEGIN CORE PLUGINS -->
+        <script src="../assets/global/plugins/jquery.min.js" type="text/javascript"></script>
+        <script src="../assets/global/plugins/bootstrap/js/bootstrap.min.js" type="text/javascript"></script>
+        <script src="../assets/global/plugins/js.cookie.min.js" type="text/javascript"></script>
+        <script src="../assets/global/plugins/jquery-slimscroll/jquery.slimscroll.min.js" type="text/javascript"></script>
+        <script src="../assets/global/plugins/jquery.blockui.min.js" type="text/javascript"></script>
+        <script src="../assets/global/plugins/bootstrap-switch/js/bootstrap-switch.min.js" type="text/javascript"></script>
+        <!-- END CORE PLUGINS -->
+        <!-- BEGIN PAGE LEVEL PLUGINS -->
+        <script src="../assets/global/plugins/backstretch/jquery.backstretch.min.js" type="text/javascript"></script>
+        <!-- END PAGE LEVEL PLUGINS -->
+        <!-- BEGIN THEME GLOBAL SCRIPTS -->
+        <script src="../assets/global/scripts/app.min.js" type="text/javascript"></script>
+        <!-- END THEME GLOBAL SCRIPTS -->
+        <!-- BEGIN PAGE LEVEL SCRIPTS -->
+        <script src="../assets/pages/scripts/lock-2.min.js" type="text/javascript"></script>
+        <!-- END PAGE LEVEL SCRIPTS -->
+        <!-- BEGIN THEME LAYOUT SCRIPTS -->
+        <!-- END THEME LAYOUT SCRIPTS -->
+    </body>
+
+</html>

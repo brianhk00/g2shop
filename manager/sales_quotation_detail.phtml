@@ -1,0 +1,1866 @@
+<!-- #INCLUDE File="local/local.phtml" -->
+<!-- #INCLUDE File="util/xt_func_util.phtml" -->
+<!-- #INCLUDE File="../util/xt_func_rc4.phtml" -->
+<!-- #INCLUDE File="util/xt_func_string.phtml" -->
+<!-- #INCLUDE File="include/i_login.phtml" -->
+<%
+	order_id = Trim(Request("so_id"))
+	order_id = "1452626599"
+	
+	quote_id = Trim(Request("quote_id"))
+	c_quote_id = Trim(Request("c_quote_id"))
+	c_shopper_id = Trim(Request("c_shopper_id"))
+	guid = createGuid()
+	
+	sql = "SELECT * FROM " & Session("StoreID") & "_quotes WHERE quote_id=" & quote_id
+	
+	set rsQuote = dbconn.Execute(sql)
+	
+	if not rsQuote.EOF then
+		quote_owner = Trim(rsQuote("quote_owner"))
+		quote_status = Trim(rsQuote("quote_status"))
+		
+		SELECT CASE quote_status
+		CASE 0
+			quote_status_text = "Pending"
+		CASE 2
+			quote_status_text = "Approved"
+		CASE 1
+			quote_status_text = "Closed"
+		CASE 3
+			quote_status_text = "Converted"
+		END SELECT
+								
+		lead_quality = Trim(rsQuote("lead_quality"))
+		date_created = Trim(rsQuote("date_created"))
+		date_updated = Trim(rsQuote("date_updated"))
+		company_id = Trim(rsQuote("company_id"))
+		company_name = Trim(rsQuote("company_name"))
+		company_address = Trim(rsQuote("company_address"))
+		company_city= Trim(rsQuote("company_city"))
+		company_state = Trim(rsQuote("company_state"))
+		company_zip = Trim(rsQuote("company_zip"))
+		'company_country = Trim(rsQuote("quote_owner"))
+		shopper_id = Trim(rsQuote("shopper_id"))
+		shopper_firstname = Trim(rsQuote("shopper_firstname"))
+		shopper_lastname = Trim(rsQuote("shopper_lastname"))
+		shopper_email = Trim(rsQuote("shopper_email"))
+		shopper_phone = Trim(rsQuote("shopper_phone"))
+		shopper_fax = Trim(rsQuote("shopper_fax"))
+		shopper_title = Trim(rsQuote("shopper_title"))
+		payment_method = Trim(rsQuote("payment_method"))
+		payment_number = Trim(rsQuote("payment_number"))
+		payment_expYear = Trim(rsQuote("payment_expYear"))
+		payment_expMonth = Trim(rsQuote("payment_expMonth"))
+		payment_name = Trim(rsQuote("payment_name"))
+		billing_company = Trim(rsQuote("billing_company"))
+		billing_address = Trim(rsQuote("billing_address"))
+		billing_city = Trim(rsQuote("billing_city"))
+		billing_state = Trim(rsQuote("billing_state"))
+		billing_zip = Trim(rsQuote("billing_zip"))
+		billing_country = Trim(rsQuote("billing_country"))
+		
+		Session("Admin_Current_Doc_ID") = quote_id
+		Session("Admin_Current_Doc_Type") = "q"
+		Session("Admin_Current_Doc_Desc") = quote_id & " / " & company_name & " / " & shopper_lastname & ", " & shopper_firstname
+
+		if billing_country = "USA" OR billing_country = "" OR billing_country = "--" then
+		  billing_country = "US"
+		end if
+		
+		SELECT case billing_state
+		CASE "Alberta"
+		  billing_state = "AB"
+		CASE "British Columbia"
+		  billing_state = "BC"
+		CASE "Manitoba"
+		  billing_state = "MB"
+		CASE "New Brunswick"
+		  billing_state = "NB"
+		CASE "Newfoundland"
+		  billing_state = "NL"
+		CASE "N.W. Territories"
+		  billing_state = "NT"
+		CASE "Nova Scotia"
+		  billing_state = "NS"
+		CASE "Nunavut"
+		  billing_state = "NU"
+		CASE "Ontario"
+		  billing_state = "ON"
+		CASE "Prince Edward Island"
+		  billing_state = "PE"
+		CASE "Quebec"
+		  billing_state = "QC"
+		CASE "Saskatchewan"
+		  billing_state = "SK"
+		CASE "Yukon"
+		  billing_state = "YT"
+		END SELECT
+		
+		billing_contact = Trim(rsQuote("billing_contact"))
+		billing_phone = Trim(rsQuote("billing_phone"))
+		shipping_company = Trim(rsQuote("shipping_company"))
+		shipping_address = Trim(rsQuote("shipping_address"))
+		shipping_city = Trim(rsQuote("shipping_city"))
+		shipping_state = Trim(rsQuote("shipping_state"))
+		shipping_zip = Trim(rsQuote("shipping_zip"))
+		shipping_country = Trim(rsQuote("shipping_country"))
+		
+		if shipping_country = "USA" OR shipping_country = "" OR shipping_country = "--" then
+		  shipping_country = "US"
+		end if
+		
+		SELECT case shipping_state
+		CASE "Alberta"
+		  shipping_state = "AB"
+		CASE "British Columbia"
+		  shipping_state = "BC"
+		CASE "Manitoba"
+		  shipping_state = "MB"
+		CASE "New Brunswick"
+		  shipping_state = "NB"
+		CASE "Newfoundland"
+		  shipping_state = "NL"
+		CASE "N.W. Territories"
+		  shipping_state = "NT"
+		CASE "Nova Scotia"
+		  shipping_state = "NS"
+		CASE "Nunavut"
+		  shipping_state = "NU"
+		CASE "Ontario"
+		  shipping_state = "ON"
+		CASE "Prince Edward Island"
+		  shipping_state = "PE"
+		CASE "Quebec"
+		  shipping_state = "QC"
+		CASE "Saskatchewan"
+		  shipping_state = "SK"
+		CASE "Yukon"
+		  shipping_state = "YT"
+		END SELECT 
+		
+		shipping_contact = Trim(rsQuote("shipping_contact"))
+		shipping_phone = Trim(rsQuote("shipping_phone"))
+		tax_rate = rsQuote("tax_rate")
+		Tax = rsQuote("Tax")
+		SH = rsQuote("SH")
+		sh_method = rsQuote("sh_method")
+		quote_remark = Trim(rsQuote("remark1"))
+		quote_notes = Trim(rsQuote("notes"))
+		
+		if Len(quote_remark) > 0 then
+		else
+			quote_remark = "..."
+		end if
+	
+		if Len(quote_notes) > 0 then
+		else
+			quote_notes = "..."
+		end if
+
+		price_group = UCase(Trim(rsQuote("quote_price_group")))
+		date_expires = Trim(rsQuote("date_expires"))
+		date_exp_close = Trim(rsQuote("date_exp_close"))
+
+		trans_version = rsQuote("quote_version")
+		
+		trans_taxable = rsQuote("quote_taxable")
+
+		email_show_option1 = rsQuote("email_show_option1")
+		email_to = rsQuote("email_to")
+		email_cc = rsQuote("email_cc")
+		email_subject = rsQuote("email_subject")
+		email_msg = rsQuote("email_msg")
+		
+		'Date Conversion...
+		date_created = ConvertToTimeZone(date_created)
+		date_updated = ConvertToTimeZone(date_updated)
+		
+		UDF01 = rsQuote("UDF01")
+		UDF02 = rsQuote("UDF02")
+		UDF03 = rsQuote("UDF03")
+		UDF04 = rsQuote("UDF04")
+		UDF05 = rsQuote("UDF05")
+		
+		'Contact Information Updates...
+		billing_contact_firstname = Trim(rsQuote("billing_contact_firstname"))
+		billing_contact_lastname = Trim(rsQuote("billing_contact_lastname"))
+		shipping_contact_firstname = Trim(rsQuote("shipping_contact_firstname"))
+		shipping_contact_lastname = Trim(rsQuote("shipping_contact_lastname"))
+		
+		billing_address_id = Trim(rsQuote("billing_address_id"))
+		shipping_address_id = Trim(rsQuote("shipping_address_id"))
+				
+		if Len(billing_contact_firstname) > 0 OR Len(billing_contact_lastname) > 0 then
+			'New contact name format is available .. do nothing
+		else
+			'Try this..
+			billing_contact_lastname = ""
+			billing_contact_firstname = ""
+			
+			if Len(billing_contact) > 0 then
+				ar_billing_contact = Split(billing_contact, " ")
+				for ii = 0 to UBound(ar_billing_contact)
+					if (ii = 0) then
+						billing_contact_firstname = ar_billing_contact(ii)
+					else
+						billing_contact_lastname = billing_contact_lastname & " " & ar_billing_contact(1)
+					end if
+				next
+				billing_contact_firstname = Trim(billing_contact_firstname)
+				billing_contact_lastname = Trim(billing_contact_lastname)
+			end if
+			
+		end if
+		
+		if Len(shipping_contact_firstname) > 0 OR Len(shipping_contact_lastname) > 0 then
+			'New contact name format is available .. do nothing
+		else
+			'Try this..
+			shipping_contact_lastname = ""
+			shipping_contact_firstname = ""
+						
+			if Len(shipping_contact) > 0 then
+				ar_shipping_contact = Split(shipping_contact, " ")
+				for ii = 0 to UBound(ar_shipping_contact)
+					if (ii = 0) then
+						shipping_contact_firstname = ar_shipping_contact(ii)
+					else
+						shipping_contact_lastname = shipping_contact_lastname & " " & ar_shipping_contact(1)
+					end if
+				next
+				shipping_contact_firstname = Trim(shipping_contact_firstname)
+				shipping_contact_lastname = Trim(shipping_contact_lastname)
+			end if
+						
+		end if
+		
+		if Session("ENABLEINT") = "2" OR Session("ENABLEINT")="3" then
+		  order_tax2 = rsQuote("Tax2")
+		  tax_rate2 = rsQuote("tax_rate2")
+		end if
+		
+		quote_name = Trim(rsQuote("quote_name"))
+		
+	else
+    
+		Session("Admin_Current_Doc_ID") = ""
+		Session("Admin_Current_Doc_Type") = "q"
+		Session("Admin_Current_Doc_Desc") = ""
+		
+	end if
+	
+	rsQuote.Close
+	
+	bShowUPS = false
+	bShowFedEx = false
+	bShowUSPS = false
+	bShowCustomFlatTable = false
+	bShowCustomShippingTable = false
+	sql = "SELECT * FROM " & g_storeid & "_profile"
+	set rsProfile = dbconn.Execute(sql)
+	if not rsProfile.EOF then
+		SH_display_flag = rsProfile("SH_display_flag")
+		
+		if InStr(SH_display_flag, "UPS") then
+			bShowUPS = true
+		end if
+		
+		if InStr(SH_display_flag, "FedEx") then
+			bShowFedEx = true
+		end if
+		
+		if InStr(SH_display_flag, "USPS") then
+			bShowUSPS = true
+		end if
+		
+	end if
+	rsProfile.Close
+	set rsProfile = nothing
+
+%>
+<!--#INCLUDE FILE="include/doctype.phtml"-->
+<head>
+<!--#INCLUDE FILE="include/head.phtml"-->
+<!-- start: CSS REQUIRED FOR THIS PAGE ONLY -->
+<link rel="stylesheet" href="assets/plugins/jquery-ui/jquery-ui-1.10.4.custom.min.css" />
+<link href="vendor/select2/select2.min.css" rel="stylesheet" media="screen">
+<link href="vendor/DataTables/css/jquery.dataTables.css" rel="stylesheet" media="screen">
+<link href="vendor/DataTables/css/DT_bootstrap.css" rel="stylesheet" media="screen">
+<link rel="stylesheet" href="assets/plugins/x-editable/css/bootstrap-editable.css">
+<link href="assets/plugins/bootstrap-modal/css/bootstrap-modal-bs3patch.css" rel="stylesheet" type="text/css"/>
+<link href="assets/plugins/bootstrap-modal/css/bootstrap-modal.css" rel="stylesheet" type="text/css"/>
+<!-- end: CSS REQUIRED FOR THIS PAGE ONLY -->
+<link rel="stylesheet" href="assets/css/custom.css">
+</head>
+<body>
+	<div id="app" class="app-sidebar-closed">
+		<!--#INCLUDE FILE="include/sidebar.phtml"-->
+		<div class="app-content">
+			<!--#INCLUDE FILE="include/header.phtml"-->
+			<div class="main-content" >
+				<div class="wrap-content container" id="container">
+					<!-- start: TITLE -->
+					<section id="page-title" class="padding-top-15 padding-bottom-15">
+						<div class="row">
+							<div class="col-sm-8">
+								<h1 class="mainTitle">Quotation (ID:<%=quote_id%>)</h1>
+								<!--
+								<span class="mainDescription">overview &amp; list </span>
+								-->
+							</div>
+							<ol class="breadcrumb">
+								<a href="sales_quotation.phtml" class="btn btn-default btn-sm" role="button">
+								<i class="fa fa-arrow-circle-left"></i> Back
+								</a>
+							</ol>
+						</div>
+					</section>
+					<!-- end: TITLE -->
+					<div class="container-fluid container-fullw bg-white">
+						<div class="content-header-floating" style="display: block;">
+							<div class="content-header">
+								<h3 class="mainTitle" id="mainTitle2">Quotatoin (ID:<%=quote_id%>)</h3>
+								<p class="content-buttons form-buttons">
+									<a href="sales_quotation.phtml" class="btn btn-default btn-sm" role="button">
+									<i class="fa fa-arrow-circle-left"></i> Back
+									</a>
+								</p>	
+							</div>
+						</div>
+						<div class="row">
+							<div class="col-md-12">
+								<div class="tabbable">
+									<ul id="myTab3" class="nav nav-tabs tab-green">
+										<li class="active">
+											<a href="#panel_tab4_example1" data-toggle="tab">
+												<i class="pink fa fa-info"></i> Information
+											</a>
+										</li>
+										<li class="">
+											<a href="#panel_tab4_example3" data-toggle="tab">
+												<i class="fa  fa-envelope-o"></i> Email
+											</a>
+										</li>
+									</ul>
+									<div class="tab-content">
+										<div class="tab-pane active" id="panel_tab4_example1">
+											
+											<div class="row">
+												<div class="col-sm-6">
+													<div class="panel panel-blue">
+														<div class="panel-heading">
+															<h4 class="panel-title">Quotation # <%=quote_id%></h4>
+															<div class="panel-tools" >
+																<a data-original-title="Collapse" data-toggle="tooltip" data-placement="top" class="btn btn-transparent btn-sm panel-collapse" href="#"><i class="ti-minus collapse-off"></i><i class="ti-plus collapse-on"></i></a>
+															</div>
+														</div>
+														<div class="panel-body partition-white">
+															<div class="row">
+																<label class="col-sm-3">
+																	Quotation Date
+																</label>
+																<div class="col-sm-9">
+																	<%=date_created%>
+																</div>
+															</div>
+															<div class="row">
+																<label class="col-sm-3">
+																	Quotation Status
+																</label>
+																<div class="col-sm-9">
+																	<a href="#" id="quote_status" data-type="select" data-pk="<%=quote_id%>" data-value="<%=quote_status%>" data-original-title="Update Quotation Status">
+																	<%=quote_status_text%>
+																	</a>
+																</div>
+															</div>
+														
+														</div>
+														
+													</div>
+												</div>
+												<div class="col-sm-6">
+													<div class="panel panel-blue">
+														<div class="panel-heading">
+															<h4 class="panel-title">Account Information</h4>
+															<div class="panel-tools" >
+																<a data-original-title="Collapse" data-toggle="tooltip" data-placement="top" class="btn btn-transparent btn-sm panel-collapse" href="#"><i class="ti-minus collapse-off"></i><i class="ti-plus collapse-on"></i></a>
+															</div>
+														</div>
+														<div class="panel-body partition-white">
+															<div class="row">
+																<label class="col-sm-3">
+																	Customer Name
+																</label>
+																<div class="col-sm-9">
+																	<%=shopper_firstname%>&nbsp;<%=shopper_lastname%>
+																</div>
+															</div>
+															<div class="row">
+																<label class="col-sm-3">
+																	Email
+																</label>
+																<div class="col-sm-9">
+																	<a href="#" id="shopper_email" data-type="text" data-pk="<%=quote_id%>" data-placeholder="Required" data-original-title="Enter Customer Email Adddress">
+																	<%=shopper_email%>
+																	</a>
+																</div>
+															</div>
+															<div class="row">
+																<label class="col-sm-3">
+																	Price Group
+																</label>
+																<div class="col-sm-9">
+																	Group <%=price_group%>
+																</div>
+															</div>
+															<div class="row">
+																<label class="col-sm-3">
+																	Sales Rep.
+																</label>
+																<div class="col-sm-9">
+																	<%=quote_owner%>
+																</div>
+															</div>
+														</div>
+														
+													</div>
+												</div>
+											</div>
+											
+											<div class="row">
+												<div class="col-sm-6">
+													<div class="panel panel-blue">
+														<div class="panel-heading">
+															<h4 class="panel-title">Billing Address</h4>
+															<div class="panel-tools" >
+																<a class="btn btn-xs btn-link" id="modal_ajax_billing" href="#" data-toggle="modal">
+																	<i class="fa fa-pencil"></i> Edit
+																</a>
+																<a data-original-title="Collapse" data-toggle="tooltip" data-placement="top" class="btn btn-transparent btn-sm panel-collapse" href="#"><i class="ti-minus collapse-off"></i><i class="ti-plus collapse-on"></i></a>
+															</div>
+														</div>
+														<div class="panel-body partition-white"  id="panel_body_billing_address">
+															
+															<div class="row">
+																<label class="col-sm-12">
+																	<%=billing_contact_firstname%>&nbsp;<%=billing_contact_lastname%>
+																</label>
+															</div>
+															<div class="row">
+																<label class="col-sm-12">
+																	<%=billing_company%>
+																</label>
+															</div>
+															<div class="row">
+																<label class="col-sm-12">
+																	<%=billing_address%>
+																</label>
+															</div>
+															<div class="row">
+																<label class="col-sm-12">
+																	<%=billing_city%>, 
+																	<%=billing_state%>&nbsp;<%=billing_zip%>
+																</label>
+															</div>
+															<div class="row">
+																<label class="col-sm-12">
+																	<%=billing_country%>
+																</label>
+															</div>
+															<div class="row">
+																<label class="col-sm-12">
+																	<i class="fa fa-phone"></i>&nbsp;<%=billing_phone%>
+																</label>
+															</div>
+														</div>
+														
+													</div>
+												</div>
+												<div class="col-sm-6">
+													<div class="panel panel-blue">
+														<div class="panel-heading">
+															<h4 class="panel-title">Shipping Address</h4>
+															<div class="panel-tools" >
+																<a class="btn btn-xs btn-link" id="modal_ajax_shipping" href="#" data-toggle="modal">
+																	<i class="fa fa-pencil"></i> Edit
+																</a>
+																<a data-original-title="Collapse" data-toggle="tooltip" data-placement="top" class="btn btn-transparent btn-sm panel-collapse" href="#"><i class="ti-minus collapse-off"></i><i class="ti-plus collapse-on"></i></a>
+															</div>
+														</div>
+														<div class="panel-body partition-white"  id="panel_body_shipping_address">
+															
+															<div class="row">
+																<label class="col-sm-12">
+																	<%=shipping_contact_firstname%>&nbsp;<%=shipping_contact_lastname%>
+																</label>
+															</div>
+															<div class="row">
+																<label class="col-sm-12">
+																	<%=shipping_company%>
+																</label>
+															</div>
+															<div class="row">
+																<label class="col-sm-12">
+																	<%=shipping_address%>
+																</label>
+															</div>
+															<div class="row">
+																<label class="col-sm-12">
+																	<%=shipping_city%>, 
+																	<%=shipping_state%>&nbsp;<%=shipping_zip%>
+																</label>
+															</div>
+															<div class="row">
+																<label class="col-sm-12">
+																	<%=shipping_country%>
+																</label>
+															</div>
+															<div class="row">
+																<label class="col-sm-12">
+																	<i class="fa fa-phone"></i>&nbsp;<%=shipping_phone%>
+																</label>
+															</div>
+														</div>
+														
+													</div>
+												</div>
+											</div>
+											
+											<div class="row">
+												<div class="col-sm-6">
+													<div class="panel panel-blue">
+														<div class="panel-heading">
+															<h4 class="panel-title">Payment Information</h4>
+															<div class="panel-tools" >
+																<a data-original-title="Collapse" data-toggle="tooltip" data-placement="top" class="btn btn-transparent btn-sm panel-collapse" href="#"><i class="ti-minus collapse-off"></i><i class="ti-plus collapse-on"></i></a>
+															</div>
+														</div>
+														<div class="panel-body partition-white">
+															<div class="row">
+																<label class="col-sm-12">
+																	<%=order_payment_method%>
+																</label>
+															</div>
+															<div class="row">
+																<label class="col-sm-4">
+																	Credit Card Type
+																</label>
+																<div class="col-sm-8">
+																	<%=order_payment_card_type%>
+																</div>
+															</div>
+															<div class="row">
+																<label class="col-sm-4">
+																	Credit Card Number
+																</label>
+																<div class="col-sm-8">
+																	xxxx-<%=Right(order_payment_card_number,4)%>
+																</div>
+															</div>
+															<div class="row">
+																<label class="col-sm-4">
+																	Name on the Card
+																</label>
+																<div class="col-sm-8">
+																	<%=order_customer_card_name%>
+																</div>
+															</div>
+															<div class="row">
+																<label class="col-sm-4">
+																	Expiration Date
+																</label>
+																<div class="col-sm-8">
+																	<%=order_customer_card_exp_month%>/<%=order_customer_card_exp_year%>
+																</div>
+															</div>
+															<% if Len(AuthNumber) > 0 then %>
+															<div class="row">
+																<label class="col-sm-4">
+																	Payment ID
+																</label>
+																<div class="col-sm-8">
+																	<%=AuthNumber%>
+																</div>
+															</div>
+															<% end if %>
+														</div>
+														
+													</div>
+												</div>
+												<div class="col-sm-6">
+													<div class="panel panel-blue">
+														<div class="panel-heading">
+															<h4 class="panel-title">Tax &amp; Shipping</h4>
+															<div class="panel-tools" >
+																<a data-original-title="Collapse" data-toggle="tooltip" data-placement="top" class="btn btn-transparent btn-sm panel-collapse" href="#"><i class="ti-minus collapse-off"></i><i class="ti-plus collapse-on"></i></a>
+															</div>
+														</div>
+														<div class="panel-body partition-white">
+															<div class="row">
+																<label class="col-sm-4">
+																	Ship Via
+																</label>
+																<div class="col-sm-8">
+																	<a href="#" id="ship_via" data-type="select" data-pk="<%=order_id%>" data-value="<%=order_shipping_sh_method%>" data-original-title="Ship Via">
+																	<%=order_shipping_sh_method%>
+																	</a>
+																</div>
+															</div>
+															<div class="row">
+																<label class="col-sm-4">
+																	Shipping Total
+																</label>
+																<div class="col-sm-8">
+																	$<span id="sh_panel_shipping_total"><%=order_shipping_sh%></span>
+																</div>
+															</div>
+															<div class="row">
+																<label class="col-sm-4">
+																	Taxable
+																</label>
+																<div class="col-sm-8">
+																	<a href="#" id="order_taxable" data-type="select" data-pk="<%=order_id%>" data-value="<%=order_taxable%>" data-original-title="Charge Sales Tax on Sales Order">
+																	<% if order_taxable then %>
+																	Yes
+																	<% else %>
+																	No
+																	<% end if %>
+																	</a>
+																</div>
+															</div>
+															<div class="row">
+																<label class="col-sm-4">
+																	Tax Rate
+																</label>
+																<div class="col-sm-8">
+																	<%=order_tax_rate%>%
+																</div>
+															</div>
+															
+														</div>
+														
+													</div>
+												</div>
+											</div>
+											<%
+												i_subtotal = 0
+												sql = "SELECT * FROM " & g_storeid & "_order_item WHERE order_id='" & order_id & "' ORDER BY row_id"
+												set rsOrderItems = dbconn.Execute(sql)
+												do while not rsOrderItems.EOF
+													order_item_description = rsOrderItems("item_description")
+													order_item_sku = rsOrderItems("sku")
+													order_item_row_id = rsOrderItems("row_id")
+													order_item_options = rsOrderItems("options")
+													order_item_quantity = rsOrderItems("quantity")
+													order_item_adjusted_price = FormatNumber(rsOrderItems("adjusted_price"),2)
+													'order_item_cost = FormatNumber(rsOrderItems("cost"),2)
+													'order_item_pack_quantity = rsOrderItems("pack_quantity")
+													order_item_cost = 0
+													'if order_item_pack_quantity = 0 then
+														order_item_pack_quantity = 1
+													'end if
+													
+													order_item_subtotal = FormatNumber(order_item_quantity * order_item_adjusted_price * order_item_pack_quantity,2)
+													i_subtotal = i_subtotal + (order_item_quantity * order_item_adjusted_price* order_item_pack_quantity)
+													
+													
+											
+													rsOrderItems.MoveNext
+												loop
+												rsOrderItems.Close
+												set rsOrderItems = nothing
+											%>
+											<div class="row">
+												<div class="col-sm-12">
+													<div class="panel panel-blue">
+														<div class="panel-heading">
+															<h4 class="panel-title">Items Ordered</h4>
+															<div class="panel-tools" >
+																<a data-original-title="Collapse" data-toggle="tooltip" data-placement="top" class="btn btn-transparent btn-sm panel-collapse" href="#"><i class="ti-minus collapse-off"></i><i class="ti-plus collapse-on"></i></a>
+															</div>
+														</div>
+														<div class="panel-body partition-white">
+															<table class="table table-hover" id="sample-table-1">
+																<thead>
+																	<tr>
+																		<th class="center">Product</th>
+																		<th class="center">Qty</th>
+																		<th class="text-right">Unit Price</th>
+																		<th class="hidden-xs text-right">Sub Total</th>
+																		<th class="center"></th>
+																	</tr>
+																</thead>
+																<tbody id="order_detail">
+																
+																
+																</tbody>
+																<tfoot>
+																	<tr>
+																		<td colspan="6">
+																		<!--
+																		<a class="btn btn-primary" href="#" id="order_item_add_new"><i class="fa fa-plus"></i>Add Item</a>
+																		-->
+																		<a class="demo btn btn-green" data-toggle="modal" href="#stack2"><i class="fa fa-plus"></i> Add Item </a>
+																		</td>
+																	</tr>
+																</tfoot>
+															</table>
+														
+														</div>
+														
+													</div>
+												</div>
+											</div>
+											
+											<div class="row">
+												<div class="col-sm-6">
+													<div class="panel panel-blue">
+														<div class="panel-heading">
+															<h4 class="panel-title">Comment &amp; Note</h4>
+															<div class="panel-tools" >
+																<a data-original-title="Collapse" data-toggle="tooltip" data-placement="top" class="btn btn-transparent btn-sm panel-collapse" href="#"><i class="ti-minus collapse-off"></i><i class="ti-plus collapse-on"></i></a>
+															</div>
+														</div>
+														<div class="panel-body partition-white">
+															<h5>Comments</h5>
+															<div class="row">
+																<label class="col-sm-12">
+																	<a href="#" id="quote_remark" data-type="textarea" data-pk="<%=quote_id%>" data-placeholder="Your comments here..." data-original-title="Enter comments"><%=quote_remark%></a>
+																</label>
+															</div>
+															<h5>Internal Notes</h5>
+															<div class="row">
+																<label class="col-sm-12">
+																	<a href="#" id="quote_notes" data-type="textarea" data-pk="<%=quote_id%>" data-placeholder="Your internal note here..." data-original-title="Internal note"><%=quote_notes%></a>
+																</label>
+															</div>
+														</div>
+														
+													</div>
+												</div>
+												<div class="col-sm-6">
+													<div class="panel panel-blue">
+														<div class="panel-heading">
+															<h4 class="panel-title">Quotation Totals</h4>
+															<div class="panel-tools" >
+																<a data-original-title="Collapse" data-toggle="tooltip" data-placement="top" class="btn btn-transparent btn-sm panel-collapse" href="#"><i class="ti-minus collapse-off"></i><i class="ti-plus collapse-on"></i></a>
+															</div>
+														</div>
+														<div class="panel-body partition-yellow">
+															<div class="row">
+																<label class="col-sm-8 text-right">
+																	Subtotal
+																</label>
+																<div class="col-sm-4 text-right">
+																	$<span id="order_subtotal"><%=FormatNumber(i_subtotal,2)%></span>
+																</div>
+															</div>
+															<div class="row">
+																<label class="col-sm-8 text-right">
+																	Shipping & Handling
+																</label>
+																<div class="col-sm-4 text-right">
+																	$<a href="#" id="order_shipping_sh" data-type="text" data-pk="<%=order_id%>" data-placeholder="Required" data-original-title="Enter Shipping Charge"><%=order_shipping_sh%></a>
+																</div>
+															</div>
+															<div class="row">
+																<label class="col-sm-8 text-right">
+																	Discount
+																</label>
+																<div class="col-sm-4 text-right">
+																	$<a href="#" id="discount_amount" data-type="text" data-pk="<%=order_id%>" data-placeholder="Required" data-original-title="Enter Discount"><%=discount_amount%></a>
+																</div>
+															</div>
+															<div class="row">
+																<label class="col-sm-8 text-right">
+																	Tax
+																</label>
+																<div class="col-sm-4 text-right">
+																	$<span id="order_tax"><%=order_tax%></span>
+																</div>
+															</div>
+															<div class="row">
+																<label class="col-sm-8 text-right">
+																	<b>Grand Total</b>
+																</label>
+																<div class="col-sm-4 text-right">
+																	$<span id="order_grand_total"><%=order_total%></span>
+																</div>
+															</div>
+														</div>
+														
+													</div>
+												</div>
+											</div>
+											
+										</div>
+										
+										<div class="tab-pane" id="panel_tab4_example3">
+											
+											<div class="row">
+												<div class="col-sm-12">
+													<div class="panel panel-blue">
+														<div class="panel-heading">
+															<h4 class="panel-title">Email History</h4>
+															<div class="panel-tools" >
+																<a data-original-title="Collapse" data-toggle="tooltip" data-placement="top" class="btn btn-transparent btn-sm panel-collapse" href="#"><i class="ti-minus collapse-off"></i><i class="ti-plus collapse-on"></i></a>
+															</div>
+														</div>
+														<div class="panel-body partition-white">
+															<table class="table table-hover" id="sample-table-1">
+																<thead>
+																	<tr>
+																		<th class="center">ID</th>
+																		<th class="center">Date</th>
+																		<th class="hidden-xs center">Subject</th>
+																		<th class="center">Recipient Name</th>
+																		<th class="hidden-xs center">Recipient Email</th>
+																		<th></th>
+																	</tr>
+																</thead>
+																<tbody id="email_log_list">
+																
+																</tbody>
+																
+															</table>
+														
+														</div>
+														
+													</div>
+												</div>
+											</div>
+											
+											<div class="row">
+												<div class="col-sm-12">
+													<div class="panel panel-blue">
+														<div class="panel-heading">
+															<h4 class="panel-title">New Email</h4>
+															<div class="panel-tools" >
+																<a data-original-title="Collapse" data-toggle="tooltip" data-placement="top" class="btn btn-transparent btn-sm panel-collapse" href="#"><i class="ti-minus collapse-off"></i><i class="ti-plus collapse-on"></i></a>
+															</div>
+														</div>
+														<div class="panel-body partition-white">
+															<form role="form" id="message_form" name="message_form" method=post class="form-horizontal">
+																<input type="hidden" name="order_id" id="order_id" value="<%=order_id%>">
+																<div class="col-md-12">
+																	<div id="errorHandler1" class="errorHandler alert alert-danger no-display">
+																		<i class="fa fa-times-sign"></i> You have some form errors. Please check below.
+																	</div>
+																	<div id="errorHandler2" class="errorHandler alert alert-danger no-display">
+																		<i class="fa fa-times-sign"></i> The information has not been saved properly. Please contact system administrator.
+																	</div>
+																	<div class="successHandler alert alert-success no-display">
+																		<i class="fa fa-ok"></i> Email has sent successfully.
+																	</div>
+																</div>
+																
+																<div class="form-group">
+																	<label class="col-sm-2 control-label" for="pf_email_to">
+																		Email To: <span class="symbol required"></span>
+																	</label>
+																	<div class="col-sm-9">
+																		<input type="text" placeholder="" id="pf_email_to" name="pf_email_to" class="form-control" value="<%=pf_email_to%>">
+																	</div>
+																</div>
+																
+																<div class="form-group">
+																	<label class="col-sm-2 control-label" for="pf_email_to_name">
+																		Name To: <span class="symbol required"></span>
+																	</label>
+																	<div class="col-sm-9">
+																		<input type="text" placeholder="" id="pf_email_to_name" name="pf_email_to_name" class="form-control" value="<%=pf_email_to_name%>">
+																	</div>
+																</div>
+																
+																<div class="form-group">
+																	<label class="col-sm-2 control-label" for="pf_email_cc">
+																		Cc: <span class="symbol required"></span>
+																	</label>
+																	<div class="col-sm-9">
+																		<input type="text" placeholder="" id="pf_email_cc" name="pf_email_cc" class="form-control" value="<%=pf_email_cc%>">
+																	</div>
+																</div>
+																
+																<div class="form-group">
+																	<label class="col-sm-2 control-label" for="pf_email_subject">
+																		Subject: <span class="symbol required"></span>
+																	</label>
+																	<div class="col-sm-9">
+																		<input type="text" placeholder="" id="pf_email_subject" name="pf_email_subject" class="form-control" value="<%=pf_email_subject%>">
+																	</div>
+																</div>
+																
+																<div class="form-group">
+																	<label class="col-sm-2 control-label" for="pf_email_content">
+																		Content
+																	</label>
+																	<div class="col-sm-9">
+																		<textarea rows="15" id="pf_email_content" name="pf_email_content" class="form-control limited"><%=pf_email_content%></textarea>
+																	</div>
+																</div>
+																
+																<div class="row">
+																	<div class="col-md-2">&nbsp;
+																	</div>
+																	<div class="col-md-4">
+																		
+																		<button class="btn btn-blue btn-lg" type="submit">
+																			<i class="fa fa-check-square"></i> Send 
+																		</button>
+																	</div>
+																</div>
+									
+															</form>
+														
+														
+														</div>
+													</div>
+												</div>
+											</div>
+										</div>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+		<!--#INCLUDE FILE="include/footer.phtml"-->
+	</div>
+	
+	<div id="ajax-modal" class="modal fade" tabindex="-1" style="display: none;"></div>
+	<div id="ajax-modal2" class="modal fade" tabindex="-1" style="display: none;"></div>
+	<div id="ajax-modal3" class="modal fade" tabindex="-1" style="display: none;"></div>
+	<div id="ajax-modal4" class="modal fade" tabindex="-1" style="display: none;"></div>
+	<div id="dialog-confirm" title="Delete Item from Sales Order?" style="display:none;">
+	  <p><span class="ui-icon ui-icon-alert" style="float:left; margin:0 7px 20px 0;"></span>This item will be permanently deleted and cannot be recovered. Are you sure?</p>
+	</div>
+	<div class="modal fade" id="stack2" tabindex="-1" data-width="960" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+	<!--
+	<div class="modal fade" id="stack2" style="width:960px">
+	-->
+		<div class="modal-content">
+			<div class="modal-header">
+				<button type="button" class="close" data-dismiss="modal" aria-hidden="true">
+					&times;
+				</button>
+				<h4 class="modal-title">Product Search</h4>
+			</div>
+			<div class="modal-body">
+				<input id="s_sku" name="s_sku" class="form-control" data-tabindex="1" type="hidden">
+				<div class="row">
+					<div class="col-sm-12">
+						<div class="tabbable">
+							<ul id="myTab3" class="nav nav-tabs tab-green">
+								<li class="active">
+									<a href="#panel_tab4_example11" data-toggle="tab">
+										<i class="pink fa fa-cube"></i> Your Catalog
+									</a>
+								</li>
+								<li class="">
+									<a href="#panel_tab4_example12" data-toggle="tab">
+										<i class="blue fa fa-cubes"></i> ICECAT Catalog
+									</a>
+								</li>
+								<li class="">
+									<a href="#panel_tab4_example13" data-toggle="tab">
+										<i class="blue fa fa-laptop"></i> System
+									</a>
+								</li>
+								<li class="">
+									<a href="#panel_tab4_example14" data-toggle="tab">
+										<i class="blue fa fa-pencil-square-o"></i> Manual Entry
+									</a>
+								</li>
+							</ul>
+							
+							<div class="tab-content">
+								<div class="tab-pane active" id="panel_tab4_example11">
+									<div class="row">
+										<div class="col-sm-3">
+											<div class="form-group">
+												<select class="form-control input-sm" id="catalog_category1">
+												</select>
+											</div>
+										</div>
+										<div class="col-sm-3">
+											<div class="form-group">
+												<select class="form-control input-sm" id="catalog_category2">
+												</select>
+											</div>
+										</div>
+										<div class="col-sm-3">
+											<div class="form-group">
+												<select class="form-control input-sm" id="catalog_category3">
+												</select>
+											</div>
+										</div>
+										<div class="col-sm-3">
+											<div class="form-group">
+												<select class="form-control input-sm" id="catalog_category4">
+												</select>
+											</div>
+										</div>
+									</div>
+									<div class="row"><div class="col-md-12">
+									<table class="table table-striped table-bordered table-hover table-full-width table-condensed" id="sample_1">
+										<thead>
+										<tr>
+											<th>Product ID</th>
+											<th>Thumbnail</th>
+											<th>Name</th>
+											<th>SKU</th>
+											<th>Price</th>
+											<th>Stock Qty.</th>
+											<th>Status</th>
+											<th>Action</th>
+										</tr>
+										</thead>
+										<tbody>
+											<tr>
+												<td colspan="9" class="dataTables_empty">Loading data from server</td>
+											</tr>
+										</tbody>
+									</table>
+									</div></div>
+								</div>
+								<div class="tab-pane" id="panel_tab4_example12">
+									<div class="row">
+										<div class="col-sm-3">
+											<div class="form-group">
+												<select class="form-control input-sm" id="icecat_category1">
+												</select>
+											</div>
+										</div>
+										<div class="col-sm-3">
+											<div class="form-group">
+												<select class="form-control input-sm" id="icecat_category2">
+												</select>
+											</div>
+										</div>
+										<div class="col-sm-3">
+											<div class="form-group">
+												<select class="form-control input-sm" id="icecat_category3">
+												</select>
+											</div>
+										</div>
+										<div class="col-sm-3">
+											<div class="form-group">
+												<select class="form-control input-sm" id="icecat_category4">
+												</select>
+											</div>
+										</div>
+									</div>
+									<div class="row"><div class="col-md-12">
+									<table class="table table-striped table-bordered table-hover table-full-width table-condensed" id="sample_2">
+										<thead>
+										<tr>
+											<th>SKU</th>
+											<th>Thumbnail</th>
+											<th>Name</th>
+											<th>Manufacturer</th>
+											<th>Mfg.Part #</th>
+											<th>Cost</th>
+											<th width="80">Qty.<br>(IM/TD/SY/DH)</th>
+											<th>Status</th>
+											<th>Action</th>
+										</tr>
+										</thead>
+										<tbody>
+											<tr>
+												<td colspan="9" class="dataTables_empty">Loading data from server</td>
+											</tr>
+										</tbody>
+									</table>
+									</div></div>
+								</div>
+								<div class="tab-pane" id="panel_tab4_example13">
+									.....
+								</div>
+								<div class="tab-pane" id="panel_tab4_example14">
+									.....
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+				
+			</div>
+		</div>
+	</div>
+	
+	<!--#INCLUDE FILE="include/js.phtml"-->
+	<!-- start: JAVASCRIPTS REQUIRED FOR THIS PAGE ONLY -->
+	<script src="assets/plugins/jquery-ui/jquery-ui-1.10.1.custom.min.js" type="text/javascript"></script>
+	<script src="vendor/jquery-validation/jquery.validate.min.js"></script>
+	<script src="vendor/select2/select2.min.js"></script>
+	<script src="assets/plugins/bootstrap-modal/js/bootstrap-modal.js"></script>
+	<script src="assets/plugins/bootstrap-modal/js/bootstrap-modalmanager.js"></script>
+	<script src="vendor/DataTables/jquery.dataTables.min.js"></script>
+	<script src="//cdn.datatables.net/plug-ins/1.10.10/api/fnReloadAjax.js"></script>
+	<script src="assets/plugins/x-editable/js/bootstrap-editable.min.js"></script>
+	<!-- end: JAVASCRIPTS REQUIRED FOR THIS PAGE ONLY -->
+	<script src="assets/js/main.js"></script>
+	<!-- start: JavaScript Event Handlers for this page -->
+	<script type="text/javascript">
+		
+	var oTable1;
+	var oTable2;
+	var v1 = "";
+	var v2 = "";
+	var v3 = "";
+	var v4 = "";
+	
+	var w1 = "";
+	var w2 = "";
+	var w3 = "";
+	var w4 = "";
+	
+	var TableData = function () {
+		//function to initiate DataTable
+		//DataTable is a highly flexible tool, based upon the foundations of progressive enhancement, 
+		//which will add advanced interaction controls to any HTML table
+		//For more information, please visit https://datatables.net/
+		var runDataTable = function () {
+			oTable1 = $('#sample_1').dataTable({
+				"bProcessing": true,
+				"bStateSave": false,
+				"bJQueryUI": false,
+				"iDisplayLength": 10,
+				"bServerSide": true,
+				"bAutoWidth": false,
+				"sAjaxSource": "api/sp_sales_order_product_list.phtml?v1=" + v1 + "&v2=" + v2 + "&v3=" + v3 + "&z1=",
+				"aoColumns": [ 
+					/* Product ID */  { "sClass": "text-left" },
+					/* Thumbnail */  { "sClass": "center","bSortable": false },
+					/* Name */  { "sClass": "text-left" },
+					/* sku */  { "sClass": "center" },
+					/* Price */  { "sClass": "text-right"},
+					/* Qty */ { "sClass": "text-right"},
+					/* Status*/  { "sClass": "center" ,"bSortable": false},
+					/* Action*/  { "sClass": "center" ,"bSortable": false}
+				  ],
+				  
+				"aaSorting": [[0, 'desc']],
+				
+				"searchDelay": 500,
+				
+				"aLengthMenu": [
+					[5, 10, 15, 20, 30, 40],
+					[5, 10, 15, 20, 30, 40] // change per page values here
+				],
+				
+				"oLanguage": {
+					"sLengthMenu": "Show _MENU_ Rows",
+					"sSearch": "",
+					"sProcessing": '<img src="assets/images/ajax-loader-primary.gif"/>',
+					"oPaginate": {
+						"sPrevious": "",
+						"sNext": ""
+					}
+				}
+			});
+			
+
+			$('#sample_1_wrapper .dataTables_filter input').addClass("form-control input-sm").attr("placeholder", "Search");
+			// modify table search input
+			//$('#sample_1_wrapper .dataTables_length select').addClass("m-wrap small");
+			// modify table per page dropdown
+			//$('#sample_1_wrapper .dataTables_length select').select2();
+			// initialzie select2 dropdown
+		};
+		
+		var runDataTable2 = function () {
+			oTable2 = $('#sample_2').dataTable({
+				"bProcessing": true,
+				"bStateSave": false,
+				"bJQueryUI": false,
+				"iDisplayLength": 10,
+				"bServerSide": true,
+				"bAutoWidth": false,
+				"sAjaxSource": "api/sp_sales_order_icecat_list.phtml?v1=" + w1 + "&v2=" + w2 + "&v3=" + w3 + "&z1=",
+				"aoColumns": [ 
+					/* Product ID */  { "sClass": "text-left" },
+					/* Thumbnail */  { "sClass": "center","bSortable": false },
+					/* Name */  { "sClass": "text-left" },
+					/* sku */  { "sClass": "center" },
+					/* Product ID */  { "sClass": "text-left" },
+					/* Price */  { "sClass": "text-right"},
+					/* Qty */ { "sClass": "text-right","bSortable": false},
+					/* Status*/  { "sClass": "center" ,"bSortable": false},
+					/* Action*/  { "sClass": "center" ,"bSortable": false}
+				  ],
+				  
+				"aaSorting": [[0, 'desc']],
+				
+				"aLengthMenu": [
+					[5, 10, 15, 20, 30, 40],
+					[5, 10, 15, 20, 30, 40] // change per page values here
+				],
+				
+				"searchDelay": 500,
+				
+				"oLanguage": {
+					"sLengthMenu": "Show _MENU_ Rows",
+					"sSearch": "",
+					"sProcessing": '<img src="assets/images/ajax-loader-primary.gif"/>',
+					"oPaginate": {
+						"sPrevious": "",
+						"sNext": ""
+					}
+				}
+			});
+			
+			$('#sample_2_wrapper .dataTables_filter input').addClass("form-control input-sm").attr("placeholder", "Search");
+			// modify table search input
+			//$('#sample_2_wrapper .dataTables_length select').addClass("m-wrap small");
+			// modify table per page dropdown
+			//$('#sample_2_wrapper .dataTables_length select').select2();
+			// initialzie select2 dropdown
+		};
+		
+		return {
+			//main function to initiate template pages
+			init: function () {
+				runDataTable();
+				runDataTable2();
+			}
+		};
+	}();
+	
+	/*
+	function StatusFilter (theObj)
+	{
+		v3 = theObj.value;
+		oTable.fnReloadAjax("sp_sales_order_product_list.phtml?v1=" + v1 + "&v2=" + v2 + "&v3=" + theObj.value + "&z1=");
+	}
+	
+	function VisibilityFilter (theObj)
+	{
+		v2 = theObj.value;
+		oTable.fnReloadAjax("sp_sales_order_product_list.phtml?v1=" + v1 + "&v2=" + theObj.value + "&v3=" + v3 + "&z1=");
+	}
+	
+	function TypeFilter (theObj)
+	{
+		v1 = theObj.value;
+		oTable.fnReloadAjax("sp_sales_order_product_list.phtml?v1=" + theObj.value + "&v2=" + v2 + "&v3=" + v3 + "&z1=");
+	}
+	*/
+	function isValidEmailAddress(emailAddress) {
+		var pattern = new RegExp(/^((([a-z]|\d|[!#\$%&'\*\+\-\/=\?\^_`{\|}~]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])+(\.([a-z]|\d|[!#\$%&'\*\+\-\/=\?\^_`{\|}~]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])+)*)|((\x22)((((\x20|\x09)*(\x0d\x0a))?(\x20|\x09)+)?(([\x01-\x08\x0b\x0c\x0e-\x1f\x7f]|\x21|[\x23-\x5b]|[\x5d-\x7e]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(\\([\x01-\x09\x0b\x0c\x0d-\x7f]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF]))))*(((\x20|\x09)*(\x0d\x0a))?(\x20|\x09)+)?(\x22)))@((([a-z]|\d|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(([a-z]|\d|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])*([a-z]|\d|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])))\.)+(([a-z]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(([a-z]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])*([a-z]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])))\.?$/i);
+		return pattern.test(emailAddress);
+	};
+	
+	</script>
+	<script>
+	//MODAL
+		var UIModals = function () {
+			//function to initiate bootstrap extended modals
+			var initModals = function () {
+				$.fn.modalmanager.defaults.resize = true;
+				$.fn.modal.defaults.spinner = $.fn.modalmanager.defaults.spinner =
+					'<div class="loading-spinner" style="width: 200px; margin-left: -100px;">' +
+					'<div class="progress progress-striped active">' +
+					'<div class="progress-bar" style="width: 100%;"></div>' +
+					'</div>' +
+					'</div>';
+					
+				var $modal = $('#ajax-modal');
+				$('#modal_ajax_billing').on('click', function () {
+					// create the backdrop and wait for next modal to be triggered
+					$('body').modalmanager('loading');
+					modal_order_id = $(this).data('id');
+					setTimeout(function () {
+						$modal.load('api/modal_ajax_order_billing.phtml?quote_id=' + '<%=quote_id%>', '', function () {
+							$modal.modal();
+						});
+					}, 500);
+				});
+				
+				$modal.on('hidden', function () {
+					jQuery.ajax({
+						type:"post",
+						url: "api/sp_get_quote_info.phtml",
+						data: {'quote_id' :'<%=quote_id%>', 'infotype': 'billing_address', 'isAjax':true},
+						dataType: 'json',
+						success: function(data) {
+							
+							var EditItems= "";
+							for (var i = 0; i < data.QuoteInfo.length; i++){
+								EditItems = data.QuoteInfo[i].detail;
+							}
+							
+							jQuery("#panel_body_billing_address").html(EditItems);
+							
+						}
+					});
+				})
+
+				$modal.on('click', '#billing_update_btn', function () {
+					
+				});
+				
+				
+				var $modal2 = $('#ajax-modal2');
+				$('#modal_ajax_shipping').on('click', function () {
+					// create the backdrop and wait for next modal to be triggered
+					$('body').modalmanager('loading');
+					modal_order_id = $(this).data('id');
+					setTimeout(function () {
+						$modal2.load('api/modal_ajax_order_shipping.phtml?quote_id=' + '<%=quote_id%>', '', function () {
+							$modal2.modal();
+						});
+					}, 500);
+				});
+				
+				$modal2.on('hidden', function () {
+					jQuery.ajax({
+						type:"post",
+						url: "api/sp_get_quote_info.phtml",
+						data: {'quote_id' :'<%=quote_id%>', 'infotype': 'shipping_address', 'isAjax':true},
+						dataType: 'json',
+						success: function(data) {
+							
+							var EditItems= "";
+							for (var i = 0; i < data.QuoteInfo.length; i++){
+								EditItems = data.QuoteInfo[i].detail;
+							}
+							
+							jQuery("#panel_body_shipping_address").html(EditItems);
+							
+						}
+					});
+				})
+
+				$modal2.on('click', '#shipping_update_btn', function () {
+					
+				});
+				
+				var $modal4 = $('#ajax-modal4');
+				$('.modal-view-email').on('click', function () {
+					// create the backdrop and wait for next modal to be triggered
+					$('body').modalmanager('loading');
+					modal_log_id = $(this).data('id');
+					setTimeout(function () {
+						$modal4.load('modal_ajax_email_log_detail.phtml?log_id=' + modal_log_id, '', function () {
+							$modal4.modal();
+						});
+					}, 500);
+				});
+				
+				
+			};
+			return {
+				init: function () {
+					initModals();
+				}
+			};
+		}();
+	</script>
+	<script>
+		jQuery(document).ready(function() {
+			Main.init();
+			TableData.init();
+			UIModals.init();
+		});
+	</script>
+	<script>
+		jQuery(document).ready(function() {
+		   //defaults
+		   $.fn.editable.defaults.url = 'api/sp_sales_quotation_detail_update.phtml'; 
+			var c = window.location.href.match(/c=inline/i) ? 'inline' : 'popup';
+					$.fn.editable.defaults.mode = c === 'inline' ? 'inline' : 'popup';
+
+			$('#quote_status').editable({
+				source: [
+					{value: '0', text: 'Pending'},
+					{value: '2', text: 'Approved'},
+					{value: '1', text: 'Closed'},
+					{value: '3', text: 'Converted'}
+				] 
+			});order_taxable
+			
+			$('#order_taxable').editable({
+				source: [
+					{value: '1', text: 'Yes'},
+					{value: '0', text: 'No'}
+				] 
+			});
+			
+			$('#ship_via').editable({
+				source: [
+					<% if bShowUPS then %>
+					{value: 'U03', text: 'UPS GROUND'},
+					{value: 'U12', text: 'UPS 3-Day Select'},
+					{value: 'U02', text: 'UPS 2nd Day Air'},
+					{value: 'U59', text: 'UPS 2nd Day Air AM'},
+					{value: 'U13', text: 'UPS Next Day Air Saver'},
+					{value: 'U01', text: 'UPS Next Day Air'},
+					{value: 'U14', text: 'UPS Next Day Air Early AM'},
+					{value: 'U07', text: 'UPS Worldwide Express'},
+					{value: 'U08', text: 'UPS Worldwide Expedited'},
+					{value: 'U11', text: 'UPS Standard'},
+					{value: 'U54', text: 'UPS Worldwide Express Plus'},
+					{value: 'U59', text: 'UPS 2nd Day Air AM'},
+					{value: 'U65', text: 'UPS Express Saver'},
+					<% end if %>
+					<% if bShowFedEx then %>
+					{value: 'F90', text: 'FedEx Home Delivery'},
+					{value: 'F92', text: 'FedEx Ground'},
+					{value: 'F03', text: 'FedEx 2Day'},
+					{value: 'F05', text: 'FedEx Standard Overnight'},
+					{value: 'F06', text: 'FedEx First Overnight'},
+					{value: 'F20', text: 'FedEx Express Saver'},
+					{value: 'F01', text: 'FedEx Priority Overnight'},
+					{value: 'F03', text: 'FedEx International Economy'},
+					{value: 'F06', text: 'FedEx International First'},
+					{value: 'F20', text: 'FedEx International Priority'},
+					<% end if %>
+					<% if bShowUSPS then %>
+					{value: 'S01', text: 'USPS Parcel'},
+					{value: 'S02', text: 'USPS Priority'},
+					{value: 'S03', text: 'USPS Express'},
+					{value: 'S04', text: 'USPS Global Express Mail(EMS)'},
+					{value: 'S05', text: 'USPS Airmail Parcel Post'},
+					{value: 'S06', text: 'USPS Economy Parcel Post'},
+					<% end if %>
+					{value: 'None', text: 'None'}
+				],
+
+				success: function(response, newValue) {
+					jQuery.ajax({
+						type:"post",
+						url: "api/sp_get_shipping_rate.phtml",
+						data: {'order_id' :'<%=order_id%>', 'v1' :newValue, 'isAjax':true},
+						dataType: 'json',
+						success: function(data) {
+							var RateValue= "0.00";
+							for (var i = 0; i < data.SHIPPINGRATE.length; i++){
+								RateValue = data.SHIPPINGRATE[i].rate;
+							}
+							RateValue1 = Number(RateValue).toFixed(2);
+							$("#sh_panel_shipping_total").html(RateValue1);
+							jQuery.ajax({
+								type:"post",
+								url: "api/sp_sales_quotation_detail_update.phtml",
+								data: {'name': 'order_shipping_sh', 'pk' :'<%=order_id%>', 'value' :RateValue1, 'isAjax':false},
+								dataType: 'html',
+								success: function(data) {
+									UpdateOrderTotals();
+								}
+							});
+							
+						}
+					});
+				}
+			});
+			
+			$('#quote_remark').editable({
+				showbuttons: 'bottom'
+			}); 
+			
+			$('#quote_notes').editable({
+				showbuttons: 'bottom'
+			});
+
+			$('#shopper_email').editable({
+				validate: function(value) {
+				   if($.trim(value) == '') return 'This field is required';
+				   if(!isValidEmailAddress(value)) return 'Valid email address is required';
+				}
+			});
+			
+			$('#order_shipping_sh').editable({
+				validate: function(value) {
+				   if($.trim(value) == '') return 'This field is required';
+				   if($.isNumeric(value) == false) return 'Valid numeric value is required';
+				},
+				display: function(value, response) {
+				  return false;   //disable this method
+				},
+				success: function(response, newValue) {
+				  newValue = Number(newValue).toFixed(2);
+				  $(this).html(newValue);
+				  var order_subtotal = $("#order_subtotal").html();
+				  var order_tax = $("#order_tax").html();
+				  var discount_amount = $("#discount_amount").html();
+				  
+				  var order_grand_total = Number(order_subtotal) + Number(newValue) + Number(order_tax) - Number(discount_amount);
+				  $("#order_grand_total").html(order_grand_total.toFixed(2));
+				  
+				  ProcessPostItemUpdate();
+				}
+			});
+			
+			$('#discount_amount').editable({
+				validate: function(value) {
+				   if($.trim(value) == '') return 'This field is required';
+				   if($.isNumeric(value) == false) return 'Valid numeric value is required';
+				},
+				display: function(value, response) {
+				  return false;   //disable this method
+				},
+				success: function(response, newValue) {
+				  newValue = Number(newValue).toFixed(2);
+				  $(this).html(newValue);
+				  var order_subtotal = $("#order_subtotal").html();
+				  var order_tax = $("#order_tax").html();
+				  var order_shipping_sh = $("#order_shipping_sh").html();
+				  
+				  var order_grand_total = Number(order_subtotal) + Number(order_shipping_sh) + Number(order_tax) - Number(newValue);
+				  $("#order_grand_total").html(order_grand_total.toFixed(2));
+				  
+				  ProcessPostItemUpdate();
+				  
+				}
+			});
+			
+			$('#billing_city').editable({
+				validate: function(value) {
+				   if($.trim(value) == '') return 'This field is required';
+				}
+			});
+			
+			jQuery.ajax({
+				type:"post",
+				url: "api/sp_get_quote_items.phtml",
+				data: {'quote_id' :'<%=quote_id%>', 'isAjax':true},
+				dataType: 'json',
+				success: function(data) {
+					
+					var EditItems= "";
+					for (var i = 0; i < data.ORDERITEMS.length; i++){
+						EditItems = data.ORDERITEMS[i].detail;
+					}
+					
+					jQuery("#order_detail").html(EditItems);
+					ProcessPostItemUpdate();
+				}
+			});
+			
+			var $modal3 = $('#ajax-modal3');
+			$modal3.on('hidden', function () {
+				jQuery.ajax({
+					type:"post",
+					url: "api/sp_get_order_items.phtml",
+					data: {'order_id' :'<%=order_id%>', 'isAjax':true},
+					dataType: 'json',
+					success: function(data) {
+						var EditItems= "";
+						for (var i = 0; i < data.ORDERITEMS.length; i++){
+							EditItems = data.ORDERITEMS[i].detail;
+						}
+						
+						jQuery("#order_detail").html(EditItems);
+						
+						ProcessPostItemUpdate();
+					}
+				});
+				
+			})
+			
+			/* PRIVATE CATALOG */
+			jQuery.ajax({
+				type:"post",
+				url: "api/sp_catalog_get_subcategories.phtml",
+				data: {parent_id: '0', 'isAjax':true},
+				dataType: 'json',
+				success: function(data) {
+					var listItems= "<option value=''>All Categories</option>";
+					for (var i = 0; i < data.Subcategories.length; i++){
+						listItems+= "<option value='" + data.Subcategories[i].id + "'>" + data.Subcategories[i].name + "</option>";
+					}
+					var select = jQuery("#catalog_category1"), options = '';
+					select.empty(); 
+					select.append(listItems);
+				}
+			});
+			
+			
+			jQuery( "#catalog_category1" ).change(function() {
+			  jQuery.ajax({
+					type:"post",
+					url: "api/sp_catalog_get_subcategories.phtml",
+					data: {parent_id: jQuery('#catalog_category1').val(), 'isAjax':true},
+					dataType: 'json',
+					success: function(data) {
+						var listItems= "<option value=''>All Categories</option>";
+						for (var i = 0; i < data.Subcategories.length; i++){
+							listItems+= "<option value='" + data.Subcategories[i].id + "'>" + data.Subcategories[i].name + "</option>";
+						}
+						var select = jQuery("#catalog_category2"), options = '';
+						select.empty(); 
+						select.append(listItems);
+						
+						select = jQuery("#catalog_category3"), options = '';
+						select.empty(); 
+						
+						select = jQuery("#catalog_category4"), options = '';
+						select.empty();
+						oTable1.fnReloadAjax("api/sp_sales_order_product_list.phtml?v1=" + jQuery('#catalog_category1').val());
+					}
+				});
+			});
+			
+			jQuery( "#catalog_category2" ).change(function() {
+			  jQuery.ajax({
+					type:"post",
+					url: "api/sp_catalog_get_subcategories.phtml",
+					data: {parent_id: jQuery('#catalog_category2').val(), 'isAjax':true},
+					dataType: 'json',
+					success: function(data) {
+						var listItems= "<option value=''>All Categories</option>";
+						for (var i = 0; i < data.Subcategories.length; i++){
+							listItems+= "<option value='" + data.Subcategories[i].id + "'>" + data.Subcategories[i].name + "</option>";
+						}
+						var select = jQuery("#catalog_category3"), options = '';
+						select.empty(); 
+						select.append(listItems);
+						
+						select = jQuery("#catalog_category4"), options = '';
+						select.empty();
+						oTable1.fnReloadAjax("api/sp_sales_order_product_list.phtml?v1=" + jQuery('#catalog_category1').val() + "&v2=" + jQuery('#catalog_category2').val());
+					}
+				});
+			});
+			
+			jQuery( "#catalog_category3" ).change(function() {
+			  jQuery.ajax({
+					type:"post",
+					url: "api/sp_catalog_get_subcategories.phtml",
+					data: {parent_id: jQuery('#catalog_category3').val(), 'isAjax':true},
+					dataType: 'json',
+					success: function(data) {
+						var listItems= "<option value=''>All Categories</option>";
+						for (var i = 0; i < data.Subcategories.length; i++){
+							listItems+= "<option value='" + data.Subcategories[i].id + "'>" + data.Subcategories[i].name + "</option>";
+						}
+						var select = jQuery("#catalog_category4"), options = '';
+						select.empty(); 
+						select.append(listItems);
+						
+						oTable1.fnReloadAjax("api/sp_sales_order_product_list.phtml?v1=" + jQuery('#catalog_category1').val() + "&v2=" + jQuery('#catalog_category2').val() + "&v3=" + jQuery('#catalog_category3').val());
+					}
+				});
+			});
+			
+			/* ICECAT CATALOG */
+			jQuery.ajax({
+				type:"post",
+				url: "api/sp_catalog_get_icecat_subcategories.phtml",
+				data: {parent_id: '2833', 'isAjax':true},
+				dataType: 'json',
+				success: function(data) {
+					var listItems= "<option value=''>All Categories</option>";
+					for (var i = 0; i < data.Subcategories.length; i++){
+						listItems+= "<option value='" + data.Subcategories[i].id + "'>" + data.Subcategories[i].name + "</option>";
+					}
+					var select = jQuery("#icecat_category1"), options = '';
+					select.empty(); 
+					select.append(listItems);
+				}
+			});
+			
+			jQuery( "#icecat_category1" ).change(function() {
+			  jQuery.ajax({
+					type:"post",
+					url: "api/sp_catalog_get_icecat_subcategories.phtml",
+					data: {parent_id: jQuery('#icecat_category1').val(), 'isAjax':true},
+					dataType: 'json',
+					success: function(data) {
+						var listItems= "<option value=''>All Categories</option>";
+						for (var i = 0; i < data.Subcategories.length; i++){
+							listItems+= "<option value='" + data.Subcategories[i].id + "'>" + data.Subcategories[i].name + "</option>";
+						}
+						var select = jQuery("#icecat_category2"), options = '';
+						select.empty(); 
+						select.append(listItems);
+						
+						select = jQuery("#icecat_category3"), options = '';
+						select.empty(); 
+						
+						select = jQuery("#icecat_category4"), options = '';
+						select.empty();
+						oTable2.fnReloadAjax("api/sp_sales_order_icecat_list.phtml?v1=" + jQuery('#icecat_category1').val());
+					}
+				});
+			});
+			
+			jQuery( "#icecat_category2" ).change(function() {
+			  jQuery.ajax({
+					type:"post",
+					url: "api/sp_catalog_get_icecat_subcategories.phtml",
+					data: {parent_id: jQuery('#icecat_category2').val(), 'isAjax':true},
+					dataType: 'json',
+					success: function(data) {
+						var listItems= "<option value=''>All Categories</option>";
+						for (var i = 0; i < data.Subcategories.length; i++){
+							listItems+= "<option value='" + data.Subcategories[i].id + "'>" + data.Subcategories[i].name + "</option>";
+						}
+						var select = jQuery("#icecat_category3"), options = '';
+						select.empty(); 
+						select.append(listItems);
+						
+						select = jQuery("#icecat_category4"), options = '';
+						select.empty();
+						oTable2.fnReloadAjax("api/sp_sales_order_icecat_list.phtml?v1=" + jQuery('#icecat_category1').val() + "&v2=" + jQuery('#icecat_category2').val());
+					}
+				});
+			});
+			
+			jQuery( "#icecat_category3" ).change(function() {
+			  jQuery.ajax({
+					type:"post",
+					url: "api/sp_catalog_get_icecat_subcategories.phtml",
+					data: {parent_id: jQuery('#icecat_category3').val(), 'isAjax':true},
+					dataType: 'json',
+					success: function(data) {
+						var listItems= "<option value=''>All Categories</option>";
+						for (var i = 0; i < data.Subcategories.length; i++){
+							listItems+= "<option value='" + data.Subcategories[i].id + "'>" + data.Subcategories[i].name + "</option>";
+						}
+						var select = jQuery("#icecat_category4"), options = '';
+						select.empty(); 
+						select.append(listItems);
+						
+						oTable2.fnReloadAjax("api/sp_sales_order_icecat_list.phtml?v1=" + jQuery('#icecat_category1').val() + "&v2=" + jQuery('#icecat_category2').val() + "&v3=" + jQuery('#icecat_category3').val());
+					}
+				});
+			});
+			
+			
+		   
+		});
+	</script>
+	<script>
+	function ProcessPostItemUpdate()
+	{
+		$('.modal-delete-line').on('click', function () {
+					
+			modal_row_id = $(this).data('id');
+			$( "#dialog-confirm" ).dialog({
+			  resizable: false,
+			  width:360,
+			  height:180,
+			  modal: true,
+			  buttons: {
+				"Delete item": function() {
+					$( this ).dialog( "close" );
+					jQuery.ajax({
+						type:"post",
+						url: "api/sp_sales_quotation_detail_update.phtml?name=item_delete",
+						data: {'order_id' :'<%=order_id%>', 'row_id' : modal_row_id, 'isAjax':true},
+						dataType: 'json',
+						success: function(data) {
+							
+							jQuery.ajax({
+								type:"post",
+								url: "api/sp_get_order_items.phtml",
+								data: {'order_id' :'<%=order_id%>', 'isAjax':true},
+								dataType: 'json',
+								success: function(data) {
+									
+									var EditItems= "";
+									for (var i = 0; i < data.ORDERITEMS.length; i++){
+										EditItems = data.ORDERITEMS[i].detail;
+									}
+									
+									jQuery("#order_detail").html(EditItems);
+									ProcessPostItemUpdate();
+									
+								}
+							});
+						}
+					});
+				},
+				Cancel: function() {
+					$( this ).dialog( "close" );
+				}
+			  }
+			});
+			
+		});
+		
+		var $modal3 = $('#ajax-modal3');
+		$('.modal-edit-line').on('click', function () {
+			$('body').modalmanager('loading');
+			var modal_order_id = $(this).data('id');
+			setTimeout(function () {
+				$modal3.load('api/modal_ajax_order_line_item.phtml?quote_id=<%=quote_id%>&row_id=' + modal_order_id, '', function () {
+					$modal3.modal();
+				});
+			}, 500);
+		});
+		
+		UpdateOrderTotals();
+		UpdateShippingMethod();
+		
+	}
+	
+	function UpdateOrderTotals()
+	{
+		jQuery.ajax({
+			type:"post",
+			url: "api/sp_get_order_totals.phtml",
+			data: {'order_id' :'<%=order_id%>', 'isAjax':true},
+			dataType: 'json',
+			success: function(data) {
+				
+				var subtotal= "0.00";
+				var grandtotal = "0.00";
+				
+				for (var i = 0; i < data.ORDERTOTALS.length; i++){
+					subtotal = data.ORDERTOTALS[i].subtotal;
+					grandtotal = data.ORDERTOTALS[i].grandtotal;
+					shtotal = data.ORDERTOTALS[i].shtotal;
+					taxtotal = data.ORDERTOTALS[i].taxtotal;
+				}
+				
+				$("#order_subtotal").html(subtotal);
+				$("#order_grand_total").html(grandtotal);
+				$("#order_tax").text(taxtotal);
+				$("#order_shipping_sh").text(shtotal);
+				$("#order_shipping_sh").editable('setValue',shtotal);
+	
+				//save grand total ...
+			}
+		});
+	}
+	
+	function UpdateShippingMethod()
+	{
+		
+	}
+	</script>
+	
+	<script type="text/javascript">
+	function getSearchResult(sku, descr, cost) {
+		//alert("adding private catalog item");
+		$("#stack2").modal("hide");
+		var $modal3 = $('#ajax-modal3');
+		$('body').modalmanager('loading');
+		var modal_order_id = $(this).data('id');
+		setTimeout(function () {
+			$modal3.load('api/modal_ajax_order_line_item.phtml?item_mode=0&order_id=<%=order_id%>&row_id=0&sku=' + sku, '', function () {
+				$modal3.modal();
+			});
+		}, 500);
+	}
+	function getIcecatSearchResult(sku, descr, cost) {
+		$("#stack2").modal("hide");
+		var $modal3 = $('#ajax-modal3');
+		$('body').modalmanager('loading');
+		var modal_order_id = $(this).data('id');
+		setTimeout(function () {
+			$modal3.load('api/modal_ajax_order_line_item.phtml?item_mode=7&order_id=<%=order_id%>&row_id=0&sku=' + sku, '', function () {
+				$modal3.modal();
+			});
+		}, 500);
+	}
+	</script>
+	<!-- end: JavaScript Event Handlers for this page -->
+</body>
+</html>

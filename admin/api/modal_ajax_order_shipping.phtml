@@ -1,0 +1,501 @@
+<%response.Expires=-1%>
+<!-- #INCLUDE File="../local/local.phtml" -->
+<!-- #INCLUDE File="../util/xt_func_util.phtml" -->
+<!-- #INCLUDE File="../util/xt_func_string.phtml" -->
+<%
+	order_id=Trim(Request("order_id"))
+	quote_id=Trim(Request("quote_id"))
+	if Len(order_id) > 0 then
+		sql = "SELECT * FROM " & g_storeid & "_order WHERE order_id='" & order_id & "'"
+		set rsOrder = dbconn.Execute(sql)
+		if not rsOrder.EOF then
+			so_owner = Trim(rsOrder("salesrep_id"))
+			shopper_id = Trim(rsOrder("shopper_id"))
+			order_date = rsOrder("date_entered")
+			order_date = ConvertToTimeZone(order_date)
+			order_status = rsOrder("status")
+			order_ip = rsOrder("order_ip_addr")
+			
+			order_email = rsOrder("shopper_email")
+			order_customer_name = rsOrder("CardName")
+			
+			order_billing_company = rsOrder("bill_company")
+			order_billing_address = rsOrder("CardAddress")
+			order_billing_city = rsOrder("CardCity")
+			order_billing_state = rsOrder("CardState")
+			order_billing_zip = rsOrder("CardZip")
+			order_billing_country = rsOrder("CardCountry")
+			order_billing_phone = rsOrder("bill_phone")
+			
+			order_shipping_firstname = rsOrder("ShipFirstName")
+			order_shipping_lastname = rsOrder("ShipLastName")
+			order_shipping_company = rsOrder("ship_company")
+			order_shipping_address = rsOrder("ShipAddress")
+			order_shipping_city = rsOrder("ShipCity")
+			order_shipping_state = rsOrder("ShipState")
+			order_shipping_zip = rsOrder("ShipZip")
+			order_shipping_country = rsOrder("ShipCountry")
+			order_shipping_phone = rsOrder("ShipPhone")
+			
+			order_payment_method = rsOrder("PaymentMethod")
+			order_payment_card_type = rsOrder("CardType")
+			order_payment_card_number = rsOrder("CardNumber")
+			order_customer_card_name = rsOrder("CardName")
+			order_customer_card_exp_month = rsOrder("CardExpirationMonth")
+			order_customer_card_exp_year = rsOrder("CardExpirationYear")
+			
+			order_shipping_sh_method = rsOrder("SH_method")
+			order_shipping_sh = rsOrder("SH")
+			order_shipping_sh = FormatNumber(order_shipping_sh)
+			
+			order_comment = rsOrder("Order_Comments")
+			order_notes = rsOrder("notes")
+			
+			order_tax = rsOrder("tax")
+			order_tax = FormatNumber(order_tax)
+			order_total = rsOrder("total")
+			order_total = FormatNumber(order_total)
+			
+			if Len(order_comment) > 0 then
+			else
+				order_comment = "..."
+			end if
+		
+			if Len(order_notes) > 0 then
+			else
+				order_notes = "..."
+			end if
+			
+			'TODO...
+			SELECT CASE order_payment_method
+			CASE "visa"
+				order_payment_method = "Credit Card"
+			CASE "master"
+				order_payment_method = "Credit Card"
+			CASE "discover"
+				order_payment_method = "Credit Card"
+			CASE "amex"
+				order_payment_method = "Credit Card"
+			CASE "cod"
+				order_payment_method = "COD"
+			END SELECT
+			
+		end if
+		rsOrder.Close
+		set rsOrder = nothing
+	end if
+	
+	if Len(quote_id) > 0 then
+		sql = "SELECT * FROM " & Session("StoreID") & "_quotes WHERE quote_id=" & quote_id
+		set rsQuote = dbconn.Execute(sql)
+		if not rsQuote.EOF then
+			shopper_id = Trim(rsQuote("shopper_id"))
+			
+			order_shipping_company = Trim(rsQuote("shipping_company"))
+			order_shipping_address = Trim(rsQuote("shipping_address"))
+			order_shipping_city = Trim(rsQuote("shipping_city"))
+			order_shipping_state = Trim(rsQuote("shipping_state"))
+			order_shipping_zip = Trim(rsQuote("shipping_zip"))
+			order_shipping_country = Trim(rsQuote("shipping_country"))
+			shipping_contact = Trim(rsQuote("shipping_contact"))
+			order_shipping_phone = Trim(rsQuote("shipping_phone"))
+			order_shipping_firstname = Trim(rsQuote("shipping_contact_firstname"))
+			order_shipping_lastname = Trim(rsQuote("shipping_contact_lastname"))
+			
+			if Len(order_shipping_firstname) > 0 OR Len(order_shipping_firstname) > 0 then
+				'New contact name format is available .. do nothing
+			else
+				'Try this..
+				shipping_contact_lastname = ""
+				shipping_contact_firstname = ""
+							
+				if Len(shipping_contact) > 0 then
+					ar_shipping_contact = Split(shipping_contact, " ")
+					for ii = 0 to UBound(ar_shipping_contact)
+						if (ii = 0) then
+							shipping_contact_firstname = ar_shipping_contact(ii)
+						else
+							shipping_contact_lastname = shipping_contact_lastname & " " & ar_shipping_contact(1)
+						end if
+					next
+					order_shipping_firstname = Trim(shipping_contact_firstname)
+					order_shipping_lastname = Trim(shipping_contact_lastname)
+				end if
+							
+			end if
+		end if
+		rsQuote.Close
+		set rsQuote = nothing
+	end if
+%>
+<div class="modal-header">
+	<button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+	<h4>Shipping Information</h4>
+</div>
+<form role="form" id='shippingform'>
+<input type="hidden" name="name" value="shipping_address" />
+<input type="hidden" name="order_id" value="<%=order_id%>" />
+<div class="modal-body" style="padding-left: 30px;">
+	<div class="col-md-12">
+		<div class="alert alert-danger display-hide">
+		<button class="close" data-close="alert"></button> You have some form errors. Please check below. 
+		</div>
+		<div class="alert alert-success display-hide">
+		<button class="close" data-close="alert"></button> The information has been saved.
+		</div>
+		<div class="alert alert-warning display-hide">
+		<button class="close" data-close="alert"></button> The information has not been saved properly. Please contact system administrator.
+		</div>
+	</div>
+	<div class="row">
+	<div class="form-group">
+		<label class="col-sm-3 control-label" for="alt_shipping">
+			Ship To <span class="symbol required"></span> 
+		</label>
+		<div class="col-sm-9">
+			<select name ="alt_shipping" id="alt_shipping" class="form-control input-sm">
+				<option value="">Current</option>
+				<option value="0">Default Customer Shipping Information</option>
+				<%
+				xs1 = ""
+				xs2 = "Default"
+							
+				if Len(shopper_id) > 1 then
+					sql = "SELECT * FROM " & g_storeid & "_shopper_shipping_address WHERE shopper_id = '" & shopper_id & "'"
+					set rsShippingAddress = dbconn.Execute(sql)
+					do while not rsShippingAddress.EOF
+					
+						alt_shipping_address_id = Trim(rsShippingAddress("address_id"))
+						alt_shipping_address_name = Trim(rsShippingAddress("address_name"))
+						alt_shipping_firstname = Trim(rsShippingAddress("firstname"))
+						alt_shipping_lastname = Trim(rsShippingAddress("lastname"))
+						alt_shipping_address = Trim(rsShippingAddress("address"))
+						alt_shipping_city = Trim(rsShippingAddress("city"))
+						alt_shipping_state = Trim(rsShippingAddress("state"))
+						alt_shipping_zip = Trim(rsShippingAddress("zip"))
+						alt_shipping_country = Trim(rsShippingAddress("country"))
+						alt_shipping_phone = Trim(rsShippingAddress("phone"))
+						alt_shipping_default = Trim(rsShippingAddress("set_default"))
+						alt_shipping_company = Trim(rsShippingAddress("company"))
+						alt_shipping_address_type = Trim(rsShippingAddress("address_type"))
+						
+						if Len(alt_shipping_address) > 20 then
+							alt_shipping_address1 = Left(alt_shipping_address,20)
+						else
+							alt_shipping_address1 = alt_shipping_address
+						end if
+						
+						if alt_shipping_address_id = shipping_address_id then
+							xs1 = " selected"
+							xs2 = alt_shipping_address_name
+							xs3 = alt_shipping_address_type
+						else
+							xs1 = ""
+						end if
+						
+				%>
+				<option value="<%=alt_shipping_address_id%>" <%=xs1%>><%=alt_shipping_address_name%> - <%=alt_shipping_address1%></option>
+				<%
+						rsShippingAddress.MoveNext
+					loop
+					
+					rsShippingAddress.Close
+					set rsShippingAddress = nothing
+					
+				end if
+				%>
+				<!--
+				<option value="-1">New Shipping Information...</option>
+				-->
+			</select>
+		</div>
+	</div>
+	<br><br>
+	<div class="form-group">
+		<label class="col-sm-3 control-label" for="order_shipping_company">
+			Company
+		</label>
+		<div class="col-sm-9">
+			<input type="text" placeholder="" id="order_shipping_company" name="order_shipping_company" class="form-control input-sm" value="<%=order_shipping_company%>">
+		</div>
+	</div>
+	<br><br>
+	<div class="form-group">
+		<label class="col-sm-3 control-label" for="order_shipping_firstname">
+			First Name <span class="symbol required"></span> 
+		</label>
+		<div class="col-sm-9">
+			<input type="text" placeholder="" id="order_shipping_firstname" name="order_shipping_firstname" class="form-control input-sm" value="<%=order_shipping_firstname%>">
+		</div>
+	</div>
+	<br><br>
+	<div class="form-group">
+		<label class="col-sm-3 control-label" for="order_shipping_lastname">
+			Last Name <span class="symbol required"></span> 
+		</label>
+		<div class="col-sm-9">
+			<input type="text" placeholder="" id="order_shipping_lastname" name="order_shipping_lastname" class="form-control input-sm" value="<%=order_shipping_lastname%>">
+		</div>
+	</div>
+	<br><br>
+	<div class="form-group">
+		<label class="col-sm-3 control-label" for="order_shipping_address">
+			Address <span class="symbol required"></span> 
+		</label>
+		<div class="col-sm-9">
+			<input type="text" placeholder="" id="order_shipping_address" name="order_shipping_address" class="form-control input-sm" value="<%=order_shipping_address%>">
+		</div>
+	</div>
+	<br><br>
+	<div class="form-group">
+		<label class="col-sm-3 control-label" for="order_shipping_city">
+			City <span class="symbol required"></span> 
+		</label>
+		<div class="col-sm-9">
+			<input type="text" placeholder="" id="order_shipping_city" name="order_shipping_city" class="form-control input-sm" value="<%=order_shipping_city%>">
+		</div>
+	</div>
+	<br><br>
+	<div class="form-group">
+		<label class="col-sm-3 control-label" for="order_shipping_country">
+			Country <span class="symbol required"></span> 
+		</label>
+		<div class="col-sm-9">
+			<select id="order_shipping_country" name="order_shipping_country" class="form-control input-sm"></select>
+		</div>
+	</div>
+	<br><br>
+	<div class="form-group">
+		<label class="col-sm-3 control-label" for="order_shipping_state">
+			State <span class="symbol required"></span> 
+		</label>
+		<div class="col-sm-9">
+			<select id="order_shipping_state" name="order_shipping_state" class="form-control input-sm"></select>
+		</div>
+	</div>
+	<br><br>
+	<div class="form-group">
+		<label class="col-sm-3 control-label" for="order_shipping_zip">
+			Zip Code <span class="symbol required"></span> 
+		</label>
+		<div class="col-sm-9">
+			<input type="text" placeholder="" id="order_shipping_zip" name="order_shipping_zip" class="form-control input-sm" value="<%=order_shipping_zip%>">
+		</div>
+	</div>
+	<br><br>
+	
+	<div class="form-group">
+		<label class="col-sm-3 control-label" for="order_shipping_phone">
+			Phone <span class="symbol required"></span> 
+		</label>
+		<div class="col-sm-9">
+			<input type="text" placeholder="" id="order_shipping_phone" name="order_shipping_phone" class="form-control input-sm" value="<%=order_shipping_phone%>">
+		</div>
+	</div>
+	
+	</div>
+</div>
+<div class="modal-footer">
+	<button class="btn btn-primary" id="billing_update_btn btn-sm">Update</button>
+	<button type="button" data-dismiss="modal" class="btn btn-default btn-sm">Close</button>
+</div>
+</form>
+<script language="javascript">
+var FormValidatorShipping = function () {
+	
+	var runValidatorShipping = function() {
+		// for more info visit the official plugin documentation: 
+		// http://docs.jquery.com/Plugins/Validation
+
+		var form1 = $('#shippingform');
+		var error1 = $('.alert-danger', form1);
+		var success1 = $('.alert-success', form1);
+		var warning1 = $('.alert-warning', form1);
+
+		form1.validate({
+			errorElement: 'span', //default input error message container
+			errorClass: 'help-block help-block-error', // default input error message class
+			focusInvalid: false, // do not focus the last invalid input
+			ignore: "",  // validate all fields including form hidden input
+			//RULES
+			rules: {
+				order_shipping_address: {
+					minlength: 2,
+					required: true
+				}
+			},
+
+			invalidHandler: function (event, validator) { //display error alert on form submit              
+				success1.hide();
+				error1.show();
+				App.scrollTo(error1, -200);
+			},
+
+			errorPlacement: function (error, element) { // render error placement for each input type
+				var cont = $(element).parent('.input-group');
+				if (cont) {
+					cont.after(error);
+				} else {
+					element.after(error);
+				}
+			},
+
+			highlight: function (element) { // hightlight error inputs
+
+				$(element)
+					.closest('.form-group').addClass('has-error'); // set error class to the control group
+			},
+
+			unhighlight: function (element) { // revert the change done by hightlight
+				$(element)
+					.closest('.form-group').removeClass('has-error'); // set error class to the control group
+			},
+
+			success: function (label) {
+				label
+					.closest('.form-group').removeClass('has-error'); // set success class to the control group
+			},
+
+			submitHandler: function (form) {
+				success1.hide();
+				error1.hide();
+				warning1.hide();
+				
+				$.ajax({
+					type: "POST",
+					<% if Len(order_id) > 0 then %>
+					url: "api/sp_sales_orders_detail_update.phtml",
+					<% end if %>
+					<% if Len(quote_id) > 0 then %>
+					url: "api/sp_sales_quotation_detail_update.phtml",
+					<% end if %>
+					data: $("#shippingform").serialize(),
+					success: function() {
+						success1.show();
+						setTimeout(function () {
+							 $('#ajax-modal2').modal('hide');
+						}, 700);						
+					},
+					error: function() {
+						warning1.show();
+					}
+				});
+			}
+		});
+
+	};
+	
+	return {
+		//main function to initiate template pages
+		init: function () {
+			runValidatorShipping();
+		}
+	};
+}();
+</script>
+<script type="text/javascript">
+	$("#shippingform").submit(function (e) {
+		e.preventDefault(); //prevent default form submit
+	});
+	FormValidatorShipping.init();
+
+	jQuery.ajax({
+		type:"post",
+		url: "api/sp_get_country_list.phtml",
+		data: {'country_id':'<%=order_shipping_country%>','isAjax':true},
+		dataType: 'json',
+		success: function(data) {
+			var listItems= "<option value=''></option>";
+			for (var i = 0; i < data.Country.length; i++){
+				if (data.Country[i].id == '<%=order_shipping_country%>')
+				{
+					listItems+= "<option value='" + data.Country[i].id + "' selected>" + data.Country[i].name + "</option>";
+				}
+				else
+				{
+					listItems+= "<option value='" + data.Country[i].id + "'>" + data.Country[i].name + "</option>";
+				}
+			}
+			var select = jQuery("#order_shipping_country"), options = '';
+			select.empty(); 
+			select.append(listItems);
+		}
+	});
+	
+	jQuery.ajax({
+		type:"post",
+		url: "api/sp_get_zone_list.phtml",
+		data: {country_id: '<%=order_shipping_country%>', 'isAjax':true},
+		dataType: 'json',
+		success: function(data) {
+			var listItems= "<option value=''></option>";
+			for (var i = 0; i < data.Zone.length; i++){
+				if (data.Zone[i].id == '<%=order_shipping_state%>')
+				{
+					listItems+= "<option value='" + data.Zone[i].id + "' selected>" + data.Zone[i].name + "</option>";
+				}
+				else
+				{
+					listItems+= "<option value='" + data.Zone[i].id + "'>" + data.Zone[i].name + "</option>";
+				}
+			}
+			var select = jQuery("#order_shipping_state");
+			select.empty(); 
+			select.append(listItems);
+		}
+	});
+	
+	jQuery( "#order_shipping_country" ).change(function() {
+	  jQuery.ajax({
+			type:"post",
+			url: "api/sp_get_zone_list.phtml",
+			data: {country_id: jQuery('#order_shipping_country').val(), 'isAjax':true},
+			dataType: 'json',
+			success: function(data) {
+				var listItems= "<option value=''></option>";
+				for (var i = 0; i < data.Zone.length; i++){
+					if (data.Zone[i].id == '<%=order_shipping_state%>')
+					{
+						listItems+= "<option value='" + data.Zone[i].id + "' selected>" + data.Zone[i].name + "</option>";
+					}
+					else
+					{
+						listItems+= "<option value='" + data.Zone[i].id + "'>" + data.Zone[i].name + "</option>";
+					}
+				}
+				var select = jQuery("#order_shipping_state"), options = '';
+				select.empty(); 
+				select.append(listItems);
+			}
+		});
+	});
+	
+	jQuery( "#alt_shipping" ).change(function() {
+	  jQuery.ajax({
+			type:"post",
+			url: "api/sp_get_shopper_alt_shipping_information.phtml",
+			data: {address_id: jQuery('#alt_shipping').val(), shopper_id: "<%=shopper_id%>", order_id: "<%=order_id%>", 'isAjax':true},
+			dataType: 'json',
+			success: function(data) {
+				for (var i = 0; i < data.Address.length; i++){
+					jQuery("#alt_shipping_name").val(data.Address[i].nickname);
+					jQuery("#order_shipping_company").val(data.Address[i].company);
+					jQuery("#order_shipping_firstname").val(data.Address[i].firstname);
+					jQuery("#order_shipping_lastname").val(data.Address[i].lastname);
+					jQuery("#order_shipping_address").val(data.Address[i].address);
+					jQuery("#order_shipping_city").val(data.Address[i].city);
+					jQuery("#order_shipping_country").val(data.Address[i].country);
+					jQuery("#order_shipping_state").val(data.Address[i].state);
+					jQuery("#order_shipping_zip").val(data.Address[i].zipcode);
+					jQuery("#order_shipping_phone").val(data.Address[i].phone);
+				}
+			}
+		});
+	});
+	
+	$('.close').click(function() {
+	   $('.alert').hide();
+	})
+				
+				
+</script>

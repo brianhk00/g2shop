@@ -1,0 +1,9 @@
+<!-- #INCLUDE File="../../local/local.phtml" -->
+<%
+	Set dbconn=server.CreateObject("ADODB.Connection")
+	dbconn.Open g_connection_string
+
+	Set dbconn_icecat=server.CreateObject("ADODB.Connection")
+	dbconn_icecat.Open g_connection_icecat_catalog
+
+%>

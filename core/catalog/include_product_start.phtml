@@ -8,6 +8,51 @@
 <!--#INCLUDE FILE="../../i_initsession.phtml"-->
 <!--#INCLUDE FILE="../i_login.phtml"-->
 <%
+	Function GetTabContent(tabProduct, tabID, tabType)
+		ssTabContent = ""
+		
+		SELECT CASE tabType
+		CASE 1
+			sql = "SELECT * FROM " & g_storeid & "_tab_HTML WHERE pf_id='" & tabProduct & "' AND tab_id=" & tabID
+			set rsTab = dbconn.Execute(sql)
+			if not rsTab.EOF then
+			  tab_HTML = Trim(rsTab("tab_HTML"))
+			else
+			  tab_HTML = ""
+			end if
+			rsTab.Close
+			set rsTabs = nothing
+			ssTabContent = tab_HTML
+		CASE 2
+			ssTabContent = "<table class=""table table-bordered"">"
+			sql = "SELECT * FROM " & g_storeid & "_tab_table WHERE pf_id='" & tabProduct & "' AND tab_id=" & tabID & " ORDER BY tab_order"
+			set rsTabs = dbconn.Execute(sql)
+			do while not rsTabs.EOF
+				ssTabContent = ssTabContent & "<tr>"
+				if Len(rsTabs("tab_desc")) > 0 then
+					ssTabContent = ssTabContent & "<td>"
+					ssTabContent = ssTabContent & rsTabs("tab_header")
+					ssTabContent = ssTabContent & "</td>"
+					ssTabContent = ssTabContent & "<td>"
+					ssTabContent = ssTabContent & rsTabs("tab_desc")
+					ssTabContent = ssTabContent & "</td>"
+				else
+					ssTabContent = ssTabContent & "<td colspan=""2"">"
+					ssTabContent = ssTabContent & "<strong>" & rsTabs("tab_header") & "</strong>"
+					ssTabContent = ssTabContent & "</td>"
+				end if
+				ssTabContent = ssTabContent & "</tr>"
+				rsTabs.MoveNext
+			loop
+			rsTabs.Close
+			set rsTabs = nothing
+			ssTabContent = ssTabContent & "</table>"
+		END SELECT
+		
+		GetTabContent = ssTabContent
+	End Function
+%>
+<%
 	pf_id = Trim(Request("pf_id"))
 	dept_ID = Trim(Request("dept_id"))
 	pf_id = FilterSKUString(pf_id)
@@ -96,6 +141,7 @@
 	if not rsProd.EOF then	
 		prod_name = rsProd("name")
 		prod_desc = rsProd("description")
+		prod_sku = rsProd("SKU")
 		prod_detail = rsProd("details")
 		prod_list_price = rsProd("list_price")
 		prod_retail_price = rsProd("retail_price")
@@ -122,6 +168,7 @@
 		else
 			prod_stock = 1
 		end if
+		prod_stock_status = rsProd("stock_status")
 		prod_iv_text = Trim(rsProd("iv_text"))
 		prod_warranty = Trim(rsProd("warranty_id"))
 		prod_manu_part_num = Trim(rsProd("manu_part_num"))
@@ -315,6 +362,59 @@
 	
 	conn_ss2.Close
 	set conn_ss2 = nothing
+	
+	'====================================================================================================
+	'Product Reviews..
+	'====================================================================================================
+	review_count = 0
+	sql = "SELECT COUNT(RatingID) FROM " & g_storeid & "_Rating WHERE ProductID = '" & pf_id & "'"
+	set rsReviews = dbconn.Execute(sql)
+	if not rsReviews.EOF then
+		review_count = rsReviews(0)
+	end if
+	rsReviews.Close
+	set rsReviews = nothing
+	
+	if IsNumeric(review_count) then
+	else
+		review_count = 0	
+	end if
+	
+	review_avg = 0
+	sql = "SELECT AVG(rating) FROM " & g_storeid & "_Rating WHERE ProductID = '" & pf_id & "'"
+	set rsReviews = dbconn.Execute(sql)
+	if not rsReviews.EOF then
+		review_avg = rsReviews(0)
+	end if
+	rsReviews.Close
+	set rsReviews = nothing
+	
+	if IsNumeric(review_avg) then
+		review_avg = CInt(review_avg)
+	else
+		review_avg = 0	
+	end if
+	
+	bWriteReview = false
+	if Session("shopper_id") = "" OR Session("shopper_id") = "GUEST" Then
+	else
+		sql = "SELECT COUNT(sku) FROM " & g_storeid & "_order_item WHERE sku ='" & pf_id & "'"
+		sql = sql & " AND order_id IN (SELECT order_id FROM " & g_storeid & "_order WHERE shopper_id='" & Session("shopper_id") & "')"
+		ordered_count = 0
+
+		Set rsReviews = dbconn.Execute(sql)
+
+		If Not rsReviews.EOF Then
+			ordered_count = rsReviews(0)
+		End If
+		rsReviews.Close
+		set rsReviews = nothing
+	
+		If ordered_count > 0 then
+			bWriteReview = true
+		end if
+	end if
+	
 	'====================================================================================================
 	'Product display options..
 	'====================================================================================================
@@ -362,6 +462,54 @@
 	Else
 		g_meta_text = ""
 	End if
+	
+	
+	'====================================================================================
+	'THEME VALUES
+	'====================================================================================
+	x_prod_name = prod_name
+	x_page_title = g_page_title
+	x_prod_sku = prod_sku
+	x_prod_desc = prod_desc
+	x_prod_detail = prod_detail
+	x_prod_manu_part_num = prod_manu_part_num
+	x_vendor_name = vendor_name
+	x_prod_stock_status = prod_stock_status
+	if (x_prod_stock_status) = 1 then
+		x_prod_stock_status_display = " In Stock"
+	else
+		x_prod_stock_status_display = " Out of Stock"
+	end if
+	
+	x_prod_on_sale = prod_on_sale
+	x_prod_sale_price = prod_sale_price
+	x_prod_group_price = prod_group_price
+	x_prod_retail_price = prod_retail_price
+	
+	x_prod_image = image_display_src
+	x_prod_zoom_image = image_display_src_zoom
+	x_prod_thumb_image = image_display_src_thumb
+	x_prod_mm_type = prod_mm_type
+	x_prod_espec_sku = prod_use_icecat_images
+	x_prod_use_icecat_images = prod_use_icecat_images
+	x_prod_image_file = prod_image_file
+	
+	'-----------------TABS-------------------------------------------------------------------
+	'pf_tab_show(5)
+	'pf_tab_name(5)
+	'pf_tab_type(5)	
+	'----------------------------------------------------------------------------------------
+	
+	x_review_count = review_count
+	x_review_avg = review_avg
+	x_bWriteReview = bWriteReview
+	
+	'====================================================================================
+	'TRANSLATE
+	'====================================================================================
+	x_prod_name = TranslateX(x_prod_name, 2, pf_id, 1)
+	x_prod_desc = TranslateX(x_prod_desc, 2, pf_id, 2)
+	x_prod_detail = TranslateXT(x_prod_detail, 2, pf_id, 3)
 	
 %>
 

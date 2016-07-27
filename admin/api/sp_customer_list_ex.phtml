@@ -1,0 +1,227 @@
+<%@ Language=VBScript %>
+<%
+	Response.CodePage = 65001
+	Response.CharSet = "UTF-8"
+%>
+<%
+  Response.Expires = -1
+%>
+<!-- #INCLUDE File="../local/local.phtml" -->
+<!-- #INCLUDE File="../util/xt_func_util.phtml" -->
+<!-- #INCLUDE File="../util/xt_func_string.phtml" -->
+<%
+	sEcho = Trim(Request("draw"))
+	iDisplayLength = Trim(Request("length"))
+	iDisplayStart = Trim(Request("start"))
+
+	sEcho = FilterStringEx(sEcho, "[^0-9]")
+	iDisplayLength = FilterStringEx(iDisplayLength, "[^0-9]")
+	iDisplayStart = FilterStringEx(iDisplayStart, "[^0-9]")
+
+	sEcho = Cint(sEcho)
+	iDisplayLength = Cint(iDisplayLength)
+	iDisplayStart = Cint(iDisplayStart)
+	sSearch = Trim(Request("sSearch"))
+	v1 = Trim(Request("v1"))
+
+	'=======================================================================================
+	strWhere = ""
+	'---------------------------------------------------------------------------------------
+	shopper_id = Trim(Request("shopper_id"))
+	if Len(shopper_id) > 0 then
+		strWhere = strWhere &  " (shopper_id like '%" & shopper_id & "%') AND"
+	end if
+	'----------------------------------------------------------------------------------------
+	sMin = Trim(Request("shopper_date_from"))
+	sMax = Trim(Request("shopper_date_to"))
+	sDateRange = ""
+	if IsDate(sMin) then
+		if IsDate(sMax) then
+			dMax = CDate(sMax)
+			dMax = DateAdd("d", 1, dMax)
+			sMax = FormatDateTime(dMax,0)
+			sDateRange = "(DateEntered between '" & sMin & "' AND '" & sMax & "')"
+		else
+			'dMin = CDate(sMin)
+			dMax = Date()
+			dMax = DateAdd("d", 1, dMax)
+			sMax = FormatDateTime(dMax,0)
+			sDateRange = "(DateEntered between '" & sMin & "' AND '" & sMax & "')"
+		end if
+	else
+		if IsDate(sMax) then
+			dMax = CDate(sMax)
+			dMax = DateAdd("d", 1, dMax)
+			sMax = FormatDateTime(dMax,0)
+			sDateRange = "(DateEntered between '1/1/1970' AND '" & sMax & "')"
+		end if
+	end if
+	
+	if Len(sDateRange) > 0 then
+		strWhere = strWhere &  " " & sDateRange & " AND"
+	end if
+	'----------------------------------------------------------------------------------------
+	shopper_company = Trim(Request("shopper_company"))
+	if Len(shopper_company) > 1 then
+		strWhere = strWhere &  " (Company like '%" & shopper_company & "%') AND"
+	end if
+	'----------------------------------------------------------------------------------------
+	shopper_name = Trim(Request("shopper_name"))
+	if Len(shopper_name) > 1 then
+		strWhere = strWhere &  " (FirstName + ' ' + LastName like '%" & shopper_name & "%') AND"
+	end if
+	'----------------------------------------------------------------------------------------
+	shopper_email = Trim(Request("shopper_email"))
+	if Len(shopper_email) > 1 then
+		strWhere = strWhere &  " (Email like '%" & shopper_email & "%') AND"
+	end if
+	'----------------------------------------------------------------------------------------
+	shopper_group = Trim(Request("shopper_group"))
+	if Len(shopper_group) > 0 then
+		strWhere = strWhere &  " (member_group = '" & shopper_group & "') AND"
+	end if
+	'----------------------------------------------------------------------------------------
+	shopper_phone = Trim(Request("shopper_phone"))
+	if Len(shopper_phone) > 1 then
+		strWhere = strWhere &  " (Phone like '%" & shopper_phone & "%') AND"
+	end if
+	'----------------------------------------------------------------------------------------
+	shopper_country = Trim(Request("shopper_country"))
+	if Len(shopper_country) > 1 then
+		strWhere = strWhere &  " (Country like '%" & shopper_country & "%') AND"
+	end if
+	'----------------------------------------------------------------------------------------
+	if Len(strWhere) > 0 then
+		strWhere = Left(strWhere, Len(strWhere) - 4)
+	else
+		strWhere = " shopper_id LIKE '%%'"
+	end if
+  
+	'=======================================================================================
+	'ORDERING
+	SELECT CASE Trim(Request("order[0][column]"))
+	CASE "0"
+		sOrder = "shopper_id DESC"
+	CASE "1"
+		sOrder = "shopper_id " & Trim(Request("order[0][dir]"))
+	CASE "2"
+		sOrder = "Company " & Trim(Request("order[0][dir]"))
+	CASE "3"
+		sOrder = "FirstName + ' ' + LastName " & Trim(Request("order[0][dir]"))
+	CASE "4"
+		sOrder = "Email " & Trim(Request("order[0][dir]"))
+	CASE "5"
+		sOrder = "member_group " & Trim(Request("order[0][dir]"))
+	CASE "6"
+		sOrder = "Phone " & Trim(Request("order[0][dir]"))
+	CASE "7"
+		sOrder = "Country " & Trim(Request("order[0][dir]"))
+	CASE "8"
+		sOrder = "DateEntered " & Trim(Request("order[0][dir]"))
+	CASE "9"
+		sOrder = "shopper_id DESC"
+	CASE ELSE
+		sOrder = "shopper_id DESC"
+	END SELECT 
+	'here we create the variable "strOrderBy" that will be used in the SQL querry
+	strOrderBy = "ORDER BY " & sOrder
+
+	'======================================================================================
+	
+	'strWhere = " shopper_id LIKE '%%'"
+	'strOrderBy = "ORDER BY shopper_id DESC"
+	
+	sql = "SELECT * FROM " & g_storeid & "_shopper WHERE " & strWhere & " " & strOrderBy
+	sqlx = "SELECT COUNT(shopper_id) FROM " & g_storeid & "_shopper WHERE " & strWhere 
+	
+	set rs = dbconn.Execute(sql)
+	
+	iTotalDisplayRecords = 0
+	iTotalRecords = 50
+	set rs1 = dbconn.Execute(sqlx)
+	if not rs1.EOF then
+	  iTotalDisplayRecords = rs1(0)
+	  iTotalRecords = rs1(0)
+	else
+	end if
+	rs1.Close
+	
+	'iTotalDisplayRecords = 50
+	
+	'iTotalRecords = 50
+	
+%>
+{"draw": <%=sEcho%>, "recordsTotal": <%=iTotalRecords%>, "recordsFiltered": <%=iTotalDisplayRecords%>, "data": [ 
+<%
+	i = 0
+  
+	if rs.eof = false then
+		rs.move(iDisplayStart)
+		do while i < iDisplayLength and not rs.eof
+    
+			s_shopper_id = rs("shopper_id")
+			s_company = rs("Company")
+			s_lastname = rs("LastName")
+			s_firstname = rs("FirstName")
+			s_email = rs("Email")
+			s_address = rs("Address")
+			s_city = rs("City")
+			s_state = rs("State")
+			s_country = rs("Country")
+			s_salesrep_id = rs("salesrep_id")
+			s_phone = rs("Phone")
+			s_group = rs("member_group")
+			
+			s_date_created = rs("DateEntered")
+			s_date_created = ConvertToTimeZone(s_date_created)
+      
+			If Len(s_lastname) > 0 Then
+				s_lastname = Replace(s_lastname, "'", "&#39")
+			End if
+			If Len(s_firstname) > 0 Then
+				s_firstname = Replace(s_firstname, "'", "&#39")
+			End if
+			If Len(s_company) > 0 Then
+				s_company = Replace(s_company, "'", "&#39")
+			End if
+			If Len(s_address) > 0 Then
+				s_address = Replace(s_address, "'", "&#39")
+			End if
+			If Len(s_city) > 0 Then
+				s_city = Replace(s_city, "'", "&#39")
+			End if
+      
+			aaData = aaData & "['"
+			aaData = aaData & "<label class=\'mt-checkbox mt-checkbox-single mt-checkbox-outline\'><input name=\'id[]\' type=\'checkbox\' class=\'checkboxes\' value=\'" &  s_shopper_id & "\'/><span></span></label> " & "','" 
+			aaData = aaData & s_shopper_id & "','"
+			aaData = aaData & s_company & "','"
+			aaData = aaData & s_lastname & ", " & s_firstname & "','" 
+			aaData = aaData & s_email & "','"
+			aaData = aaData & s_group & "','"
+			aaData = aaData & s_phone & "','"
+			aaData = aaData & s_country & "','" 			
+			aaData = aaData & s_date_created & "','"
+			
+			'aaData = aaData & "<a class=\'btn btn-blue btn-xs btn-o\' href=\'api/tp_sales_quotation_detail.phtml?quote_id=0&shopper_id=" & s_shopper_id & "\'><i class=\'fa fa-plus\'></i></a>','"
+			'aaData = aaData & "<a class=\'btn btn-blue btn-xs btn-o\' href=\'api/tp_sales_orders_detail.phtml?so_id=0&shopper_id=" & s_shopper_id & "\'><i class=\'fa fa-plus\'></i></a>','"
+			'aaData = aaData & s_city & "','" 
+			'aaData = aaData & s_state & "','"
+			'aaData = aaData & s_group & "','"
+			'aaData = aaData & s_salesrep_id & "'],"
+			aaData = aaData & "<a href=\'customer_manage_customer_detail.phtml?shopper_id=" & s_shopper_id & "\' class=\'btn btn-sm btn-outline grey-salsa\'><i class=\'fa fa-search\'><\/i> View<\/a>" & "'],"
+			'aaData = aaData & "<input type=checkbox name=cust_del value=" & s_shopper_id & ">'],"
+			'aaData = aaData & "<a class=\'btn btn-red btn-xs btn-o\' href=\'javascript:RemoveCustomer(" & s_shopper_id & ")\'><i class=\'fa fa-close\'></i></a>'],"
+          
+			aaData = Replace(aaData,"'",chr(34))
+			rs.MoveNext
+			i=i+1
+      
+		loop
+		rs.Close
+		aaData = Left(aaData, Len(aaData)-1)
+  else
+    aaData = ""
+  end if
+  response.write aaData & "] }"
+  
+%>

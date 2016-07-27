@@ -1,0 +1,410 @@
+<%
+	Response.CodePage = 65001
+	Response.CharSet = "UTF-8"
+%>
+<!-- #INCLUDE File="local/local.phtml" -->
+<!-- #INCLUDE File="util/xt_func_util.phtml" -->
+<!-- #INCLUDE File="util/xt_func_string.phtml" -->
+<!-- #INCLUDE File="include/i_login.phtml" -->
+
+<!--#INCLUDE FILE="include/doctype.phtml"-->
+<head>
+<!--#INCLUDE FILE="include/head.phtml"-->
+<!-- BEGIN PAGE LEVEL PLUGINS -->
+<link href="../assets/global/plugins/datatables/datatables.min.css" rel="stylesheet" type="text/css" />
+<link href="../assets/global/plugins/datatables/plugins/bootstrap/datatables.bootstrap.css" rel="stylesheet" type="text/css" />
+<link href="../assets/global/plugins/bootstrap-datepicker/css/bootstrap-datepicker3.min.css" rel="stylesheet" type="text/css" />
+<link href="../assets/global/plugins/fancybox/source/jquery.fancybox.css" rel="stylesheet" type="text/css" />
+<link href="../assets/global/plugins/bootstrap-modal/css/bootstrap-modal-bs3patch.css" rel="stylesheet" type="text/css" />
+<link href="../assets/global/plugins/bootstrap-modal/css/bootstrap-modal.css" rel="stylesheet" type="text/css" />
+<!-- END PAGE LEVEL PLUGINS -->
+</head>
+
+<body class="page-container-bg-solid">
+<div class="page-wrapper">
+	<div class="page-wrapper-row">
+		<div class="page-wrapper-top">
+			<!--#INCLUDE FILE="include/header.phtml"-->
+		</div>
+	</div>
+	<div class="page-wrapper-row full-height">
+		<div class="page-wrapper-middle">
+			<!-- BEGIN CONTAINER -->
+			<div class="page-container">
+				<!-- BEGIN CONTENT -->
+				<div class="page-content-wrapper">
+					<!-- BEGIN CONTENT BODY -->
+					<!-- BEGIN PAGE CONTENT BODY -->
+					<div class="page-content">
+						<div class="container-fluid">
+							<!-- BEGIN PAGE CONTENT INNER -->
+							<div class="page-content-inner">
+								<div class="row">
+									<div class="col-md-12">
+										<form id="form_edit_1" class="form-horizontal form-row-seperated" action="#">
+											<div class="portlet">
+												<div class="portlet-title">
+													<div class="caption">
+													<i class="fa fa-shopping-cart"></i>
+													Manufacturer Listing
+													</div>
+													<div class="actions btn-set">
+														
+													</div>
+												</div>
+												<div class="alert alert-danger display-hide">
+												<button class="close" data-close="alert"></button> You have some form errors. Please check below. 
+												</div>
+												<div class="alert alert-success display-hide">
+												<button class="close" data-close="alert"></button> Your form validation is successful! 
+												</div>
+												<div class="portlet-body">
+													<div class="tabbable-bordered">
+														<ul class="nav nav-tabs">
+															<li class="active">
+																<a href="#tab_general" data-toggle="tab"> Manufacturers </a>
+															</li>
+															<% if g_store_use_icecat_catalog = "1" then %>
+															<li>
+																<a href="#tab_meta" data-toggle="tab"> ICECAT  Manufacturers</a>
+															</li>
+															<% end if %>
+														</ul>
+														<div class="tab-content">
+															<div class="tab-pane active" id="tab_general">
+																<div class="row">
+																	<div class="col-md-12">
+																		<!-- Begin: life time stats -->
+																		<div class="portlet light">
+																			<div class="portlet-title">
+																				<div class="caption">
+																					<i class="fa fa-shopping-cart"></i>Maufacturer Listing </div>
+																				<div class="actions">
+																					<% if Session("CURRENT_ADMIN_VIEW_ID") = "1" then %>
+																						<a href="#" class="btn btn-circle btn-info modal-edit-line" data-placement="top" data-id="0" data-toggle="modal">
+																						<i class="fa fa-plus"></i>
+																						<span class="hidden-xs"> New Manufacturer </span>
+																						</a>
+																					</a>
+																					<% end if %>
+																					<div class="btn-group">
+																						
+																					</div>
+																				</div>
+																			</div>
+																			<div class="portlet-body">
+																				<div class="table-container">
+																					<table class="table table-striped table-bordered table-hover table-full-width" id="catalog_manufacturer_1">
+																					<thead>
+																					<tr>
+																						<th>ID</th>
+																						<th>Name</th>
+																						<th>MAP Enabled</th>
+																						<th>Edit</th>
+																					</tr>
+																					</thead>
+																					<tbody>
+																						<tr>
+																							<td colspan="4" class="dataTables_empty">Loading data from server</td>
+																						</tr>
+																					</tbody>
+																					</table>
+																				</div>
+																			</div>
+																		</div>
+																	</div>
+																</div>
+															</div>
+															<% if g_store_use_icecat_catalog = "1" then %>
+															<div class="tab-pane" id="tab_meta">
+																<div class="row">
+																	<div class="col-md-12">
+																		<!-- Begin: life time stats -->
+																		<div class="portlet light">
+																			<div class="portlet-title">
+																				<div class="caption">
+																					<i class="fa fa-shopping-cart"></i>ICECAT Manufacturer Listing </div>
+																				<div class="actions">
+																					
+																				</div>
+																			</div>
+																			<div class="portlet-body">
+																				<div class="table-container">
+																					<table class="table table-striped table-bordered table-hover table-full-width" id="catalog_manufacturer_2">
+																					<thead>
+																					<tr>
+																						<th>ID</th>
+																						<th>Name</th>
+																						<th>MAP Enabled</th>
+																						<th>Edit</th>
+																					</tr>
+																					</thead>
+																					<tbody>
+																						<tr>
+																							<td colspan="4" class="dataTables_empty">Loading data from server</td>
+																						</tr>
+																					</tbody>
+																					</table>
+																				</div>
+																			</div>
+																		</div>
+																	</div>
+																</div>
+															</div>
+															<% end if %>
+														</div>
+													</div>
+												</div>
+											</div>
+										</div>
+									</div>
+								</div>
+							</div>
+							<!-- END PAGE CONTENT INNER -->
+						</div>
+					</div>
+					<!-- END PAGE CONTENT BODY -->
+					<!-- END CONTENT BODY -->
+				</div>
+				<!-- END CONTENT -->
+			</div>
+			<!-- END CONTAINER -->
+		</div>
+	</div>
+	<div class="page-wrapper-row">
+		<div class="page-wrapper-bottom">
+			<!--#INCLUDE FILE="include/footer.phtml"-->
+		</div>
+	</div>
+</div>
+<div id="ajax-modal3" class="modal fade" tabindex="-1" style="display: none;"></div>
+<div id="ajax-modal4" class="modal fade" tabindex="-1" style="display: none;"></div>
+<!--#INCLUDE FILE="include/js.phtml"-->
+<!-- BEGIN PAGE LEVEL PLUGINS -->
+<script src="../assets/global/plugins/jquery-validation/js/jquery.validate.min.js" type="text/javascript"></script>
+<script src="../assets/global/plugins/jquery-validation/js/additional-methods.min.js" type="text/javascript"></script>
+<script src="../assets/global/scripts/datatable.js" type="text/javascript"></script>
+<script src="../assets/global/plugins/datatables/datatables.min.js" type="text/javascript"></script>
+<script src="../assets/global/plugins/datatables/plugins/bootstrap/datatables.bootstrap.js" type="text/javascript"></script>
+<script src="../assets/global/plugins/bootstrap-datepicker/js/bootstrap-datepicker.min.js" type="text/javascript"></script>
+<script src="../assets/global/plugins/bootstrap-maxlength/bootstrap-maxlength.min.js" type="text/javascript"></script>
+<script src="../assets/global/plugins/fancybox/source/jquery.fancybox.pack.js" type="text/javascript"></script>
+<script src="../assets/global/plugins/bootstrap-modal/js/bootstrap-modalmanager.js" type="text/javascript"></script>
+<script src="../assets/global/plugins/bootstrap-modal/js/bootstrap-modal.js" type="text/javascript"></script>
+<script src="//cdn.datatables.net/plug-ins/1.10.10/api/fnReloadAjax.js"></script>
+<!-- END PAGE LEVEL PLUGINS -->
+<!-- BEGIN PAGE LEVEL SCRIPTS -->
+<script type="text/javascript">
+var oTable, oTable2;
+var v1 = "All";
+var v2 = "All";
+var v3 = "All";
+
+var TableData = function () {
+	//function to initiate DataTable
+	//DataTable is a highly flexible tool, based upon the foundations of progressive enhancement, 
+	//which will add advanced interaction controls to any HTML table
+	//For more information, please visit https://datatables.net/
+	var runDataTable = function () {
+		oTable = $('#catalog_manufacturer_1').dataTable({
+			"bProcessing": true,
+			"searchDelay": 800,
+			"bStateSave": true,
+			"bJQueryUI": false,
+			"iDisplayLength": 20,
+			"bServerSide": true,
+			"bAutoWidth": false,
+			"sAjaxSource": "api/sp_manufacturer_list.phtml",
+			"aoColumns": [ 
+				/* ID */  { "sClass": "text-left" },
+				/* Name */  { "sClass": "text-left" },
+				/* MAP*/  { "sClass": "text-center" ,"bSortable": false},
+				/* Action*/  { "sClass": "text-center" ,"bSortable": false}
+			  ],
+			  
+			"aaSorting": [[0, 'desc']],
+			
+			"aLengthMenu": [
+				[10, 20, 30, 40, 50],
+				[10, 20, 30, 40, 50] // change per page values here
+			],
+			
+			"oLanguage": {
+				"sLengthMenu": "Show _MENU_ Rows",
+				"sSearch": "",
+				"sProcessing": '<img src="assets/images/ajax-loader-primary.gif"/>',
+				"oPaginate": {
+					"sPrevious": "Prev",
+					"sNext": "Next"
+				}
+			},
+			
+			/*
+			"initComplete": function( settings, json ) {
+				var $modal3 = $('#ajax-modal3');
+				$('.modal-edit-line').on('click', function () {
+					$('body').modalmanager('loading');
+					var modal_mfg_id = $(this).data('id');
+					setTimeout(function () {
+						$modal3.load('api/modal_ajax_mfg_edit.phtml?mfg_id=' + modal_mfg_id, '', function () {
+							$modal3.modal();
+						});
+					}, 500);
+					
+				});
+			},
+			*/
+
+			'fnServerData' : function ( sSource, aoData, fnCallback ) {
+				aoData.push( { 'name' : 'min', 'value' : $("#min").val() } );
+				aoData.push( { 'name' : 'max', 'value' : $("#max").val() } );
+				$.ajax({
+					'dataType' : 'json',
+					'data' : aoData,
+					'type' : 'GET',
+					'url' : sSource,
+					'success' : fnCallback
+				});
+			} 
+		});
+		
+		$('#catalog_manufacturer_1').on( 'draw.dt', function () {
+			var $modal3 = $('#ajax-modal3');
+			$('.modal-edit-line').on('click', function () {
+				$('body').modalmanager('loading');
+				var modal_mfg_id = $(this).data('id');
+				setTimeout(function () {
+					$modal3.load('api/modal_ajax_mfg_edit.phtml?mfg_id=' + modal_mfg_id, '', function () {
+						$modal3.modal();
+					});
+				}, 500);
+				
+			});
+		} );
+		
+		$('#catalog_manufacturer_1_wrapper .dataTables_filter input').addClass("form-control input-sm").attr("placeholder", "Search");
+		// modify table search input
+		$('#catalog_manufacturer_1_wrapper .dataTables_length select').addClass("m-wrap small");
+		// modify table per page dropdown
+		
+	};
+	<% if g_store_use_icecat_catalog = "1" then %>
+	var runDataTable2 = function () {
+		oTable2 = $('#catalog_manufacturer_2').dataTable({
+			"bProcessing": true,
+			"searchDelay": 800,
+			"bStateSave": true,
+			"bJQueryUI": false,
+			"iDisplayLength": 20,
+			"bServerSide": true,
+			"bAutoWidth": false,
+			"sAjaxSource": "api/sp_icecat_manufacturer_list.phtml",
+			"aoColumns": [ 
+				/* ID */  { "sClass": "text-left" },
+				/* Name */  { "sClass": "text-left" },
+				/* MAP*/  { "sClass": "text-center" ,"bSortable": false},
+				/* Action*/  { "sClass": "text-center" ,"bSortable": false}
+			  ],
+			  
+			"aaSorting": [[1, 'asc']],
+			
+			"aLengthMenu": [
+				[10, 20, 30, 40, 50],
+				[10, 20, 30, 40, 50] // change per page values here
+			],
+			
+			"oLanguage": {
+				"sLengthMenu": "Show _MENU_ Rows",
+				"sSearch": "",
+				"sProcessing": '<img src="assets/images/ajax-loader-primary.gif"/>',
+				"oPaginate": {
+					"sPrevious": "Prev",
+					"sNext": "Next"
+				}
+			},
+			
+			'fnServerData' : function ( sSource, aoData, fnCallback ) {
+				aoData.push( { 'name' : 'min', 'value' : $("#min").val() } );
+				aoData.push( { 'name' : 'max', 'value' : $("#max").val() } );
+				$.ajax({
+					'dataType' : 'json',
+					'data' : aoData,
+					'type' : 'GET',
+					'url' : sSource,
+					'success' : fnCallback
+				});
+			} 
+		});
+		
+		$('#catalog_manufacturer_2').on( 'draw.dt', function () {
+			var $modal4 = $('#ajax-modal4');
+			$('.modal-edit-line2').on('click', function () {
+				$('body').modalmanager('loading');
+				var modal_mfg_id = $(this).data('id');
+				setTimeout(function () {
+					$modal4.load('api/modal_ajax_icecat_mfg_edit.phtml?mfg_id=' + modal_mfg_id, '', function () {
+						$modal4.modal();
+					});
+				}, 500);
+				
+			});
+		} );
+		
+		$('#catalog_manufacturer_2_wrapper .dataTables_filter input').addClass("form-control input-sm").attr("placeholder", "Search");
+		// modify table search input
+		$('#catalog_manufacturer_2_wrapper .dataTables_length select').addClass("m-wrap small");
+		// modify table per page dropdown
+		
+		
+	};
+	<% end if %>
+	return {
+		//main function to initiate template pages
+		init: function () {
+			runDataTable();
+			<% if g_store_use_icecat_catalog = "1" then %>
+			runDataTable2();
+			<% end if %>
+		},
+		
+		reload: function(theURL) {
+			if ( theURL ) {
+				oTable.fnReloadAjax(theURL);
+			}
+			else {
+				oTable.fnReloadAjax("api/sp_manufacturer_list.phtml");
+			}
+		},
+		
+		reload2: function(theURL) {
+			if ( theURL ) {
+				oTable2.fnReloadAjax(theURL);
+			}
+			else {
+				oTable2.fnReloadAjax("api/sp_icecat_manufacturer_list.phtml");
+			}
+		}
+	};
+}();
+
+</script>
+<script type="text/javascript">
+
+jQuery(document).ready(function() {    
+	TableData.init();
+	var $modal3 = $('#ajax-modal3');
+	$modal3.on('hidden', function () {
+		TableData.reload();
+	});
+
+	<% if g_store_use_icecat_catalog = "1" then %>
+	var $modal4 = $('#ajax-modal4');
+	$modal4.on('hidden', function () {
+		TableData.reload2();
+	});
+	<% end if %>
+});
+</script>
+<!-- END PAGE LEVEL SCRIPTS -->
+</body>
+</html>

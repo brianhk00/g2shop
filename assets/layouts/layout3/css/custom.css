@@ -1,0 +1,68 @@
+/* here you can put your own css to customize and override the theme */
+/* Font Size.. */
+@media (min-width: 992px) {
+  /* 992px */
+  .container-fluid {
+    padding-left: 20px;
+    padding-right: 20px; } }
+	
+table.dataTable tbody th, table.dataTable tbody td {
+    font-size: 12px;
+}
+
+table.dataTable thead tr th {
+    font-size: 12px;
+}
+/*
+body {
+    font-size: 12px;
+}
+
+.static-info .name {
+    font-size: 12px;
+}
+
+.static-info .value {
+    font-size: 12px;
+}
+*/
+
+/* Loading.. */
+#loading-process {
+    position:absolute;
+    top:45%;
+    left:50%;
+    margin-left:-60px;
+    border:2px solid #f1af73;
+    padding:15px 60px;
+    background:#fff4e9;
+    color:#d85909;
+    font-size:1.1em;
+    font-weight:bold;
+    text-align:center;
+    z-index:501;
+    }
+#loading-mask {
+    position:absolute;
+    color:#d85909;
+    font-size:1.1em;
+    font-weight:bold;
+    text-align:center;
+    opacity:0.80;
+    -ms-filter: "progid:DXImageTransform.Microsoft.Alpha(Opacity=80)"; /* IE8 */
+    z-index:500;
+    }
+#loading-mask .loader {
+    position:fixed;
+    top:45%;
+    left:50%;
+    width:150px;
+    margin-left:-105px;
+    padding:15px 30px;
+    background:#fff4e9;
+    border:2px solid #007aff;
+    color:#007aff;
+    font-weight:bold;
+    text-align:center;
+    z-index:1000;
+    }

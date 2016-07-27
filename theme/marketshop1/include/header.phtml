@@ -1,3 +1,7 @@
+<%
+	header_logo_image = GetSettingValue("header_logo_image", "logo.png")
+	global_email_address = GetSettingValue("global_email_address", "support@mydomain.com")
+%>
 <div id="header">
 	<!-- Top Bar Start-->
 	<nav id="top" class="htop">
@@ -7,7 +11,8 @@
 			<div class="pull-left flip left-top">
 				<div class="links">
 					<ul>
-						<li class="email"><a href="mailto:support@hubutu.com"><i class="fa fa-envelope"></i>support@hubutu.com</a></li>
+						<li class="email"><a href="mailto:<%=global_email_address%>"><i class="fa fa-envelope"></i><%=global_email_address%></a></li>
+						<!--
 						<li class="wrap_custom_block hidden-sm hidden-xs"><a><%=a("Become Prime Member")%><b></b></a>
 						<div class="dropdown-menu custom_block">
 							<ul>
@@ -51,10 +56,23 @@
 								</li>
 							</ul>
 						</div>
+						-->
 						</li>
 						<li><a href="checkout.html"><%=a("Checkout")%></a></li>
 					</ul>
 				</div>
+				<%
+					sql = "SELECT COUNT(view_id) FROM " & g_storeid & "_store_view"
+					set rs = dbconn.Execute(sql)
+					if not rs.EOF then
+						view_count = rs(0)
+					end if
+					rs.Close
+					set rs = nothing
+				%>
+				<%
+					if view_count > 1 then 
+				%>
 				<div id="language" class="btn-group">
 					<%
 						sql = "SELECT * FROM " & g_storeid & "_store_view WHERE view_id = " & Session("CURRENT_VIEW_ID") 
@@ -92,11 +110,20 @@
 						%>
 					</ul>
 				</div>
+				<%
+					end if
+				%>
 			</div>
 			<div id="top-links" class="nav pull-right flip">
 				<ul>
-					<li><a href="<%=g_secure_url%>login.phtml"><%=a("Login")%></a></li>
+					<% if Session("shopper_id") = "" OR Session("shopper_id") = "GUEST" then %>
+					<li><a href="<%=g_secure_url%>login.phtml?sessionID=<%=Session("SESSIONKEY")%>"><%=a("Login")%></a></li>
 					<li><a href="<%=g_secure_url%>register.phtml"><%=a("Register")%></a></li>
+					<% else %>
+					<li><a href="<%=g_secure_url%>tp_login.phtml?sessionID=<%=Session("SESSIONKEY")%>&op=logout"><%=a("Log Out")%></a>..<%=Session("shopper_id")%>..</li>
+					<li><a href="<%=g_secure_url%>account_profile.phtml?sessionID=<%=Session("SESSIONKEY")%>"><%=a("My Account")%></a></li>
+					<% end if %>
+					
 				</ul>
 			</div>
 		</div>
@@ -110,7 +137,7 @@
 			<!-- Logo Start -->
 			<div class="col-table-cell col-lg-6 col-md-6 col-sm-12 col-xs-12 inner">
 				<div id="logo">
-					<a href="<%=g_store_url%>index.phtml"><img class="img-responsive" src="image/hubutu1.png" title="MarketShop" alt="MarketShop"/></a>
+					<a href="<%=g_store_url%>"><img class="img-responsive" src="media/logo/<%=header_logo_image%>" title="MarketShop" alt="MarketShop"/></a>
 				</div>
 			</div>
 			<!-- Logo End -->

@@ -3803,6 +3803,18 @@ a.text-light:hover {
   color: #ffffff !important;
 }
 
+.panel-olive, .partition-olive {
+  background-color: #81B441;
+  position: relative;
+  color: #ffffff;
+}
+.panel-olive .panel-tools .btn, .panel-olive .panel-tools > a, .partition-olive .panel-tools .btn, .partition-olive .panel-tools > a {
+  color: rgba(255, 255, 255, 0.7) !important;
+}
+.panel-olive .panel-tools .btn:hover, .panel-olive .panel-tools > a:hover, .partition-olive .panel-tools .btn:hover, .partition-olive .panel-tools > a:hover {
+  color: #ffffff !important;
+}
+
 .panel-red, .partition-red {
   background-color: #C82E29;
   position: relative;

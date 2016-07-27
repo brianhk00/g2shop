@@ -1,0 +1,392 @@
+<%
+	storeviewid = Trim(Request("storeviewid"))
+	if Len(storeviewid) > 0 then
+		Session("CURRENT_ADMIN_VIEW_ID")  = storeviewid
+	end if
+
+	'GET CURRENT MENU LOCATION
+	current_path = Request.ServerVariables("SCRIPT_NAME")
+	array_path = Split(current_path, "/")
+	current_menu = array_path(Ubound(array_path))
+	
+%>
+<!-- BEGIN HEADER -->
+<div class="page-header">
+	<!-- BEGIN HEADER TOP -->
+	<div class="page-header-top">
+		<div class="container-fluid">
+			<!-- BEGIN LOGO -->
+			<div class="page-logo">
+				<a href="dashboard.phtml">
+					<img src="assets/images/g2shop_logo2a.png" width="106" alt="logo" class="logo-default">
+				</a>
+			</div>
+			<!-- END LOGO -->
+			<!-- BEGIN RESPONSIVE MENU TOGGLER -->
+			<a href="javascript:;" class="menu-toggler"></a>
+			<!-- END RESPONSIVE MENU TOGGLER -->
+			<!-- BEGIN TOP NAVIGATION MENU -->
+			<div class="top-menu">
+				<ul class="nav navbar-nav pull-right">
+					<!-- BEGIN NOTIFICATION DROPDOWN -->
+					<li class="dropdown dropdown-extended dropdown-notification" id="header_notification_bar">
+						<%
+							sql = "SELECT * FROM " & g_storeid & "_store_view WHERE view_id = " & Session("CURRENT_ADMIN_VIEW_ID") 
+							set rs = dbconn.Execute(sql)
+							if not rs.EOF then
+								view_id = rs("view_id")
+								view_code = rs("view_code")
+								view_name = rs("view_name")
+								view_status = rs("view_status")
+						%>
+						<a href="javascript:;" class="dropdown-toggle" data-toggle="dropdown" data-hover="dropdown" data-close-others="true">
+							<i class="icon-globe"></i><%=view_name%>
+						</a>
+						<%
+							end if
+						%>
+						<ul class="dropdown-menu" style="width:160px">
+							<%
+								sql = "SELECT * FROM " & g_storeid & "_store_view WHERE view_id <> " & Session("CURRENT_ADMIN_VIEW_ID") & " ORDER BY view_sort_order"
+								set rs = dbconn.Execute(sql)
+								do while not rs.EOF
+									view_id = rs("view_id")
+									view_code = rs("view_code")
+									view_name = rs("view_name")
+									view_status = rs("view_status")
+									q = Request.Querystring
+									view_page ="http://" & Request.ServerVariables("SERVER_NAME") & Request.ServerVariables("URL") '& "?" & Request.Querystring 
+									
+									if InStr(q,"&storeviewid=") then
+										lang_pos = InStr(q,"&storeviewid=")
+										if lang_pos > 0 then
+											q = Replace(q, Mid(q, lang_pos), "")
+										end if
+									end if
+									if InStr(q,"storeviewid=") then
+										lang_pos = InStr(q,"storeviewid=")
+										if lang_pos > 0 then
+											q = Replace(q, Mid(q, lang_pos), "")
+										end if
+									end if
+									
+									if Len(q) > 1 then
+										view_page = view_page & "?" & q & "&storeviewid=" & view_id
+									else
+										view_page = view_page & "?" & "storeviewid=" & view_id
+									end if
+							%>
+							<li class="external">
+								<h3><a href="<%=view_page%>"><%=view_name%></a></h3>
+							</li>
+							<%
+									rs.MoveNext
+								loop
+								rs.close
+								set rs = nothing
+							%>
+							
+						</ul>
+					</li>
+					<!-- END NOTIFICATION DROPDOWN -->
+					<li class="droddown dropdown-separator">
+						<span class="separator"></span>
+					</li>
+					<!-- BEGIN USER LOGIN DROPDOWN -->
+					<li class="dropdown dropdown-user dropdown-dark">
+						<a href="javascript:;" class="dropdown-toggle" data-toggle="dropdown" data-hover="dropdown" data-close-others="true">
+							<img alt="" class="img-circle" src="assets/images/avatar-10.png">
+							<span class="username username-hide-mobile"><%=Session("AdminID")%></span>
+						</a>
+						<ul class="dropdown-menu dropdown-menu-default">
+							<li>
+								<a href="myaccount.phtml">
+									<i class="icon-user"></i> My Profile </a>
+							</li>
+							<li class="divider"> </li>
+							<li>
+								<a href="login_lockscreen.phtml?userid=<%=Session("AdminID")%>">
+									<i class="icon-lock"></i> Lock Screen </a>
+							</li>
+							<li>
+								<a href="login.phtml?logoff=1">
+									<i class="icon-key"></i> Log Out </a>
+							</li>
+						</ul>
+					</li>
+					<!-- END USER LOGIN DROPDOWN -->
+				</ul>
+			</div>
+			<!-- END TOP NAVIGATION MENU -->
+		</div>
+	</div>
+	<!-- END HEADER TOP -->
+	<!-- BEGIN HEADER MENU -->
+	<div class="page-header-menu">
+		<div class="container-fluid">
+			
+			<!-- BEGIN MEGA MENU -->
+			<!-- DOC: Apply "hor-menu-light" class after the "hor-menu" class below to have a horizontal menu with white background -->
+			<!-- DOC: Remove data-hover="dropdown" and data-close-others="true" attributes below to disable the dropdown opening on mouse hover -->
+			<div class="hor-menu  hor-menu-light">
+				<ul class="nav navbar-nav">
+					<li class="menu-dropdown classic-menu-dropdown <% if current_menu = "dashboard.phtml" then%>active<% end if %>">
+						<a href="dashboard.phtml"> Dashboard
+							<span class="arrow"></span>
+						</a>
+					</li>
+					<li class="menu-dropdown classic-menu-dropdown <% if InStr(current_menu,"sales_") then%>active<% end if %>">
+						<a href="javascript:;">
+							<i class="icon-basket-loaded"></i> Transactions
+							<span class="arrow"></span>
+						</a>
+						<ul class="dropdown-menu pull-left">
+							<li <% if InStr(current_menu,"sales_quotation") then%>class="active"<% end if %>>
+								<a href="sales_quotation.phtml" class="nav-link">
+									<i class="icon-calculator"></i> Quotations
+								</a>
+							</li>
+							<li <% if InStr(current_menu,"sales_order") then%>class="active"<% end if %>>
+								<a href="sales_order.phtml" class="nav-link">
+									<i class="icon-basket"></i> Orders
+								</a>
+							</li>
+							<li <% if InStr(current_menu,"sales_purchase_order") then%>class="active"<% end if %>>
+								<a href="sales_purchase_order.phtml" class="nav-link">
+									<i class="icon-call-out"></i> Purchase Orders
+								</a>
+							</li>
+						</ul>
+					</li>
+					<li class="menu-dropdown classic-menu-dropdown <% if InStr(current_menu,"catalog_") then%>active<% end if %>">
+						<a href="javascript:;">
+							<i class="fa fa-cubes"></i> Catalog
+							<span class="arrow"></span>
+						</a>
+						<ul class="dropdown-menu pull-left">
+							<li <% if InStr(current_menu,"catalog_product") then%>class="active"<% end if %>>
+								<a href="catalog_product.phtml" class="nav-link">
+									<i class="icon-cloud-upload"></i> Manage Products
+								</a>
+							</li>
+							<li <% if InStr(current_menu,"catalog_category") then%>class="active"<% end if %>>
+								<a href="catalog_category.phtml" class="nav-link">
+									<i class="icon-folder-alt"></i> Manage Categories
+								</a>
+							</li>
+							<li <% if InStr(current_menu,"catalog_manufacturer") then%>class="active"<% end if %>>
+								<a href="catalog_manufacturer.phtml" class="nav-link">
+									<i class="icon-globe-alt"></i> Manage Manufacturers
+								</a>
+							</li>
+							<li <% if InStr(current_menu,"catalog_system") then%>class="active"<% end if %>>
+								<a href="catalog_system.phtml" class="nav-link">
+									<i class="fa fa-desktop"></i> System Configurator
+								</a>
+							</li>
+							<li <% if InStr(current_menu,"catalog_icecat") then%>class="active"<% end if %>>
+								<a href="catalog_icecat.phtml" class="nav-link">
+									<i class="icon-social-dropbox"></i> ICECAT Browser
+								</a>
+							</li>
+							<li <% if InStr(current_menu,"catalog_attribute") then%>class="active"<% end if %>>
+								<a href="catalog_attribute.phtml" class="nav-link">
+									<i class="icon-star"></i> Filter Attributes
+								</a>
+							</li>
+						</ul>
+					</li>
+					<li class="menu-dropdown classic-menu-dropdown <% if InStr(current_menu,"customer_") then%>active<% end if %>">
+						<a href="javascript:;">
+							<i class="icon-users"></i> Customers
+							<span class="arrow"></span>
+						</a>
+						<ul class="dropdown-menu pull-left">
+							<li <% if InStr(current_menu,"customer_manage_customer") then%>class="active"<% end if %>>
+								<a href="customer_manage_customer.phtml" class="nav-link">
+									<i class="icon-users"></i> Manage Customers
+								</a>
+							</li>
+						</ul>
+					</li>
+					<li class="menu-dropdown classic-menu-dropdown <% if InStr(current_menu,"design_") then%>active<% end if %>">
+						<a href="javascript:;">
+							<i class="icon-magic-wand"></i> Design
+							<span class="arrow"></span>
+						</a>
+						<ul class="dropdown-menu pull-left">
+							<li <% if InStr(current_menu,"design_template") then%>class="active"<% end if %>>
+								<a href="design_template.phtml" class="nav-link">
+									<i class="icon-eye"></i> Templates
+								</a>
+							</li>
+							<li <% if InStr(current_menu,"design_setting") then%>class="active"<% end if %>>
+								<a href="design_setting.phtml" class="nav-link">
+									<i class="icon-magic-wand"></i> Design Settings
+								</a>
+							</li>
+							<li <% if InStr(current_menu,"design_file_manager") then%>class="active"<% end if %>>
+								<a href="design_file_manager.phtml" class="nav-link">
+									<i class="icon-list"></i> File Manager
+								</a>
+							</li>
+							<li <% if InStr(current_menu,"design_cms") then%>class="active"<% end if %>>
+								<a href="design_cms.phtml" class="nav-link">
+									<i class="icon-docs"></i> CMS Pages
+								</a>
+							</li>
+							<li <% if InStr(current_menu,"design_staticblocks") then%>class="active"<% end if %>>
+								<a href="design_staticblocks.phtml" class="nav-link">
+									<i class="icon-note"></i> Static Blocks
+								</a>
+							</li>
+							<li <% if InStr(current_menu,"design_404") then%>class="active"<% end if %>>
+								<a href="design_404.phtml" class="nav-link">
+									<i class="icon-note"></i> 404 pages
+								</a>
+							</li>
+							
+						</ul>
+						
+					</li>
+					<li class="menu-dropdown classic-menu-dropdown <% if InStr(current_menu,"tool_") then%>active<% end if %>">
+						<a href="javascript:;">
+							<i class="icon-briefcase"></i> Tools
+							<span class="arrow"></span>
+						</a>
+						<ul class="dropdown-menu pull-left">
+							<li <% if InStr(current_menu,"tool_form_builder") then%>class="active"<% end if %>>
+								<a href="tool_form_builder.phtml" class="nav-link">
+									<i class="icon-note"></i> Form Builder
+								</a>
+							</li>
+						</ul>
+					</li>
+					<li class="menu-dropdown classic-menu-dropdown <% if InStr(current_menu,"marketing_") then%>active<% end if %>">
+						<a href="javascript:;">
+							<i class="icon-feed"></i> Marketing
+							<span class="arrow"></span>
+						</a>
+						<ul class="dropdown-menu pull-left">
+							<li <% if InStr(current_menu,"marketing_coupons") then%>class="active"<% end if %>>
+								<a href="marketing_coupons.phtml" class="nav-link">
+									<i class="icon-present"></i> Coupon / Discounts
+								</a>
+							</li>
+						</ul>
+					</li>
+					<li class="menu-dropdown classic-menu-dropdown <% if InStr(current_menu,"reports_") then%>active<% end if %>">
+						<a href="javascript:;">
+							<i class="icon-bar-chart"></i> Reports
+							<span class="arrow"></span>
+						</a>
+						<ul class="dropdown-menu pull-left">
+							<li class="dropdown-submenu <% if InStr(current_menu,"reports_sales_") then%>active<% end if %>">
+								<a href="javascript:;" class="nav-link nav-toggle ">
+									<i class="icon-bar-chart"></i> Sales
+									<span class="arrow"></span>
+								</a>
+								<ul class="dropdown-menu">
+									<li <% if InStr(current_menu,"reports_sales_orders") then%>class="active"<% end if %>>
+										<a href="reports_sales_orders.phtml" class="nav-link">
+											<i class="icon-bar-chart"></i> Sales by Date
+										</a>
+									</li>
+									<li <% if InStr(current_menu,"reports_sales_products") then%>class="active"<% end if %>>
+										<a href="reports_sales_products.phtml" class="nav-link">
+											<i class="icon-bar-chart"></i> Sales by Product
+										</a>
+									</li>
+									<li <% if InStr(current_menu,"reports_sales_quaterly") then%>class="active"<% end if %>>
+										<a href="reports_sales_quaterly.phtml" class="nav-link">
+											<i class="icon-bar-chart"></i> Quarterly
+										</a>
+									</li>
+									<li <% if InStr(current_menu,"reports_sales_monthly") then%>class="active"<% end if %>>
+										<a href="reports_sales_monthly.phtml" class="nav-link">
+											<i class="icon-bar-chart"></i> Monthly
+										</a>
+									</li>
+								</ul>
+							</li>
+							<li class="dropdown-submenu <% if InStr(current_menu,"reports_products_") then%>active<% end if %>">
+								<a href="javascript:;" class="nav-link nav-toggle ">
+									<i class="icon-bar-chart"></i> Products
+									<span class="arrow"></span>
+								</a>
+								<ul class="dropdown-menu">
+									<li <% if InStr(current_menu,"reports_products_best_sellers") then%>class="active"<% end if %>>
+										<a href="reports_products_best_sellers.phtml" class="nav-link">
+											<i class="icon-bar-chart"></i> Best Sellers
+										</a>
+									</li>
+									<li <% if InStr(current_menu,"reports_products_most_viewed") then%>class="active"<% end if %>>
+										<a href="reports_products_most_viewed.phtml" class="nav-link">
+											<i class="icon-bar-chart"></i> Most Viewed
+										</a>
+									</li>
+								</ul>
+							</li>
+						</ul>
+					</li>
+					<!--
+					<li class="menu-dropdown classic-menu-dropdown <% if InStr(current_menu,"importexport_") then%>active<% end if %>">
+						<a href="javascript:;">
+							<i class="icon-briefcase"></i> Import/Export
+							<span class="arrow"></span>
+						</a>
+						<ul class="dropdown-menu pull-left">
+							<li <% if InStr(current_menu,"importexport_import") then%>class="active"<% end if %>>
+								<a href="importexport_import.phtml" class="nav-link">
+									<i class="icon-login"></i> Import
+								</a>
+							</li>
+							<li <% if InStr(current_menu,"importexport_export") then%>class="active"<% end if %>>
+								<a href="importexport_export.phtml" class="nav-link">
+									<i class="icon-logout"></i> Export
+								</a>
+							</li>
+						</ul>
+					</li>
+					-->
+					<li class="menu-dropdown classic-menu-dropdown <% if InStr(current_menu,"store_") then%>active<% end if %>">
+						<a href="javascript:;">
+							<i class="icon-settings"></i> System
+							<span class="arrow"></span>
+						</a>
+						<ul class="dropdown-menu pull-left">
+							<li <% if InStr(current_menu,"store_information") then%>class="active"<% end if %>>
+								<a href="store_information.phtml" class="nav-link">
+									<i class="icon-settings"></i> Store Information
+								</a>
+							</li>
+							<li <% if InStr(current_menu,"store_configuration") then%>class="active"<% end if %>>
+								<a href="store_configuration.phtml" class="nav-link">
+									<i class="icon-equalizer"></i> Configuration
+								</a>
+							</li>
+							<li <% if InStr(current_menu,"store_distributors") then%>class="active"<% end if %>>
+								<a href="store_distributors.phtml" class="nav-link">
+									<i class="icon-globe-alt"></i> Distributors
+								</a>
+							</li>
+							<li <% if InStr(current_menu,"store_users") then%>class="active"<% end if %>>
+								<a href="store_users.phtml" class="nav-link">
+									<i class="icon-user"></i> Admin Accounts
+								</a>
+							</li>
+							<li <% if InStr(current_menu,"store_emails") then%>class="active"<% end if %>>
+								<a href="store_emails.phtml" class="nav-link">
+									<i class="icon-envelope"></i> Emails
+								</a>
+							</li>
+						</ul>
+					</li>
+				</ul>
+			</div>
+			<!-- END MEGA MENU -->
+		</div>
+	</div>
+	<!-- END HEADER MENU -->
+</div>
+<!-- END HEADER -->

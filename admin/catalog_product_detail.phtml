@@ -1,0 +1,2497 @@
+<%
+	Response.CodePage = 65001
+	Response.CharSet = "UTF-8"
+	
+	storeviewid = Trim(Request("storeviewid"))
+	if Len(storeviewid) > 0 then
+		Session("CURRENT_ADMIN_VIEW_ID")  = storeviewid
+	end if
+%>
+<!-- #INCLUDE File="local/local.phtml" -->
+<!-- #INCLUDE File="util/xt_func_util.phtml" -->
+<!-- #INCLUDE File="util/xt_func_string.phtml" -->
+<!-- #INCLUDE File="../util/xt_func_product.phtml" -->
+<!-- #include file="aspuploader/include_aspuploader.asp" -->
+<!-- #INCLUDE File="include/i_login.phtml" -->
+<%
+	g_access_key = "02-b"
+%>
+<!-- #INCLUDE File="include/i_access.phtml" -->
+<%
+	pf_id = Trim(Request("pf_id"))
+	
+	'===============================================================================================
+	' Assign New pf_id
+	'===============================================================================================
+	if pf_id = "0" then
+		pf_id = GetUniqueLongIntegerID()
+		pf_op = "new"
+	else
+		pf_op = "edit"
+	end if
+	
+	'===============================================================================================
+	' GET Information
+	'===============================================================================================
+	sql = "SELECT * FROM " & g_storeid & "_product WHERE pf_id='" & pf_id & "'"
+	set rsProduct = dbconn.Execute(sql)
+	if not rsProduct.EOF then
+		
+		pf_sku = Trim(rsProduct("sku"))
+		pf_name = Trim(rsProduct("name"))
+		pf_description = Trim(rsProduct("description"))
+		pf_detail=Trim(rsProduct("details"))
+		pf_price=rsProduct("list_price")
+		pf_retail_price = rsProduct("retail_price")
+		pf_image_file =rsProduct("image_file")
+		pf_thumb_image = rsProduct("thumb_image")
+		pf_on_sale = rsProduct("on_sale")
+		pf_sale_price = rsProduct("sale_price")
+		pf_weight=rsProduct("weight")
+		pf_is_nontaxable = rsProduct("is_nontaxable")
+		pf_is_noship = rsProduct("is_noship")
+		pf_dist_flag = rsProduct("dist_flag")
+		pf_vendor_name = Trim(rsProduct("vendor_name"))
+		pf_vendor_number = Trim(rsProduct("vendor_number"))
+		
+		pf_use_price = Trim(rsProduct("use_price"))
+		pf_price_A = Trim(rsProduct("price_A"))
+		pf_price_B = Trim(rsProduct("price_B"))
+		pf_price_C = Trim(rsProduct("price_C"))
+		pf_price_D = Trim(rsProduct("price_D"))
+		
+		
+		pf_manu_part_number = Trim(rsProduct("manu_part_num"))
+		pf_IM_part_number = Trim(rsProduct("IM_part_num"))
+		pf_TD_part_number = Trim(rsProduct("TD_part_num"))
+		pf_UPC_code = Trim(rsProduct("UPC"))
+		pf_stock = Trim(rsProduct("stock"))
+		pf_iv_text = Trim(rsProduct("iv_text"))
+		if pf_stock < 0 then
+			pf_stock = 0
+		end if
+		if pf_is_noship then
+			pf_is_noship = "1"
+		else
+			pf_is_noship = "0"
+		end if
+		pf_warranty_id = Trim(rsProduct("warranty_id"))
+		pf_visited = rsProduct("visited")
+		pf_count_since = rsProduct("count_since")
+		pf_bundle_flag = rsProduct("bundle_flag")
+		pf_bundle_group_id = Trim(rsProduct("bundle_group_id"))
+		pf_map_price_flag = rsProduct("map_price_flag")
+		pf_related_item_category = Trim(rsProduct("related_item_category"))
+		pf_page_title = Trim(rsProduct("page_title"))
+		pf_export_filter = rsProduct("export_filter")
+		pf_condition = Trim(rsProduct("product_condition"))
+		pf_SN_part_number = Trim(rsProduct("SN_part_num"))
+		pf_espec_sku = Trim(rsProduct("espec_sku"))
+		pf_buynow_link = Trim(rsProduct("buynow_link"))
+		pf_qb_item_type = Trim(rsProduct("qb_item_type"))
+		pf_espec_categoryid = rsProduct("espec_categoryid")
+		
+		pf_URL_key = rsProduct("URL_key")
+		pf_dh_part_number = rsProduct("dh_part_number")
+		pf_dist_inventory_sync = rsProduct("dist_inventory_sync")
+		pf_meta_description = rsProduct("meta_description")
+		pf_meta_keywords = rsProduct("meta_keywords")
+		pf_stock_status = rsProduct("stock_status")
+		
+		pf_item_status = rsProduct("item_status")
+		pf_include_icecat_specdata = rsProduct("include_icecat_specdata")
+		pf_use_icecat_images = rsProduct("use_icecat_images")
+		
+		pf_markup_category =  rsProduct("markup_category")
+		if Len(pf_markup_category) > 1 then
+		else
+			pf_markup_category = "0"
+		end if
+		
+	end if
+	rsProduct.Close
+	
+	
+	set rsProduct = nothing
+	
+	
+	'===============================================================================================
+	' GET CATEGORY INFORMATION - Multi Ready
+	'===============================================================================================
+	s_dept_id = ""
+	if Len(pf_id) > 1 then
+		sql = "SELECT dept_id FROM " & g_storeid & "_dept_prod WHERE pf_id = '" & pf_id & "'"
+		set rs = dbconn.Execute(sql)
+		do while not rs.EOF
+			s_dept_id = s_dept_id & rs("dept_id") & ","
+			rs.MoveNext
+		loop
+		rs.Close
+		set rs = nothing
+	end if
+	if Len(s_dept_id) > 1 then
+		s_dept_id = Left(s_dept_id, Len(s_dept_id)-1)
+	end if
+	
+	'===============================================================================================
+	'Related & Upsell
+	'===============================================================================================
+	s_data = ""
+	sql = "SELECT pf_id, sku, name FROM " & g_storeid & "_product WHERE pf_id IN (SELECT pf_id2 FROM " & g_storeid & "_prod_cross WHERE pf_id1='" & pf_id & "')"
+	set rsProductCross = dbconn.Execute(sql)
+	attr_id = 1
+	do while not rsProductCross.EOF
+	
+		s_data = s_data & "{ ""ID"": " & attr_id & ", ""PID"": """ & Trim(rsProductCross(0)) & """, ""SKU"": """ & Trim(rsProductCross(1)) & """, ""NAME"": """ & Trim(rsProductCross(2)) & """ },"
+		
+		attr_id = attr_id + 1
+		rsProductCross.MoveNext
+	loop
+	rsProductCross.Close
+	set rsProductCross = nothing
+	
+	if Len(s_data) > 0 then
+		s_data = Left(s_data, Len(s_data) - 1)
+	end if
+	s_data = "[" & s_data & "]"
+	s_data_related = s_data
+	
+	'===============================================================================================
+	' TABS
+	' TODO : UPDATE pf_id with sku
+	'===============================================================================================
+	dim pf_tab_show(5)
+	dim pf_tab_name(5)
+	dim pf_tab_type(5)
+	
+	sql = "SELECT * FROM " & g_storeid & "_product_tabs WHERE pf_id='" & pf_id & "'"
+	'sql = "SELECT * FROM " & g_storeid & "_product_tabs WHERE pf_id='" & pf_sku & "'" 'TO BE REMOVED
+	set rsTabs = dbconn.Execute(sql)
+	if not rsTabs.EOF then
+		pf_tab1_show = rsTabs("tab1_show")
+		pf_tab1_name = Trim(rsTabs("tab1_name"))
+		pf_tab1_type = rsTabs("tab1_type")
+
+		pf_tab2_show = rsTabs("tab2_show")
+		pf_tab2_name = Trim(rsTabs("tab2_name"))
+		pf_tab2_type = rsTabs("tab2_type")
+
+		pf_tab3_show = rsTabs("tab3_show")
+		pf_tab3_name = Trim(rsTabs("tab3_name"))
+		pf_tab3_type = rsTabs("tab3_type")
+
+		pf_tab4_show = rsTabs("tab4_show")
+		pf_tab4_name = Trim(rsTabs("tab4_name"))
+		pf_tab4_type = rsTabs("tab4_type")
+
+		pf_tab5_show = rsTabs("tab5_show")
+		pf_tab5_name = Trim(rsTabs("tab5_name"))
+		pf_tab5_type = rsTabs("tab5_type")
+		
+		pf_tab_show(1) = pf_tab1_show
+		pf_tab_name(1) = pf_tab1_name
+		pf_tab_type(1) = pf_tab1_type
+		
+		pf_tab_show(2) = pf_tab2_show
+		pf_tab_name(2) = pf_tab2_name
+		pf_tab_type(2) = pf_tab2_type
+		
+		pf_tab_show(3) = pf_tab3_show
+		pf_tab_name(3) = pf_tab3_name
+		pf_tab_type(3) = pf_tab3_type
+		
+		pf_tab_show(4) = pf_tab4_show
+		pf_tab_name(4) = pf_tab4_name
+		pf_tab_type(4) = pf_tab4_type
+		
+		pf_tab_show(5) = pf_tab5_show
+		pf_tab_name(5) = pf_tab5_name
+		pf_tab_type(5) = pf_tab5_type
+	end if
+	rsTabs.Close
+	set rsTabs = nothing
+	
+	'===============================================================================================
+	dim pf_tab_html(5)
+	pf_tab_html(1) = ""
+	pf_tab_html(2) = ""
+	pf_tab_html(3) = ""
+	pf_tab_html(4) = ""
+	pf_tab_html(5) = ""
+	
+	sql = "SELECT * FROM " & g_storeid & "_tab_HTML WHERE pf_id='" & pf_id & "'"
+	'sql = "SELECT * FROM " & g_storeid & "_tab_HTML WHERE pf_id='" & pf_sku & "'"
+	
+	set rsTabs = dbconn.Execute(sql)
+	do while not rsTabs.EOF
+		SELECT CASE rsTabs("tab_id")
+		CASE 1
+			pf_tab_html(1) = Trim(rsTabs("tab_HTML"))
+		CASE 2
+			pf_tab_html(2) = Trim(rsTabs("tab_HTML"))
+		CASE 3
+			pf_tab_html(3) = Trim(rsTabs("tab_HTML"))
+		CASE 4
+			pf_tab_html(4) = Trim(rsTabs("tab_HTML"))
+		CASE 5
+			pf_tab_html(5) = Trim(rsTabs("tab_HTML"))
+		END SELECT
+		rsTabs.MoveNext
+	loop
+	rsTabs.Close
+	set rsTabs = nothing
+	'===============================================================================================
+	
+	dim tab_data(5)
+	tab_data(1) = ""
+	tab_data(2) = ""
+	tab_data(3) = ""
+	tab_data(4) = ""
+	tab_data(5) = ""
+	for kk = 1 to 5
+		s_data = ""
+		sql = "SELECT * FROM " & g_storeid & "_tab_table WHERE pf_id='" & pf_id & "' AND tab_id = " & kk & " ORDER BY tab_order"
+		'sql = "SELECT * FROM " & g_storeid & "_tab_table WHERE pf_id='" & pf_sku & "' AND tab_id = " & kk & " ORDER BY tab_order" 'TO BE REMOVED
+		
+		set rsTabs = dbconn.Execute(sql)
+		attr_id = 1
+		do while not rsTabs.EOF
+		
+			tab_header = Trim(rsTabs("tab_header"))
+			tab_desc = Replace(Trim(rsTabs("tab_desc")), """", "\""")
+			
+			s_data = s_data & "{ ""ID"": " & attr_id & ", ""Name"": """ & tab_header & """, ""Value"": """ & tab_desc & """},"
+			
+			attr_id = attr_id + 1
+			rsTabs.MoveNext
+		loop
+		rsTabs.Close
+		set rsTabs = nothing
+		if Len(s_data) > 0 then
+			s_data = Left(s_data, Len(s_data) - 1)
+		end if
+		s_data = "[" & s_data & "]"
+		tab_data(kk) = s_data
+	next
+	
+	'===============================================================================================
+	' ATTRIBUTES
+	'===============================================================================================
+	dim pf_option_enable(6)
+	dim pf_option_use_price(6)
+	dim pf_option_name(6)
+	
+	iix = 1
+	sql = "SELECT TOP 6 * FROM " & g_storeid & "_product_custom_option WHERE pf_id='" & pf_id & "' ORDER BY option_id"
+	set rsOptions = dbconn.Execute(sql)
+	if not rsOptions.EOF then
+		pf_option_enable(iix) = rsOptions("option_enable")
+		pf_option_use_price(iix) = rsOptions("option_use_price")
+		pf_option_name(iix) = rsOptions("option_name")
+	end if
+	rsOptions.Close
+	set rsOptions = nothing
+	
+	'===============================================================================================
+	dim option_data(6)
+	option_data(1) = ""
+	option_data(2) = ""
+	option_data(3) = ""
+	option_data(4) = ""
+	option_data(5) = ""
+	option_data(6) = ""
+	
+	
+	for kk = 1 to 6
+		s_data = ""
+		sql = "SELECT * FROM " & g_storeid & "_product_custom_option_data WHERE pf_id='" & pf_id & "' AND option_id = " & kk & " ORDER BY sort_order"
+		set rsOptions = dbconn.Execute(sql)
+		attr_id = 1
+		do while not rsOptions.EOF
+		
+			option_data_name = Trim(rsOptions("option_data_name"))
+			option_data_sku = Trim(rsOptions("option_data_sku"))
+			option_data_price = Trim(rsOptions("option_data_price"))
+			option_data_price = FormatNumber(option_data_price,2)
+			
+			s_data = s_data & "{ ""ID"": " & attr_id & ", ""Name"": """ & option_data_name & """, ""SKU"": """ & tab_desc & """, ""Price"": """ & option_data_price & """},"
+			
+			attr_id = attr_id + 1
+			rsOptions.MoveNext
+		loop
+		rsOptions.Close
+		set rsOptions = nothing
+		if Len(s_data) > 0 then
+			s_data = Left(s_data, Len(s_data) - 1)
+		end if
+		s_data = "[" & s_data & "]"
+		option_data(kk) = s_data
+	next
+	
+	'===============================================================================================
+	' FILTER
+	'===============================================================================================
+	dim pf_attribute(10)
+	dim pf_attribute_option(10)
+	
+	for iix = 1 to 10
+		pf_attribute(iix) = ""
+		pf_attribute_option(iix) = ""
+	next
+	
+	iix = 1
+	sql = "SELECT TOP 10 * FROM " & g_storeid & "_product_entity_varchar WHERE entity_id='" &  pf_id & "'"
+	set rsOptions = dbconn.Execute(sql)
+	do while not rsOptions.EOF
+		pf_attribute(iix) = rsOptions("attribute_id")
+		pf_attribute_option(iix) = Trim(rsOptions("value"))
+		iix = iix + 1
+		rsOptions.MoveNext
+	loop
+	rsOptions.Close
+	set rsOptions = nothing
+	
+	t_filter_number = iix
+	
+	'===============================================================================================
+	' CHECK FOLDER
+	'===============================================================================================
+	Set objFSO = Server.CreateObject("Scripting.FileSystemObject")
+	Dim strRootFolder
+	strRootFolder = Server.MapPath("..")
+	If objFSO.FolderExists(strRootFolder & "/media/catalog/product/" & pf_id) Then
+	Else
+		objFSO.CreateFolder(strRootFolder & "/media/catalog/product/" & pf_id)
+	End If
+	
+	'===============================================================================================
+	' X
+	'===============================================================================================
+	if Session("CURRENT_ADMIN_VIEW_ID") <> "1" then
+		sLangStyle="border-width: 3px; border-color:#51C6EA"
+		pf_name = TranslateX(pf_name, 2, pf_id, 1)
+		pf_description = TranslateX(pf_description, 2, pf_id, 2)
+		pf_detail  = TranslateX(pf_detail, 2, pf_id, 3)
+	else
+		sLangStyle=""
+	end if
+	
+%>
+<!--#INCLUDE FILE="include/doctype.phtml"-->
+<head>
+<!--#INCLUDE FILE="include/head.phtml"-->
+<!-- BEGIN PAGE LEVEL PLUGINS -->
+<link href="../assets/global/plugins/datatables/datatables.min.css" rel="stylesheet" type="text/css" />
+<link href="../assets/global/plugins/datatables/plugins/bootstrap/datatables.bootstrap.css" rel="stylesheet" type="text/css" />
+<link href="../assets/global/plugins/bootstrap-datepicker/css/bootstrap-datepicker3.min.css" rel="stylesheet" type="text/css" />
+<link href="../assets/global/plugins/bootstrap-datetimepicker/css/bootstrap-datetimepicker.min.css" rel="stylesheet" type="text/css" />
+<link href="../assets/global/plugins/fancybox/source/jquery.fancybox.css" rel="stylesheet" type="text/css" />
+<link rel="stylesheet" href="assets/plugins/jquery-ui/jquery-ui-1.10.4.custom.min.css" />
+<link rel="stylesheet" href="assets/plugins/dynatree/src/skin-vista/ui.dynatree.css">
+<link rel="stylesheet" type="text/css" href="assets/plugins/grid/grid-0.5.6.min.css" />
+<link href="../assets/global/plugins/bootstrap-modal/css/bootstrap-modal-bs3patch.css" rel="stylesheet" type="text/css" />
+<link href="../assets/global/plugins/bootstrap-modal/css/bootstrap-modal.css" rel="stylesheet" type="text/css" />
+<!-- END PAGE LEVEL PLUGINS -->
+</head>
+
+<body class="page-container-bg-solid">
+<div class="page-wrapper">
+	<div class="page-wrapper-row">
+		<div class="page-wrapper-top">
+			<!--#INCLUDE FILE="include/header.phtml"-->
+		</div>
+	</div>
+	<div class="page-wrapper-row full-height">
+		<div class="page-wrapper-middle">
+			<!-- BEGIN CONTAINER -->
+			<div class="page-container">
+				<!-- BEGIN CONTENT -->
+				<div class="page-content-wrapper">
+					<!-- BEGIN CONTENT BODY -->
+					
+					<!-- BEGIN PAGE CONTENT BODY -->
+					<div class="page-content">
+						<div class="container-fluid">
+							<!-- BEGIN PAGE CONTENT INNER -->
+							<div class="page-content-inner">
+								<div class="row">
+									<div class="col-md-12">
+										<form id="form_edit_1" class="form-horizontal form-row-seperated" action="#">
+											<div class="portlet">
+												<div class="portlet-title">
+													<div class="caption">
+													<i class="fa fa-shopping-cart"></i>
+													<%
+													if Len(pf_name) > 0 then
+														Response.Write(Left(pf_name, 50))
+													else
+														Response.Write("New Product")
+													end if
+													%>
+													</div>
+													<div class="actions btn-set">
+														<button type="button" onclick="location.href='catalog_product.phtml';" name="back" class="btn btn-default">
+															<i class="fa fa-angle-left"></i> Back
+														</button>
+														<button class="btn btn-success">
+															<i class="fa fa-check"></i> Save
+														</button>
+														<button class="btn btn-success">
+															<i class="fa fa-check-circle"></i> Save & Continue Edit
+														</button>
+														<div class="btn-group">
+															<a class="btn btn-success dropdown-toggle" href="javascript:;" data-toggle="dropdown">
+																<i class="fa fa-share"></i> More
+																<i class="fa fa-angle-down"></i>
+															</a>
+															<div class="dropdown-menu pull-right">
+																<li>
+																	<a href="javascript:;"> Duplicate </a>
+																</li>
+																<li>
+																	<a href="javascript:;"> Delete </a>
+																</li>
+															</div>
+														</div>
+													</div>
+												</div>
+												<div class="alert alert-danger display-hide">
+												<button class="close" data-close="alert"></button> You have some form errors. Please check below. 
+												</div>
+												<div class="alert alert-success display-hide">
+												<button class="close" data-close="alert"></button> Your form validation is successful! 
+												</div>
+												<div class="portlet-body">
+													<div class="tabbable-bordered">
+														<ul class="nav nav-tabs">
+															<li class="active">
+																<a href="#tab_general" data-toggle="tab"> General </a>
+															</li>
+															<li>
+																<a href="#tab_meta" data-toggle="tab"> Meta </a>
+															</li>
+															<li>
+																<a href="#tab_images" data-toggle="tab"> Images </a>
+															</li>
+															<li>
+																<a href="#tab_options" data-toggle="tab"> Options</a>
+															</li>
+															<li>
+																<a href="#tab_tabs" data-toggle="tab"> Tabs </a>
+															</li>
+															<li>
+																<a href="#tab_filter" data-toggle="tab"> Filter Data </a>
+															</li>
+															<li>
+																<a href="#tab_related" data-toggle="tab"> Related Products </a>
+															</li>
+														</ul>
+														<div class="tab-content">
+															<div class="tab-pane active" id="tab_general">
+																<div class="row">
+																	<div class="col-sm-9">
+																		<div class="panel panel-primary">
+																			<div class="panel-heading">
+																				<h3 class="panel-title">General</h3>
+																			</div>
+																			<div class="panel-body"> 
+																				<div class="row">
+																					<div class="col-sm-6">
+																						<div class="form-group">
+																							<label class="col-sm-4 control-label" for="pf_sku">
+																								SKU <span class="symbol required"></span> 
+																							</label>
+																							<div class="col-sm-8">
+																								<input type="text" placeholder="" id="pf_sku" name="pf_sku" class="form-control input-sm" value="<%=pf_sku%>">
+																							</div>
+																						</div>
+																					</div>
+																					
+																					<div class="col-sm-6">
+																						<div class="form-group">
+																							<label class="col-sm-4 control-label" for="pf_item_status">
+																								Status
+																							</label>
+																							<div class="col-sm-8">
+																								<select class="form-control input-sm" name="pf_item_status" id="pf_item_status">
+																									<option value="0" <%if pf_item_status=0 then%>selected<%end if%>>Active</option>
+																									<option value="1" <%if pf_item_status=1 then%>selected<%end if%>>Call for Avaialability</option>
+																									<option value="2" <%if pf_item_status=2 then%>selected<%end if%>>Inactive</option>
+																								</select>
+																							</div>
+																						</div>
+																					</div>
+																				</div>
+																				<div class="form-group">
+																					<label class="col-sm-2 control-label" for="pf_name">
+																						Name <span class="symbol required"></span> 
+																					</label>
+																					<div class="col-sm-10">
+																						<input type="text" placeholder="" id="pf_name" name="pf_name" class="form-control input-sm" value="<%=pf_name%>" style="<%=sLangStyle%>">
+																					</div>
+																				</div>
+																				<div class="form-group">
+																					<label class="col-sm-2 control-label" for="pf_description">
+																						Description 
+																					</label>
+																					<div class="col-sm-10">
+																						<textarea rows="3" maxlength="1024" id="pf_description" name="pf_description" class="form-control input-sm limited"  style="<%=sLangStyle%>"><%=pf_description%></textarea>
+																						<button class="btn btn-primary btn-xs" type="button" id="wysiwyg_description" data-id="2">
+																						<i class="fa fa-file-code-o"></i>
+																						WYSIWYG Editor
+																						</button>
+																					</div>
+																				</div>
+																				
+																				<div class="row">
+																					<div class="col-sm-6">
+																						<div class="form-group">
+																							<label class="col-sm-4 control-label" for="pf_vendor_number">
+																								Manufacturer
+																							</label>
+																							<div class="col-sm-8">
+																								<select id="pf_vendor_number" name="pf_vendor_number" class="form-control input-sm">
+																									<% '= GetStoreMfgOptionsTags(g_connection_string, pf_vendor_number)%>
+																								</select>
+																							</div>
+																						</div>
+																					</div>
+																					<div class="col-sm-6">
+																						<div class="form-group">
+																							<label class="col-sm-4 control-label" for="pf_manu_part_number">
+																								Mfg. Part #
+																							</label>
+																							<div class="col-sm-8">
+																								<div class="input-group">
+																									<input type="text" placeholder="" id="pf_manu_part_number" name="pf_manu_part_number" class="form-control input-sm" value="<%=pf_manu_part_number%>">
+																									<% if store_use_icecat_catalog = "1" then %>
+																									<span class="input-group-btn">
+																										<a class="demo btn btn-primary btn-sm" data-toggle="modal" href="#stack1">
+																											<i class="fa fa-search"></i>
+																										</a>
+																									</span>
+																									<% end if %>
+																								</div>
+																							</div>
+																						</div>
+																					</div>
+																				</div>
+																				<% if g_store_use_icecat_catalog = "1" then %>
+																				<div class="row">
+																					<div class="col-sm-6">
+																						<div class="form-group">
+																							<label class="col-sm-4 control-label" for="pf_espec_sku">
+																								ICECAT #
+																							</label>
+																							<div class="col-sm-8">
+																								<div class="input-group">
+																									<input type="text" id="pf_espec_sku" name="pf_espec_sku" class="form-control input-sm" value="<%=pf_espec_sku%>">
+																									<span class="input-group-btn">
+																										<a class="demo btn btn-primary btn-sm" data-toggle="modal" href="#stack1">
+																											<i class="fa fa-search"></i>
+																										</a>
+																									</span>
+																								</div>
+																							</div>
+																						</div>
+																					</div>
+																					
+																					<div class="col-sm-6">
+																						<div class="form-group">
+																							<label class="col-sm-4 control-label" for="pf_IM_part_number">
+																								Ingram Micro #
+																							</label>
+																							<div class="col-sm-8">
+																								<div class="input-group">
+																									<input type="text" id="pf_IM_part_number" name="pf_IM_part_number" class="form-control input-sm" value="<%=pf_IM_part_number%>">
+																									<span class="input-group-btn">
+																										<a class="demo btn btn-primary btn-sm" data-toggle="modal" href="#stack1">
+																											<i class="fa fa-search"></i>
+																										</a>
+																									</span>
+																								</div>
+																							</div>
+																						</div>
+																					</div>
+																				</div>
+																				
+																				<div class="row">
+																					<div class="col-sm-6">
+																						<div class="form-group">
+																							<label class="col-sm-4 control-label" for="pf_TD_part_number">
+																								Tech Data #
+																							</label>
+																							<div class="col-sm-8">
+																								<div class="input-group">
+																									<input type="text" id="pf_TD_part_number" name="pf_TD_part_number" class="form-control input-sm" value="<%=pf_TD_part_number%>">
+																									<span class="input-group-btn">
+																										<a class="demo btn btn-primary btn-sm" data-toggle="modal" href="#stack1">
+																											<i class="fa fa-search"></i>
+																										</a>
+																									</span>
+																								</div>
+																							</div>
+																						</div>
+																					</div>
+																					
+																					<div class="col-sm-6">
+																						<div class="form-group">
+																							<label class="col-sm-4 control-label" for="pf_SN_part_number">
+																								Synnex #
+																							</label>
+																							<div class="col-sm-8">
+																								<div class="input-group">
+																									<input type="text" id="pf_SN_part_number" name="pf_SN_part_number" class="form-control input-sm" value="<%=pf_SN_part_number%>">
+																									<span class="input-group-btn">
+																										<a class="demo btn btn-primary btn-sm" data-toggle="modal" href="#stack1">
+																											<i class="fa fa-search"></i>
+																										</a>
+																									</span>
+																								</div>
+																							</div>
+																						</div>
+																					</div>
+																				</div>
+																				<div class="row">
+																					<div class="col-sm-6">
+																						<div class="form-group">
+																							<label class="col-sm-4 control-label" for="pf_dh_part_number">
+																								D &amp; H
+																							</label>
+																							<div class="col-sm-8">
+																								<div class="input-group">
+																									<input type="text" id="pf_dh_part_number" name="pf_dh_part_number" class="form-control input-sm" value="<%=pf_dh_part_number%>">
+																									<span class="input-group-btn">
+																										<a class="demo btn btn-primary btn-sm" data-toggle="modal" href="#stack1">
+																											<i class="fa fa-search"></i>
+																										</a>
+																									</span>
+																								</div>
+																							</div>
+																						</div>
+																					</div>
+																					
+																					<div class="col-sm-6">
+																						<div class="form-group">
+																							<label class="col-sm-4 control-label" for="pf_UPC_code">
+																								UPC
+																							</label>
+																							<div class="col-sm-8">
+																								<input type="text" id="pf_UPC_code" name="pf_UPC_code" class="form-control input-sm" value="<%=pf_UPC_code%>">
+																							</div>
+																						</div>
+																					</div>
+																				</div>
+																				<% end if %>
+																				<div class="form-group">
+																					<label class="col-sm-2 control-label" for="pf_weight">
+																						Weight (lbs)<span class="symbol required"></span>
+																					</label>
+																					<div class="col-sm-10">
+																						<input type="text" placeholder="" id="pf_weight" name="pf_weight" class="form-control input-sm" value="<%=pf_weight%>">
+																					</div>
+																				</div>
+																				<div class="form-group">
+																					<label class="col-sm-2 control-label" for="pf_url_key">
+																						URL Key
+																					</label>
+																					<div class="col-sm-10">
+																						<input type="text" placeholder="" id="pf_url_key" name="pf_url_key" class="form-control input-sm" value="<%=pf_url_key%>">
+																					</div>
+																				</div>
+																				<div class="form-group">
+																					<label class="col-sm-2 control-label" for="pf_visibility">
+																						Detail
+																					</label>
+																					<div class="col-sm-10">
+																					<textarea rows="5" id="pf_detail" name="pf_detail" class="form-control input-sm limited" style="<%=sLangStyle%>"><%=pf_detail%></textarea>
+																					
+																					<button class="btn btn-primary btn-xs" type="button" id="wysiwyg_detail" data-id="3">
+																					<i class="fa fa-file-code-o"></i>
+																					WYSIWYG Editor
+																					</button>
+																					</div>
+																				</div>
+																				<% if g_store_use_icecat_catalog = "1" then %>
+																				<div class="row">
+																					<div class="col-sm-6">
+																						<div class="form-group">
+																							<label class="col-sm-4 control-label" for="pf_is_nontaxable">
+																								ICECAT Spec Data 
+																							</label>
+																							<div class="col-sm-8">
+																								<select class="form-control input-sm" name="pf_include_icecat_specdata" id="pf_include_icecat_specdata">
+																									<option value="0" <% if pf_include_icecat_specdata  = 0 then %> selected <%end if%>>No</option>
+																									<option value="1" <% if pf_include_icecat_specdata = 1 then %> selected <%end if%>>Yes</option>
+																								</select>
+																							</div>
+																						</div>
+																					</div>
+																					<div class="col-sm-6">
+																						<span class="help-block"><i class="ti-info-alt text-primary"></i> If Yes is selected, additonal tab with specification data will be added.</span>
+																					</div>
+																				</div>
+																				<% else %>
+																				<input type="hidden"name="pf_include_icecat_specdata" id="pf_include_icecat_specdata" value="0">
+																				<% end if %>
+																			</div>
+																		</div>
+																		<div class="panel panel-primary">
+																			<div class="panel-heading">
+																				<h3 class="panel-title">Prices &amp; Inventory</h3>
+																			</div>
+																			<div class="panel-body"> 
+																				<div class="row">
+																					<div class="col-sm-6">
+																						<div class="form-group">
+																							<label class="col-sm-4 control-label" for="pf_use_price">
+																								Price Option 
+																							</label>
+																							<div class="col-sm-8">
+																								<select class="form-control input-sm" name="pf_use_price" id="pf_use_price">
+																									<option value="0" <% if not pf_use_price then %> selected <%end if%>>Use Category Markup Prices</option>
+																									<option value="1" <% if pf_use_price then %> selected <%end if%>>Use Manual Prices</option>
+																								</select>
+																							</div>
+																						</div>
+																					</div>
+																					<div class="col-sm-6">
+																						<div class="form-group">
+																							<label class="col-sm-4 control-label" for="pf_list_price">
+																								Cost <span class="symbol required"></span>
+																							</label>
+																							<div class="col-sm-8">
+																								<input type="text" placeholder="" id="pf_list_price" class="form-control input-sm text-right"  value="<%=FormatNumber(pf_price,2)%>" name="pf_list_price">
+																							</div>
+																						</div>
+																					</div>
+																				</div>
+																				<div class="row">
+																					<div class="col-sm-12">
+																						<div class="form-group">
+																							<label class="col-sm-2 control-label" for="pf_url_key">
+																								Markup Category
+																							</label>
+																							<div class="col-sm-10">
+																								<select class="form-control input-sm" name="pf_markup_category" id="pf_markup_category">
+																								</select>
+																								<input type="hidden" name="pf_markup_category_temp" id="pf_markup_category_temp" value="<%=pf_markup_category%>">
+																							</div>
+																						</div>
+																					</div>
+																				</div>
+																				<div class="row">
+																					<div class="col-sm-6">
+																						<div class="form-group">
+																							<label class="col-sm-4 control-label" for="pf_price_A">
+																								Price A
+																							</label>
+																							<div class="col-sm-8">
+																								<input type="text" placeholder="0" id="pf_price_A" name="pf_price_A" class="form-control input-sm text-right" value="<%=FormatNumber(pf_price_A,2)%>">
+																							</div>
+																						</div>
+																					</div>
+																					<div class="col-sm-6">
+																						<div class="form-group">
+																							<label class="col-sm-4 control-label" for="pf_price_B">
+																								Price B
+																							</label>
+																							<div class="col-sm-8">
+																								<input type="text" placeholder="0" id="pf_price_B" name="pf_price_B" class="form-control input-sm text-right" value="<%=FormatNumber(pf_price_B,2)%>">
+																							</div>
+																						</div>
+																					</div>
+																				</div>
+																				<div class="row">
+																					<div class="col-sm-6">
+																						<div class="form-group">
+																							<label class="col-sm-4 control-label" for="pf_price_C">
+																								Price C
+																							</label>
+																							<div class="col-sm-8">
+																								<input type="text" placeholder="0" id="pf_price_C" name="pf_price_C" class="form-control input-sm text-right" value="<%=FormatNumber(pf_price_C,2)%>">
+																							</div>
+																						</div>
+																					</div>
+																					<div class="col-sm-6">
+																						<div class="form-group">
+																							<label class="col-sm-4 control-label" for="pf_price_D">
+																								Price D
+																							</label>
+																							<div class="col-sm-8">
+																								<input type="text" placeholder="0" id="pf_price_D" name="pf_price_D" class="form-control input-sm text-right" value="<%=FormatNumber(pf_price_D,2)%>">
+																							</div>
+																						</div>
+																					</div>
+																				</div>
+																				<div class="row">
+																					<div class="col-sm-6">
+																						<div class="form-group">
+																							<div class="col-sm-offset-4 col-sm-12">
+																								<div class="checkbox clip-check check-primary">
+																									<input type="checkbox" id="pf_on_sale" name="pf_on_sale" value="1" <%if pf_on_sale = 1 then%>checked<%end if%>>
+																									<label for="pf_on_sale">
+																										Enable Special Price
+																									</label>
+																								</div>
+																							</div>
+																						</div>
+																					</div>
+																					<div class="col-sm-6">
+																						<div class="form-group">
+																							<label class="col-sm-4 control-label" for="pf_sale_price">
+																								Special Price 
+																							</label>
+																							<div class="col-sm-8">
+																								<input type="text" placeholder="" id="pf_sale_price" name="pf_sale_price" class="form-control input-sm text-right"  value="<%=FormatNumber(pf_sale_price,2)%>">
+																							</div>
+																							
+																						</div>
+																					</div>
+																				</div>
+																				<div class="row">
+																					<div class="col-sm-6">
+																						<div class="form-group">
+																							<label class="col-sm-4 control-label" for="pf_retail_price">
+																								MSRP 
+																							</label>
+																							<div class="col-sm-8">
+																								<input type="text" placeholder="" id="pf_retail_price" name="pf_retail_price" class="form-control input-sm text-right" value="<%=FormatNumber(pf_retail_price,2)%>">
+																							</div>
+																						</div>
+																					</div>
+																					<div class="col-sm-6">
+																						<div class="form-group">
+																							<label class="col-sm-4 control-label" for="pf_map_price_flag">
+																								Enable MAP
+																							</label>
+																							<div class="col-sm-8">
+																								<select class="form-control input-sm" name="pf_map_price_flag" id="pf_map_price_flag">
+																									<option value="0" <%if pf_map_price_flag="0" then%>selected<%end if%>>No</option>
+																									<option value="1" <%if pf_map_price_flag="1" then%>selected<%end if%>>Yes</option>
+																								</select>
+																							</div>
+																						</div>
+																					</div>
+																				</div>
+																				<div class="row">
+																					<div class="col-sm-6">
+																						<div class="form-group">
+																							<label class="col-sm-4 control-label" for="pf_is_nontaxable">
+																								Taxable 
+																							</label>
+																							<div class="col-sm-8">
+																								<select class="form-control input-sm" name="pf_is_nontaxable" id="pf_is_nontaxable">
+																									<option value="0" <% if not pf_is_nontaxable then %> selected <%end if%>>Taxable</option>
+																									<option value="1" <% if pf_is_nontaxable then %> selected <%end if%>>None</option>
+																								</select>
+																							</div>
+																						</div>
+																					</div>
+																					<div class="col-sm-6">
+																						<div class="form-group">
+																							
+																						</div>
+																					</div>
+																				</div>
+																				<div class="row">
+																					<div class="col-sm-6">
+																						<div class="form-group">
+																							<label class="col-sm-4 control-label" for="pf_retail_price">
+																								Qty.
+																							</label>
+																							<div class="col-sm-8">
+																								<input type="text" placeholder="0" id="pf_stock" name="pf_stock" class="form-control input-sm text-right" value="<%=pf_stock%>">
+																							</div>
+																						</div>
+																					</div>
+																					<div class="col-sm-6">
+																						<div class="form-group">
+																							<label class="col-sm-4 control-label" for="pf_stock_status">
+																								Stock Availability
+																							</label>
+																							<div class="col-sm-8">
+																								<select class="form-control input-sm" name="pf_stock_status" id="pf_stock_status">
+																									<option value="1" <%if pf_stock_status=1 then%>selected<%end if%>>In Stock</option>
+																									<option value="0" <%if pf_stock_status=0 then%>selected<%end if%>>Out of Stock</option>
+																								</select>
+																							</div>
+																						</div>
+																					</div>
+																				</div>
+																				<% if g_store_use_icecat_catalog = "1" then %>
+																				<div class="row">
+																					<div class="col-sm-6">
+																						<div class="form-group">
+																							<label class="col-sm-4 control-label" for="pf_dist_flag">
+																								Cost Sync.
+																							</label>
+																							<div class="col-sm-8">
+																								<select class="form-control input-sm" name="pf_dist_flag" id="pf_dist_flag">
+																									<option value="0" <%if pf_dist_flag="0" then%>selected<%end if%>>No</option>
+																									<option value="11" <%if pf_dist_flag="11" then%>selected<%end if%>>ICECAT (best price from available distributors)</option>
+																									<option value="1" <%if pf_dist_flag="1" then%>selected<%end if%>>Ingram Micro</option>
+																									<option value="2" <%if pf_dist_flag="2" then%>selected<%end if%>>Tech Data</option>
+																									<option value="3" <%if pf_dist_flag="3" then%>selected<%end if%>>Synnex</option>
+																								</select>
+																								<span class="help-block"><i class="ti-info-alt text-primary"></i> Cost will be synchronized with selected price file when ICECAT catalog is updated.</span>
+																							</div>
+																						</div>
+																					</div>
+																					<div class="col-sm-6">
+																						<div class="form-group">
+																							<label class="col-sm-4 control-label" for="pf_dist_inventory_sync">
+																								Inventory Sync.
+																							</label>
+																							<div class="col-sm-8">
+																								<select class="form-control input-sm" name="pf_dist_inventory_sync" id="pf_dist_inventory_sync">
+																									<option value="0" <%if pf_dist_inventory_sync="0" then%>selected<%end if%>>No</option>
+																									<option value="11" <%if pf_dist_inventory_sync="11" then%>selected<%end if%>>ICECAT (best price from available distributors)</option>
+																									<option value="1" <%if pf_dist_inventory_sync="1" then%>selected<%end if%>>Ingram Micro</option>
+																									<option value="2" <%if pf_dist_inventory_sync="2" then%>selected<%end if%>>Tech Data</option>
+																									<option value="3" <%if pf_dist_inventory_sync="3" then%>selected<%end if%>>Synnex</option>
+																								</select>
+																								<span class="help-block"><i class="ti-info-alt text-primary"></i> Stock Qty. and availability will be synchronized with selected price file when ICECAT catalog is updated.</span>
+																							</div>
+																						</div>
+																					</div>
+																				</div>
+																				<% else %>
+																				<input type="hidden"name="pf_dist_flag" id="pf_dist_flag" value="0">
+																				<input type="hidden"name="pf_dist_inventory_sync" id="pf_dist_inventory_sync" value="0">
+																				<% end if %>
+																			</div>
+																		</div>
+																	</div>
+																	<div class="col-sm-3">
+																		<div class="panel panel-primary">
+																			<div class="panel-heading">
+																				<h3 class="panel-title">Categories</h3>
+																			</div>
+																			<div class="panel-body"> 
+																				<div id="tree5"></div>
+																				<div>
+																				<input type="hidden" id="selectedDept" name="selectedDept" value="<%=s_dept_id%>" />
+																				</div>
+																			</div>
+																		</div>
+																	</div>
+																</div>
+															</div>
+															<div class="tab-pane" id="tab_meta">
+																<div class="form-group">
+																	<label class="col-sm-2 control-label" for="pf_page_title">
+																		Page Title
+																	</label>
+																	<div class="col-sm-9">
+																		<input type="text" placeholder="" id="pf_page_title" name="pf_page_title" class="form-control input-sm" value="<%=pf_page_title%>">
+																	</div>
+																</div>
+																<div class="form-group">
+																	<label class="col-sm-2 control-label" for="pf_meta_keywords">
+																		Meta Keywords
+																	</label>
+																	<div class="col-sm-9">
+																		<textarea maxlength="255" id="pf_meta_keywords" name="pf_meta_keywords" class="form-control limited input-sm"><%=pf_meta_keywords%></textarea>
+																	</div>
+																</div>
+																<div class="form-group">
+																	<label class="col-sm-2 control-label" for="pf_meta_description">
+																		Meta Description
+																	</label>
+																	<div class="col-sm-9">
+																		<textarea maxlength="255" id="pf_meta_description" name="pf_meta_description" class="form-control limited input-sm"><%=pf_meta_description%></textarea>
+																	</div>
+																</div>
+															</div>
+															<div class="tab-pane" id="tab_images">
+																<%
+																Dim uploader
+																Set uploader=new AspUploader
+																uploader.MaxSizeKB=5120
+																uploader.AllowedFileExtensions="jpeg,jpg,gif,png"
+																uploader.Name="myuploader"
+																uploader.InsertText="Select multiple files (Max 5M)"
+																uploader.InsertButtonID="uploadbutton"
+																uploader.MultipleFilesUpload=true
+																%>
+																	
+																<%=uploader.GetString() %>
+																<button class="btn btn-primary btn-sm" type="button" id="uploadbutton">
+																<i class="fa fa-upload"></i>
+																Select multiple files (Max 5M)
+																</button>
+																<br /><br />
+																<div style="padding:4px" id="myfilescontainer">
+																	Loading....
+																</div>
+															</div>
+															<div class="tab-pane" id="tab_options">
+																<div class="row">
+																	<%
+																		for ix = 1 to 6 
+																	%>
+																	<div class="col-sm-6">
+																		<div class="panel panel-primary">
+																			<div class="panel-heading">
+																				<h3 class="panel-title">Custom Option <%=ix%></h3>
+																			</div>
+																			<div class="panel-body">
+																				<div class="row">
+																					<div class="col-md-6">
+																						<div class="form-group">
+																							<label class="col-sm-4 control-label" for="pf_use_att<%=ix%>">
+																								&nbsp;
+																							</label>
+																							<div class="col-sm-8">
+																								<div class="checkbox clip-check check-primary checkbox-inline">
+																									<input type="checkbox" id="pf_use_att<%=ix%>" name="pf_use_att<%=ix%>" value="1" <%if pf_use_att1 then%>checked<%end if%>>
+																									<label for="pf_use_att<%=ix%>">
+																										Enable
+																									</label>
+																								</div>
+																							</div>
+																						</div>
+																					</div>
+																					<div class="col-md-6">
+																						<div class="form-group">
+																							<div class="col-sm-12">
+																								<div class="checkbox clip-check check-primary checkbox-inline">
+																									<input type="checkbox" id="pf_use_att<%=ix%>_price" name="pf_use_att<%=ix%>_price" value="1" <%if pf_use_att1_price then%>checked<%end if%>>
+																									<label for="pf_use_att<%=ix%>_price">
+																										Use Price
+																									</label>
+																								</div>
+																							</div>
+																						</div>
+																					</div>
+																				</div>
+																				<div class="form-group">
+																					<label class="col-sm-2 control-label" for="pf_att<%=ix%>_name">
+																						Name
+																					</label>
+																					<div class="col-sm-9">
+																						<input type="text" placeholder="" id="pf_att<%=ix%>_name" name="pf_att<%=ix%>_name" class="form-control" value="<%=pf_att1_name%>">
+																					</div>
+																				</div>
+																				<div class="form-group">
+																					<label class="col-sm-2 control-label" for="pf_att<%=ix%>_display_method">
+																						Type
+																					</label>
+																					<div class="col-sm-8">
+																						<select id="pf_att<%=ix%>_display_method" name="pf_att<%=ix%>_display_method" class="js-example-basic-hide-search js-states form-control">
+																						<option value="1" <%if pf_att1_display_method = "1" then%>selected<%end if%>>Dropdown</option>
+																						<option value="2" <%if pf_att1_display_method = "2" then%>selected<%end if%>>Radio Button</option>
+																						</select>
+																					</div>
+																				</div>
+																				<div class="form-group">
+																					<label class="col-sm-2 control-label" for="pf_att<%=ix%>_alert_type">
+																						Prompt
+																					</label>
+																					<div class="col-sm-8">
+																						<select id="pf_att<%=ix%>_alert_type" name="pf_att<%=ix%>_alert_type" class="js-example-basic-hide-search js-states form-control">
+																						<option value="0" <%if pf_att1_alert_type = "0" then%>selected<%end if%>>None</option>
+																						<option value="1" <%if pf_att1_alert_type = "1" then%>selected<%end if%>>Soft</option>
+																						<option value="2" <%if pf_att1_alert_type = "2" then%>selected<%end if%>>Hard</option>
+																						</select>
+																						<span class="help-block"><i class="fa fa-info-circle"></i> 
+																						Soft Prompt - show prompt, but not required.
+																						</span>
+																						<span class="help-block"><i class="fa fa-info-circle"></i> 
+																						Hard Prompt - show prompt, and required. 
+																						</span>
+																					</div>
+																				</div>
+																				<div class="row">
+																					<div class="col-md-12">
+																						<a class="btn btn-green btn-xs" role="button" id="btnAddX<%=ix%>">
+																						<i class="fa fa-plus"></i> Add New 
+																						</a>
+																						<br><br>
+																						<table id="gridx<%=ix%>"></table>
+																						<div id="dialog-optionx-<%=ix%>" style="display:none">
+																							<input type="hidden" id="OptionID<%=ix%>">
+																							<table border="0">
+																								<tbody>
+																								<tr>
+																									<td style="padding:5px;"><label for="OptionSKU<%=ix%>">SKU:</label></td>
+																									<td style="padding:5px;"><input type="text" id="OptionSKU<%=ix%>" style="width:300px;font-size:14px;"></td>
+																								</tr>
+																								<tr>
+																									<td style="padding:5px;"><label for="OptionName<%=ix%>">Name:</label></td>
+																									<td style="padding:5px;"><input type="text" id="OptionName<%=ix%>" style="width:300px;font-size:14px;"></td>
+																								</tr>
+																								<tr>
+																									<td style="padding:5px;"><label for="OptionPrice<%=ix%>">Price:</label></td>
+																									<td style="padding:5px;"><input type="text" id="OptionPrice<%=ix%>" style="width:300px;font-size:14px;"></td>
+																								</tr>
+																								</tbody>
+																							</table>
+																						</div>
+																					</div>
+																					<input type="hidden" name="pf_att<%=ix%>_skus" id="pf_att<%=ix%>_skus" value="">
+																					<input type="hidden" name="pf_att<%=ix%>_values" id="pf_att<%=ix%>_values" value="">
+																					<input type="hidden" name="pf_att<%=ix%>_prices" id="pf_att<%=ix%>_prices" value="">
+																				</div>
+																			</div>
+																		</div>
+																	</div>
+																	<%
+																			if ix = 2 OR ix = 4 then
+																				Response.Write("</div><div class=""row"">")
+																			end if
+																		Next
+																	%>
+																</div>
+															</div>
+															<div class="tab-pane" id="tab_tabs">
+																<% for jj = 1 to 5 %>
+																<% if jj = 1 OR jj = 3 OR jj =5 then %>
+																<div class="row">
+																<% end if %>
+																<div class="col-sm-6">
+																	<div class="panel panel-primary">
+																		<div class="panel-heading">
+																			<h3 class="panel-title">Tab <%=jj%></h3>
+																		</div>
+																		<div class="panel-body">
+																			<div class="row">
+																				<div class="col-md-6">
+																					<div class="form-group">
+																						<label class="col-sm-4 control-label" for="pf_tab1_show">
+																							&nbsp;
+																						</label>
+																						<div class="col-sm-8">
+																							<div class="checkbox clip-check check-primary checkbox-inline">
+																								<input type="checkbox" id="pf_tab<%=jj%>_show" name="pf_tab<%=jj%>_show" value="1" <%if pf_tab_show(jj) = 1 then %>checked<%end if %>>
+																								<label for="pf_tab<%=jj%>_show">
+																									Enable Tab <%=jj%>
+																								</label>
+																							</div>
+																						</div>
+																					</div>
+																				</div>
+																			</div>
+																			<div class="form-group">
+																				<label class="col-sm-2 control-label" for="pf_tab<%=jj%>_name">
+																					Name
+																				</label>
+																				<div class="col-sm-9">
+																					<input type="text" placeholder="" id="pf_tab<%=jj%>_name" name="pf_tab<%=jj%>_name" class="form-control input-sm" value="<%=pf_tab_name(jj)%>">
+																				</div>
+																			</div>
+																			
+																			<div class="form-group">
+																				<label class="col-sm-2 control-label" for="pf_tab<%=jj%>_type">
+																					Type
+																				</label>
+																				<div class="col-sm-8">
+																					<select id="pf_tab<%=jj%>_type" name="pf_tab<%=jj%>_type" class="form-control input-sm">
+																					<option value="0">None</option>
+																					<option value="1" <%if pf_tab_type(jj)=1 then %>selected<%end if%>>HTML</option>
+																					<option value="2" <%if pf_tab_type(jj)=2 then %>selected<%end if%>>Table View</option>
+																					<!--
+																					<option value="3" <%if pf_tab_type(jj)=3 then %>selected<%end if%>>Download</option>
+																					-->
+																					</select>
+																				</div>
+																			</div>
+																			<div class="form-group">
+																				<label class="col-sm-2 control-label" for="pf_tab<%=jj%>_html">
+																					HTML
+																				</label>
+																				<div class="col-sm-9">
+																					<textarea rows="5" id="pf_tab<%=jj%>_html" name="pf_tab<%=jj%>_html" class="form-control input-sm limited"><%=pf_tab_html(jj)%></textarea>
+																				</div>
+																			</div>
+																			<div class="row">
+																				<div class="col-md-12">
+																				
+																					<a class="btn btn-green btn-xs" role="button" id="btnAdd<%=jj%>">
+																					<i class="fa fa-plus"></i> Add New Row (for table view) 
+																					</a>
+																					<br><br>
+																					<table id="grid<%=jj%>"></table>
+																					<div id="dialog-option-<%=jj%>" style="display:none;">
+																						<input type="hidden" id="TabItemID<%=jj%>">
+																						<table border="0">
+																							<tbody>
+																							<tr>
+																								<td style="padding:5px;"><label for="TabItemName<%=jj%>">Name:</label>&nbsp;</td>
+																								<td style="padding:5px;"><input type="text" id="TabItemName<%=jj%>" style="width:300px;font-size:14px;"></td>
+																							</tr>
+																							<tr>
+																								<td style="padding:5px;"><label for="TabItemValue<%=jj%>">Value:</label>&nbsp;</td>
+																								<td style="padding:5px;"><input type="text" id="TabItemValue<%=jj%>" style="width:300px;font-size:14px;"></td>
+																							</tr>
+																							</tbody>
+																						</table>
+																					</div>
+																				</div>
+																				<input type="hidden" name="pf_tab_table_data<%=jj%>" id="pf_tab_table_data<%=jj%>" value="">
+																			</div>
+																			
+																		</div>
+																	</div>
+																</div>
+																<% if jj = 2 OR jj = 4 OR jj =5 then %>
+																</div>
+																<% end if %>
+																<% next %>
+															</div>
+															<div class="tab-pane" id="tab_filter">
+																<% for jj = 1 to 10 %>
+																<div class="row" id="pf_filter_row_<%=jj%>">
+																	<div class="col-sm-6">
+																		<div class="form-group">
+																			<label class="col-sm-2 control-label" for="pf_filter_<%=jj%>">
+																				Filter
+																			</label>
+																			<div class="col-sm-10">
+																				<select id="pf_filter_<%=jj%>" name="pf_filter_<%=jj%>" class="form-control input-sm">
+																				<option value="">None</option>
+																				</select>
+																			</div>
+																		</div>
+																		<div class="form-group">
+																			<label class="col-sm-2 control-label" for="pf_filter_option_<%=jj%>">
+																				Selection
+																			</label>
+																			<div class="col-sm-10">
+																				<select id="pf_filter_option_<%=jj%>" name="pf_filter_option_<%=jj%>" class="form-control input-sm" size="10" multiple="multiple">
+																				</select>
+																			</div>
+																		</div>
+																	</div>
+																</div>
+																<% next %>
+															</div>
+															<div class="tab-pane" id="tab_related">
+																<div class="row">
+																	<div class="col-sm-12">
+																		<a class="btn btn-green btn-sm btn-o" data-toggle="modal" href="#stack2" id="pf_related_items_btn"><i class="fa fa-plus"></i> Add New Related Item </a>
+																	</div>
+																</div>
+																<br>
+																<div class="row">
+																	<div class="col-md-12">
+																		<table id="gridr"></table>
+																	</div>
+																	<input type="hidden" name="pf_related_items" id="pf_related_items" value="">
+																</div>
+															</div>
+														</div>
+													</div>
+												</div>
+											</div>
+										</form>
+									</div>
+								</div>
+							</div>
+							<!-- END PAGE CONTENT INNER -->
+						</div>
+					</div>
+					<!-- END PAGE CONTENT BODY -->
+					<!-- END CONTENT BODY -->
+				</div>
+				<!-- END CONTENT -->
+			</div>
+			<!-- END CONTAINER -->
+		</div>
+	</div>
+	<div class="page-wrapper-row">
+		<div class="page-wrapper-bottom">
+			<!--#INCLUDE FILE="include/footer.phtml"-->
+		</div>
+	</div>
+</div>
+<!-- BEGIN MODAL -->
+<div id="ajax-modal" class="modal container fade" tabindex="-1"> </div>
+<div id="ajax-modal2" class="modal container fade" tabindex="-1"> </div>
+<div id="ajax-modal3" class="modal fade" tabindex="-1" style="display: none;"></div>
+<div class="modal container fade " id="stack1" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+	<div class="modal-header">
+		<button type="button" class="close" data-dismiss="modal" aria-hidden="true"></button>
+		<h4 class="modal-title">ICECAT Search</h4>
+	</div>
+	<div class="modal-body">
+		<div class="row"  sytle="margin-left:0px;margin-right:0px;">
+			<div class="col-sm-3">
+				<div class="form-group">
+					<select class="form-control input-sm" id="icecat_category1">
+					</select>
+				</div>
+			</div>
+			<div class="col-sm-3">
+				<div class="form-group">
+					<select class="form-control input-sm" id="icecat_category2">
+					</select>
+				</div>
+			</div>
+			<div class="col-sm-3">
+				<div class="form-group">
+					<select class="form-control input-sm" id="icecat_category3">
+					</select>
+				</div>
+			</div>
+			<div class="col-sm-3">
+				<div class="form-group">
+					<select class="form-control input-sm" id="icecat_category4">
+					</select>
+				</div>
+			</div>
+			<div class="table-container">
+				<table class="table table-striped table-condensed table-bordered table-hover table-checkable" id="sample_2">
+					<thead>
+					<tr>
+						<th>SKU</th>
+						<th>Thumbnail</th>
+						<th>Name</th>
+						<th>Manufacturer</th>
+						<th>Mfg.Part #</th>
+						<th>Cost</th>
+						<th width="80">Qty.<br>(IM/TD/SY/DH)</th>
+						<th>Status</th>
+						<th>Action</th>
+					</tr>
+					</thead>
+					<tbody>
+						<tr>
+							<td colspan="9" class="dataTables_empty">Loading data from server</td>
+						</tr>
+					</tbody>
+				</table>
+			</div>
+		</div>
+	</div>
+	<div class="modal-footer">
+		<button type="button" data-dismiss="modal" class="btn btn-outline dark">Close</button>
+	</div>
+</div>
+<div id="stack2" class="modal fade container" tabindex="-1" data-focus-on="input:first">
+	<div class="modal-header">
+		<button type="button" class="close" data-dismiss="modal" aria-hidden="true"></button>
+		<h4 class="modal-title">Product Search</h4>
+	</div>
+	<div class="modal-body">
+		<div class="row" sytle="margin-left:0px;margin-right:0px;">
+			<div class="col-sm-3">
+				<div class="form-group">
+					<select class="form-control input-sm" id="catalog_category1">
+					</select>
+				</div>
+			</div>
+			<div class="col-sm-3">
+				<div class="form-group">
+					<select class="form-control input-sm" id="catalog_category2">
+					</select>
+				</div>
+			</div>
+			<div class="col-sm-3">
+				<div class="form-group">
+					<select class="form-control input-sm" id="catalog_category3">
+					</select>
+				</div>
+			</div>
+			<div class="col-sm-3">
+				<div class="form-group">
+					<select class="form-control input-sm" id="catalog_category4">
+					</select>
+				</div>
+			</div>
+		</div>
+		<div class="table-container">
+			<div class="table-actions-wrapper">
+			</div>
+			<table class="table table-striped table-condensed table-bordered table-hover table-checkable" id="sample_1">
+				<thead>
+				<tr>
+					<th>ID</th>
+					<th>Thumbnail</th>
+					<th>Name</th>
+					<th>SKU</th>
+					<th>Price</th>
+					<th>Stock Qty.</th>
+					<th>Status</th>
+					<th>Action</th>
+				</tr>
+				</thead>
+				<tbody>
+					<tr>
+						<td colspan="9" class="dataTables_empty">Loading data from server</td>
+					</tr>
+				</tbody>
+			</table>
+		</div>
+	</div>
+	<div class="modal-footer">
+		<button type="button" data-dismiss="modal" class="btn btn-outline dark">Close</button>
+	</div>
+</div>
+<!-- END MODAL -->
+<!--#INCLUDE FILE="include/js.phtml"-->
+<!-- BEGIN PAGE LEVEL PLUGINS -->
+<script src="../assets/global/plugins/jquery-validation/js/jquery.validate.min.js" type="text/javascript"></script>
+<script src="../assets/global/plugins/jquery-validation/js/additional-methods.min.js" type="text/javascript"></script>
+<script src="../assets/global/scripts/datatable.js" type="text/javascript"></script>
+<script src="../assets/global/plugins/datatables/datatables.min.js" type="text/javascript"></script>
+<script src="../assets/global/plugins/datatables/plugins/bootstrap/datatables.bootstrap.js" type="text/javascript"></script>
+<script src="../assets/global/plugins/bootstrap-datepicker/js/bootstrap-datepicker.min.js" type="text/javascript"></script>
+<script src="../assets/global/plugins/bootstrap-datetimepicker/js/bootstrap-datetimepicker.min.js" type="text/javascript"></script>
+<script src="../assets/global/plugins/bootstrap-maxlength/bootstrap-maxlength.min.js" type="text/javascript"></script>
+<script src="../assets/global/plugins/fancybox/source/jquery.fancybox.pack.js" type="text/javascript"></script>
+<script src="../assets/global/plugins/plupload/js/plupload.full.min.js" type="text/javascript"></script>
+<script src="assets/plugins/jquery-ui/jquery-ui-1.10.1.custom.min.js" type="text/javascript"></script>
+<script src="assets/plugins/dynatree/src/jquery.dynatree.js"></script>
+<script src="assets/plugins/grid/grid-0.5.6.min.js" type="text/javascript"></script>
+<script src="../assets/global/plugins/bootstrap-modal/js/bootstrap-modalmanager.js" type="text/javascript"></script>
+<script src="../assets/global/plugins/bootstrap-modal/js/bootstrap-modal.js" type="text/javascript"></script>
+<!-- END PAGE LEVEL PLUGINS -->
+<!-- BEGIN PAGE LEVEL SCRIPTS -->
+<script>
+var data1, grid1, dialog1;
+var data2, grid2, dialog2;
+var data3, grid3, dialog3;
+var data4, grid4, dialog4;
+var data5, grid5, dialog5;
+var data6, grid6, dialog6;
+
+var datar, gridr, dialogr;
+var datau, gridu, dialogu;
+
+var itemAddType;
+var is_editor_init = 0;
+
+
+var datax1, gridx1, dialogx1;
+var datax2, gridx2, dialogx2;
+var datax3, gridx3, dialogx3;
+var datax4, gridx4, dialogx4;
+var datax5, gridx5, dialogx5;
+var datax6, gridx6, dialogx6;
+
+
+</script>
+
+<script type="text/javascript">
+var oTable;
+var oTable1;
+var oTable2;
+var v1 = "";
+var v2 = "";
+var v3 = "";
+
+var w1 = "";
+var w2 = "";
+var w3 = "";
+var w4 = "";
+	
+var TableData = function () {
+
+    var runDataTable = function() {
+        oTable = new Datatable();
+
+        oTable.init({
+            src: $("#sample_1"),
+            onSuccess: function (oTable) {
+                // execute some code after table records loaded
+            },
+            onError: function (oTable) {
+                // execute some code on network or other general error  
+            },
+            loadingMessage: 'Loading...',
+            dataTable: { // here you can define a typical datatable settings from http://datatables.net/usage/options 
+
+                // Uncomment below line("dom" parameter) to fix the dropdown overflow issue in the datatable cells. The default datatable layout
+                // setup uses scrollable div(table-scrollable) with overflow:auto to enable vertical scroll(see: assets/global/scripts/datatable.js). 
+                // So when dropdowns used the scrollable div should be removed. 
+                //"dom": "<'row'<'col-md-8 col-sm-12'pli><'col-md-4 col-sm-12'<'table-group-actions pull-right'>>r>t<'row'<'col-md-8 col-sm-12'pli><'col-md-4 col-sm-12'>>",
+				columnDefs: [ 
+					{ orderable: false, targets: [1] }
+				],
+                "lengthMenu": [
+                    [10, 20, 50, 100, 150],
+                    [10, 20, 50, 100, 150] // change per page values here 
+                ],
+                "pageLength": 10, // default record count per page
+                "ajax": {
+                    "url": "api/sp_sales_order_product_list.phtml?v1=" + v1 + "&v2=" + v2 + "&v3=" + v3 + "&z1=", // ajax source
+                },
+                "order": [
+                    [0, "asc"]
+                ] // set first column as a default sort by asc
+            }
+        });
+    }
+	
+	var runDataTable1 = function() {
+        oTable1 = new Datatable();
+
+        oTable1.init({
+            src: $("#sample_2"),
+            onSuccess: function (oTable1) {
+                // execute some code after table records loaded
+            },
+            onError: function (oTable1) {
+                // execute some code on network or other general error  
+            },
+            loadingMessage: 'Loading...',
+            dataTable: { // here you can define a typical datatable settings from http://datatables.net/usage/options 
+
+                // Uncomment below line("dom" parameter) to fix the dropdown overflow issue in the datatable cells. The default datatable layout
+                // setup uses scrollable div(table-scrollable) with overflow:auto to enable vertical scroll(see: assets/global/scripts/datatable.js). 
+                // So when dropdowns used the scrollable div should be removed. 
+                //"dom": "<'row'<'col-md-8 col-sm-12'pli><'col-md-4 col-sm-12'<'table-group-actions pull-right'>>r>t<'row'<'col-md-8 col-sm-12'pli><'col-md-4 col-sm-12'>>",
+				columnDefs: [ 
+					{ orderable: false, targets: [1] }
+				],
+                "lengthMenu": [
+                    [10, 20, 50, 100, 150],
+                    [10, 20, 50, 100, 150] // change per page values here 
+                ],
+                "pageLength": 10, // default record count per page
+                "ajax": {
+                    "url": "api/sp_sales_order_icecat_list.phtml?v1=" + w1 + "&v2=" + w2 + "&v3=" + w3 + "&z1=", // ajax source
+                },
+                "order": [
+                    [0, "asc"]
+                ] // set first column as a default sort by asc
+            }
+        });
+    }
+
+    return {
+
+        //main function to initiate the module
+        init: function () {
+
+            runDataTable();
+			runDataTable1();  
+        }
+
+    };
+
+}();
+
+</script>
+
+<script language="javascript">
+var theActivatedCategory = "0";
+
+var UITreeview = function () {
+	//function to initiate jquery.dynatree
+	var runTreeView = function () {
+		//External data 
+		$("#tree5").dynatree({
+			checkbox: true,
+			/*classNames: {checkbox: "dynatree-radio"},*/
+			selectMode: 2,
+			initAjax: {
+				url: "api/sp_catalog_category_get_tree_list.phtml?pf_id=<%=pf_id%>",
+				data: { mode: "funnyMode" }
+			},
+			onSelect: function (select, node) {
+				// Display list of selected nodes
+				var selNodes = node.tree.getSelectedNodes();
+				// convert to title/key array
+				var selKeys = $.map(selNodes, function (node) {
+					//return "[" + node.data.key + "]: '" + node.data.title + "'";
+					return node.data.key;
+				});
+				$("#echoSelection3").text(selKeys.join(","));
+				$("#selectedDept").val(selKeys.join(","));
+				
+				jQuery.ajax({
+					type:"post",
+					url: "api/sp_catalog_category_option_list_from_id.phtml",
+					data: {'ids': $("#selectedDept").val(), 'sid': $("#pf_markup_category_temp").val(), 'isAjax':true},
+					dataType: 'json',
+					success: function(data) {
+						var listItems= "";
+						var sid = $("#pf_markup_category_temp").val();
+						for (var i = 0; i < data.Subcategories.length; i++){
+							if (data.Subcategories[i].id == sid)
+							{
+								listItems+= "<option value='" + data.Subcategories[i].id + "' selected>" + data.Subcategories[i].name + "</option>";
+							}
+							else
+							{
+								listItems+= "<option value='" + data.Subcategories[i].id + "'>" + data.Subcategories[i].name + "</option>";
+							}
+						}
+						var select = jQuery("#pf_markup_category"), options = '';
+						select.empty(); 
+						select.append(listItems);
+					}
+				});
+				
+			},
+			onClick: function (node, event) {
+				// We should not toggle, if target was "checkbox", because this
+				// would result in double-toggle (i.e. no toggle)
+				if (node.getEventTargetType(event) == "title")
+					node.toggleSelect();
+			},
+			onKeydown: function (node, event) {
+				if (event.which == 32) {
+					node.toggleSelect();
+					return false;
+				}
+			}
+		});
+		
+	};
+	return {
+		//main function to initiate template pages
+		init: function () {
+			runTreeView();
+		}
+	};
+}();
+
+</script>
+<script language="javascript">
+var FormValidation = function () {
+
+	// basic validation
+	var handleValidation1 = function() {
+		// for more info visit the official plugin documentation: 
+			// http://docs.jquery.com/Plugins/Validation
+
+			var form1 = $('#form_edit_1');
+			var error1 = $('.alert-danger', form1);
+			var success1 = $('.alert-success', form1);
+
+			form1.validate({
+				errorElement: 'span', //default input error message container
+				errorClass: 'help-block help-block-error', // default input error message class
+				focusInvalid: false, // do not focus the last invalid input
+				ignore: "",  // validate all fields including form hidden input
+				//RULES
+				rules: {
+					pf_sku: {
+						minlength: 3,
+						required: true,
+						"remote":
+						{
+						  url: 'api/sp_product_check_sku.phtml?pf_id=<%=pf_id%>',
+						  type: "post"
+						}
+					},
+					pf_name: {
+						minlength: 2,
+						required: true
+					},
+					pf_url_key: {
+						minlength: 5,
+						"remote":
+						{
+						  url: 'api/sp_product_check_url_key.phtml?pf_id=<%=pf_id%>',
+						  type: "post"
+						}
+					},
+					pf_list_price: {
+						required: true,
+						number: true
+					},
+					pf_weight: {
+						required: true,
+						number: true
+					}
+					
+				},
+
+				invalidHandler: function (event, validator) { //display error alert on form submit              
+					success1.hide();
+					error1.show();
+					App.scrollTo(error1, -200);
+				},
+
+				errorPlacement: function (error, element) { // render error placement for each input type
+					var cont = $(element).parent('.input-group');
+					if (cont) {
+						cont.after(error);
+					} else {
+						element.after(error);
+					}
+				},
+
+				highlight: function (element) { // hightlight error inputs
+
+					$(element)
+						.closest('.form-group').addClass('has-error'); // set error class to the control group
+				},
+
+				unhighlight: function (element) { // revert the change done by hightlight
+					$(element)
+						.closest('.form-group').removeClass('has-error'); // set error class to the control group
+				},
+
+				success: function (label) {
+					label
+						.closest('.form-group').removeClass('has-error'); // set success class to the control group
+				},
+
+				submitHandler: function (form) {
+					success1.show();
+					error1.hide();
+				}
+			});
+
+
+	}
+	return {
+		//main function to initiate the module
+		init: function () {
+			handleValidation1();
+		}
+	};
+
+}();
+</script>
+
+<script type="text/javascript">
+	var handlerurl='misc-filemanager-handler.asp?pf_id=<%=pf_id%>';
+	function DoMyAjax(guidlist, deleteid)
+	{
+		guidlist = guidlist || "";
+		deleteid = deleteid || "";
+
+		//Send Request
+		var xh;
+		if (window.XMLHttpRequest)
+			xh = new window.XMLHttpRequest();
+		else
+			xh = new ActiveXObject("Microsoft.XMLHTTP");
+		xh.open("POST", handlerurl, false, null, null);
+		xh.setRequestHeader("Content-Type", "application/x-www-form-urlencoded; charset=utf-8");
+		xh.send("guidlist=" + guidlist + "&deleteid=" + deleteid);
+
+		if (xh.status != 200)
+		{
+			alert("http error " + xh.status);
+			setTimeout(function() { document.write(xh.responseText); }, 10);
+			return;
+		}
+
+		var filelist = document.getElementById("filelist");
+
+		var div = document.getElementById("myfilescontainer");
+
+		//alert(xh.responseText);
+		var list = eval(xh.responseText); //get JSON objects
+
+		if (list.length > 0)
+		{
+
+			var table = document.createElement("TABLE");
+
+			//table.border = 1;
+			//table.cellSpacing = 0;
+			//table.cellPadding = 4;
+			//table.style.borderCollapse = "collapse";
+			//table.style.width = "640px";
+			table.className = "table table-bordered table-hover";
+
+			var th = table.insertRow(-1);
+			//th.style.backgroundColor = "steelblue";
+			//th.style.color = "white";
+			th.style.textAlign = "center";
+			th.insertCell(-1).innerHTML = "image";
+			th.insertCell(-1).innerHTML = "Label";
+			th.insertCell(-1).innerHTML = "Sort Order";
+			th.insertCell(-1).innerHTML = "&nbsp;";
+			th.insertCell(-1).innerHTML = "Default";
+			
+			//th = table.insertRow(-1);
+			//th.style.backgroundColor = "steelblue";
+			//th.style.color = "white";
+			//th.style.textAlign = "center";
+			//th.insertCell(-1).innerHTML = "No Image";
+			//th.insertCell(-1).innerHTML = "&nbsp;";
+			//th.insertCell(-1).innerHTML = "&nbsp;";
+			//th.insertCell(-1).innerHTML = "&nbsp;";
+			//th.insertCell(-1).innerHTML = "<input type='radio' name='default_image' value='--'>";
+			
+			//Process Result:
+			var pf_image_file = "<%=pf_image_file%>";
+			for (var i = 0; i < list.length; i++)
+			{
+				var item = list[i];
+				var row = table.insertRow(-1);
+				var td1 = row.insertCell(-1);
+				var td2 = row.insertCell(-1);
+				var td3 = row.insertCell(-1);
+				var td4 = row.insertCell(-1);
+				var td5 = row.insertCell(-1);
+
+				td1.style.width = "120px";
+				td1.style.textAlign = "center";
+				td1.innerHTML = "<img src='" + item.FileSecureURI + "' border='0'><input type='hidden' name='pf_list_image_id' value='" + item.FileName + "'>";
+
+				td2.innerHTML = item.FileName;
+				td2.style.textAlign = "center";
+				td2.innerHTML = "<input type='textbox' name='pf_list_image_label' class='form-control input-sm' style='width:100%' value='" + item.FileLabel + "'>";
+
+				td3.style.width = "80px";
+				td3.style.textAlign = "center";
+				td3.innerHTML = "<input type='textbox' name='pf_list_image_sort_order' class='form-control input-sm'  style='width:50px' value='" + item.FileSortOrder + "'>";
+
+				td4.style.width = "45px";
+				td4.style.textAlign = "center";
+				td4.innerHTML = "<a href='javascript:void(0)' onclick='DoMyDelete(\"" + item.FileName + "\",\"" + item.FileID + "\");return false;'>Delete</a>";
+				
+				td5.style.width = "45px";
+				td5.style.textAlign = "center";
+				if (pf_image_file == item.FileName)
+				{
+					td5.innerHTML = "<input type='radio' name='productimage' value='" + item.FileName + "' checked>";
+				}
+				else
+				{
+					td5.innerHTML = "<input type='radio' name='productimage' value='" + item.FileName + "'>";
+				}
+
+			}
+
+			div.innerHTML = "";
+			div.appendChild(table);
+		}
+		else
+		{
+			div.innerHTML = "<div style='padding:8px;border:solid 1px steelblue;color:maroon;'>No files.</div>";
+		}
+	}
+
+	function DoMyDelete(filename, fileid)
+	{
+		if (confirm("Are you sure you want to delete " + filename + "?"))
+		{
+			DoMyAjax("", fileid)
+		}
+	}
+
+	function CuteWebUI_AjaxUploader_OnPostback()
+	{
+
+		var uploader = document.getElementById("myuploader");
+		var guidlist = uploader.value;
+
+		DoMyAjax(guidlist);
+
+		//call uploader to clear the client state
+		uploader.reset();
+	}
+</script>
+
+<script type="text/javascript">
+jQuery(document).ready(function() {    
+   //EcommerceProductsEdit.init();
+   FormValidation.init();
+   UITreeview.init();
+   DoMyAjax("");
+   TableData.init();
+   
+   jQuery.ajax({
+		type:"post",
+		url: "api/sp_catalog_category_option_list_from_id.phtml",
+		data: {'ids': $("#selectedDept").val(), 'sid': $("#pf_markup_category_temp").val(), 'isAjax':true},
+		dataType: 'json',
+		success: function(data) {
+			var listItems= "";
+			var sid = $("#pf_markup_category_temp").val();
+			for (var i = 0; i < data.Subcategories.length; i++){
+				if (data.Subcategories[i].id == sid)
+				{
+					listItems+= "<option value='" + data.Subcategories[i].id + "' selected>" + data.Subcategories[i].name + "</option>";
+				}
+				else
+				{
+					listItems+= "<option value='" + data.Subcategories[i].id + "'>" + data.Subcategories[i].name + "</option>";
+				}
+			}
+			var select = jQuery("#pf_markup_category"), options = '';
+			select.empty(); 
+			select.append(listItems);
+		}
+	});
+	
+	var $modal = $('#ajax-modal');
+	$('#wysiwyg_description').on('click', function () {
+		var mid = $(this).data("id");
+		setTimeout(function () {
+			$modal.load('api/modal_ajax_wysiwyg_editor.phtml?id=pf_description&fid=' + mid, '', function () {
+				$modal.modal();
+			});
+		}, 100);
+		
+		$modal.on('click', '.update_1', function () {
+			editor_1.updateElement();
+			$('#pf_description').val($('#wysiwig_text_1_' + mid).val());
+			$modal.modal('hide');
+		});
+	});
+	
+	var $modal2 = $('#ajax-modal2');
+	$('#wysiwyg_detail').on('click', function () {
+		var mid = $(this).data("id");
+		setTimeout(function () {
+			$modal2.load('api/modal_ajax_wysiwyg_editor.phtml?id=pf_detail&fid=' + mid, '', function () {
+				$modal2.modal();
+			});
+		}, 100);
+		
+		$modal2.on('click', '.update_1', function () {
+			editor_1.updateElement();
+			$('#pf_detail').val($('#wysiwig_text_1_' + mid).val());
+			$modal2.modal('hide');
+		});
+	});
+	
+			
+	var $modal3 = jQuery('#ajax-modal3');
+	jQuery('.modal-edit-line').on('click', function () {
+		var view_id = jQuery(this).data('id');
+		var field_id = jQuery(this).data('fieldid');
+		var table_id = jQuery(this).data('tableid');
+		setTimeout(function () {
+			$modal3.load('api/modal_ajax_lang_varchar.phtml?entity_id=<%=pf_id%>&type_id=2&table_id=' + table_id + '&view_id=' + view_id + '&field_id=' + field_id, '', function () {
+				$modal3.modal();
+			});
+		}, 300);
+	});
+
+   
+});
+</script>
+
+<% if g_store_use_icecat_catalog = "1" then %>
+<script>
+	jQuery(document).ready(function() {
+		/* ICECAT CATALOG */
+		jQuery.ajax({
+			type:"post",
+			url: "api/sp_catalog_get_icecat_subcategories.phtml",
+			data: {parent_id: '2833', 'isAjax':true},
+			dataType: 'json',
+			success: function(data) {
+				var listItems= "<option value=''>All Categories</option>";
+				for (var i = 0; i < data.Subcategories.length; i++){
+					listItems+= "<option value='" + data.Subcategories[i].id + "'>" + data.Subcategories[i].name + "</option>";
+				}
+				var select = jQuery("#icecat_category1"), options = '';
+				select.empty(); 
+				select.append(listItems);
+			}
+		});
+		
+		jQuery( "#icecat_category1" ).change(function() {
+		  jQuery.ajax({
+				type:"post",
+				url: "api/sp_catalog_get_icecat_subcategories.phtml",
+				data: {parent_id: jQuery('#icecat_category1').val(), 'isAjax':true},
+				dataType: 'json',
+				success: function(data) {
+					var listItems= "<option value=''>All Categories</option>";
+					for (var i = 0; i < data.Subcategories.length; i++){
+						listItems+= "<option value='" + data.Subcategories[i].id + "'>" + data.Subcategories[i].name + "</option>";
+					}
+					var select = jQuery("#icecat_category2"), options = '';
+					select.empty(); 
+					select.append(listItems);
+					
+					select = jQuery("#icecat_category3"), options = '';
+					select.empty(); 
+					
+					select = jQuery("#icecat_category4"), options = '';
+					select.empty();
+					oTable2.fnReloadAjax("api/sp_sales_order_icecat_list.phtml?v1=" + jQuery('#icecat_category1').val());
+				}
+			});
+		});
+		
+		jQuery( "#icecat_category2" ).change(function() {
+		  jQuery.ajax({
+				type:"post",
+				url: "api/sp_catalog_get_icecat_subcategories.phtml",
+				data: {parent_id: jQuery('#icecat_category2').val(), 'isAjax':true},
+				dataType: 'json',
+				success: function(data) {
+					var listItems= "<option value=''>All Categories</option>";
+					for (var i = 0; i < data.Subcategories.length; i++){
+						listItems+= "<option value='" + data.Subcategories[i].id + "'>" + data.Subcategories[i].name + "</option>";
+					}
+					var select = jQuery("#icecat_category3"), options = '';
+					select.empty(); 
+					select.append(listItems);
+					
+					select = jQuery("#icecat_category4"), options = '';
+					select.empty();
+					oTable2.fnReloadAjax("api/sp_sales_order_icecat_list.phtml?v1=" + jQuery('#icecat_category1').val() + "&v2=" + jQuery('#icecat_category2').val());
+				}
+			});
+		});
+		
+		jQuery( "#icecat_category3" ).change(function() {
+		  jQuery.ajax({
+				type:"post",
+				url: "api/sp_catalog_get_icecat_subcategories.phtml",
+				data: {parent_id: jQuery('#icecat_category3').val(), 'isAjax':true},
+				dataType: 'json',
+				success: function(data) {
+					var listItems= "<option value=''>All Categories</option>";
+					for (var i = 0; i < data.Subcategories.length; i++){
+						listItems+= "<option value='" + data.Subcategories[i].id + "'>" + data.Subcategories[i].name + "</option>";
+					}
+					var select = jQuery("#icecat_category4"), options = '';
+					select.empty(); 
+					select.append(listItems);
+					
+					oTable2.fnReloadAjax("api/sp_sales_order_icecat_list.phtml?v1=" + jQuery('#icecat_category1').val() + "&v2=" + jQuery('#icecat_category2').val() + "&v3=" + jQuery('#icecat_category3').val());
+				}
+			});
+		});
+	});
+</script>
+<% end if %>
+
+<script>
+datar = <%=s_data_related%>;
+
+function DeleteR(e) {
+	if (confirm("Are you sure?")) {
+		gridr.removeRow(e.data.id);
+	}
+}
+
+gridr = $("#gridr").grid({
+	dataSource: datar,
+	uiLibrary: "bootstrap",
+	columns: [
+		{ field: "PID", title: "Product ID" },
+		{ field: "SKU", title: "SKU" },
+		{ field: "NAME", title: "Product Name" },
+		{ title: "", width: 40, type: "icon", icon: "glyphicon-remove", tooltip: "Delete", events: { "click": DeleteR } }
+	]
+});
+
+$( "#pf_related_items_btn" ).click(function() {
+  itemAddType = "R";
+});
+
+$( "#pf_upsell_items_btn" ).click(function() {
+  itemAddType = "U";
+});
+</script>
+
+<% for kk = 1 to 5 %>
+<script>
+$(document).ready(function () {
+		
+	data<%=kk%> = <%=tab_data(kk)%>;
+
+	dialog<%=kk%> = $("#dialog-option-<%=kk%>").dialog({
+		title: "Add/Edit Tab",
+		autoOpen: false,
+		resizable: false,
+		width: '400px',
+		modal: true,
+		buttons: {
+			"Save": Save<%=kk%>,
+			"Cancel": function () { $(this).dialog("close"); }
+		}
+	});
+	function Edit<%=kk%>(e) {
+		$("#TabItemID<%=kk%>").val(e.data.id);
+		$("#TabItemName<%=kk%>").val(e.data.record.Name);
+		$("#TabItemValue<%=kk%>").val(e.data.record.Value);
+		$("#dialog-option-<%=kk%>").dialog("open");
+	}
+	function Delete<%=kk%>(e) {
+		if (confirm("Are you sure?")) {
+			grid<%=kk%>.removeRow(e.data.id);
+		}
+	}
+	function Save<%=kk%>() {
+		if ($("#TabItemID<%=kk%>").val()) {
+			var id = parseInt($("#TabItemID<%=kk%>").val());
+			grid<%=kk%>.updateRow(id, { "ID": id, "Name": $("#TabItemName<%=kk%>").val(), "Value": $("#TabItemValue<%=kk%>").val()});
+		} else {
+			grid<%=kk%>.addRow({ "ID": grid<%=kk%>.count() + 1, "Name": $("#TabItemName<%=kk%>").val(), "Value": $("#TabItemValue<%=kk%>").val() });
+		}
+		$(this).dialog("close");
+	}
+	grid<%=kk%> = $("#grid<%=kk%>").grid({
+		dataSource: data<%=kk%>,
+		columns: [
+			{ field: "Name" },
+			{ field: "Value" },
+			{ title: "", width: 20, type: "icon", icon: "ui-icon-pencil", tooltip: "Edit", events: { "click": Edit<%=kk%> } },
+			{ title: "", width: 20, type: "icon", icon: "ui-icon-close", tooltip: "Delete", events: { "click": Delete<%=kk%> } }
+		]
+	});
+	$("#btnAdd<%=kk%>").on("click", function () {
+		$("#TabItemID<%=kk%>").val("");
+		$("#TabItemName<%=kk%>").val("");
+		$("#TabItemValue<%=kk%>").val("");
+		$("#dialog-option-<%=kk%>").dialog("open");
+	});
+});
+</script>
+<% next %>
+
+<% for kk = 1 to 6 %>
+<script>
+$(document).ready(function () {
+		
+	dataX<%=kk%> = <%=option_data(kk)%>;
+	dialogX<%=kk%> = $("#dialog-optionx-<%=kk%>").dialog({
+		title: "Add/Edit Options",
+		autoOpen: false,
+		resizable: false,
+		width: '400px',
+		modal: true,
+		buttons: {
+			"Save": SaveX<%=kk%>,
+			"Cancel": function () { $(this).dialog("close"); }
+		}
+	});
+	
+	function EditX<%=kk%>(e) {
+		$("#OptionID<%=kk%>").val(e.data.id);
+		$("#OptionSKU<%=kk%>").val(e.data.record.SKU);
+		$("#OptionName<%=kk%>").val(e.data.record.Name);
+		$("#OptionPrice<%=kk%>").val(e.data.record.Price);
+		$("#dialog-optionx-<%=kk%>").dialog("open");
+	}
+	function DeleteX<%=kk%>(e) {
+		if (confirm("Are you sure?")) {
+			gridx<%=kk%>.removeRow(e.data.id);
+		}
+	}
+	function SaveX<%=kk%>() {
+		if ($("#OptionID<%=kk%>").val()) {
+			var id = parseInt($("#OptionID<%=kk%>").val());
+			gridx<%=kk%>.updateRow(id, { "ID": id, "SKU": $("#OptionSKU<%=kk%>").val(), "Name": $("#OptionName<%=kk%>").val(), "Price": $("#OptionPrice<%=kk%>").val() });
+		} else {
+			gridx<%=kk%>.addRow({ "ID": grid<%=kk%>.count() + 1, "SKU": $("#OptionSKU<%=kk%>").val(), "Name": $("#OptionName<%=kk%>").val(), "Price": $("#OptionPrice<%=kk%>").val() });
+		}
+		$(this).dialog("close");
+	}
+	 
+	gridx<%=kk%> = $("#gridx<%=kk%>").grid({
+		dataSource: datax<%=kk%>,
+		columns: [
+			{ field: "SKU" },
+			{ field: "Name" },
+			{ field: "Price"},
+			{ title: "", width: 20, type: "icon", icon: "ui-icon-pencil", tooltip: "Edit", events: { "click": EditX<%=kk%> } },
+			{ title: "", width: 20, type: "icon", icon: "ui-icon-close", tooltip: "Delete", events: { "click": DeleteX<%=kk%> } }
+		]
+	});
+	
+	$("#btnAddX<%=kk%>").on("click", function () {
+		$("#OptionID<%=kk%>").val("");
+		$("#OptionSKU<%=kk%>").val("");
+		$("#OptionName<%=kk%>").val("");
+		$("#OptionPrice<%=kk%>").val("0.00");
+		$("#dialog-optionx-<%=kk%>").dialog("open");
+	});
+	
+});
+</script>
+<% next %>
+
+<% for kk = 1 to 10 %>
+<script>
+$(document).ready(function () {
+	
+<% if t_filter_number >= kk then %>
+	$("#pf_filter_row_<%=kk%>").show();
+	//Get filter list
+	jQuery.ajax({
+		type:"post",
+		url: "api/sp_catalog_eav_attribute.phtml",
+		data: {'isAjax':true},
+		dataType: 'json',
+		success: function(data) {
+			var listItems= "";
+			var sid = "<%=pf_attribute(kk)%>";
+			for (var i = 0; i < data.Subcategories.length; i++){
+				if (data.Subcategories[i].id == sid)
+				{
+					listItems+= "<option value='" + data.Subcategories[i].id + "' selected>" + data.Subcategories[i].name + "</option>";
+				}
+				else
+				{
+					listItems+= "<option value='" + data.Subcategories[i].id + "'>" + data.Subcategories[i].name + "</option>";
+				}
+			}
+			var select = jQuery("#pf_filter_<%=kk%>");
+			select.empty(); 
+			select.append(listItems);
+		}
+	});
+	
+	//Populate options
+	
+	<% if Len(pf_attribute(kk)) > 0 then %>
+	jQuery.ajax({
+		type:"post",
+		url: "api/sp_catalog_eav_attribute_options.phtml",
+		data: {attribute_id: '<%=pf_attribute(kk)%>', 'isAjax':true},
+		dataType: 'json',
+		success: function(data) {
+			var listItems= "";
+			var sid = "<%=pf_attribute_option(kk)%>,";
+			for (var i = 0; i < data.Subcategories.length; i++){
+				//if (data.Subcategories[i].id == sid)
+				if( sid.indexOf( data.Subcategories[i].id + "," ) !== -1 )
+				{
+					listItems+= "<option value='" + data.Subcategories[i].id + "' selected>" + data.Subcategories[i].name + "</option>";
+				}
+				else
+				{
+					listItems+= "<option value='" + data.Subcategories[i].id + "'>" + data.Subcategories[i].name + "</option>";
+				}
+			}
+			var select = jQuery("#pf_filter_option_<%=kk%>");
+			select.empty(); 
+			select.append(listItems);
+		}
+	});
+	<% end if %>
+	//onchange ...
+	
+	jQuery( "#pf_filter_<%=kk%>" ).change(function() {
+	  jQuery.ajax({
+			type:"post",
+			url: "api/sp_catalog_eav_attribute_options.phtml",
+			data: {attribute_id: jQuery('#pf_filter_<%=kk%>').val(), 'isAjax':true},
+			dataType: 'json',
+			success: function(data) {
+				var listItems= "";
+				var sid = "<%=pf_attribute_option(kk)%>,";
+				for (var i = 0; i < data.Subcategories.length; i++){
+					//if (data.Subcategories[i].id == sid)
+					if( sid.indexOf( data.Subcategories[i].id + "," ) !== -1 )
+					{
+						listItems+= "<option value='" + data.Subcategories[i].id + "' selected>" + data.Subcategories[i].name + "</option>";
+					}
+					else
+					{
+						listItems+= "<option value='" + data.Subcategories[i].id + "'>" + data.Subcategories[i].name + "</option>";
+					}
+				}
+				var select = jQuery("#pf_filter_option_<%=kk%>");
+				select.empty(); 
+				select.append(listItems);
+				
+				xii = 1;
+				yii = "0";
+				for (ii = 1; ii <= 10; ii++)
+				{
+					if( jQuery("#pf_filter_row_" + ii).is(':visible') )
+					{
+						if (jQuery("#pf_filter_" + ii).val() == "")
+						{
+							yii = "1";
+						}
+					}
+					else
+					{
+						if (xii > 1)
+						{
+							
+						}
+						else
+						{
+							xii = ii;
+						}
+					}
+				}
+				
+				if (yii == "0")
+				{
+					jQuery("#pf_filter_row_" + xii).show();
+					jQuery.ajax({
+						type:"post",
+						url: "api/sp_catalog_eav_attribute.phtml",
+						data: {'isAjax':true},
+						dataType: 'json',
+						success: function(data) {
+							var listItems= "";
+							var sid = "";
+							for (var i = 0; i < data.Subcategories.length; i++){
+								if (data.Subcategories[i].id == sid)
+								{
+									listItems+= "<option value='" + data.Subcategories[i].id + "' selected>" + data.Subcategories[i].name + "</option>";
+								}
+								else
+								{
+									listItems+= "<option value='" + data.Subcategories[i].id + "'>" + data.Subcategories[i].name + "</option>";
+								}
+							}
+							var select = jQuery("#pf_filter_" + xii);
+							select.empty(); 
+							select.append(listItems);
+						}
+					});
+				}
+				else
+				{
+					
+				}
+			}
+		});
+	});
+	
+<% else %>
+	$("#pf_filter_row_<%=kk%>").hide();
+	
+	//onchange ...
+	
+	jQuery( "#pf_filter_<%=kk%>" ).change(function() {
+	  jQuery.ajax({
+			type:"post",
+			url: "api/sp_catalog_eav_attribute_options.phtml",
+			data: {attribute_id: jQuery('#pf_filter_<%=kk%>').val(), 'isAjax':true},
+			dataType: 'json',
+			success: function(data) {
+				var listItems= "";
+				var sid = $("#pf_markup_category_temp").val();
+				for (var i = 0; i < data.Subcategories.length; i++){
+					if (data.Subcategories[i].id == sid)
+					{
+						listItems+= "<option value='" + data.Subcategories[i].id + "' selected>" + data.Subcategories[i].name + "</option>";
+					}
+					else
+					{
+						listItems+= "<option value='" + data.Subcategories[i].id + "'>" + data.Subcategories[i].name + "</option>";
+					}
+				}
+				var select = jQuery("#pf_filter_option_<%=kk%>");
+				select.empty(); 
+				select.append(listItems);
+				
+				xii = 1;
+				yii = "0";
+				for (ii = 1; ii <= 10; ii++)
+				{
+					if( jQuery("#pf_filter_row_" + ii).is(':visible') )
+					{
+						if (jQuery("#pf_filter_" + ii).val() === "")
+						{
+							yii = "1";
+						}
+					}
+					else
+					{
+						if (xii > 1)
+						{
+							
+						}
+						else
+						{
+							xii = ii;
+						}
+					}
+				}
+				
+				
+				if (yii == "0")
+				{
+					jQuery("#pf_filter_row_" + xii).show();
+				}
+				else
+				{
+					
+				}
+			}
+		});
+	});
+<% end if %>
+
+});
+</script>
+<% next %>
+<script type="text/javascript">
+function getSearchResult(sku, descr, cost) {
+	$("#stack2").modal("hide");
+	
+	jQuery.ajax({
+		type:"get",
+		url: "api/sp_get_catalog_product_detail.phtml",
+		data: {'pf_id':sku, 'isAjax':true},
+		dataType: 'json',
+		success: function(data) {
+			for (var i = 0; i < data.PRODUCT.length; i++){
+				//$("#pf_espec_sku").val(data.PRODUCT[i].id);
+				if (itemAddType == "R")
+				{
+					gridr.addRow({ "ID": gridr.count() + 1, "PID": data.PRODUCT[i].id, "SKU": data.PRODUCT[i].sku, "Name": data.PRODUCT[i].name });
+				}
+				
+				if (itemAddType == "U")
+				{
+					gridu.addRow({ "ID": gridr.count() + 1, "PID": data.PRODUCT[i].id, "SKU": data.PRODUCT[i].sku, "Name": data.PRODUCT[i].name });
+				}
+				
+				itemAddType == "";
+			}
+		}
+	});
+}
+function getIcecatSearchResult(sku, descr, cost) {
+	$("#stack1").modal("hide");
+	if (confirm("Would you like to update SKU, Name, Description, and Cost as well?"))
+	{
+		jQuery.ajax({
+			type:"get",
+			url: "api/sp_get_icecat_product_detail.phtml",
+			data: {'pf_id':sku, 'isAjax':true},
+			dataType: 'json',
+			success: function(data) {
+				for (var i = 0; i < data.ICECAT.length; i++){
+					$("#pf_sku").val(data.ICECAT[i].id);
+					$("#pf_name").val(data.ICECAT[i].DESCR);
+					$("#pf_description").val(data.ICECAT[i].DESCR2);
+					$("#pf_list_price").val(data.ICECAT[i].COST);
+					$("#pf_espec_sku").val(data.ICECAT[i].id);
+					$("#pf_IM_part_number").val(data.ICECAT[i].IM_ID);
+					$("#pf_TD_part_number").val(data.ICECAT[i].TD_ID);
+					$("#pf_SN_part_number").val(data.ICECAT[i].SN_ID);
+					$("#pf_dh_part_number").val(data.ICECAT[i].DH_ID);
+					$("#pf_manu_part_number").val(data.ICECAT[i].VEND_PART);
+					$("#pf_UPC_code").val(data.ICECAT[i].UPC);
+				}
+			}
+		});
+	}
+	else
+	{
+		jQuery.ajax({
+			type:"get",
+			url: "api/sp_get_icecat_product_detail.phtml",
+			data: {'pf_id':sku, 'isAjax':true},
+			dataType: 'json',
+			success: function(data) {
+				for (var i = 0; i < data.ICECAT.length; i++){
+					$("#pf_espec_sku").val(data.ICECAT[i].id);
+					$("#pf_IM_part_number").val(data.ICECAT[i].IM_ID);
+					$("#pf_TD_part_number").val(data.ICECAT[i].TD_ID);
+					$("#pf_SN_part_number").val(data.ICECAT[i].SN_ID);
+					$("#pf_dh_part_number").val(data.ICECAT[i].DH_ID);
+					$("#pf_manu_part_number").val(data.ICECAT[i].VEND_PART);
+					$("#pf_UPC_code").val(data.ICECAT[i].UPC);
+				}
+			}
+		});
+	}
+	
+}
+</script>
+<!-- END PAGE LEVEL SCRIPTS -->
+</body>
+</html>

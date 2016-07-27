@@ -1,0 +1,330 @@
+<%@  language="VBScript" %>
+<!--#INCLUDE FILE="local/local.phtml"-->
+<!--#INCLUDE FILE="core/i_adoopen.phtml"-->
+<!--#INCLUDE FILE="util/xt_func_session.phtml"-->
+<!--#INCLUDE FILE="util/xt_func_string.phtml"-->
+
+<%
+	sessionID = Request("sessionID")
+	sessionID = FilterSessionString(sessionID)
+	if Len(sessionID) > 0 then
+		Session("SESSIONKEY") = sessionID
+	else
+		if Len(Session("SESSIONKEY")) > 0 then
+			'session key exist
+		else
+			'no key information...
+			Response.Redirect Session("StoreURL") & "/index.phtml"
+		end if
+	end if
+%>
+<%
+	Session("shopper_id") = GetSession(Session("SESSIONKEY"), "sCID")
+	Session("Shopper_Name") = GetSession(Session("SESSIONKEY"), "sCName")
+	Session("PARTNER") = GetSession(Session("SESSIONKEY"), "sAffID")
+	Session("REFERER_URL2") = GetSession(Session("SESSIONKEY"), "sREFERER2") 
+%>
+<%
+	dim bok
+	
+	bok = false
+	
+	op = Request("op")
+	returnPage = LCase(Trim(Request("returnPage")))
+	
+	SELECT case op
+	
+	case "logout"
+		Session("shopper_id") = ""
+		Session("LOGINGROUP") = "D"
+		Session("Shopper_Name") = ""
+		Session("Shopper_State") = ""
+		Session("Shopper_Zip") = ""
+		
+		'Resetting....
+		iCount = 0
+		Session("ItemCount") = iCount
+		Session("CartItemCount") = 0
+		Session("TotalPrice") = 0
+		Session("TotalWeight")= 0
+		
+		if Session("IMPRICE") = "1" then
+			Session("IMFILEID") = g_storeid
+		else
+			Session("IMFILEID") = ""
+		end if
+		
+		Session("CUSTOM_CATALOG_ID_FLAG") = ""
+
+		bok = true
+
+	case else
+
+		str_uid = FilterEmailString(Trim(Request("login_email")))
+		str_password = FilterPassword(Trim(Request("login_password")))
+		agreeterms = Request.Form("agreeterms")
+		
+		str_uid = LCase(str_uid)
+		if str_uid = "guest" then
+			Session("shopper_id") = "GUEST"
+			Session("LOGINGROUP") = "D"
+			Session("Shopper_Name") = "GUEST"
+			bok = true
+						
+		else
+
+			if agreeterms = "1" then
+
+                Set x1Conn = Server.CreateObject("ADODB.Connection")
+				x1Conn.open g_connection_string
+			
+ 				sql="SELECT * FROM :9_shopper WHERE (Email='"& str_uid &"' AND Password='"&str_password&"')"
+  			
+				sql = Replace(sql, ":9", g_storeid)
+				set rs=server.CreateObject("ADODB.Recordset")
+				rs.Open sql, g_connection_string
+		
+				if (not rs.EOF) then
+					Session("shopper_id") = rs("shopper_id")
+					
+					Shopper_Name = ""
+					if Len(rs("FirstName")) > 0 then
+						Shopper_Name = UCase(rs("FirstName"))& " "
+					end if
+					if Len(rs("LastName")) > 0 then
+						Shopper_Name = Shopper_Name & UCase(rs("LastName"))
+					end if
+					
+					shopper_state = rs("State")
+					shopper_zip = rs("ZipCode")
+					shopper_country = rs("Country")
+					
+					shopper_same_address = rs("IsSameAddress")
+					shipping_state = rs("shipping_State")
+					shipping_zip = rs("shipping_ZipCode")
+					shipping_country = rs("shipping_Country")
+					
+					if shopper_same_address then
+						shipping_state = shopper_state
+						shipping_zip = shopper_zip
+						shipping_country = shopper_country
+					end if
+					
+					favorite_link = rs("favorite_link")
+					
+					Session("Shopper_Name") = Shopper_Name
+					Session("Shopper_State") = shipping_state
+					Session("Shopper_Zip") = shipping_zip
+					Session("shopper_country") = shipping_country
+					
+					custom_price_profile = rs("custom_price_profile")
+					custom_catalog_id = Trim(rs("custom_catalog_id"))
+					
+					if Len(custom_catalog_id) > 1 then
+					 csql = "SELECT enable_flag FROM " & g_storeid & "_custom_catalog WHERE catalog_id='" & custom_catalog_id & "'"
+					  Set rs1 = x1Conn.Execute(csql)
+					  If Not rs1.EOF Then
+						custom_catalog_id_flag = rs1(0)
+						Session("CUSTOM_CATALOG_ID_FLAG") = CStr(custom_catalog_id_flag)
+						If custom_catalog_id_flag = 0 Then
+							Session("CUSTOM_CATALOG_ID_FLAG") = ""
+						End If	
+					  Else
+						Session("CUSTOM_CATALOG_ID_FLAG") = ""
+					  End If
+					  rs1.Close
+					else
+					  Session("CUSTOM_CATALOG_ID_FLAG") = ""
+					end if
+					
+					If custom_price_profile > 0 then
+						Session("LOGINGROUP") = CStr(custom_price_profile)
+					Else
+						Session("LOGINGROUP") = rs("member_group")
+					End if
+					
+					'Session("LOGINGROUP") = rs("member_group")
+					
+					if Len(rs("affiliate_id")) > 0 then
+					  Session("PARTNER") = rs("affiliate_id")
+					  Session("Expiration") = rs("DateEntered")
+
+					  if InStr(Session("PARTNER"), "OT") > 0 then
+						  Session("PARTNER") = ""
+						  Session("Expiration") = ""
+					  end if
+
+					  sql="SELECT disable FROM :9_affiliate WHERE affiliate_id='"& rs("affiliate_id") &"'"
+					  sql = Replace(sql, ":9", g_storeid)
+
+					  set rsAff = x1Conn.execute(sql)
+						  if not rsAff.EOF then
+							  status = rsAff("disable")
+						  end if
+					  rsAff.close
+  					
+					  if status = 1 or status = 2 then
+						  Session("PARTNER") = ""
+						  Session("Expiration") = ""
+					  end if
+
+				  end if
+									
+					if Session("IMPRICE") = "1" then
+						imftp_id = rs("imftp_id")
+						
+						if Len(imftp_id) > 0 then
+							sql = "SELECT IMFTP_TableID FROM A_IMFTP WHERE IMFTP_ID=" & imftp_id
+							set rsx = x1Conn.Execute(sql)
+							if not rsx.EOF then
+								Session("IMFILEID") = Trim(rsx(0))
+							else
+								Session("IMFILEID") = g_storeid
+							end if
+							rsx.Close
+						else
+							Session("IMFILEID") = g_storeid
+						end if
+											
+					end if
+
+					x1Conn.close
+					
+					err_msg = ""
+					bok = true
+
+					if rs("new_customer") = 1 then
+						Session("shopper_id") = ""
+						Session("LOGINGROUP") = "D"
+						Session("Shopper_Name") = ""
+						Session("Shopper_State") = ""
+						Session("Shopper_Zip") = ""
+						Session("shopper_country") = ""
+						
+						if Session("IMPRICE") = "1" then
+							Session("IMFILEID") = g_storeid
+						else
+							Session("IMFILEID") = ""
+						end if
+						
+						err_msg = "Your account has not been approved yet."
+						bok = false
+					end if
+					
+
+					if (Session("LoginOption") = "2") then
+					  if rs("confirmed") = 0 or rs("confirmed") = null then
+						  Session("shopper_id") = ""
+						  Session("LOGINGROUP") = "D"
+						  Session("Shopper_Name") = ""
+						  Session("Shopper_State") = ""
+						  Session("Shopper_Zip") = ""
+						  Session("shopper_country") = ""
+  						
+						  if Session("IMPRICE") = "1" then
+							  Session("IMFILEID") = g_storeid
+						  else
+							  Session("IMFILEID") = ""
+						  end if
+  						
+						  err_msg = "Your account has not been approved yet."
+						  bok = false
+					  end if
+					end if
+
+				else
+					Session("shopper_id") = ""
+					Session("LOGINGROUP") = "D"
+					Session("Shopper_Name") = ""
+					Session("Shopper_State") = ""
+					Session("Shopper_Zip") = ""
+					Session("shopper_country") = ""
+					
+					if Session("IMPRICE") = "1" then
+						Session("IMFILEID") = g_storeid
+					else
+						Session("IMFILEID") = ""
+					end if
+					
+					err_msg = "Please verify your login information."
+					bok = false
+				end if
+
+			else
+				
+				err_msg = "Please read and select checkbox to acknowledge privacy policy and user agreement."
+
+			end if 'agreeterms
+
+
+
+		end if
+	end select
+	
+	UpdateSession Session("SESSIONKEY"), "sCID", Session("shopper_id")
+	UpdateSession Session("SESSIONKEY"), "sCName", Session("Shopper_Name")
+	UpdateSession Session("SESSIONKEY"), "sCGroup", Session("LOGINGROUP")
+	UpdateSession Session("SESSIONKEY"), "sAffID", CStr(Session("PARTNER"))
+	UpdateSession Session("SESSIONKEY"), "sCIM", Session("IMFILEID")
+	UpdateSession Session("SESSIONKEY"), "sCustomCatalog", Session("CUSTOM_CATALOG_ID_FLAG")
+%>
+
+<%
+	if bok then
+		if returnPage = "" then
+		  'Response.Redirect("index.phtml")
+		  if Len(favorite_link) > 0 then
+			  'rx_page = Session("StoreURL") & "/index.phtml?sessionID=" & Session("SESSIONKEY")
+			  rx_page = favorite_link
+			else
+			  If Len(Session("REFERER_URL2")) > 10 Then
+		      rx_page = Session("REFERER_URL2")
+		      Session("REFERER_URL2") = ""
+	      else
+			    rx_page = Session("StoreURL") & "/index.phtml?sessionID=" & Session("SESSIONKEY")
+			  end if
+			end if
+		else
+			if returnPage = "basket" or returnPage = "quote" or returnPage = "account_profile" then
+				'Response.Redirect Session("SecureURL") & "/" & returnPage & ".phtml"
+				rx_page = Session("SecureURL") & "/" & returnPage & ".phtml"
+			else
+				if InStr(returnPage, ".phtml") > 0 then
+					'Response.Redirect Session("StoreURL") & "/" & returnPage
+					rx_page = Session("StoreURL") & "/" & returnPage
+				else
+					'Response.Redirect Session("StoreURL") & "/" & returnPage & ".phtml"
+					rx_page = Session("StoreURL") & "/" & returnPage & ".phtml?sessionID="  & Session("SESSIONKEY")
+				end if
+			end if
+		end if
+	end if
+	
+	If Len(Session("REFERER_URL2")) > 10 Then
+		rx_page = Session("REFERER_URL2")
+	End if
+
+%>
+<HTML>
+<HEAD>
+</HEAD>
+<BODY>
+<% if bok then %>
+
+<script language="JavaScript">
+document.location.replace("<%=rx_page%>")
+</script>
+<% else %>
+<table width="100%">
+	<tr>
+		<td align=center><br><br>
+			<P>
+				<font size="5" color="red"><%=err_msg%></font><br><br>
+				Click <a href="javascript:history.back()"><font color="BLUE"><u><b>here</b></u></font></a> to go back.
+			</P>
+		</td>
+	</tr>
+</table>
+<% end if %>
+</BODY>
+</HTML>

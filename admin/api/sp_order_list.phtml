@@ -1,0 +1,292 @@
+<%@ Language=VBScript %>
+<%
+	Response.CodePage = 65001
+	Response.CharSet = "UTF-8"
+%>
+<%
+  Response.Expires = -1
+%>
+<!-- #INCLUDE File="../local/local.phtml" -->
+<!-- #INCLUDE File="../util/xt_func_util.phtml" -->
+<!-- #INCLUDE File="../util/xt_func_string.phtml" -->
+<%
+	'====================================================
+	strPath = Server.MapPath("..\docs")
+	guid = GetUniqueLongIntegerID()
+	'====================================================
+	sEcho = Trim(Request("draw"))
+	iDisplayLength = Trim(Request("length"))
+	iDisplayStart = Trim(Request("start"))
+
+	sEcho = FilterStringEx(sEcho, "[^0-9]")
+	iDisplayLength = FilterStringEx(iDisplayLength, "[^0-9]")
+	iDisplayStart = FilterStringEx(iDisplayStart, "[^0-9]")
+
+	sEcho = Cint(sEcho)
+	iDisplayLength = Cint(iDisplayLength)
+	iDisplayStart = Cint(iDisplayStart)
+	'=======================================================================================
+	strWhere = ""
+	'---------------------------------------------------------------------------------------
+	order_id = Trim(Request("order_id"))
+	if Len(order_id) > 0 then
+		strWhere = strWhere &  " (order_id like '%" & order_id & "%') AND"
+	end if
+	'----------------------------------------------------------------------------------------
+	sMin = Trim(Request("order_date_from"))
+	sMax = Trim(Request("order_date_to"))
+	sDateRange = ""
+	if IsDate(sMin) then
+		if IsDate(sMax) then
+			dMax = CDate(sMax)
+			dMax = DateAdd("d", 1, dMax)
+			sMax = FormatDateTime(dMax,0)
+			sDateRange = "(date_entered between '" & sMin & "' AND '" & sMax & "')"
+		else
+			'dMin = CDate(sMin)
+			dMax = Date()
+			dMax = DateAdd("d", 1, dMax)
+			sMax = FormatDateTime(dMax,0)
+			sDateRange = "(date_entered between '" & sMin & "' AND '" & sMax & "')"
+		end if
+	else
+		if IsDate(sMax) then
+			dMax = CDate(sMax)
+			dMax = DateAdd("d", 1, dMax)
+			sMax = FormatDateTime(dMax,0)
+			sDateRange = "(date_entered between '1/1/1970' AND '" & sMax & "')"
+		end if
+	end if
+	
+	if Len(sDateRange) > 0 then
+		strWhere = strWhere &  " " & sDateRange & " AND"
+	end if
+	'----------------------------------------------------------------------------------------
+	order_customer_name = Trim(Request("order_customer_name"))
+	if Len(order_customer_name) > 1 then
+		strWhere = strWhere &  " (bill_contact_firstname + ' ' + bill_contact_lastname like '%" & order_customer_name & "%') AND"
+	end if
+	'----------------------------------------------------------------------------------------
+	order_ship_to = Trim(Request("order_ship_to"))
+	if Len(order_ship_to) > 1 then
+		strWhere = strWhere &  " (ShipFirstName + ' ' + ShipLastName like '%" & order_ship_to & "%') AND"
+	end if
+	'----------------------------------------------------------------------------------------
+	sMin = Trim(Request("order_price_from"))
+	sMax = Trim(Request("order_price_to"))
+	sTotalRange = ""
+	if IsNumeric(sMin) then
+		if IsNumeric(sMax) then
+			sTotalRange = "(Total between " & sMin & " AND " & sMax & ")"
+		else
+			sMax = "1000000"
+			sTotalRange = "(Total between " & sMin & " AND " & sMax & ")"
+		end if
+	else
+		if IsNumeric(sMax) then
+			sTotalRange = "(Total between 0 AND " & sMax & ")"
+		end if
+	end if
+	
+	if Len(sTotalRange) > 0 then
+		strWhere = strWhere &  " " & sTotalRange & " AND"
+	end if
+	'----------------------------------------------------------------------------------------
+	order_status = Trim(Request("order_status"))
+	if Len(order_status) > 1 then
+		strWhere = strWhere &  " (status = '" & order_status & "') AND"
+	end if
+	'----------------------------------------------------------------------------------------
+	
+	if Len(strWhere) > 0 then
+		strWhere = Left(strWhere, Len(strWhere) - 4)
+	else
+		strWhere = " order_id LIKE '%%'"
+	end if
+	
+	
+	'=======================================================================================
+	'ORDERING
+	SELECT CASE Trim(Request("order[0][column]"))
+	CASE "0"
+		sOrder = "order_id DESC"
+	CASE "1"
+		sOrder = "order_id " & Trim(Request("order[0][dir]"))
+	CASE "2"
+		sOrder = "date_entered " & Trim(Request("order[0][dir]"))
+	CASE "3"
+		sOrder = "bill_contact_firstname + ' ' + bill_contact_lastname " & Trim(Request("order[0][dir]"))
+	CASE "4"
+		sOrder = "ShipFirstName + ' ' + ShipLastName " & Trim(Request("order[0][dir]"))
+	CASE "5"
+		sOrder = "total " & Trim(Request("order[0][dir]"))
+	CASE "6"
+		sOrder = "status " & Trim(Request("order[0][dir]"))
+	CASE "7"
+		sOrder = "order_id DESC"
+	CASE "8"
+		sOrder = "order_id DESC"
+	CASE "9"
+		sOrder = "order_id DESC"
+	CASE ELSE
+		sOrder = "order_id DESC"
+	END SELECT 
+	'here we create the variable "strOrderBy" that will be used in the SQL querry
+	strOrderBy = "ORDER BY " & sOrder
+
+	'======================================================================================
+
+
+	Set dbconnx=server.CreateObject("ADODB.Connection")
+	dbconnx.Open g_connection_string
+
+	sql = "SELECT * FROM " & g_storeid & "_order WHERE " & strWhere & " " & strOrderBy
+
+	sqlx = "SELECT COUNT(order_id) FROM " & g_storeid & "_order WHERE " & strWhere 
+
+	set rs = dbconnx.Execute(sql)
+
+	iTotalDisplayRecords = 0
+	iTotalRecords = 50
+	set rs1 = dbconnx.Execute(sqlx)
+	if not rs1.EOF then
+		iTotalDisplayRecords = rs1(0)
+		iTotalRecords = rs1(0)
+	else
+	end if
+	rs1.Close
+
+	'iTotalDisplayRecords = 50
+
+	'iTotalRecords = 50
+
+	%>
+	{"draw": <%=sEcho%>, "recordsTotal": <%=iTotalRecords%>, "recordsFiltered": <%=iTotalDisplayRecords%>, "data": [ 
+	<%
+	i = 0
+
+	if rs.eof = false then
+		rs.move(iDisplayStart)
+		do while i < iDisplayLength and not rs.eof
+			
+			s_order_id = rs("order_id")
+			s_order_owner = rs("salesrep_id")
+			s_order_amount = FormatNumber(rs("total"),2)
+			
+			s_order_status = rs("status")
+			auth_number = rs("AuthNumber")
+			CybercashResponse = Trim(rs("CybercashResponse"))
+			
+			s_date_created = rs("date_entered")
+			s_date_updated = rs("date_changed")
+			
+			s_date_created = ConvertToTimeZone(s_date_created)
+			s_date_updated = ConvertToTimeZone(s_date_updated)
+			
+			s_company_name = rs("bill_company")
+			s_shopper = rs("CardName")
+			s_shopper_firstname = rs("bill_contact_firstname")
+			s_shopper_lastname = rs("bill_contact_lastname")
+			
+			cardtype = rs("CardType")
+			cvv2_flag = rs("CVV2_flag")
+			avs_flag = rs("AVS_flag")
+			export_flag = rs("export_flag")
+			
+			if Len(s_shopper) > 0 then
+			else
+				s_shopper = s_shopper_lastname & ", " & s_shopper_firstname
+			end if
+			
+			
+			If Len(s_shopper) > 0 Then
+				s_shopper = Replace(s_shopper, "'", "&#39")
+			End if
+			If Len(s_company_name) > 0 Then
+				s_company_name = Replace(s_company_name, "'", "&#39")
+			End if
+			
+			s_order_id = Trim(rs("order_id"))
+			
+			s_order_notes = Trim(rs("notes"))
+			if Len(s_order_notes) > 20 then
+				s_order_notes = Left(s_order_notes,20) & "..."
+			end if
+			If Len(s_order_notes) > 0 Then
+				s_order_notes = Replace(s_order_notes, "'", "&#39")
+				s_order_notes = Replace(s_order_notes, VbCrLf, " ")
+				s_order_notes = Replace(s_order_notes, VbLf, " ")
+				s_order_notes = Replace(s_order_notes, VbCr, " ")
+				s_order_notes = Replace(s_order_notes, """", "&#34;")
+				s_order_notes = Replace(s_order_notes, "\", "")
+			End if
+			
+			
+			s_order_name = rs("order_name")
+			If Len(s_order_name) > 0 Then
+				s_order_name = Replace(s_order_name, "'", "&#39")
+				s_order_name = Replace(s_order_name, """", "&#34;")
+			End if
+			
+			aaData = aaData & "['"
+			aaData = aaData & "<label class=\'mt-checkbox mt-checkbox-single mt-checkbox-outline\'><input name=\'id[]\' type=\'checkbox\' class=\'checkboxes\' value=\'" &  s_order_id & "\'/><span></span></label> " & "','" 
+			'aaData = aaData & "<a href=\'sales_orders_detail.phtml?so_id=" & s_order_id & "\'>" & s_order_id & "</a>"
+			aaData = aaData  & s_order_id & ""
+			aaData = aaData & "','" 
+			aaData = aaData & s_date_created & "','"
+			'aaData = aaData & s_company_name & "','" 
+			aaData = aaData & s_shopper & "','" 
+			aaData = aaData & s_shopper & "','" 
+			aaData = aaData & s_order_amount & "','"
+			aaData = aaData & s_order_status & "','"
+			
+			'==================================================================================================
+			sql = "SELECT quote_id, quote_status FROM " & g_storeid & "_quotes WHERE order_id='" & s_order_id & "'"
+			set rsQuote = dbconnx.Execute(sql)
+			s_quote_num = ""
+			do while not rsQuote.EOF
+				if rsQuote(0) > 0 then
+					if rsQuote(1) = 1 or rsQuote(1) = 4 or rsQuote(1) = 3 then
+						s_quote_num = s_quote_num & "<a href=\'javascript:OpenQuoteInvoice(" & rsQuote(0) & ")\'>" & rsQuote(0) & "</a>"
+					else
+						s_quote_num = s_quote_num & "<a href=\'v2_quote.asp?quote_id=" & rsQuote(0) & "\'>" & rsQuote(0) & "</a>"
+					end if
+				end if
+				rsQuote.MoveNext
+			loop
+			rsQuote.Close
+			'==================================================================================================
+			
+			aaData = aaData & s_quote_num & "','"
+			
+			'==================================================================================================
+			'purchase order...
+			sql = "SELECT DISTINCT item_po FROM " & g_storeid & "_order_item WHERE order_id='" & s_order_id & "'"
+			set rsPO = dbconnx.Execute(sql)
+			s_po_num = ""
+			do while not rsPO.EOF
+				if rsPO(0) > 0 then
+					s_po_num = s_po_num & "<a href=\'v2_po.asp?po_id=" & rsPO(0) & "\'>" & rsPO(0) & "</a><br>"
+				end if
+				rsPO.MoveNext
+			loop
+			rsPO.Close
+			'==================================================================================================
+			aaData = aaData & s_po_num & "','"
+			
+			aaData = aaData & "<a href=\'sales_order_detail.phtml?so_id=" & s_order_id & "\' class=\'btn btn-sm btn-outline grey-salsa\'><i class=\'fa fa-search\'><\/i> View<\/a>" & "'],"
+			
+			aaData = Replace(aaData,"'",chr(34))
+			rs.MoveNext
+			i=i+1
+		loop
+		rs.Close
+		aaData = Left(aaData, Len(aaData)-1)
+	else
+		aaData = ""
+	end if
+	response.write aaData & "] }"
+
+%>
+
+
