@@ -1,7 +1,7 @@
 <%
 	g_static_block_content = ""
 	sql = "SELECT block_content FROM " & g_storeid & "_static_block WHERE block_identifier='" & g_static_block_code & "' AND block_status=1"
-	set rsStaticBlock = conn.Execute(sql)
+	set rsStaticBlock = dbconn.Execute(sql)
 	if not rsStaticBlock.EOF then
 		g_static_block_content = rsStaticBlock("block_content")
 	end if

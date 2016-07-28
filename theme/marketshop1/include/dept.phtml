@@ -12,28 +12,33 @@
 			<label class="control-label" for="input-sort">Sort By:</label>
 		</div>
 		<div class="col-md-3 col-sm-2 text-right">
-			<select id="input-sort" class="form-control col-sm-3">
-				<option value="" selected="selected">Default</option>
-				<option value="">Name (A - Z)</option>
-				<option value="">Name (Z - A)</option>
-				<option value="">Price (Low &gt; High)</option>
-				<option value="">Price (High &gt; Low)</option>
-				<option value="">Rating (Highest)</option>
-				<option value="">Rating (Lowest)</option>
-				<option value="">Model (A - Z)</option>
-				<option value="">Model (Z - A)</option>
+			<select id="input-sort" class="form-control col-sm-3" onchange="setLocation(this.value)">
+				<!--
+				<option value="" selected="selected">Default</option>onchange="setLocation(this.value)"
+				-->
+				<option value="<%=strSortURL_Name %>" <% if so="0" then %>selected="selected" <%end if %>>Name (A - Z)</option>
+				<option value="<%=strSortURL_Name_desc %>" <% if so="1" then %>selected="selected" <%end if %>>Name (Z - A)</option>
+				<option value="<%=strSortURL_Price %>" <% if so="8" then %>selected="selected" <%end if %>>Price (Low &gt; High)</option>
+				<option value="<%=strSortURL_Price_desc %>" <% if so="9" then %>selected="selected" <%end if %>>Price (High &gt; Low)</option>
+				<option value="<%=strSortURL_PartNumber %>" <% if so="6" then %>selected="selected" <%end if %>>SKU (A - Z)</option>
+				<option value="<%=strSortURL_PartNumber_desc %>" <% if so="7" then %>selected="selected" <%end if %>>SKU (Z - A)</option>
 			</select>
 		</div>
 		<div class="col-sm-1 text-right">
 			<label class="control-label" for="input-limit">Show:</label>
 		</div>
 		<div class="col-sm-2 text-right">
-			<select id="input-limit" class="form-control">
-				<option value="" selected="selected">20</option>
-				<option value="">25</option>
-				<option value="">50</option>
-				<option value="">75</option>
-				<option value="">100</option>
+			<select id="input-limit" class="form-control" onchange="setLocation(this.value);">
+				<option value="<%=strSortURL_10 %>" <% if show="10" then %>selected="selected" <%end if %>>
+				10 </option>
+				<option value="<%=strSortURL_20 %>" <% if show="20" then %>selected="selected" <%end if %>>
+				20 </option>
+				<option value="<%=strSortURL_40 %>" <% if show="40" then %>selected="selected" <%end if %>>
+				40 </option>
+				<option value="<%=strSortURL_60 %>" <% if show="60" then %>selected="selected" <%end if %>>
+				60 </option>
+				<option value="<%=strSortURL_80 %>" <% if show="80" then %>selected="selected" <%end if %>>
+				80 </option>
 			</select>
 		</div>
 	</div>
@@ -75,13 +80,49 @@
 <div class="row">
 	<div class="col-sm-6 text-left">
 		<ul class="pagination">
+			<%
+				rest = page mod block_size
+				if rest = 0 then rest = block_size end if
+				start = page - rest + 1
+			%>
+			<%if start-block_size > 0 Then %>
+					<li>
+					<a class="previous" href="<%=strPageURL %>&page=<%=start-block_size%>" title="Previous">
+					Prev </a>
+					</li>
+			<% end if %>
+
+			<%
+				for xp = start to start+block_size-1
+				if xp <= page_count then
+				if xp = page then
+			%>
+				<li class="active"><span><%=xp%></span></li>
+			<%
+				else
+			%>
+				<li><a href="<%=strPageURL %>&page=<%=xp%>"><%=xp%></a></li>
+			<%
+				end if
+			end if
+			next
+			%>
+
+			<% if start+block_size <= page_count Then %>
+				<li>
+				<a class="next" href="<%=strPageURL %>&page=<%=start+block_size%>" title="Next">
+				Next </a>
+				</li>
+			<% end if %>
+			<!--
 			<li class="active"><span>1</span></li>
 			<li><a href="#">2</a></li>
 			<li><a href="#">&gt;</a></li>
 			<li><a href="#">&gt;|</a></li>
+			-->
 		</ul>
 	</div>
 	<div class="col-sm-6 text-right">
-		Showing 1 to 12 of 15 (2 Pages)
+		Showing <%=i_start%> to <%=i_last%> of <%=list_count%>
 	</div>
 </div>

@@ -802,10 +802,10 @@ end function
 					str_sort = " ORDER BY vendor_name DESC, name"
 					sort_description = "Manufacturer <font face=webdings>5</font>"
 				case "6"
-					str_sort = " ORDER BY pf_id"
+					str_sort = " ORDER BY SKU"
 					sort_description = "Part Number <font face=webdings>6</font>"
 				case "7"
-					str_sort = " ORDER BY pf_id DESC"
+					str_sort = " ORDER BY SKU DESC"
 					sort_description = "Part Number <font face=webdings>5</font>"
 				case "8"
 					str_sort = " ORDER BY price_" &  Session("LOGINGROUP")
@@ -904,15 +904,18 @@ end function
 			'========================================================================================
 			' GET TOOLBAR VALUES
 
-			strSortURL_3 = Session("StoreURL") & "/dept.phtml?dept_id=" & dept_id & "&mode=" & mode & "&so=" & so & "&show=3"
-			strSortURL_5 = Session("StoreURL") & "/dept.phtml?dept_id=" & dept_id & "&mode=" & mode & "&so=" & so & "&show=5"
 			strSortURL_10 = Session("StoreURL") & "/dept.phtml?dept_id=" & dept_id & "&mode=" & mode & "&so=" & so & "&show=10"
-			strSortURL_15 = Session("StoreURL") & "/dept.phtml?dept_id=" & dept_id & "&mode=" & mode & "&so=" & so & "&show=15"
 			strSortURL_20 = Session("StoreURL") & "/dept.phtml?dept_id=" & dept_id & "&mode=" & mode & "&so=" & so & "&show=20"
+			strSortURL_40 = Session("StoreURL") & "/dept.phtml?dept_id=" & dept_id & "&mode=" & mode & "&so=" & so & "&show=40"
+			strSortURL_60 = Session("StoreURL") & "/dept.phtml?dept_id=" & dept_id & "&mode=" & mode & "&so=" & so & "&show=60"
+			strSortURL_80 = Session("StoreURL") & "/dept.phtml?dept_id=" & dept_id & "&mode=" & mode & "&so=" & so & "&show=80"
 
 			strSortURL_Name = Session("StoreURL") & "/dept.phtml?dept_id=" & dept_id & "&mode=" & mode & "&so=0&show=" & show
+			strSortURL_Name_desc = Session("StoreURL") & "/dept.phtml?dept_id=" & dept_id & "&mode=" & mode & "&so=1&show=" & show
 			strSortURL_PartNumber = Session("StoreURL") & "/dept.phtml?dept_id=" & dept_id & "&mode=" & mode & "&so=6&show=" & show
+			strSortURL_PartNumber_desc= Session("StoreURL") & "/dept.phtml?dept_id=" & dept_id & "&mode=" & mode & "&so=7&show=" & show
 			strSortURL_Price = Session("StoreURL") & "/dept.phtml?dept_id=" & dept_id & "&mode=" & mode & "&so=8&show=" & show
+			strSortURL_Price_desc = Session("StoreURL") & "/dept.phtml?dept_id=" & dept_id & "&mode=" & mode & "&so=9&show=" & show
 
 			Select case so
 				

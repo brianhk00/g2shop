@@ -1,0 +1,188 @@
+<%
+	'----------READ SETTING-----------------------------------------------------------------------------
+	category_data = ""
+	custom_category_id = ""
+	str_pathinfo = Request.ServerVariables("APPL_PHYSICAL_PATH")
+	BlockIniFile = str_pathinfo & "theme\marketshop1\docs\index\category.txt"
+	Set FileObject = Server.CreateObject("Scripting.FileSystemObject")
+	Set Out = FileObject.OpenTextFile(BlockIniFile,1,FALSE, FALSE)
+	category_data = Trim(Out.ReadLine) 
+	Out.Close
+	set Out = nothing
+	Set FileObject = nothing
+	
+	if Len(category_data) > 0 then
+		ar_category_data = Split(category_data, ",")
+		if custom_category_index <= Ubound(ar_category_data) then
+			custom_category_id = ar_category_data(custom_category_index)
+		end if
+	else
+		custom_category_id = ""
+	end if
+	'---------------------------------------------------------------------------------------
+
+	if Len(custom_category_id) > 0 then
+	sql = "SELECT * FROM " & g_storeid & "_dept WHERE dept_id='" & custom_category_id & "'"
+    Set rsCustom = dbconn.Execute(sql)
+	if not rsCustom.EOF then
+		custom_dept_name = Trim(rsCustom("dept_name"))
+		custom_icecat_category = rsCustom("icecat_category")
+		custom_dept_url_key = rsCustom("url_key")
+		
+		'-------------------------------------------------------------------------
+		custom_dept_name = TranslateX(custom_dept_name, 1, custom_category_id, 1)
+%>
+<h3 class="subtitle"><%=custom_dept_name%></h3>
+<div class="owl-carousel product_carousel">
+	<%
+		sql = "SELECT TOP 20" & g_storeid & "_product.* FROM " & g_storeid & "_product WHERE pf_id IN(SELECT pf_id FROM " & g_storeid & "_dept_prod WHERE dept_id like '" & custom_category_id & "%')"
+		set rsCustomList = dbconn.Execute(sql)
+		do while not rsCustomList.EOF
+			
+			custom_pf_id = rsCustomList("pf_id")
+			custom_prod_name = rsCustomList("name")
+			custom_prod_on_sale = rsCustomList("on_sale")
+			custom_prod_sale_price = rsCustomList("sale_price")
+			custom_prod_group_price = rsCustomList("price_"& Session("LOGINGROUP"))
+			custom_prod_url_key = rsCustomList("url_key")
+			custom_prod_thumb_image = rsCustomList("image_file")
+			custom_prod_mm_type = rsCustomList("mm_type")
+			custom_prod_espec_sku = Trim(rsCustomList("espec_sku"))
+			custom_prod_use_icecat_images = rsCustomList("use_icecat_images")
+			custom_prod_retail_price = rsCustomList("retail_price")
+			'sale..			  
+			if custom_prod_on_sale then
+				custom_adjusted_price = custom_prod_sale_price
+			Else
+				custom_adjusted_price = custom_prod_group_price
+			End if
+			custom_prod_saveby = 0
+			if custom_prod_retail_price > 0 then
+				custom_prod_saveby = (custom_prod_retail_price - custom_adjusted_price)/custom_prod_retail_price
+				custom_prod_saveby = custom_prod_saveby * 100
+				custom_prod_saveby = CInt(custom_prod_saveby)
+			end if
+			'====================================================================================================
+			'SEO URLs
+			if Len(custom_prod_url_key) > 0 then
+				custom_product_link = g_store_url & custom_prod_url_key & ".html"
+			else
+				custom_product_link = g_store_url & "product.phtml?pf_id=" & custom_pf_id
+			end if
+			'====================================================================================================
+			ssImgSize = "upload/w_" & "200" & ",h_" & "200" & ",c_pad/"
+			
+			if custom_prod_thumb_image = "--" then
+				cloudImg = g_noimage_url
+				ssImg = Replace(cloudImg, "upload/", ssImgSize)
+			else
+				if custom_prod_mm_type = 1 then
+					if Len(custom_prod_espec_sku) > 0 AND custom_prod_use_icecat_images = 1 then
+						'USE ICECAT IMAGE
+						icecat_id = 0
+						if Session("ENABLEINT") = "2" OR Session("ENABLEINT") = "3" then
+							sql = "SELECT * FROM A_ssprice_CA WHERE sku='" & custom_prod_espec_sku & "'"
+						else
+							sql = "SELECT * FROM A_ssprice_main WHERE sku='" & custom_prod_espec_sku & "'"
+						end If
+
+						set rsPA = conn_ss1.Execute(sql)
+						if not rsPA.EOF then
+							image_published = rsPA("image_published")
+							categoryid = Trim(rsPA("CATEGORY"))
+							icecat_id = rsPA("icecat_id")
+						end if
+						rsPA.Close
+
+						sql = "SELECT cloudinary_url FROM [192.168.5.134].[icecat].dbo.cloudinary_images WHERE product_id = " & icecat_id
+						Set rsCloudImage = conn_ss1.Execute(sql)
+						If Not rsCloudImage.EOF Then
+							cloudImg = Trim(rsCloudImage("cloudinary_url"))
+						Else
+							sql = "SELECT * FROM " & g_storeid & "_product_image WHERE image_name = '" & custom_prod_thumb_image & "'"
+							Set rsCloudImage2 = dbconn.Execute(sql)
+							If Not rsCloudImage2.EOF Then
+								cloudImg = Trim(rsCloudImage2("cloud_url"))
+							Else
+								cloudImg = g_noimage_url
+							End If
+							rsCloudImage2.Close
+							Set rsCloudImage2 = Nothing
+						End If
+						rsCloudImage.Close
+						Set rsCloudImage = Nothing
+						ssImg = Replace(cloudImg, "upload/", ssImgSize)
+					else
+						sql = "SELECT * FROM " & g_storeid & "_product_image WHERE image_name = '" & custom_prod_thumb_image & "'"
+						Set rsCloudImage2 = dbconn.Execute(sql)
+						If Not rsCloudImage2.EOF Then
+							cloudImg = Trim(rsCloudImage2("cloud_url"))
+						Else
+							cloudImg = g_noimage_url
+						End If
+						rsCloudImage2.Close
+						Set rsCloudImage2 = Nothing
+						ssImg = Replace(cloudImg, "upload/", ssImgSize)
+					end if
+				else
+					ssImg = "http://a4.res.cloudinary.com/dd3llssvr/image/fetch/" & "w_" & "200" & ",h_" & "200" & ",c_pad,c_fill/" & g_store_url & "assets/pmedia/prod_img/" & Server.URLEncode(prod_thumb_image)
+				end if
+				
+				'====================================================================================================
+				custom_review_avg = 0
+				sql = "SELECT AVG(rating) FROM " & g_storeid & "_Rating WHERE ProductID = '" & custom_pf_id & "'"
+				set rsReviews = dbconn.Execute(sql)
+				if not rsReviews.EOF then
+					custom_review_avg = rsReviews(0)
+				end if
+				rsReviews.Close
+				set rsReviews = nothing
+				
+				if IsNumeric(custom_review_avg) then
+					custom_review_avg = CInt(custom_review_avg)
+				else
+					custom_review_avg = 0	
+				end if
+				
+			end if
+			
+			custom_thumb_image_link = ssImg
+			
+			'--------------------------------------------------------------------------------------------------------
+			custom_prod_name = TranslateX(custom_prod_name, 2, custom_pf_id, 1)
+	%>
+	<div class="product-thumb clearfix">
+		<div class="image">
+			<a href="<%=custom_product_link%>"><img src="<%=custom_thumb_image_link%>" alt="<%=custom_prod_name%>" title="<%=custom_prod_name%>" class="img-responsive"/></a>
+		</div>
+		<div class="caption">
+			<h4><a href="<%=custom_product_link%>"><%=custom_prod_name%></a></h4>
+			<p class="price">
+				<% if custom_prod_on_sale then %>
+				<span class="price-new">$<%=FormatNumber(custom_adjusted_price,2)%></span><span class="price-old">$<%=FormatNumber(custom_prod_group_price,2)%></span>
+				<% else %>
+				$<%=FormatNumber(custom_adjusted_price,2)%>
+				<% end if %>
+				<% 
+					if custom_prod_saveby > 0 then
+				%>
+				<span class="saving">-<%=custom_prod_saveby%>%</span>
+				<%
+					end if
+				%>
+			</p>
+		</div>
+	</div>
+	<%
+			rsCustomList.MoveNext
+		loop
+		rsCustomList.Close
+		set rsCustomList = nothing
+	%>
+</div>
+<%
+	end if
+	rsCustom.Close
+	set rsCustom = nothing
+	end if
+%>

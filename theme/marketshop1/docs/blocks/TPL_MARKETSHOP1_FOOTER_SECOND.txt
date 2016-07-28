@@ -1,0 +1,17 @@
+<div class="container">
+	<div id="powered" class="clearfix">
+		<div class="powered_text pull-left flip">
+			<p>
+				Company, Inc. &copy; 2016
+			</p>
+		</div>
+		<div class="social pull-right flip">
+			<a href="#" target="_blank"><img data-toggle="tooltip" src="image/socialicons/facebook.png" alt="Facebook" title="Facebook"></a><a href="#" target="_blank"><img data-toggle="tooltip" src="image/socialicons/twitter.png" alt="Twitter" title="Twitter"></a><a href="#" target="_blank"><img data-toggle="tooltip" src="image/socialicons/google_plus.png" alt="Google+" title="Google+"></a><a href="#" target="_blank"><img data-toggle="tooltip" src="image/socialicons/pinterest.png" alt="Pinterest" title="Pinterest"></a><a href="#" target="_blank"><img data-toggle="tooltip" src="image/socialicons/rss.png" alt="RSS" title="RSS"></a>
+		</div>
+	</div>
+	<div class="bottom-row">
+		<div class="payments_types">
+			<a href="#" target="_blank"><img data-toggle="tooltip" src="image/payment/payment_paypal.png" alt="paypal" title="PayPal"></a><a href="#" target="_blank"><img data-toggle="tooltip" src="image/payment/payment_american.png" alt="american-express" title="American Express"></a><a href="#" target="_blank"><img data-toggle="tooltip" src="image/payment/payment_2checkout.png" alt="2checkout" title="2checkout"></a><a href="#" target="_blank"><img data-toggle="tooltip" src="image/payment/payment_maestro.png" alt="maestro" title="Maestro"></a><a href="#" target="_blank"><img data-toggle="tooltip" src="image/payment/payment_discover.png" alt="discover" title="Discover"></a><a href="#" target="_blank"><img data-toggle="tooltip" src="image/payment/payment_mastercard.png" alt="mastercard" title="MasterCard"></a>
+		</div>
+	</div>
+</div>

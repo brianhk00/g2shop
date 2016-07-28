@@ -26,6 +26,113 @@
 	if pf_id = "0" then
 		pf_id = GetUniqueLongIntegerID()
 		pf_op = "new"
+		
+		did = Trim(Request("did"))
+		if Len(did) > 0 then
+			'===============================================================================================
+			' GET Information
+			'===============================================================================================
+			sql = "SELECT * FROM " & g_storeid & "_product WHERE pf_id='" & did & "'"
+			set rsProduct = dbconn.Execute(sql)
+			if not rsProduct.EOF then
+				
+				'pf_sku = Trim(rsProduct("sku"))
+				pf_name = Trim(rsProduct("name"))
+				pf_description = Trim(rsProduct("description"))
+				pf_detail=Trim(rsProduct("details"))
+				pf_price=rsProduct("list_price")
+				pf_retail_price = rsProduct("retail_price")
+				'pf_image_file =rsProduct("image_file")
+				'pf_thumb_image = rsProduct("thumb_image")
+				pf_on_sale = rsProduct("on_sale")
+				pf_sale_price = rsProduct("sale_price")
+				pf_weight=rsProduct("weight")
+				pf_is_nontaxable = rsProduct("is_nontaxable")
+				pf_is_noship = rsProduct("is_noship")
+				pf_dist_flag = rsProduct("dist_flag")
+				pf_vendor_name = Trim(rsProduct("vendor_name"))
+				pf_vendor_number = Trim(rsProduct("vendor_number"))
+				
+				pf_use_price = Trim(rsProduct("use_price"))
+				pf_price_A = Trim(rsProduct("price_A"))
+				pf_price_B = Trim(rsProduct("price_B"))
+				pf_price_C = Trim(rsProduct("price_C"))
+				pf_price_D = Trim(rsProduct("price_D"))
+				
+				
+				pf_manu_part_number = Trim(rsProduct("manu_part_num"))
+				pf_IM_part_number = Trim(rsProduct("IM_part_num"))
+				pf_TD_part_number = Trim(rsProduct("TD_part_num"))
+				pf_UPC_code = Trim(rsProduct("UPC"))
+				pf_stock = Trim(rsProduct("stock"))
+				pf_iv_text = Trim(rsProduct("iv_text"))
+				if pf_stock < 0 then
+					pf_stock = 0
+				end if
+				if pf_is_noship then
+					pf_is_noship = "1"
+				else
+					pf_is_noship = "0"
+				end if
+				
+				pf_warranty_id = Trim(rsProduct("warranty_id"))
+				pf_visited = rsProduct("visited")
+				pf_count_since = rsProduct("count_since")
+				pf_bundle_flag = rsProduct("bundle_flag")
+				pf_bundle_group_id = Trim(rsProduct("bundle_group_id"))
+				pf_map_price_flag = rsProduct("map_price_flag")
+				pf_related_item_category = Trim(rsProduct("related_item_category"))
+				pf_page_title = Trim(rsProduct("page_title"))
+				pf_export_filter = rsProduct("export_filter")
+				pf_condition = Trim(rsProduct("product_condition"))
+				pf_SN_part_number = Trim(rsProduct("SN_part_num"))
+				pf_espec_sku = Trim(rsProduct("espec_sku"))
+				pf_buynow_link = Trim(rsProduct("buynow_link"))
+				pf_qb_item_type = Trim(rsProduct("qb_item_type"))
+				pf_espec_categoryid = rsProduct("espec_categoryid")
+				
+				'pf_URL_key = rsProduct("URL_key")
+				pf_dh_part_number = rsProduct("dh_part_number")
+				pf_dist_inventory_sync = rsProduct("dist_inventory_sync")
+				pf_meta_description = rsProduct("meta_description")
+				pf_meta_keywords = rsProduct("meta_keywords")
+				pf_stock_status = rsProduct("stock_status")
+				
+				pf_item_status = rsProduct("item_status")
+				pf_include_icecat_specdata = rsProduct("include_icecat_specdata")
+				pf_use_icecat_images = rsProduct("use_icecat_images")
+				
+				pf_markup_category =  rsProduct("markup_category")
+				if Len(pf_markup_category) > 1 then
+				else
+					pf_markup_category = "0"
+				end if
+				
+			end if
+			rsProduct.Close
+			set rsProduct = nothing
+			
+			'===============================================================================================
+			' GET CATEGORY INFORMATION - Multi Ready
+			'===============================================================================================
+			s_dept_id = ""
+			if Len(did) > 1 then
+				sql = "SELECT dept_id FROM " & g_storeid & "_dept_prod WHERE pf_id = '" & did & "'"
+				set rs = dbconn.Execute(sql)
+				do while not rs.EOF
+					s_dept_id = s_dept_id & rs("dept_id") & ","
+					rs.MoveNext
+				loop
+				rs.Close
+				set rs = nothing
+			end if
+			if Len(s_dept_id) > 1 then
+				s_dept_id = Left(s_dept_id, Len(s_dept_id)-1)
+			end if
+			
+			
+		end if
+		
 	else
 		pf_op = "edit"
 	end if
@@ -417,10 +524,12 @@
 								<div class="row">
 									<div class="col-md-12">
 										<form id="form_edit_1" class="form-horizontal form-row-seperated" action="#">
+										<input type="hidden" id="pf_id" name="pf_id" value="<%=pf_id%>">
+										<input type="hidden" id="pf_op" name="pf_op" value="<%=pf_op%>">
 											<div class="portlet">
 												<div class="portlet-title">
 													<div class="caption">
-													<i class="fa fa-shopping-cart"></i>
+													<i class="icon-cloud-upload"></i>
 													<%
 													if Len(pf_name) > 0 then
 														Response.Write(Left(pf_name, 50))
@@ -428,15 +537,18 @@
 														Response.Write("New Product")
 													end if
 													%>
+													<% if Len(did) > 0 then %>
+													[Duplicate]
+													<% end if %>
 													</div>
 													<div class="actions btn-set">
 														<button type="button" onclick="location.href='catalog_product.phtml';" name="back" class="btn btn-default">
 															<i class="fa fa-angle-left"></i> Back
 														</button>
-														<button class="btn btn-success">
+														<button class="btn btn-success" onclick="savebutton='1';">
 															<i class="fa fa-check"></i> Save
 														</button>
-														<button class="btn btn-success">
+														<button class="btn btn-success" onclick="savebutton='0';">
 															<i class="fa fa-check-circle"></i> Save & Continue Edit
 														</button>
 														<div class="btn-group">
@@ -446,10 +558,10 @@
 															</a>
 															<div class="dropdown-menu pull-right">
 																<li>
-																	<a href="javascript:;"> Duplicate </a>
+																	<a href="javascript:;" id="DuplicateEntry"> Duplicate </a>
 																</li>
 																<li>
-																	<a href="javascript:;"> Delete </a>
+																	<a href="#" id="DeleteEntry"> Delete </a>
 																</li>
 															</div>
 														</div>
@@ -459,7 +571,10 @@
 												<button class="close" data-close="alert"></button> You have some form errors. Please check below. 
 												</div>
 												<div class="alert alert-success display-hide">
-												<button class="close" data-close="alert"></button> Your form validation is successful! 
+												<button class="close" data-close="alert"></button> The information has been saved.
+												</div>
+												<div class="alert alert-warning display-hide">
+												<button class="close" data-close="alert"></button> The information has not been saved properly. Please contact system administrator.
 												</div>
 												<div class="portlet-body">
 													<div class="tabbable-bordered">
@@ -499,7 +614,7 @@
 																					<div class="col-sm-6">
 																						<div class="form-group">
 																							<label class="col-sm-4 control-label" for="pf_sku">
-																								SKU <span class="symbol required"></span> 
+																								SKU <span class="symbol required">*</span> 
 																							</label>
 																							<div class="col-sm-8">
 																								<input type="text" placeholder="" id="pf_sku" name="pf_sku" class="form-control input-sm" value="<%=pf_sku%>">
@@ -524,7 +639,7 @@
 																				</div>
 																				<div class="form-group">
 																					<label class="col-sm-2 control-label" for="pf_name">
-																						Name <span class="symbol required"></span> 
+																						Name <span class="symbol required">*</span> 
 																					</label>
 																					<div class="col-sm-10">
 																						<input type="text" placeholder="" id="pf_name" name="pf_name" class="form-control input-sm" value="<%=pf_name%>" style="<%=sLangStyle%>">
@@ -685,7 +800,7 @@
 																				<% end if %>
 																				<div class="form-group">
 																					<label class="col-sm-2 control-label" for="pf_weight">
-																						Weight (lbs)<span class="symbol required"></span>
+																						Weight (lbs)<span class="symbol required">*</span>
 																					</label>
 																					<div class="col-sm-10">
 																						<input type="text" placeholder="" id="pf_weight" name="pf_weight" class="form-control input-sm" value="<%=pf_weight%>">
@@ -758,7 +873,7 @@
 																					<div class="col-sm-6">
 																						<div class="form-group">
 																							<label class="col-sm-4 control-label" for="pf_list_price">
-																								Cost <span class="symbol required"></span>
+																								Cost <span class="symbol required">*</span>
 																							</label>
 																							<div class="col-sm-8">
 																								<input type="text" placeholder="" id="pf_list_price" class="form-control input-sm text-right"  value="<%=FormatNumber(pf_price,2)%>" name="pf_list_price">
@@ -1005,6 +1120,21 @@
 																</div>
 															</div>
 															<div class="tab-pane" id="tab_images">
+																<% if g_store_use_icecat_catalog = "1" then %>
+																<div class="form-group">
+																	<label class="col-sm-4 control-label" for="pf_is_nontaxable">
+																		Use ICECAT Images 
+																	</label>
+																	<div class="col-sm-8">
+																		<select class="form-control input-sm" name="pf_use_icecat_images" id="pf_use_icecat_images">
+																			<option value="0" <% if pf_use_icecat_images  = 0 then %> selected <%end if%>>No</option>
+																			<option value="1" <% if pf_use_icecat_images = 1 then %> selected <%end if%>>Yes</option>
+																		</select>
+																	</div>
+																</div>
+																<% else %>
+																<input type="hidden" id="pf_use_icecat_images" name="pf_use_icecat_images" value="0" />
+																<% end if %>
 																<%
 																Dim uploader
 																Set uploader=new AspUploader
@@ -1429,6 +1559,12 @@
 		<button type="button" data-dismiss="modal" class="btn btn-outline dark">Close</button>
 	</div>
 </div>
+<div id="dialog-confirm" title="Delete Confirmation" style="display: none;">
+<p><span class="ui-icon ui-icon-alert" style="float:left; margin:0 7px 20px 0;"></span>You are about to permanently delete this product. Are you sure?</p>
+</div>
+<div id="dialog-confirm-duplicate" title="Delete Confirmation" style="display: none;">
+<p><span class="ui-icon ui-icon-alert" style="float:left; margin:0 7px 20px 0;"></span>Do you want to create duplicate?</p>
+</div>
 <!-- END MODAL -->
 <!--#INCLUDE FILE="include/js.phtml"-->
 <!-- BEGIN PAGE LEVEL PLUGINS -->
@@ -1449,6 +1585,9 @@
 <script src="../assets/global/plugins/bootstrap-modal/js/bootstrap-modal.js" type="text/javascript"></script>
 <!-- END PAGE LEVEL PLUGINS -->
 <!-- BEGIN PAGE LEVEL SCRIPTS -->
+<script language="javascript">
+var savebutton = "1";
+</script>
 <script>
 var data1, grid1, dialog1;
 var data2, grid2, dialog2;
@@ -1588,7 +1727,11 @@ var UITreeview = function () {
 			/*classNames: {checkbox: "dynatree-radio"},*/
 			selectMode: 2,
 			initAjax: {
+				<% if pf_op = "new" AND Len(did) > 0 then %>
+				url: "api/sp_catalog_category_get_tree_list.phtml?pf_id=<%=did%>",
+				<% else %>
 				url: "api/sp_catalog_category_get_tree_list.phtml?pf_id=<%=pf_id%>",
+				<% end if %>
 				data: { mode: "funnyMode" }
 			},
 			onSelect: function (select, node) {
@@ -1653,91 +1796,129 @@ var UITreeview = function () {
 </script>
 <script language="javascript">
 var FormValidation = function () {
-
 	// basic validation
 	var handleValidation1 = function() {
-		// for more info visit the official plugin documentation: 
-			// http://docs.jquery.com/Plugins/Validation
+		var form1 = $('#form_edit_1');
+		var error1 = $('.alert-danger', form1);
+		var success1 = $('.alert-success', form1);
+		var warning1 = $('.alert-warning', form1);
 
-			var form1 = $('#form_edit_1');
-			var error1 = $('.alert-danger', form1);
-			var success1 = $('.alert-success', form1);
-
-			form1.validate({
-				errorElement: 'span', //default input error message container
-				errorClass: 'help-block help-block-error', // default input error message class
-				focusInvalid: false, // do not focus the last invalid input
-				ignore: "",  // validate all fields including form hidden input
-				//RULES
-				rules: {
-					pf_sku: {
-						minlength: 3,
-						required: true,
-						"remote":
-						{
-						  url: 'api/sp_product_check_sku.phtml?pf_id=<%=pf_id%>',
-						  type: "post"
-						}
-					},
-					pf_name: {
-						minlength: 2,
-						required: true
-					},
-					pf_url_key: {
-						minlength: 5,
-						"remote":
-						{
-						  url: 'api/sp_product_check_url_key.phtml?pf_id=<%=pf_id%>',
-						  type: "post"
-						}
-					},
-					pf_list_price: {
-						required: true,
-						number: true
-					},
-					pf_weight: {
-						required: true,
-						number: true
-					}
-					
-				},
-
-				invalidHandler: function (event, validator) { //display error alert on form submit              
-					success1.hide();
-					error1.show();
-					App.scrollTo(error1, -200);
-				},
-
-				errorPlacement: function (error, element) { // render error placement for each input type
-					var cont = $(element).parent('.input-group');
-					if (cont) {
-						cont.after(error);
-					} else {
-						element.after(error);
+		form1.validate({
+			errorElement: 'span', //default input error message container
+			errorClass: 'help-block help-block-error', // default input error message class
+			focusInvalid: false, // do not focus the last invalid input
+			ignore: "",  // validate all fields including form hidden input
+			//RULES
+			rules: {
+				pf_sku: {
+					minlength: 3,
+					required: true,
+					"remote":
+					{
+					  url: 'api/sp_product_check_sku.phtml?pf_id=<%=pf_id%>',
+					  type: "post"
 					}
 				},
-
-				highlight: function (element) { // hightlight error inputs
-
-					$(element)
-						.closest('.form-group').addClass('has-error'); // set error class to the control group
+				pf_name: {
+					minlength: 2,
+					required: true
 				},
-
-				unhighlight: function (element) { // revert the change done by hightlight
-					$(element)
-						.closest('.form-group').removeClass('has-error'); // set error class to the control group
+				pf_url_key: {
+					minlength: 5,
+					"remote":
+					{
+					  url: 'api/sp_product_check_url_key.phtml?pf_id=<%=pf_id%>',
+					  type: "post"
+					}
 				},
-
-				success: function (label) {
-					label
-						.closest('.form-group').removeClass('has-error'); // set success class to the control group
+				pf_list_price: {
+					required: true,
+					number: true
 				},
-
-				submitHandler: function (form) {
-					success1.show();
-					error1.hide();
+				pf_weight: {
+					required: true,
+					number: true
 				}
-			});
+				
+			},
+
+			invalidHandler: function (event, validator) { //display error alert on form submit              
+				success1.hide();
+				error1.show();
+				App.scrollTo(error1, -200);
+			},
+
+			errorPlacement: function (error, element) { // render error placement for each input type
+				var cont = $(element).parent('.input-group');
+				if (cont) {
+					cont.after(error);
+				} else {
+					element.after(error);
+				}
+			},
+
+			highlight: function (element) { // hightlight error inputs
+
+				$(element)
+					.closest('.form-group').addClass('has-error'); // set error class to the control group
+			},
+
+			unhighlight: function (element) { // revert the change done by hightlight
+				$(element)
+					.closest('.form-group').removeClass('has-error'); // set error class to the control group
+			},
+
+			success: function (label) {
+				label
+					.closest('.form-group').removeClass('has-error'); // set success class to the control group
+			},
+
+			submitHandler: function (form) {
+				success1.hide();
+				error1.hide
+				warning1.hide();
+				
+				window.scrollTo(0,0);
+					
+				//GET GRID DATAS
+				//Related Items
+				var records = gridr.getAll();
+				var pid = "";
+				$.each(records, function () {
+					 pid += this.record.PID + ",";
+				});
+				$('#pf_related_items').val(pid);
+				
+				//Tabs
+				<% for kk = 1 to 5 %>
+				records = grid<%=kk%>.getAll();
+				pid = "";
+				$.each(records, function () {
+					 pid += this.record.Name + "||" + this.record.Value + "%%";
+				});
+				$('#pf_tab_table_data<%=kk%>').val(pid);
+				<% next %>
+				
+				
+				$.ajax({
+					type: "POST",
+					url: "api/sp_catalog_product_update.phtml",
+					data: form1.serialize(),
+					success: function() {
+						success1.show();
+						if (savebutton == "1")
+						{
+						setTimeout(function () {
+								window.location.replace("catalog_product.phtml");
+							}, 500);
+						}
+					},
+					error: function() {
+						warning1.show();
+					}
+				});
+			}
+		});
 
 
 	}
@@ -1886,8 +2067,7 @@ var FormValidation = function () {
 </script>
 
 <script type="text/javascript">
-jQuery(document).ready(function() {    
-   //EcommerceProductsEdit.init();
+jQuery(document).ready(function() { 
    FormValidation.init();
    UITreeview.init();
    DoMyAjax("");
@@ -1961,6 +2141,40 @@ jQuery(document).ready(function() {
 			});
 		}, 300);
 	});
+	
+	$('#DeleteEntry').on('click', function () {
+		$("#dialog-confirm").dialog({
+			resizable: false,
+			height:170,
+			modal: true,
+			buttons: {
+				"Confirm Delete": function() {
+					$( this ).dialog( "close" );
+					location.replace('api/tp_catalog_product_delete.phtml?did=<%=pf_id%>')
+				},
+				Cancel: function() {
+					$( this ).dialog( "close" );
+				}
+			}
+		});
+	});	
+	
+	$('#DuplicateEntry').on('click', function () {
+		$("#dialog-confirm-duplicate").dialog({
+			resizable: false,
+			height:170,
+			modal: true,
+			buttons: {
+				"Confirm": function() {
+					$( this ).dialog( "close" );
+					location.href='catalog_product_detail.phtml?pf_id=0&did=<%=pf_id%>';
+				},
+				Cancel: function() {
+					$( this ).dialog( "close" );
+				}
+			}
+		});
+	});	
 
    
 });

@@ -180,10 +180,10 @@
 				<div class="col-sm-10"> 
 					<select id="dept_list_num" name="dept_list_num" class="js-example-basic-hide-search js-states form-control">
 						<option value="10" <%if dept_list_num = 10 then%>selected<%end if%>>10</option>
-						<option value="15" <%if dept_list_num = 15 then%>selected<%end if%>>15</option>
 						<option value="20" <%if dept_list_num = 20 then%>selected<%end if%>>20</option>
-						<option value="30" <%if dept_list_num = 30 then%>selected<%end if%>>30</option>
 						<option value="40" <%if dept_list_num = 40 then%>selected<%end if%>>40</option>
+						<option value="60" <%if dept_list_num = 60 then%>selected<%end if%>>60</option>
+						<option value="80" <%if dept_list_num = 80 then%>selected<%end if%>>80</option>
 					</select>
 				</div>
 			</div>
@@ -195,10 +195,12 @@
 					<select id="dept_sort_order" name="dept_sort_order" class="js-example-basic-hide-search js-states form-control">
 						<option value="0" <%if dept_sort_order = 0 then%>selected<%end if%>>Name (A-Z)</option>
 						<option value="1" <%if dept_sort_order = 1 then%>selected<%end if%>>Name (Z-A)</option>
+						<!--
 						<option value="4" <%if dept_sort_order = 4 then%>selected<%end if%>>Vendor Name (A-Z)</option>
 						<option value="5" <%if dept_sort_order = 5 then%>selected<%end if%>>Vendor Name (Z-A)</option>
-						<option value="6" <%if dept_sort_order = 6 then%>selected<%end if%>>Product ID (A-Z)</option>
-						<option value="7" <%if dept_sort_order = 7 then%>selected<%end if%>>Product ID (Z-A)</option>
+						-->
+						<option value="6" <%if dept_sort_order = 6 then%>selected<%end if%>>SKU(A-Z)</option>
+						<option value="7" <%if dept_sort_order = 7 then%>selected<%end if%>>SKU (Z-A)</option>
 						<option value="8" <%if dept_sort_order = 8 then%>selected<%end if%>>Price (Low-High)</option>
 						<option value="9" <%if dept_sort_order = 9 then%>selected<%end if%>>Price (High-Low)</option>
 					</select>

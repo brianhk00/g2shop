@@ -12,6 +12,11 @@
 <script type="text/javascript" src="<%=skin_base_url%>theme/<%=THEME_TEMPLATE%>/js/swipebox/src/js/jquery.swipebox.min.js"></script>
 <% end if %>
 <script type="text/javascript" src="<%=skin_base_url%>theme/<%=THEME_TEMPLATE%>/js/custom.js"></script>
+<script type="text/javascript">
+function setLocation(url){
+    window.location.href = url;
+}
+</script>
 <% if g_route_page_id = "product" then %>
 <script type="text/javascript">
 // Elevate Zoom for Product Page image

@@ -1,0 +1,171 @@
+<%
+	custom_special_pf_id = ""
+	sql = "SELECT TOP 5 sku, SUM(quantity) as q FROM hubutu_order_item WHERE row_mode = 0 GROUP BY sku ORDER BY q"
+	set rs = dbconn.Execute(sql)
+	if not rs.EOF then
+		do while not rs.EOF
+			custom_special_pf_id = custom_special_pf_id & "'" & rs(0) & "',"
+			rs.MoveNext
+		loop
+	end if
+	rs.Close
+	set rs = nothing
+	
+	if Len(custom_special_pf_id) > 1 then
+		custom_special_pf_id = Left(custom_special_pf_id, Len(custom_special_pf_id)-1)
+	end if
+	
+	if Len(custom_special_pf_id) > 1 then
+	sql = "SELECT TOP 5 * FROM " & g_storeid & "_product WHERE pf_id IN (" & custom_special_pf_id & ") ORDER BY pf_id DESC"
+	set rs = dbconn.Execute(sql)
+	if not rs.EOF then
+%>
+<h3 class="subtitle">Bestsellers</h3>
+<div class="side-item">
+	<%
+		do while not rs.EOF
+			custom_pf_id = rs("pf_id")
+			custom_prod_name = rs("name")
+			custom_prod_on_sale = rs("on_sale")
+			custom_prod_sale_price = rs("sale_price")
+			custom_prod_group_price = rs("price_"& Session("LOGINGROUP"))
+			custom_prod_url_key = rs("url_key")
+			custom_prod_thumb_image = rs("image_file")
+			custom_prod_mm_type = rs("mm_type")
+			custom_prod_espec_sku = Trim(rs("espec_sku"))
+			custom_prod_use_icecat_images = rs("use_icecat_images")
+			'sale..			  
+			if custom_prod_on_sale then
+				custom_adjusted_price = custom_prod_sale_price
+			Else
+				custom_adjusted_price = custom_prod_group_price
+			End if
+			'====================================================================================================
+			'SEO URLs
+			if Len(custom_prod_url_key) > 0 then
+				custom_product_link = g_store_url & custom_prod_url_key & ".html"
+			else
+				custom_product_link = g_store_url & "product.phtml?pf_id=" & custom_pf_id
+			end if
+			'====================================================================================================
+			ssImgSize = "upload/w_" & "50" & ",h_" & "50" & ",c_pad/"
+			
+			if custom_prod_thumb_image = "--" then
+				cloudImg = g_noimage_url
+				ssImg = Replace(cloudImg, "upload/", ssImgSize)
+			else
+				if custom_prod_mm_type = 1 then
+					if Len(custom_prod_espec_sku) > 0 AND custom_prod_use_icecat_images = 1 then
+						'USE ICECAT IMAGE
+						icecat_id = 0
+						if Session("ENABLEINT") = "2" OR Session("ENABLEINT") = "3" then
+							sql = "SELECT * FROM A_ssprice_CA WHERE sku='" & custom_prod_espec_sku & "'"
+						else
+							sql = "SELECT * FROM A_ssprice_main WHERE sku='" & custom_prod_espec_sku & "'"
+						end If
+
+						set rsPA = conn_ss1.Execute(sql)
+						if not rsPA.EOF then
+							image_published = rsPA("image_published")
+							categoryid = Trim(rsPA("CATEGORY"))
+							icecat_id = rsPA("icecat_id")
+						end if
+						rsPA.Close
+
+						sql = "SELECT cloudinary_url FROM [192.168.5.134].[icecat].dbo.cloudinary_images WHERE product_id = " & icecat_id
+						Set rsCloudImage = conn_ss1.Execute(sql)
+						If Not rsCloudImage.EOF Then
+							cloudImg = Trim(rsCloudImage("cloudinary_url"))
+						Else
+							sql = "SELECT * FROM " & g_storeid & "_product_image WHERE image_name = '" & custom_prod_thumb_image & "'"
+							Set rsCloudImage2 = dbconn.Execute(sql)
+							If Not rsCloudImage2.EOF Then
+								cloudImg = Trim(rsCloudImage2("cloud_url"))
+							Else
+								cloudImg = g_noimage_url
+							End If
+							rsCloudImage2.Close
+							Set rsCloudImage2 = Nothing
+						End If
+						rsCloudImage.Close
+						Set rsCloudImage = Nothing
+						ssImg = Replace(cloudImg, "upload/", ssImgSize)
+					else
+						sql = "SELECT * FROM " & g_storeid & "_product_image WHERE image_name = '" & custom_prod_thumb_image & "'"
+						Set rsCloudImage2 = dbconn.Execute(sql)
+						If Not rsCloudImage2.EOF Then
+							cloudImg = Trim(rsCloudImage2("cloud_url"))
+						Else
+							cloudImg = g_noimage_url
+						End If
+						rsCloudImage2.Close
+						Set rsCloudImage2 = Nothing
+						ssImg = Replace(cloudImg, "upload/", ssImgSize)
+					end if
+				else
+					ssImg = "http://a4.res.cloudinary.com/dd3llssvr/image/fetch/" & "w_" & "200" & ",h_" & "200" & ",c_pad,c_fill/" & g_store_url & "assets/pmedia/prod_img/" & Server.URLEncode(prod_thumb_image)
+				end if
+				
+				'====================================================================================================
+				custom_review_avg = 0
+				sql = "SELECT AVG(rating) FROM " & g_storeid & "_Rating WHERE ProductID = '" & custom_pf_id & "'"
+				set rsReviews = dbconn.Execute(sql)
+				if not rsReviews.EOF then
+					custom_review_avg = rsReviews(0)
+				end if
+				rsReviews.Close
+				set rsReviews = nothing
+				
+				if IsNumeric(custom_review_avg) then
+					custom_review_avg = CInt(custom_review_avg)
+				else
+					custom_review_avg = 0	
+				end if
+				
+			end if
+			
+			custom_thumb_image_link = ssImg
+			'--------------------------------------------------------------------------------------------------------
+			custom_prod_name = TranslateX(custom_prod_name, 2, custom_pf_id, 1)
+	%>
+	<div class="product-thumb clearfix">
+		<div class="image">
+			<a href="<%=custom_product_link%>"><img src="<%=custom_thumb_image_link%>" alt="<%=custom_prod_name%>" title="<%=custom_prod_name%>" class="img-responsive"/></a>
+		</div>
+		<div class="caption">
+			<h4><a href="<%=custom_product_link%>"><%=custom_prod_name%></a></h4>
+			<p class="price">
+				<% if custom_prod_on_sale then %>
+				<span class="price-new">$<%=FormatNumber(custom_adjusted_price,2)%></span><span class="price-old">$<%=FormatNumber(custom_prod_group_price,2)%></span>
+				<% else %>
+				$<%=FormatNumber(custom_adjusted_price,2)%>
+				<% end if %>
+			</p>
+			<% if custom_review_avg = 0 then %>
+			<% else %>
+			<div class="rating">
+				<%
+					for ii =1 to 5
+						if custom_review_avg >= ii then
+							Response.Write("<span class=""fa fa-stack""><i class=""fa fa-star fa-stack-2x""></i><i class=""fa fa-star-o fa-stack-2x""></i></span>")
+						else
+							Response.Write("<span class=""fa fa-stack""><i class=""fa fa-star-o fa-stack-2x""></i></span>")
+						end if
+					next
+				%>
+			</div>
+			<% end if %>
+		</div>
+	</div>
+	<%
+			rs.MoveNext
+		loop
+		rs.Close
+		set rs = nothing
+	%>
+	
+</div>
+<%
+	end if
+	end if
+%>
