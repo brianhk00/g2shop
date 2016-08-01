@@ -14,7 +14,7 @@
 			'session key exist
 		else
 			'no key information...
-			Response.Redirect Session("StoreURL") & "/index.phtml"
+			Response.Redirect g_secure_url & "/index.phtml"
 		end if
 	end if
 %>
@@ -78,14 +78,13 @@
                 Set x1Conn = Server.CreateObject("ADODB.Connection")
 				x1Conn.open g_connection_string
 			
- 				sql="SELECT * FROM :9_shopper WHERE (Email='"& str_uid &"' AND Password='"&str_password&"')"
-  			
-				sql = Replace(sql, ":9", g_storeid)
+ 				sql="SELECT * FROM " & g_storeid & "_shopper WHERE (Email='" & str_uid & "' AND Password='" & str_password & "')"
 				set rs=server.CreateObject("ADODB.Recordset")
 				rs.Open sql, g_connection_string
 		
 				if (not rs.EOF) then
 					Session("shopper_id") = rs("shopper_id")
+					'Session("ShoppingCartID") = rs("shopper_id")
 					
 					Shopper_Name = ""
 					if Len(rs("FirstName")) > 0 then
@@ -121,22 +120,22 @@
 					custom_catalog_id = Trim(rs("custom_catalog_id"))
 					
 					if Len(custom_catalog_id) > 1 then
-					 csql = "SELECT enable_flag FROM " & g_storeid & "_custom_catalog WHERE catalog_id='" & custom_catalog_id & "'"
-					  Set rs1 = x1Conn.Execute(csql)
-					  If Not rs1.EOF Then
-						custom_catalog_id_flag = rs1(0)
-						Session("CUSTOM_CATALOG_ID_FLAG") = CStr(custom_catalog_id_flag)
-						If custom_catalog_id_flag = 0 Then
+						csql = "SELECT enable_flag FROM " & g_storeid & "_custom_catalog WHERE catalog_id='" & custom_catalog_id & "'"
+						Set rs1 = x1Conn.Execute(csql)
+						If Not rs1.EOF Then
+							custom_catalog_id_flag = rs1(0)
+							Session("CUSTOM_CATALOG_ID_FLAG") = CStr(custom_catalog_id_flag)
+							If custom_catalog_id_flag = 0 Then
+								Session("CUSTOM_CATALOG_ID_FLAG") = ""
+							End If	
+						Else
 							Session("CUSTOM_CATALOG_ID_FLAG") = ""
-						End If	
-					  Else
-						Session("CUSTOM_CATALOG_ID_FLAG") = ""
-					  End If
-					  rs1.Close
+						End If
+						rs1.Close
 					else
-					  Session("CUSTOM_CATALOG_ID_FLAG") = ""
+						Session("CUSTOM_CATALOG_ID_FLAG") = ""
 					end if
-					
+
 					If custom_price_profile > 0 then
 						Session("LOGINGROUP") = CStr(custom_price_profile)
 					Else
@@ -154,8 +153,7 @@
 						  Session("Expiration") = ""
 					  end if
 
-					  sql="SELECT disable FROM :9_affiliate WHERE affiliate_id='"& rs("affiliate_id") &"'"
-					  sql = Replace(sql, ":9", g_storeid)
+					  sql="SELECT disable FROM " & g_storeid & "_affiliate WHERE affiliate_id='" & rs("affiliate_id") & "'"
 
 					  set rsAff = x1Conn.execute(sql)
 						  if not rsAff.EOF then
@@ -271,33 +269,39 @@
 
 <%
 	if bok then
+		'--------------------------------------------------------------------------------
+		'UPDATE SHOPPING CART
+		'--------------------------------------------------------------------------------
+		sql = "UPDATE A_Shoppingcart SET CartID='" & Session("shopper_id") & "' WHERE CartID='" & Session("ShoppingCartID") & "' AND StoreID='" & g_storeid & "'"
+		dbconn.Execute(sql)
+		Session("ShoppingCartID")  = Session("shopper_id")
+		'--------------------------------------------------------------------------------
+		
 		if returnPage = "" then
-		  'Response.Redirect("index.phtml")
-		  if Len(favorite_link) > 0 then
-			  'rx_page = Session("StoreURL") & "/index.phtml?sessionID=" & Session("SESSIONKEY")
-			  rx_page = favorite_link
+			if Len(favorite_link) > 0 then
+				rx_page = favorite_link
 			else
-			  If Len(Session("REFERER_URL2")) > 10 Then
-		      rx_page = Session("REFERER_URL2")
-		      Session("REFERER_URL2") = ""
-	      else
-			    rx_page = Session("StoreURL") & "/index.phtml?sessionID=" & Session("SESSIONKEY")
-			  end if
+				If Len(Session("REFERER_URL2")) > 10 Then
+					rx_page = Session("REFERER_URL2")
+					Session("REFERER_URL2") = ""
+				else
+					rx_page = g_secure_url & "index.phtml?sessionID=" & Session("SESSIONKEY")
+				end if
 			end if
 		else
 			if returnPage = "basket" or returnPage = "quote" or returnPage = "account_profile" then
-				'Response.Redirect Session("SecureURL") & "/" & returnPage & ".phtml"
-				rx_page = Session("SecureURL") & "/" & returnPage & ".phtml"
+				rx_page = Session("SecureURL")  & returnPage & ".phtml"
 			else
 				if InStr(returnPage, ".phtml") > 0 then
-					'Response.Redirect Session("StoreURL") & "/" & returnPage
-					rx_page = Session("StoreURL") & "/" & returnPage
+					rx_page = g_secure_url  & returnPage
 				else
-					'Response.Redirect Session("StoreURL") & "/" & returnPage & ".phtml"
-					rx_page = Session("StoreURL") & "/" & returnPage & ".phtml?sessionID="  & Session("SESSIONKEY")
+					rx_page = g_secure_url  & returnPage & ".phtml?sessionID="  & Session("SESSIONKEY")
 				end if
 			end if
 		end if
+	
+	else
+		Response.Redirect (g_secure_url & "login.phtml?error=" & err_msg)
 	end if
 	
 	If Len(Session("REFERER_URL2")) > 10 Then

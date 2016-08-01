@@ -6,6 +6,9 @@
 		<li><a href="login.html">Login</a></li>
 	</ul>
 	<!-- Breadcrumb End-->
+	<% if Len(error_msg) > 0 then %>
+	<div class="alert alert-danger"><i class="fa fa-exclamation-circle"></i> <%=error_msg%></div>
+	<% end if %>
 	<div class="row">
 		<!--Middle Part Start-->
 		<form action="<%=g_secure_url %>tp_login.phtml" method="post" id="login-form">
@@ -27,6 +30,7 @@
 					<p>
 						<strong><%=a("I am a returning customer")%></strong>
 					</p>
+			  
 					<div class="form-group">
 						<label class="control-label" for="login_email"><%=a("E-Mail Address")%></label>
 						<input type="text" name="login_email" value="" placeholder="<%=a("E-Mail Address")%>" id="login_email" class="form-control"/>

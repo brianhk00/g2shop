@@ -46,6 +46,10 @@
 <br/>
 <div class="row products-category">
 	<!--#INCLUDE FILE="../../../core/catalog/include_dept_productlist_loop_start.phtml"-->
+	<%
+		'TEMPLATE FIX
+		g_prod_description = Replace(g_prod_description, "<ul>", "<ul class='description description1'>")
+	%>
 	<div class="product-layout product-list col-xs-12">
 		<div class="product-thumb">
 			<div class="image">

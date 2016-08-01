@@ -1,6 +1,6 @@
 <%
 	custom_special_pf_id = ""
-	sql = "SELECT TOP 5 sku, SUM(quantity) as q FROM hubutu_order_item WHERE row_mode = 0 GROUP BY sku ORDER BY q"
+	sql = "SELECT TOP 5 sku, SUM(quantity) as q FROM " & g_storeid & "_order_item WHERE row_mode = 0 GROUP BY sku ORDER BY q"
 	set rs = dbconn.Execute(sql)
 	if not rs.EOF then
 		do while not rs.EOF
@@ -103,7 +103,7 @@
 						ssImg = Replace(cloudImg, "upload/", ssImgSize)
 					end if
 				else
-					ssImg = "http://a4.res.cloudinary.com/dd3llssvr/image/fetch/" & "w_" & "200" & ",h_" & "200" & ",c_pad,c_fill/" & g_store_url & "assets/pmedia/prod_img/" & Server.URLEncode(prod_thumb_image)
+					ssImg = "http://a4.res.cloudinary.com/dd3llssvr/image/fetch/" & "w_" & "50" & ",h_" & "50" & ",c_pad/" & g_store_url & "assets/pmedia/prod_img/" & Server.URLEncode(custom_prod_thumb_image)
 				end if
 				
 				'====================================================================================================

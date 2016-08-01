@@ -266,6 +266,7 @@ $('#list-view').on("click", function() {
   localStorage.setItem('display', 'list');		
 	$('.btn-group').find('#list-view').addClass('selected');
 	$('.btn-group').find('#grid-view').removeClass('selected');
+	//$('.description').hide();
 	return false;
 });
 
@@ -309,6 +310,7 @@ $( window ).resize(function() {
 localStorage.setItem('display', 'grid');
 $('.btn-group').find('#grid-view').addClass('selected');
 $('.btn-group').find('#list-view').removeClass('selected');
+//$('.description').show();
 	});
 if (localStorage.getItem('display') == 'list') {
 		$('#list-view').trigger('click');

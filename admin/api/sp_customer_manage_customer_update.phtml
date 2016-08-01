@@ -1,0 +1,427 @@
+<!-- #INCLUDE File="../local/local.phtml" -->
+<!-- #INCLUDE File="../util/xt_func_util.phtml" -->
+<!-- #INCLUDE File="../util/xt_func_string.phtml" -->
+<%
+	'--POST DATA------------------------------------------
+	shopper_id = Trim(Request("shopper_id"))
+	
+	new_email = Trim(Request("new_email"))
+	shopper_password = Trim(Request("shopper_password_new"))
+	shopper_firstname = Trim(Request("shopper_firstname"))
+	shopper_lastname = Trim(Request("shopper_lastname"))
+	
+	shopper_billing_firstname = Trim(Request("shopper_billing_firstname"))
+	shopper_billing_lastname = Trim(Request("shopper_billing_lastname"))
+	shopper_billing_address = Trim(Request("shopper_billing_address"))
+	shopper_billing_city = Trim(Request("shopper_billing_city"))
+	shopper_billing_country = Trim(Request("shopper_billing_country"))
+	shopper_billing_state = Trim(Request("shopper_billing_state"))
+	shopper_billing_zip = Trim(Request("shopper_billing_zip"))
+	shopper_billing_phone = Trim(Request("shopper_billing_phone"))
+	
+	same_as_billing = Trim(Request("same_as_billing"))
+	shopper_shipping_firstname = Trim(Request("shopper_shipping_firstname"))
+	shopper_shipping_lastname = Trim(Request("shopper_shipping_lastname"))
+	shopper_shipping_address = Trim(Request("shopper_shipping_address"))
+	shopper_shipping_city = Trim(Request("shopper_shipping_city"))
+	shopper_shipping_country = Trim(Request("shopper_shipping_country"))
+	shopper_shipping_state = Trim(Request("shopper_shipping_state"))
+	shopper_shipping_zip = Trim(Request("shopper_shipping_zip"))
+	shopper_shipping_phone = Trim(Request("shopper_shipping_phone"))
+	
+	billing_address_id = Trim(Request("billing_address_id")) 'Current Edit Window Billing ID
+	shipping_address_id = Trim(Request("shipping_address_id"))
+	
+	billing_id_delete = Trim(Request("billing_id_delete"))
+	alt_billing_set_default = Trim(Request("alt_billing_set_default"))
+	shipping_id_delete = Trim(Request("shipping_id_delete"))
+	alt_shipping_set_default = Trim(Request("alt_shipping_set_default"))
+	
+	member_group = Trim(Request("member_group"))
+	use_shopper_tax = Trim(Request("use_shopper_tax"))
+	shopper_tax = Trim(Request("shopper_tax"))
+	
+	if(use_shopper_tax="")then
+		use_shopper_tax = "0"
+	else
+		use_shopper_tax = "1"
+	end if
+	
+	if IsNumeric(shopper_tax) then
+	else
+		shopper_tax = "0"
+	end if
+	
+	
+	'--END OF POST DATA-----------------------------------
+	
+	if shopper_id = "0" then
+		Set rsUpdate = Server.CreateObject("ADODB.Recordset")
+		with rsUpdate
+			.ActiveConnection = dbconn
+			.CursorLocation = 3
+			.CursorType = 1
+			.LockType = 3
+			.Source = g_storeid & "_shopper WHERE shopper_id='0'"
+			.Open
+			.AddNew
+		end with
+		
+		'GET NEW SHOPPER_ID and SAVE EMAIL Address
+		rsUpdate("shopper_id") = GetUniqueLongIntegerID()
+		rsUpdate("Email") = new_email
+		rsUpdate("Password") = shopper_password
+		
+	else
+		Set rsUpdate = Server.CreateObject("ADODB.Recordset")
+		with rsUpdate
+			.ActiveConnection = dbconn
+			.CursorLocation = 3
+			.CursorType = 1
+			.LockType = 3
+			.Source = g_storeid & "_shopper WHERE shopper_id='" & shopper_id & "'"
+			.Open
+		end with
+	end if
+	
+	rsUpdate("FirstName") = shopper_firstname
+	rsUpdate("LastName") = shopper_lastname
+	
+	if billing_address_id = "0" then
+		rsUpdate("billing_firstname") = shopper_billing_firstname
+		rsUpdate("billing_lastname") = shopper_billing_lastname
+		rsUpdate("Address") = shopper_billing_address
+		rsUpdate("City") = shopper_billing_city
+		rsUpdate("Country") = shopper_billing_country
+		rsUpdate("State") = shopper_billing_state
+		rsUpdate("ZipCode") = shopper_billing_zip
+		rsUpdate("Phone") = shopper_billing_phone
+	end if
+	
+	if shipping_address_id = "0" then
+		rsUpdate("shipping_FirstName") = shopper_shipping_firstname
+		rsUpdate("shipping_LastName") = shopper_shipping_lastname
+		rsUpdate("shipping_Address") = shopper_shipping_address
+		rsUpdate("shipping_City") = shopper_shipping_city
+		rsUpdate("shipping_Country") = shopper_shipping_country
+		rsUpdate("shipping_State") = shopper_shipping_state
+		rsUpdate("shipping_ZipCode") = shopper_shipping_zip
+		rsUpdate("shipping_Phone") = shopper_shipping_phone
+	end if
+	
+	rsUpdate("member_group") = member_group
+	rsUpdate("use_shopper_tax") = use_shopper_tax
+	rsUpdate("shopper_tax") = shopper_tax
+	
+	If dbconn.Errors.Count > 0 Then
+		dbconn.Errors.Clear
+		rsUpdate.CancelUpdate
+	else
+		rsUpdate.Update
+	End If
+	
+	rsUpdate.Close
+	set rsUpdate = nothing
+	
+	'=================================================================================================
+	'ALT Billing
+	'=================================================================================================
+	alt_billing_id = Trim(Request("alt_billing_address_id"))
+	if Len(alt_billing_id) > 0 then
+		ar_alt_billing_id = Split(alt_billing_id, ", ")
+		for ii = 0 to Ubound(ar_alt_billing_id)
+		
+			billing_id = ar_alt_billing_id(ii)
+			
+			alt_billing_address = Trim(Request("alt_billing_address_" & billing_id ))
+			alt_billing_address_name = Trim(Request("alt_billing_address_name_" & billing_id))
+			alt_billing_city = Trim(Request("alt_billing_city_" & billing_id))
+			alt_billing_country = Trim(Request("alt_billing_country_" & billing_id))
+			alt_billing_firstname = Trim(Request("alt_billing_firstname_" & billing_id))	
+			alt_billing_lastname = Trim(Request("alt_billing_lastname_" & billing_id))	
+			alt_billing_phone = Trim(Request("alt_billing_phone_" & billing_id))
+			'alt_billing_set_default = Trim(Request("alt_billing_set_default_" & billing_id))
+			alt_billing_state = Trim(Request("alt_billing_state_" & billing_id))
+			alt_billing_zip = Trim(Request("alt_billing_zip_" & billing_id))
+			
+			if billing_id = "0" then
+			else
+				sql = "SELECT * FROM " & g_storeid & "_shopper_billing_address WHERE billing_address_id = '" & billing_id & "'"
+				set rs = dbconn.Execute(sql)
+				if not rs.EOF then
+					Set rsUpdate = Server.CreateObject("ADODB.Recordset")
+					with rsUpdate
+						.ActiveConnection = dbconn
+						.CursorLocation = 3
+						.CursorType = 1
+						.LockType = 3
+						.Source = g_storeid & "_shopper_billing_address WHERE billing_address_id='" & billing_id & "'"
+						.Open
+					end with
+				else
+					Set rsUpdate = Server.CreateObject("ADODB.Recordset")
+					with rsUpdate
+						.ActiveConnection = dbconn
+						.CursorLocation = 3
+						.CursorType = 1
+						.LockType = 3
+						.Source = g_storeid & "_shopper_billing_address WHERE billing_address_id='0'"
+						.Open
+						.AddNew
+					end with
+					rsUpdate("billing_shopper_id") = shopper_id
+					rsUpdate("billing_address_id") = billing_id
+				end if
+				
+				rsUpdate("billing_address_name") = alt_billing_address_name
+				rsUpdate("billing_firstname") = alt_billing_firstname
+				rsUpdate("billing_lastname") = alt_billing_lastname
+				rsUpdate("billing_address") = alt_billing_address
+				rsUpdate("billing_city") = alt_billing_city
+				rsUpdate("billing_state") = alt_billing_state
+				rsUpdate("billing_zip") = alt_billing_zip
+				rsUpdate("billing_country") = alt_billing_country
+				rsUpdate("billing_phone") = alt_billing_phone
+				'rsUpdate("billing_set_default") = "0" 'TODO alt_billing_set_default
+				
+				If dbconn.Errors.Count > 0 Then
+					dbconn.Errors.Clear
+					rsUpdate.CancelUpdate
+				else
+					rsUpdate.Update
+				End If
+				
+				rsUpdate.Close
+				set rsUpdate = nothing
+				
+			end if
+			
+		next
+	
+	end if
+	
+	if billing_address_id <> "0" then
+		sql = "SELECT * FROM " & g_storeid & "_shopper_billing_address WHERE billing_address_id = '" & billing_address_id & "'"
+		set rs = dbconn.Execute(sql)
+		if not rs.EOF then
+			Set rsUpdate = Server.CreateObject("ADODB.Recordset")
+			with rsUpdate
+				.ActiveConnection = dbconn
+				.CursorLocation = 3
+				.CursorType = 1
+				.LockType = 3
+				.Source = g_storeid & "_shopper_billing_address WHERE billing_address_id='" & billing_address_id & "'"
+				.Open
+			end with
+		else
+			Set rsUpdate = Server.CreateObject("ADODB.Recordset")
+			with rsUpdate
+				.ActiveConnection = dbconn
+				.CursorLocation = 3
+				.CursorType = 1
+				.LockType = 3
+				.Source = g_storeid & "_shopper_billing_address WHERE billing_address_id='0'"
+				.Open
+				.AddNew
+			end with
+			rsUpdate("billing_shopper_id") = shopper_id
+			rsUpdate("billing_address_id") = billing_address_id
+		end if
+		
+		rsUpdate("billing_address_name") = alt_billing_address_name
+		rsUpdate("billing_firstname") = shopper_billing_firstname
+		rsUpdate("billing_lastname") = shopper_billing_lastname
+		rsUpdate("billing_address") = shopper_billing_address
+		rsUpdate("billing_city") = shopper_billing_city
+		rsUpdate("billing_state") = shopper_billing_state
+		rsUpdate("billing_zip") = shopper_billing_zip
+		rsUpdate("billing_country") = shopper_billing_country
+		rsUpdate("billing_phone") = shopper_billing_phone
+		
+		If dbconn.Errors.Count > 0 Then
+			dbconn.Errors.Clear
+			rsUpdate.CancelUpdate
+		else
+			rsUpdate.Update
+		End If
+		
+		rsUpdate.Close
+		set rsUpdate = nothing
+	end if
+	'=========================================================================================================================
+	'DELETE ADDRESS
+	if Len(billing_id_delete) > 1 then
+		billing_id_delete = Left(billing_id_delete, Len(billing_id_delete)-1)
+		billing_id_delete = "'" & Replace(billing_id_delete, ",", "','") & "'"
+		
+		sql = "DELETE FROM " & g_storeid & "_shopper_billing_address WHERE billing_address_id IN (" & billing_id_delete & ")"
+		dbconn.Execute(sql)	
+	end if
+	'==========================================================================================================================
+	'SET DEFAULT
+	sql = "UPDATE " & g_storeid & "_shopper_billing_address SET billing_set_default = 0 WHERE billing_shopper_id='" & shopper_id & "'"
+	dbconn.Execute(sql)
+	if Len(alt_billing_set_default) > 1 then
+		sql = "UPDATE " & g_storeid & "_shopper_billing_address SET billing_set_default = 1 WHERE billing_address_id='" & alt_billing_set_default & "'"
+		dbconn.Execute(sql)
+	end if
+	'==========================================================================================================================
+	
+	'==========================================================================================================================
+	'ALT Shipping
+	'==========================================================================================================================
+	alt_shipping_id = Trim(Request("alt_shipping_address_id"))
+	if Len(alt_shipping_id) > 0 then
+		ar_alt_shipping_id = Split(alt_shipping_id, ", ")
+		for ii = 0 to Ubound(ar_alt_shipping_id)
+		
+			shipping_id = ar_alt_shipping_id(ii)
+			
+			alt_shipping_address = Trim(Request("alt_shipping_address_" & shipping_id ))
+			alt_shipping_address_name = Trim(Request("alt_shipping_address_name_" & shipping_id))
+			alt_shipping_city = Trim(Request("alt_shipping_city_" & shipping_id))
+			alt_shipping_country = Trim(Request("alt_shipping_country_" & shipping_id))
+			alt_shipping_firstname = Trim(Request("alt_shipping_firstname_" & shipping_id))	
+			alt_shipping_lastname = Trim(Request("alt_shipping_lastname_" & shipping_id))	
+			alt_shipping_phone = Trim(Request("alt_shipping_phone_" & shipping_id))
+			'alt_shipping_set_default = Trim(Request("alt_shipping_set_default_" & shipping_id))
+			alt_shipping_state = Trim(Request("alt_shipping_state_" & shipping_id))
+			alt_shipping_zip = Trim(Request("alt_shipping_zip_" & shipping_id))
+			
+			if shipping_id = "0" then
+			else
+				sql = "SELECT * FROM " & g_storeid & "_shopper_shipping_address WHERE address_id = '" & shipping_id & "'"
+				set rs = dbconn.Execute(sql)
+				if not rs.EOF then
+					Set rsUpdate = Server.CreateObject("ADODB.Recordset")
+					with rsUpdate
+						.ActiveConnection = dbconn
+						.CursorLocation = 3
+						.CursorType = 1
+						.LockType = 3
+						.Source = g_storeid & "_shopper_shipping_address WHERE address_id='" & shipping_id & "'"
+						.Open
+					end with
+				else
+					Set rsUpdate = Server.CreateObject("ADODB.Recordset")
+					with rsUpdate
+						.ActiveConnection = dbconn
+						.CursorLocation = 3
+						.CursorType = 1
+						.LockType = 3
+						.Source = g_storeid & "_shopper_shipping_address WHERE address_id='0'"
+						.Open
+						.AddNew
+					end with
+					rsUpdate("shopper_id") = shopper_id
+					rsUpdate("address_id") = shipping_id
+				end if
+				
+				rsUpdate("address_name") = alt_shipping_address_name
+				rsUpdate("firstname") = alt_shipping_firstname
+				rsUpdate("lastname") = alt_shipping_lastname
+				rsUpdate("address") = alt_shipping_address
+				rsUpdate("city") = alt_shipping_city
+				rsUpdate("state") = alt_shipping_state
+				rsUpdate("zip") = alt_shipping_zip
+				rsUpdate("country") = alt_shipping_country
+				rsUpdate("phone") = alt_shipping_phone
+				'rsUpdate("set_default") = "0" 'TODO alt_shipping_set_default
+				
+				If dbconn.Errors.Count > 0 Then
+					dbconn.Errors.Clear
+					rsUpdate.CancelUpdate
+				else
+					rsUpdate.Update
+				End If
+				
+				rsUpdate.Close
+				set rsUpdate = nothing
+				
+			end if
+			
+		next
+	
+	end if
+	
+	if shipping_address_id <> "0" then
+		sql = "SELECT * FROM " & g_storeid & "_shopper_shipping_address WHERE address_id = '" & shipping_address_id & "'"
+		set rs = dbconn.Execute(sql)
+		if not rs.EOF then
+			Set rsUpdate = Server.CreateObject("ADODB.Recordset")
+			with rsUpdate
+				.ActiveConnection = dbconn
+				.CursorLocation = 3
+				.CursorType = 1
+				.LockType = 3
+				.Source = g_storeid & "_shopper_shipping_address WHERE address_id='" & shipping_address_id & "'"
+				.Open
+			end with
+		else
+			Set rsUpdate = Server.CreateObject("ADODB.Recordset")
+			with rsUpdate
+				.ActiveConnection = dbconn
+				.CursorLocation = 3
+				.CursorType = 1
+				.LockType = 3
+				.Source = g_storeid & "_shopper_shipping_address WHERE shipping_address_id='0'"
+				.Open
+				.AddNew
+			end with
+			rsUpdate("shopper_id") = shopper_id
+			rsUpdate("address_id") = shipping_address_id
+		end if
+		
+		rsUpdate("address_name") = alt_shipping_address_name
+		rsUpdate("firstname") = shopper_shipping_firstname
+		rsUpdate("lastname") = shopper_shipping_lastname
+		rsUpdate("address") = shopper_shipping_address
+		rsUpdate("city") = shopper_shipping_city
+		rsUpdate("state") = shopper_shipping_state
+		rsUpdate("zip") = shopper_shipping_zip
+		rsUpdate("country") = shopper_shipping_country
+		rsUpdate("phone") = shopper_shipping_phone
+		
+		If dbconn.Errors.Count > 0 Then
+			dbconn.Errors.Clear
+			rsUpdate.CancelUpdate
+		else
+			rsUpdate.Update
+		End If
+		
+		rsUpdate.Close
+		set rsUpdate = nothing
+	end if
+	'=========================================================================================================================
+	'DELETE ADDRESS
+	if Len(shipping_id_delete) > 1 then
+		shipping_id_delete = Left(shipping_id_delete, Len(shipping_id_delete)-1)
+		shipping_id_delete = "'" & Replace(shipping_id_delete, ",", "','") & "'"
+		
+		sql = "DELETE FROM " & g_storeid & "_shopper_shipping_address WHERE address_id IN (" & shipping_id_delete & ")"
+		dbconn.Execute(sql)	
+	end if
+	'==========================================================================================================================
+	'SET DEFAULT
+	sql = "UPDATE " & g_storeid & "_shopper_shipping_address SET set_default = 0 WHERE shopper_id='" & shopper_id & "'"
+	dbconn.Execute(sql)
+	if Len(alt_shipping_set_default) > 1 then
+		sql = "UPDATE " & g_storeid & "_shopper_shipping_address SET set_default = 1 WHERE address_id='" & alt_shipping_set_default & "'"
+		dbconn.Execute(sql)
+	end if
+	'==========================================================================================================================
+	
+	
+	
+	
+	
+	
+	
+	if Len(shopper_password) > 0 then
+		salt ="cV"
+		sql = "UPDATE " & g_storeid & "_shopper SET password = CONVERT(VARCHAR(32), HashBytes('MD5', '" & salt & shopper_password & "'), 2) + ':' + '" & salt & "' WHERE shopper_id='" & shopper_id & "'"
+		dbconn.Execute(sql)
+	end if
+	
+	
+%>

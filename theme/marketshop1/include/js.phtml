@@ -78,7 +78,7 @@ var FormValidation = function () {
 			unhighlight: function (element) { // revert the change done by hightlight
 				$(element)
 					.closest('.form-group').removeClass('has-error'); // set error class to the control group
-			},
+			}
 			
 		});
 
@@ -98,6 +98,46 @@ jQuery(document).ready(function() {
 });
 </script>
 
+<% end if %>
+<% if g_route_page_id = "cart" then %>
+<script type="text/javascript">
+jQuery(document).ready(function() { 
+   //FormValidation.init();
+   jQuery.ajax({
+		type:"get",
+		url: "api/sp_get_zone_list.phtml",
+		data: {country_id: 'US', 'isAjax':true},
+		dataType: 'json',
+		success: function(data) {
+			var listItems= "<option value=''>--- Please Select ---</option>";
+			for (var i = 0; i < data.Zone.length; i++){
+				listItems+= "<option value='" + data.Zone[i].id + "'>" + data.Zone[i].name + "</option>";
+			}
+			var select = jQuery("#zone_id");
+			select.empty(); 
+			select.append(listItems);
+		}
+	});
+	jQuery( "#country_id" ).change(function() {
+		var sCountry = jQuery("#country_id").val();
+		jQuery.ajax({
+			type:"get",
+			url: "api/sp_get_zone_list.phtml",
+			data: {country_id: sCountry, 'isAjax':true},
+			dataType: 'json',
+			success: function(data) {
+				var listItems= "<option value=''>--- Please Select ---</option>";
+				for (var i = 0; i < data.Zone.length; i++){
+					listItems+= "<option value='" + data.Zone[i].id + "'>" + data.Zone[i].name + "</option>";
+				}
+				var select = jQuery("#zone_id");
+				select.empty(); 
+				select.append(listItems);
+			}
+		});
+	});
+});
+</script>
 <% end if %>
 <% if g_route_page_id = "login" then %>
 <script language="javascript">
@@ -128,6 +168,7 @@ var FormValidation = function () {
 					required: "Please enter your password."
 				}
 			},
+			
 			highlight: function (element) { // hightlight error inputs
 
 				$(element)
@@ -137,7 +178,7 @@ var FormValidation = function () {
 			unhighlight: function (element) { // revert the change done by hightlight
 				$(element)
 					.closest('.form-group').removeClass('has-error'); // set error class to the control group
-			},
+			}
 			
 		});
 
@@ -154,6 +195,536 @@ var FormValidation = function () {
 <script type="text/javascript">
 jQuery(document).ready(function() { 
    FormValidation.init();
+});
+</script>
+<% end if %>
+
+<% if g_route_page_id = "register" then %>
+<script language="javascript">
+var FormValidation = function () {
+	var registerValidation1 = function() {
+		var form1 = $('#register-form');
+		var error1 = $('.alert-danger', form1);
+		var success1 = $('.alert-success', form1);
+		var warning1 = $('.alert-warning', form1);
+
+		form1.validate({
+			
+			//RULES
+			rules: {
+				new_email: {
+					required: true,
+					email: true,
+					remote:
+					{
+					  url: 'api/check_duplicate_email_address.phtml',
+					  type: "post"
+					}
+				},
+				new_password1 : {
+					required: true,
+                    minlength : 5
+                },
+                new_password2 : {
+					required: true,
+                    minlength : 5,
+                    equalTo : "#new_password1"
+                },
+				firstname: {
+					required: true
+				},
+				lastname: {
+					required: true
+				},
+				telephone: {
+					required: true
+				},
+				address: {
+					required: true
+				},
+				city: {
+					required: true
+				},
+				postcode: {
+					required: true
+				},
+				country: {
+					required: true
+				},
+				state: {
+					required: true
+				}
+				
+			},
+			messages: {
+				new_email: {
+					required: "Please enter your email address.",
+					email : "Please enter a valid email address.",
+					remote: "The specified email address is already registered."
+				},
+				new_password1: {
+					required: "Please enter your password.",
+					minlength: "Please enter your password with 5 characters or more."
+				},
+				new_password2: {
+					required: "Please confirm your password.",
+					minlength: "Please enter your password with 5 characters or more.",
+					equalTo: "Please enter same password."
+				}
+			},
+			
+			invalidHandler: function (event, validator) { //display error alert on form submit              
+				success1.hide();
+				error1.show();
+			},
+			/*
+			errorPlacement: function (error, element) { // render error placement for each input type
+				var cont = $(element).parent('.input-group');
+				if (cont) {
+					cont.after(error);
+				} else {
+					element.after(error);
+				}
+			},
+			*/
+			highlight: function (element) { // hightlight error inputs
+
+				$(element)
+					.closest('.form-group').addClass('has-error'); // set error class to the control group
+			},
+
+			unhighlight: function (element) { // revert the change done by hightlight
+				$(element)
+					.closest('.form-group').removeClass('has-error'); // set error class to the control group
+			},
+			
+			success: function (label) {
+				label
+					.closest('.form-group').removeClass('has-error'); // set success class to the control group
+			},
+
+			submitHandler: function (form) {
+				success1.hide();
+				error1.hide
+				warning1.hide();
+				window.scrollTo(0,0);
+				$.ajax({
+					type: "POST",
+					url: "api/sp_register_update.phtml",
+					data: form1.serialize(),
+					success: function() {
+						success1.show();
+						setTimeout(function () {
+							window.location.replace('<%=g_secure_url%>login.phtml');
+						}, 500);
+					},
+					error: function() {
+						warning1.show();
+					}
+				});
+			}
+			
+		});
+
+	}
+	return {
+		//main function to initiate the module
+		init: function () {
+			registerValidation1();
+		}
+	};
+
+}();
+</script>
+<script type="text/javascript">
+jQuery(document).ready(function() { 
+   FormValidation.init();
+   jQuery.ajax({
+		type:"get",
+		url: "api/sp_get_zone_list.phtml",
+		data: {country_id: 'US', 'isAjax':true},
+		dataType: 'json',
+		success: function(data) {
+			var listItems= "<option value=''>--- Please Select ---</option>";
+			for (var i = 0; i < data.Zone.length; i++){
+				listItems+= "<option value='" + data.Zone[i].id + "'>" + data.Zone[i].name + "</option>";
+			}
+			var select = jQuery("#state");
+			select.empty(); 
+			select.append(listItems);
+		}
+	});
+	jQuery( "#country" ).change(function() {
+		var sCountry = jQuery("#country").val();
+		jQuery.ajax({
+			type:"get",
+			url: "api/sp_get_zone_list.phtml",
+			data: {country_id: sCountry, 'isAjax':true},
+			dataType: 'json',
+			success: function(data) {
+				var listItems= "<option value=''>--- Please Select ---</option>";
+				for (var i = 0; i < data.Zone.length; i++){
+					listItems+= "<option value='" + data.Zone[i].id + "'>" + data.Zone[i].name + "</option>";
+				}
+				var select = jQuery("#state");
+				select.empty(); 
+				select.append(listItems);
+			}
+		});
+	});
+});
+</script>
+<% end if %>
+<% if g_route_page_id = "billing_list" then %>
+<% if op = "edit" then %>
+<script language="javascript">
+var FormValidation = function () {
+	var registerValidation1 = function() {
+		var form1 = $('#billing-form');
+		var error1 = $('.alert-danger', form1);
+		var success1 = $('.alert-success', form1);
+		var warning1 = $('.alert-warning', form1);
+
+		form1.validate({
+			
+			//RULES
+			rules: {
+				shopper_billing_firstname: {
+					required: true
+				},
+				shopper_billing_lastname: {
+					required: true
+				},
+				shopper_billing_address: {
+					required: true
+				},
+				shopper_billing_city: {
+					required: true
+				},
+				shopper_billing_country: {
+					required: true
+				},
+				shopper_billing_state: {
+					required: true
+				},
+				shopper_billing_zip: {
+					required: true
+				},
+				shopper_billing_phone: {
+					required: true
+				}
+				
+			},
+			
+			
+			invalidHandler: function (event, validator) { //display error alert on form submit              
+				success1.hide();
+				warning1.hide();
+				error1.show();
+			},
+			/*
+			errorPlacement: function (error, element) { // render error placement for each input type
+				var cont = $(element).parent('.input-group');
+				if (cont) {
+					cont.after(error);
+				} else {
+					element.after(error);
+				}
+			},
+			*/
+			highlight: function (element) { // hightlight error inputs
+
+				$(element)
+					.closest('.form-group').addClass('has-error'); // set error class to the control group
+			},
+
+			unhighlight: function (element) { // revert the change done by hightlight
+				$(element)
+					.closest('.form-group').removeClass('has-error'); // set error class to the control group
+			},
+			
+			success: function (label) {
+				label
+					.closest('.form-group').removeClass('has-error'); // set success class to the control group
+			},
+
+			submitHandler: function (form) {
+				success1.hide();
+				error1.hide
+				warning1.hide();
+				window.scrollTo(0,0);
+				$.ajax({
+					type: "POST",
+					url: "api/sp_billing_list_update.phtml",
+					data: form1.serialize(),
+					success: function() {
+						success1.show();
+						setTimeout(function () {
+							window.location.replace('<%=g_secure_url%>billing_list.phtml');
+						}, 500);
+					},
+					error: function() {
+						warning1.show();
+					}
+				});
+			}
+			
+		});
+
+	}
+	return {
+		//main function to initiate the module
+		init: function () {
+			registerValidation1();
+		}
+	};
+
+}();
+</script>
+<script type="text/javascript">
+jQuery(document).ready(function() { 
+   FormValidation.init();
+   jQuery.ajax({
+		type:"get",
+		url: "api/sp_get_zone_list.phtml",
+		data: {country_id: '<%=shopper_billing_country%>', 'isAjax':true},
+		dataType: 'json',
+		success: function(data) {
+			var listItems= "<option value=''>--- Please Select ---</option>";
+			for (var i = 0; i < data.Zone.length; i++){
+				
+				if (data.Zone[i].id == '<%=shopper_billing_state%>')
+				{
+					listItems+= "<option value='" + data.Zone[i].id + "' selected>" + data.Zone[i].name + "</option>";
+				}
+				else
+				{
+					listItems+= "<option value='" + data.Zone[i].id + "'>" + data.Zone[i].name + "</option>";
+				}
+			}
+			var select = jQuery("#shopper_billing_state");
+			select.empty(); 
+			select.append(listItems);
+		}
+	});
+	jQuery( "#shopper_billing_country" ).change(function() {
+		var sCountry = jQuery("#shopper_billing_country").val();
+		jQuery.ajax({
+			type:"get",
+			url: "api/sp_get_zone_list.phtml",
+			data: {country_id: sCountry, 'isAjax':true},
+			dataType: 'json',
+			success: function(data) {
+				var listItems= "<option value=''>--- Please Select ---</option>";
+				for (var i = 0; i < data.Zone.length; i++){
+					if (data.Zone[i].id == '<%=shopper_billing_state%>')
+					{
+						listItems+= "<option value='" + data.Zone[i].id + "' selected>" + data.Zone[i].name + "</option>";
+					}
+					else
+					{
+						listItems+= "<option value='" + data.Zone[i].id + "'>" + data.Zone[i].name + "</option>";
+					}
+				}
+				var select = jQuery("#shopper_billing_state");
+				select.empty(); 
+				select.append(listItems);
+			}
+		});
+	});
+});
+</script>
+<% end if %>
+<% end if %>
+<% if g_route_page_id = "shipping_list" then %>
+<% if op = "edit" then %>
+<script language="javascript">
+var FormValidation = function () {
+	var registerValidation1 = function() {
+		var form1 = $('#shipping-form');
+		var error1 = $('.alert-danger', form1);
+		var success1 = $('.alert-success', form1);
+		var warning1 = $('.alert-warning', form1);
+
+		form1.validate({
+			
+			//RULES
+			rules: {
+				shopper_shipping_firstname: {
+					required: true
+				},
+				shopper_shipping_lastname: {
+					required: true
+				},
+				shopper_shipping_address: {
+					required: true
+				},
+				shopper_shipping_city: {
+					required: true
+				},
+				shopper_shipping_country: {
+					required: true
+				},
+				shopper_shipping_state: {
+					required: true
+				},
+				shopper_billingshipping_zip: {
+					required: true
+				},
+				shopper_shipping_phone: {
+					required: true
+				}
+				
+			},
+			
+			
+			invalidHandler: function (event, validator) { //display error alert on form submit              
+				success1.hide();
+				warning1.hide();
+				error1.show();
+			},
+			/*
+			errorPlacement: function (error, element) { // render error placement for each input type
+				var cont = $(element).parent('.input-group');
+				if (cont) {
+					cont.after(error);
+				} else {
+					element.after(error);
+				}
+			},
+			*/
+			highlight: function (element) { // hightlight error inputs
+
+				$(element)
+					.closest('.form-group').addClass('has-error'); // set error class to the control group
+			},
+
+			unhighlight: function (element) { // revert the change done by hightlight
+				$(element)
+					.closest('.form-group').removeClass('has-error'); // set error class to the control group
+			},
+			
+			success: function (label) {
+				label
+					.closest('.form-group').removeClass('has-error'); // set success class to the control group
+			},
+
+			submitHandler: function (form) {
+				success1.hide();
+				error1.hide
+				warning1.hide();
+				window.scrollTo(0,0);
+				$.ajax({
+					type: "POST",
+					url: "api/sp_shipping_list_update.phtml",
+					data: form1.serialize(),
+					success: function() {
+						success1.show();
+						setTimeout(function () {
+							window.location.replace('<%=g_secure_url%>shipping_list.phtml');
+						}, 500);
+					},
+					error: function() {
+						warning1.show();
+					}
+				});
+			}
+			
+		});
+
+	}
+	return {
+		//main function to initiate the module
+		init: function () {
+			registerValidation1();
+		}
+	};
+
+}();
+</script>
+<script type="text/javascript">
+jQuery(document).ready(function() { 
+   FormValidation.init();
+   jQuery.ajax({
+		type:"get",
+		url: "api/sp_get_zone_list.phtml",
+		data: {country_id: '<%=shopper_shipping_country%>', 'isAjax':true},
+		dataType: 'json',
+		success: function(data) {
+			var listItems= "<option value=''>--- Please Select ---</option>";
+			for (var i = 0; i < data.Zone.length; i++){
+				
+				if (data.Zone[i].id == '<%=shopper_shipping_state%>')
+				{
+					listItems+= "<option value='" + data.Zone[i].id + "' selected>" + data.Zone[i].name + "</option>";
+				}
+				else
+				{
+					listItems+= "<option value='" + data.Zone[i].id + "'>" + data.Zone[i].name + "</option>";
+				}
+			}
+			var select = jQuery("#shopper_shipping_state");
+			select.empty(); 
+			select.append(listItems);
+		}
+	});
+	jQuery( "#shopper_shipping_country" ).change(function() {
+		var sCountry = jQuery("#shopper_shipping_country").val();
+		jQuery.ajax({
+			type:"get",
+			url: "api/sp_get_zone_list.phtml",
+			data: {country_id: sCountry, 'isAjax':true},
+			dataType: 'json',
+			success: function(data) {
+				var listItems= "<option value=''>--- Please Select ---</option>";
+				for (var i = 0; i < data.Zone.length; i++){
+					if (data.Zone[i].id == '<%=shopper_billing_state%>')
+					{
+						listItems+= "<option value='" + data.Zone[i].id + "' selected>" + data.Zone[i].name + "</option>";
+					}
+					else
+					{
+						listItems+= "<option value='" + data.Zone[i].id + "'>" + data.Zone[i].name + "</option>";
+					}
+				}
+				var select = jQuery("#shopper_shipping_state");
+				select.empty(); 
+				select.append(listItems);
+			}
+		});
+	});
+});
+</script>
+<% end if %>
+<% end if %>
+<% if g_route_page_id = "checkout" then %>
+<script type="text/javascript">
+jQuery(document).ready(function() { 
+   //FormValidation.init();
+   jQuery( "#billing_address_id" ).change(function() {
+	  
+	   if (jQuery("#billing_address_id").val() == "new")
+	   {
+			$('#billing_address').removeClass('display-hide');
+	   }
+	   else
+	   {
+		  $('#billing_address').addClass('display-hide');
+	   }
+   });
+   
+    jQuery( "#shipping_address_id" ).change(function() {
+	  
+	   if (jQuery("#shipping_address_id").val() == "new")
+	   {
+			$('#shipping_address').removeClass('display-hide');
+	   }
+	   else
+	   {
+		  $('#shipping_address').addClass('display-hide');
+	   }
+   });
+   
 });
 </script>
 <% end if %>

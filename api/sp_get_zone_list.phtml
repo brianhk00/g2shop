@@ -1,0 +1,38 @@
+<%
+	Response.CodePage = 65001
+	Response.CharSet = "UTF-8"
+%>
+<%response.Expires=-1%>
+<!-- #INCLUDE File="../local/local.phtml" -->
+<!-- #INCLUDE File="../core/i_adoopen.phtml" -->
+<%
+	country_id = Trim(Request("country_id"))
+	CountryID = 0
+	sql = "SELECT CountryID FROM A_GlobalCountries WHERE ISOCode2='" & country_id & "'"
+	set rs1 = dbconn.Execute(sql)
+	if not rs1.EOF then
+		CountryID = rs1(0)
+	end if
+	rs1.Close
+	set rs1 = nothing
+%>
+{
+"Zone" : [
+<%
+	s_zone = ""
+	sql = "SELECT ZoneName, ZoneCode FROM A_GlobalZones WHERE CountryID = " & CountryID & " ORDER BY ZoneName"
+	set rs1 = dbconn.Execute(sql)
+	do while not rs1.EOF
+		s_zone = s_zone & "{""id"" : """ & rs1(1) & """,""name"" : """ & rs1(0) & """},"
+		rs1.MoveNext
+	loop
+	rs1.Close
+	set rs1 = nothing
+	if Len(s_zone) > 0 then
+		s_zone = Left(s_zone, Len(s_zone)-1)
+	end if
+	response.Write(s_zone)
+%>
+]
+}
+<!-- #INCLUDE File="../core/i_adoclosed.phtml" -->

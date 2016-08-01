@@ -1,0 +1,64 @@
+<%
+	Response.CodePage = 1252 
+	Response.CharSet = "windows-1252" 
+%>
+<!--#INCLUDE FILE="local/local.phtml"-->
+<!--#INCLUDE FILE="core/i_adoopen.phtml"-->
+<!--#INCLUDE FILE="util/xt_func_session.phtml"-->
+<!--#INCLUDE File="util/xt_func_util.phtml" -->
+<!--#INCLUDE FILE="util/xt_func_string.phtml"-->
+<!--#INCLUDE FILE="util/xt_func_shoppingcart.phtml"-->
+<%
+	if basket_action = "" then
+        basket_action = Trim(Request("basket_action"))
+        basket_action = Left(basket_action, 3)
+    end if 
+	
+	Select Case basket_action
+	CASE "U"
+		recordid = Trim(Request("recordid"))
+		quantity = Trim(Request("quantity"))
+		
+		if Len(recordid) > 0 then
+			ar_recordid = Split(recordid, ", ")
+			ar_quantity = Split(quantity, ", ")
+			
+			for i = 0 to UBound(ar_recordid)
+				
+				if IsNumeric(ar_recordid(i)) AND IsNumeric(ar_quantity(i)) then
+					sql = "UPDATE A_Shoppingcart SET cartOrderQuantity = " & ar_quantity(i) & " WHERE RecordID=" & ar_recordid(i)
+					dbconn.Execute(sql)
+				end if
+				
+			next
+			
+		end if
+		
+		Response.Redirect (g_secure_url & "cart.phtml")
+	CASE "A"
+		pf_id = Trim(Request("pf_id"))
+		pf_id = FilterSKUString(pf_id)
+		product_mode = Trim(Request("product_mode"))
+		qty = Trim(Request("qty"))
+		
+		SELECT CASE product_mode
+		CASE "0"
+			if AddItemToShoppingCart(pf_id, product_mode, 0, 0, 0, "", qty) then
+				bRedirect = true
+			else
+				iCount = iCount - 1
+			end if
+		END SELECT
+		Response.Redirect (g_secure_url & "cart.phtml")
+	CASE "D"
+		recordid = Trim(Request("recordid"))
+		if IsNumeric(recordid) then
+			sql = "DELETE FROM A_Shoppingcart WHERE RecordID=" & recordid
+			dbconn.Execute(sql)
+		end if
+		Response.Redirect (g_secure_url & "cart.phtml")
+	CASE ELSE
+		Response.Redirect (g_secure_url & "cart.phtml")
+	END SELECT
+
+%>

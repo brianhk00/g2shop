@@ -1,4 +1,9 @@
 <%
 	Set dbconn=server.CreateObject("ADODB.Connection")
 	dbconn.Open g_connection_string
+	
+	if g_store_use_icecat_catalog = "1" then
+		Set conn_ss1=server.CreateObject("ADODB.Connection")
+		conn_ss1.Open g_connection_icecat_catalog
+	end if
 %>

@@ -1,0 +1,213 @@
+<div id="content" class="col-sm-12">
+	<h1 class="title"><%=a("Shopping Cart")%></h1>
+	<% if GetTotalItemsInCart() > 0 then %>
+	<div class="table-responsive">
+		<form action="<%=g_secure_url%>tp_cart.phtml" method="post" name="basketform" id="basketform">
+		<input type="hidden" name="basket_action" id="basket_action" value="U"/>
+		<table class="table table-bordered">
+		<thead>
+		<tr>
+			<td class="text-center">
+				Image
+			</td>
+			<td class="text-left">
+				Product Name
+			</td>
+			<td class="text-left">
+				Quantity
+			</td>
+			<td class="text-right">
+				Unit Price
+			</td>
+			<td class="text-right">
+				Total
+			</td>
+			<td class="text-center">
+				&nbsp;
+			</td>
+		</tr>
+		</thead>
+		<tbody>
+		<!--#INCLUDE FILE="../../../core/checkout/include_cart_loop_start.phtml"-->
+		<tr>
+			<td class="text-center">
+				<a href="product.html"><img src="image/product/samsung_tab_1-50x50.jpg" alt="Aspire Ultrabook Laptop" title="Aspire Ultrabook Laptop" class="img-thumbnail"/></a>
+			</td>
+			<td class="text-left">
+				<%=g_cartProductName%><br/>
+				<small>SKU: <%=g_cartProductSKU%></small>
+			</td>
+			<td class="text-left">
+				<input type="text" name="quantity" value="<%=g_cartOrderQuantity%>" size="2" class="form-control"/>
+				<input type="hidden" name="recordid" value="<%=g_cartRecordID%>" />
+			</td>
+			<td class="text-right">
+				$<%=g_cartProductUnitPrice%>
+			</td>
+			<td class="text-right">
+				$<%=g_cartProductUnitTotal%>
+			</td>
+			<td class="text-center">
+				<a href="<%=g_basket_item_delete_link%>"<span class="fa fa-trash"></span></a>
+			</td>
+		</tr>
+		<!--#INCLUDE FILE="../../../core/checkout/include_cart_loop_end.phtml"-->
+		
+		</tbody>
+		<tfoot>
+		<tr>
+			<td colspan="50" class="a-right">
+				<button type="button" title="Continue Shopping" class="btn btn-default" onclick="setLocation('<%=g_store_url%>')"><span><span>Continue Shopping</span></span></button>
+				<button type="submit" name="update_cart_action" value="update_qty" title="Update Shopping Cart" class="btn btn-primary"><span><span>Update Shopping Cart</span></span></button>
+			</td>
+		</tr>
+		</tfoot>
+		</table>
+		</form>
+	</div>
+	<h2 class="subtitle">What would you like to do next?</h2>
+	<p>
+		Choose if you have a discount code or reward points you want to use or would like to estimate your delivery cost.
+	</p>
+	<div class="row">
+		<div class="col-sm-6">
+			<div class="panel panel-default">
+				<div class="panel-heading">
+					<h4 class="panel-title">Use Coupon Code</h4>
+				</div>
+				<div id="collapse-coupon" class="panel-collapse collapse in">
+					<div class="panel-body">
+						<label class="col-sm-4 control-label" for="input-coupon">Enter your coupon here</label>
+						<div class="input-group">
+							<input type="text" name="coupon" value="" placeholder="Enter your coupon here" id="input-coupon" class="form-control"/>
+							<span class="input-group-btn">
+							<input type="button" value="Apply Coupon" id="button-coupon" data-loading-text="Loading..." class="btn btn-primary"/>
+							</span>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+		<div class="col-sm-6">
+			<div class="panel panel-default">
+				<div class="panel-heading">
+					<h4 class="panel-title">Use Gift Voucher</h4>
+				</div>
+				<div id="collapse-voucher" class="panel-collapse collapse in">
+					<div class="panel-body">
+						<label class="col-sm-4 control-label" for="input-voucher">Enter gift voucher code here</label>
+						<div class="input-group">
+							<input type="text" name="voucher" value="" placeholder="Enter gift voucher code here" id="input-voucher" class="form-control"/>
+							<span class="input-group-btn">
+							<input type="submit" value="Apply Voucher" id="button-voucher" data-loading-text="Loading..." class="btn btn-primary"/>
+							</span>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+	<div class="panel panel-default">
+		<div class="panel-heading">
+			<h4 class="panel-title">Estimate Shipping &amp; Taxes</h4>
+		</div>
+		<div id="collapse-shipping" class="panel-collapse collapse in">
+			<div class="panel-body">
+				<p>
+					Enter your destination to get a shipping estimate.
+				</p>
+				<form class="form-horizontal">
+					<div class="form-group required">
+						<label class="col-sm-2 control-label" for="input-country">Country</label>
+						<div class="col-sm-10">
+							<select name="country_id" id="country_id" class="form-control">
+								<option value=""> --- Please Select --- </option>
+								<%
+									sql = "SELECT CountryID, CountryName, ISOCode2 FROM A_GlobalCountries"
+									set rsCntry = dbconn.Execute(sql)
+									int i = 0
+
+									do while not rsCntry.Eof
+										country = rsCntry("CountryName")
+										country_id = Trim(rsCntry("ISOCode2"))
+										if shopper_billing_country = country_id then
+											Response.Write("<option value=""" & country_id & """ selected>" & country & "</option>")
+										else
+											Response.Write("<option value=""" & country_id & """>" & country & "</option>")
+										end if
+										rsCntry.MoveNext
+									i = i + 1
+									loop
+									rsCntry.Close
+								%>
+							</select>
+						</div>
+					</div>
+					<div class="form-group required">
+						<label class="col-sm-2 control-label" for="zone_id">Region / State</label>
+						<div class="col-sm-10">
+							<select class="form-control" id="zone_id" name="zone_id">
+								
+							</select>
+						</div>
+					</div>
+					<div class="form-group required">
+						<label class="col-sm-2 control-label" for="input-postcode">Post Code</label>
+						<div class="col-sm-10">
+							<input type="text" name="postcode" value="" placeholder="Post Code" id="input-postcode" class="form-control"/>
+						</div>
+					</div>
+					<input type="button" value="Get Quotes" id="button-quote" data-loading-text="Loading..." class="btn btn-primary"/>
+				</form>
+			</div>
+		</div>
+	</div>
+	<div class="row">
+		<div class="col-sm-4 col-sm-offset-8">
+			<table class="table table-bordered">
+			<tr>
+				<td class="text-right">
+					<strong>Sub-Total:</strong>
+				</td>
+				<td class="text-right">
+					$<%=FormatNumber(GetTotalAmountInCart,2)%>
+				</td>
+			</tr>
+			<tr>
+				<td class="text-right">
+					<strong>Tax:</strong>
+				</td>
+				<td class="text-right">
+					$<%=FormatNumber(GetTaxInCart(),2) %>
+				</td>
+			</tr>
+			<tr>
+				<td class="text-right">
+					<strong>Total:</strong>
+				</td>
+				<td class="text-right">
+					$<%=FormatNumber(GetGrandTotalInCart(),2) %>
+				</td>
+			</tr>
+			</table>
+		</div>
+	</div>
+	<div class="buttons">
+		<div class="pull-left">
+			<a href="<%=g_store_url%>" class="btn btn-default"><%=a("Continue Shopping")%></a>
+		</div>
+		<div class="pull-right">
+			<a href="checkout.phtml" class="btn btn-primary"><%=a("Checkout")%></a>
+		</div>
+	</div>
+	<% else %>
+	<p><%=a("You have no items in your shopping cart.")%></a>
+	<div class="buttons">
+		<div class="pull-left">
+			<a href="<%=g_store_url%>" class="btn btn-default"><%=a("Continue Shopping")%></a>
+		</div>
+		<div class="pull-right">
+		</div>
+	</div>
+	<% end if %>
+</div>

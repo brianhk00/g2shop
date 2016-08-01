@@ -1,0 +1,215 @@
+<%response.Expires=-1%>
+<!-- #INCLUDE File="../local/local.phtml" -->
+<!-- #INCLUDE File="../util/xt_func_util.phtml" -->
+<!-- #INCLUDE File="../util/xt_func_string.phtml" -->
+<%
+	sEcho = Trim(Request("draw"))
+	iDisplayLength = Trim(Request("length"))
+	iDisplayStart = Trim(Request("start"))
+  
+	sEcho = FilterStringEx(sEcho, "[^0-9]")
+	iDisplayLength = FilterStringEx(iDisplayLength, "[^0-9]")
+	iDisplayStart = FilterStringEx(iDisplayStart, "[^0-9]")
+
+	sEcho = Cint(sEcho)
+	iDisplayLength = Cint(iDisplayLength)
+	iDisplayStart = Cint(iDisplayStart)
+	
+	'=======================================================================================
+	strWhere = ""
+	'---------------------------------------------------------------------------------------
+	block_id = Trim(Request("block_id"))
+	if Len(block_id) > 0 then
+		if IsNumeric(block_id) then
+			strWhere = strWhere &  " (block_id like '%" & block_id & "%') AND"
+		end if
+	end if
+	'----------------------------------------------------------------------------------------
+	block_title = Trim(Request("block_title"))
+	if Len(block_title) > 1 then
+		strWhere = strWhere &  " (block_title like '%" & block_title & "%') AND"
+	end if
+	'----------------------------------------------------------------------------------------
+	s_block_identifier = Trim(Request("s_block_identifier"))
+	if Len(s_block_identifier) > 1 then
+		strWhere = strWhere &  " (s_block_identifier like '%" & s_block_identifier & "%') AND"
+	end if
+	'----------------------------------------------------------------------------------------
+	sMin = Trim(Request("block_date_created_from"))
+	sMax = Trim(Request("block_date_created_to"))
+	sDateRange = ""
+	if IsDate(sMin) then
+		if IsDate(sMax) then
+			dMax = CDate(sMax)
+			dMax = DateAdd("d", 1, dMax)
+			sMax = FormatDateTime(dMax,0)
+			sDateRange = "(block_date_created between '" & sMin & "' AND '" & sMax & "')"
+		else
+			'dMin = CDate(sMin)
+			dMax = Date()
+			dMax = DateAdd("d", 1, dMax)
+			sMax = FormatDateTime(dMax,0)
+			sDateRange = "(block_date_created between '" & sMin & "' AND '" & sMax & "')"
+		end if
+	else
+		if IsDate(sMax) then
+			dMax = CDate(sMax)
+			dMax = DateAdd("d", 1, dMax)
+			sMax = FormatDateTime(dMax,0)
+			sDateRange = "(block_date_created between '1/1/1970' AND '" & sMax & "')"
+		end if
+	end if
+	
+	if Len(sDateRange) > 0 then
+		strWhere = strWhere &  " " & sDateRange & " AND"
+	end if
+	'----------------------------------------------------------------------------------------
+	sMin = Trim(Request("block_date_updated_from"))
+	sMax = Trim(Request("block_date_updated_to"))
+	sDateRange = ""
+	if IsDate(sMin) then
+		if IsDate(sMax) then
+			dMax = CDate(sMax)
+			dMax = DateAdd("d", 1, dMax)
+			sMax = FormatDateTime(dMax,0)
+			sDateRange = "(block_date_modified between '" & sMin & "' AND '" & sMax & "')"
+		else
+			'dMin = CDate(sMin)
+			dMax = Date()
+			dMax = DateAdd("d", 1, dMax)
+			sMax = FormatDateTime(dMax,0)
+			sDateRange = "(block_date_modified between '" & sMin & "' AND '" & sMax & "')"
+		end if
+	else
+		if IsDate(sMax) then
+			dMax = CDate(sMax)
+			dMax = DateAdd("d", 1, dMax)
+			sMax = FormatDateTime(dMax,0)
+			sDateRange = "(block_date_modified between '1/1/1970' AND '" & sMax & "')"
+		end if
+	end if
+	
+	if Len(sDateRange) > 0 then
+		strWhere = strWhere &  " " & sDateRange & " AND"
+	end if
+	
+	'----------------------------------------------------------------------------------------
+	block_status = Trim(Request("block_status"))
+	if Len(block_status) > 0 then
+		strWhere = strWhere &  " (block_status = '" & block_status & "') AND"
+	end if
+	'----------------------------------------------------------------------------------------
+	
+	if Len(strWhere) > 0 then
+		strWhere = Left(strWhere, Len(strWhere) - 4)
+	else
+		strWhere = "block_title LIKE '%%'"
+	end if
+	
+	'=======================================================================================
+	'ORDERING
+	SELECT CASE Trim(Request("order[0][column]"))
+	CASE "0"
+		sOrder = "block_id DESC"
+	CASE "1"
+		sOrder = "block_id " & Trim(Request("order[0][dir]"))
+	CASE "2"
+		sOrder = "block_title " & Trim(Request("order[0][dir]"))
+	CASE "3"
+		sOrder = "block_identifier " & Trim(Request("order[0][dir]"))
+	CASE "4"
+		sOrder = "block_date_created " & Trim(Request("order[0][dir]"))
+	CASE "5"
+		sOrder = "block_date_modified " & Trim(Request("order[0][dir]"))
+	CASE "6"
+		sOrder = "block_status " & Trim(Request("order[0][dir]"))
+	CASE "7"
+		sOrder = "block_id " & Trim(Request("order[0][dir]"))
+	CASE ELSE
+		sOrder = "block_id DESC"
+	END SELECT 
+	'here we create the variable "strOrderBy" that will be used in the SQL querry
+	strOrderBy = "ORDER BY " & sOrder
+
+	'======================================================================================
+	Set dbconn=server.CreateObject("ADODB.Connection")
+	dbconn.Open g_connection_string
+	
+	sql = "SELECT * FROM " & g_storeid & "_static_block WHERE " & strWhere & " " & strOrderBy
+	sqlx = "SELECT COUNT(block_id) FROM " & g_storeid & "_static_block WHERE " & strWhere 
+		
+	set rs = dbconn.Execute(sql)
+	
+	iTotalDisplayRecords = 0
+	iTotalRecords = 50
+	set rs1 = dbconn.Execute(sqlx)
+	if not rs1.EOF then
+	  iTotalDisplayRecords = rs1(0)
+	  iTotalRecords = rs1(0)
+	else
+	end if
+	rs1.Close
+	
+	'iTotalDisplayRecords = 50
+	
+	'iTotalRecords = 50
+	
+%>
+{"draw": <%=sEcho%>, "recordsTotal": <%=iTotalRecords%>, "recordsFiltered": <%=iTotalDisplayRecords%>, "data": [ 
+<%
+	i = 0
+
+	if rs.eof = false then
+		rs.move(iDisplayStart)
+		do while i < iDisplayLength and not rs.eof
+    
+			s_block_id = rs("block_id")
+			s_block_title = Trim(rs("block_title"))
+			s_block_identifier = Trim(rs("block_identifier"))
+			s_date_created = rs("block_date_created")
+			s_date_created = ConvertToTimeZone(FormatDateTime(s_date_created,2))
+			s_date_modified = rs("block_date_modified")
+			s_date_modified = ConvertToTimeZone(FormatDateTime(s_date_modified,2))
+			i_status = rs("block_status")
+			SELECT CASE i_status
+			CASE 1
+				s_status = "Enabled"
+			CASE 2
+				s_status = "Disabled"
+			CASE ELSE
+				s_status = "Disabled"
+			END SELECT
+			
+			
+			aaData = aaData & "['"
+			aaData = aaData & "<label class=\'mt-checkbox mt-checkbox-single mt-checkbox-outline\'><input name=\'id[]\' type=\'checkbox\' class=\'checkboxes\' value=\'" &  s_block_id & "\'/><span></span></label> " & "','" 
+			'aaData = aaData & "<a href=\'design_staticblocks_detail.phtml?block_id=" & s_block_id & "\'>" & s_block_id & "</a>','" 
+			aaData = aaData & s_block_id & "','" 
+			aaData = aaData & s_block_title & "','" 
+			aaData = aaData & s_block_identifier & "','" 
+			aaData = aaData & s_date_created & "','" 
+			aaData = aaData & s_date_modified & "','"
+			
+			SELECT CASE s_status
+			CASE "Enabled"
+				s_label = "label label-success"
+			CASE "Disabled"
+				s_label = "label label-warning"
+			END SELECT
+			
+			aaData = aaData & "<span class=\'" & s_label & "\'>" & s_status & "</span>','"
+			aaData = aaData & "<a href=\'design_staticblocks_detail.phtml?block_id=" & s_block_id & "\' class=\'btn btn-sm btn-default btn-circle btn-editable\'><i class=\'fa fa-pencil\'></i> Edit</a>'],"
+		  
+			  
+			aaData = Replace(aaData,"'",chr(34))
+			rs.MoveNext
+			i=i+1
+		loop
+		rs.Close
+		aaData = Left(aaData, Len(aaData)-1)
+	else
+		aaData = ""
+  end if
+  
+  response.write aaData & "] }"
+%>

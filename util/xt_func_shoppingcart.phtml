@@ -1,0 +1,148 @@
+<%
+'https://support.microsoft.com/en-us/kb/320375
+
+Function AddItemToShoppingCart(ByRef str_pf_id, ByRef str_op,_
+ ByRef cart_price, ByRef part_cost, ByRef cart_index, ByRef warranty_index, ByRef cart_qty)
+ 
+	'---------------------------------------------------------------------------------------
+	if IsNumeric(cart_qty) then
+	else
+	  cart_qty = 1
+	end if
+	'----------------------------------------------------------------------------------------
+	Select Case str_op
+
+	case "0" 'Private catalog
+		
+		sql = "SELECT * FROM " & g_storeid & "_product WHERE pf_id = '" & str_pf_id & "'"			
+		Set rsCart = dbconn.Execute(sql)
+		
+		if not rsCart.EOF then
+			prod_sku = rsCart("SKU")
+			prod_name = rsCart("name")
+			prod_weight = rsCart("weight")
+			prod_cost = rsCart("list_price")
+			prod_price = rsCart("price_" & Session("LOGINGROUP"))
+			prod_is_nontaxable = rsCart("is_nontaxable")
+		end if
+		rsCart.Close
+		set rsCart = nothing
+		
+		Set rsUpdate = Server.CreateObject("ADODB.Recordset")
+		with rsUpdate
+			.ActiveConnection = dbconn
+			.CursorLocation = 3
+			.CursorType = 1
+			.LockType = 3
+			.Source = "A_Shoppingcart WHERE RecordID=0"
+			.Open
+			.AddNew
+		end with
+		
+		rsUpdate("CartID") = Session("ShoppingCartID")
+		rsUpdate("StoreID") = g_storeid
+		rsUpdate("RowID") = cart_index
+		rsUpdate("cartProductID") = str_pf_id
+		rsUpdate("cartProductSKU") = prod_sku
+		rsUpdate("cartStockID") = str_pf_id
+		rsUpdate("cartProductName") = prod_name
+		rsUpdate("cartOrderQuantity") = cart_qty
+		rsUpdate("cartProductUnitPrice") = prod_price
+		rsUpdate("cartProductUnitWeight") = prod_weight
+		rsUpdate("cartTaxable") = prod_is_nontaxable
+		rsUpdate("cartProductMode") = 0
+		rsUpdate("cartProductUnitCost") = prod_cost
+		rsUpdate("cartProductWarranty") = ""
+		rsUpdate("cartProductWarrantySelection") = ""
+		rsUpdate("cartOptions") = ""
+		
+		If dbconn.Errors.Count > 0 Then
+			dbconn.Errors.Clear
+			rsUpdate.CancelUpdate
+		else
+			rsUpdate.Update
+		End If
+		
+		rsUpdate.Close
+		set rsUpdate = nothing
+		
+	
+	End Select
+ 
+ 
+End Function
+
+Function GetTotalItemsInCart()
+	iCart = 0
+	
+	sql = "SELECT SUM (cartOrderQuantity) FROM A_Shoppingcart WHERE StoreID = '" & g_storeid & "' AND CartID = '" & Session("ShoppingCartID") & "'"
+	set rsCart1 = dbconn.Execute(sql)
+	if not rsCart1.EOF then
+		iCart = rsCart1(0)
+	end if
+	rsCart1.Close
+	set rsCart1 = nothing
+	
+	if isNumeric(iCart) then
+	else
+		iCart = 0
+	end if
+	
+	GetTotalItemsInCart = iCart
+End Function
+
+Function GetTotalAmountInCart()
+	iCart = 0
+	
+	sql = "SELECT SUM (cartOrderQuantity * cartProductUnitPrice) FROM A_Shoppingcart WHERE StoreID = '" & g_storeid & "' AND CartID = '" & Session("ShoppingCartID") & "'"
+	set rsCart1 = dbconn.Execute(sql)
+	if not rsCart1.EOF then
+		iCart = rsCart1(0)
+	end if
+	rsCart1.Close
+	set rsCart1 = nothing
+	
+	if isNumeric(iCart) then
+	else
+		iCart = 0
+	end if
+	
+	GetTotalAmountInCart = iCart
+End Function
+
+Function GetTotalTaxableAmountInCart()
+	iCart = 0
+	
+	sql = "SELECT SUM (cartOrderQuantity * cartProductUnitPrice) FROM A_Shoppingcart WHERE StoreID = '" & g_storeid & "' AND CartID = '" & Session("ShoppingCartID") & "' AND cartTaxable = 1"
+	set rsCart1 = dbconn.Execute(sql)
+	if not rsCart1.EOF then
+		iCart = rsCart1(0)
+	end if
+	rsCart1.Close
+	set rsCart1 = nothing
+	
+	if isNumeric(iCart) then
+	else
+		iCart = 0
+	end if
+	
+	GetTotalTaxableAmountInCart = iCart
+End Function
+
+Function GetTaxInCart()
+	iCart = 0
+	
+	GetTaxInCart = iCart
+	
+End Function
+
+Function GetGrandTotalInCart()
+	iCart = 0
+	
+	iCart = GetTotalAmountInCart() + GetTaxInCart() '+SH
+	
+	GetGrandTotalInCart = iCart
+	
+End Function
+
+%>

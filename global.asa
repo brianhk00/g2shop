@@ -16,11 +16,17 @@ END SUB
 
 <SCRIPT LANGUAGE=VBScript RUNAT=Server>
 Function LTrimEx(str)
-  Dim re
-  Set re = New RegExp
-  re.Pattern = "^\s*"
-  re.Multiline = False
-  LTrimEx = re.Replace(str, "")
+	Dim re
+	Set re = New RegExp
+	re.Pattern = "^\s*"
+	re.Multiline = False
+	LTrimEx = re.Replace(str, "")
+End Function
+Function createGuid()
+	Set TypeLib = Server.CreateObject("Scriptlet.TypeLib")
+	tg = TypeLib.Guid
+	createGuid = left(tg, len(tg)-2)
+	Set TypeLib = Nothing
 End Function
 
 SUB Session_OnStart
@@ -96,6 +102,14 @@ SUB Session_OnStart
 	Session("TotalTaxable") = 0
 	Session("TotalWeight") = 0
 	Session("CartItemCount") = 0
+	
+	'-----------------------------------------------------------------------
+	'SHOPPING CART V2
+	'-----------------------------------------------------------------------
+	GUID = createGuid()
+	Session("StoreGUID") = GUID
+	Session("ShoppingCartID") = GUID
+	'-----------------------------------------------------------------------
 	
 	Set conn = Server.CreateObject("ADODB.Connection")
 	conn.open Session("ConnectionString")

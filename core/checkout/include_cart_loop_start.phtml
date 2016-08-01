@@ -1,0 +1,14 @@
+<%
+	sql = "SELECT * FROM A_ShoppingCart WHERE StoreID='" & g_storeid & "' AND CartID='" & Session("ShoppingCartID") & "' ORDER BY RecordID"
+	set rsCart = dbconn.Execute(sql)
+	do while not rsCart.EOF
+		g_cartRecordID = rsCart("RecordID")
+		g_cartProductName = rsCart("cartProductName")
+		g_cartProductSKU = rsCart("cartProductSKU")
+		g_cartOrderQuantity = rsCart("cartOrderQuantity")
+		g_cartProductUnitPrice = rsCart("cartProductUnitPrice")
+		g_cartProductUnitPrice = FormatNumber(g_cartProductUnitPrice,2)
+		g_cartProductUnitTotal = g_cartOrderQuantity * g_cartProductUnitPrice
+		g_cartProductUnitTotal = FormatNumber(g_cartProductUnitTotal,2)
+		g_basket_item_delete_link = "tp_cart.phtml?basket_action=D&recordid=" & rsCart("RecordID")
+%>

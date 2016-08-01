@@ -1,0 +1,105 @@
+<%
+	Response.CodePage = 65001
+	Response.CharSet = "UTF-8"
+%>
+<%response.Expires=-1%>
+<!-- #INCLUDE File="../local/local.phtml" -->
+<!-- #INCLUDE File="../core/i_adoopen.phtml" -->
+<!-- #INCLUDE File="../util/xt_func_util.phtml" -->
+<!-- #INCLUDE File="../util/xt_func_string.phtml" -->
+<%
+	'--POST DATA------------------------------------------
+	shopper_id = Trim(Request("shopper_id"))
+	address_id = Trim(Request("address_id"))
+	
+	shopper_shipping_firstname = Trim(Request("shopper_shipping_firstname"))
+	shopper_shipping_lastname = Trim(Request("shopper_shipping_lastname"))
+	shopper_shipping_address = Trim(Request("shopper_shipping_address"))
+	shopper_shipping_city = Trim(Request("shopper_shipping_city"))
+	shopper_shipping_country = Trim(Request("shopper_shipping_country"))
+	shopper_shipping_state = Trim(Request("shopper_shipping_state"))
+	shopper_shipping_zip = Trim(Request("shopper_shipping_zip"))
+	shopper_shipping_phone = Trim(Request("shopper_shipping_phone"))
+	
+	'--END OF POST DATA-----------------------------------
+	
+	if address_id = "0" then
+	
+		Set rsUpdate = Server.CreateObject("ADODB.Recordset")
+		with rsUpdate
+			.ActiveConnection = dbconn
+			.CursorLocation = 3
+			.CursorType = 1
+			.LockType = 3
+			.Source = g_storeid & "_shopper WHERE shopper_id='" & Session("shopper_id") & "'"
+			.Open
+		end with
+		
+		rsUpdate("shipping_FirstName") = shopper_shipping_firstname
+		rsUpdate("shipping_LastName") = shopper_shipping_lastname
+		rsUpdate("shipping_Address") = shopper_shipping_address
+		rsUpdate("shipping_City") = shopper_shipping_city
+		rsUpdate("shipping_Country") = shopper_shipping_country
+		rsUpdate("shipping_State") = shopper_shipping_state
+		rsUpdate("shipping_ZipCode") = shopper_shipping_zip
+		rsUpdate("shipping_Phone") = shopper_shipping_phone
+		
+		If dbconn.Errors.Count > 0 Then
+			dbconn.Errors.Clear
+			rsUpdate.CancelUpdate
+		else
+			rsUpdate.Update
+		End If
+		
+		rsUpdate.Close
+		set rsUpdate = nothing
+	
+	else
+		
+		if address_id = "new" then
+			Set rsUpdate = Server.CreateObject("ADODB.Recordset")
+			with rsUpdate
+				.ActiveConnection = dbconn
+				.CursorLocation = 3
+				.CursorType = 1
+				.LockType = 3
+				.Source = g_storeid & "_shopper_shipping_address WHERE address_id='0'"
+				.Open
+				.AddNew
+			end with
+			rsUpdate("shopper_id") = Session("shopper_id")
+			rsUpdate("address_id") = GetUniqueLongIntegerID()	
+		else
+			Set rsUpdate = Server.CreateObject("ADODB.Recordset")
+			with rsUpdate
+				.ActiveConnection = dbconn
+				.CursorLocation = 3
+				.CursorType = 1
+				.LockType = 3
+				.Source = g_storeid & "_shopper_shipping_address WHERE address_id='" & address_id & "'"
+				.Open
+			end with
+		end if
+		
+		rsUpdate("address_name") = alt_shipping_address_name
+		rsUpdate("firstname") = alt_shipping_firstname
+		rsUpdate("lastname") = alt_shipping_lastname
+		rsUpdate("address") = alt_shipping_address
+		rsUpdate("city") = alt_shipping_city
+		rsUpdate("state") = alt_shipping_state
+		rsUpdate("zip") = alt_shipping_zip
+		rsUpdate("country") = alt_shipping_country
+		rsUpdate("phone") = alt_shipping_phone
+		
+		If dbconn.Errors.Count > 0 Then
+			dbconn.Errors.Clear
+			rsUpdate.CancelUpdate
+		else
+			rsUpdate.Update
+		End If
+		
+		rsUpdate.Close
+		set rsUpdate = nothing
+		
+	end if
+%>

@@ -120,7 +120,7 @@
 					<li><a href="<%=g_secure_url%>login.phtml?sessionID=<%=Session("SESSIONKEY")%>"><%=a("Login")%></a></li>
 					<li><a href="<%=g_secure_url%>register.phtml"><%=a("Register")%></a></li>
 					<% else %>
-					<li><a href="<%=g_secure_url%>tp_login.phtml?sessionID=<%=Session("SESSIONKEY")%>&op=logout"><%=a("Log Out")%></a>..<%=Session("shopper_id")%>..</li>
+					<li><a href="<%=g_secure_url%>tp_login.phtml?sessionID=<%=Session("SESSIONKEY")%>&op=logout"><%=a("Log Out")%></a></li>
 					<li><a href="<%=g_secure_url%>account_profile.phtml?sessionID=<%=Session("SESSIONKEY")%>"><%=a("My Account")%></a></li>
 					<% end if %>
 					
@@ -146,88 +146,37 @@
 				<div id="cart">
 					<button type="button" data-toggle="dropdown" data-loading-text="Loading..." class="heading dropdown-toggle">
 					<span class="cart-icon pull-left flip"></span>
-					<span id="cart-total">2 <%=a("item(s)")%> - $1,132.00</span></button>
+					<span id="cart-total"><%=GetTotalItemsInCart()%>&nbsp;<%=a("item(s)")%> - $<%=FormatNumber(GetTotalAmountInCart(),2)%></span></button>
 					<ul class="dropdown-menu">
 						<li>
 						<table class="table">
 						<tbody>
+						<!--#INCLUDE FILE="../../../core/checkout/include_cart_loop_start.phtml"-->
 						<tr>
 							<td class="text-center">
 								<a href="product.html"><img class="img-thumbnail" title="Xitefun Causal Wear Fancy Shoes" alt="Xitefun Causal Wear Fancy Shoes" src="image/product/sony_vaio_1-50x50.jpg"></a>
 							</td>
 							<td class="text-left">
-								<a href="product.html">Xitefun Causal Wear Fancy Shoes</a>
+								<%=g_cartProductName%>
+							</td>
+							<td class="text-right" nowrap>
+								x <%=g_cartOrderQuantity%>
 							</td>
 							<td class="text-right">
-								x 1
-							</td>
-							<td class="text-right">
-								$902.00
+								$<%=g_cartProductUnitPrice%>
 							</td>
 							<td class="text-center">
-								<button class="btn btn-danger btn-xs remove" title="Remove" onclick="" type="button"><i class="fa fa-times"></i></button>
+								<button class="btn btn-danger btn-xs remove" title="Remove" onclick="setLocation('<%=g_basket_item_delete_link%>');" type="button"><i class="fa fa-times"></i></button>
 							</td>
 						</tr>
-						<tr>
-							<td class="text-center">
-								<a href="product.html"><img class="img-thumbnail" title="Aspire Ultrabook Laptop" alt="Aspire Ultrabook Laptop" src="image/product/samsung_tab_1-50x50.jpg"></a>
-							</td>
-							<td class="text-left">
-								<a href="product.html">Aspire Ultrabook Laptop</a>
-							</td>
-							<td class="text-right">
-								x 1
-							</td>
-							<td class="text-right">
-								$230.00
-							</td>
-							<td class="text-center">
-								<button class="btn btn-danger btn-xs remove" title="Remove" onclick="" type="button"><i class="fa fa-times"></i></button>
-							</td>
-						</tr>
+						<!--#INCLUDE FILE="../../../core/checkout/include_cart_loop_end.phtml"-->
 						</tbody>
 						</table>
 						</li>
 						<li>
 						<div>
-							<table class="table table-bordered">
-							<tbody>
-							<tr>
-								<td class="text-right">
-									<strong>Sub-Total</strong>
-								</td>
-								<td class="text-right">
-									$940.00
-								</td>
-							</tr>
-							<tr>
-								<td class="text-right">
-									<strong>Eco Tax (-2.00)</strong>
-								</td>
-								<td class="text-right">
-									$4.00
-								</td>
-							</tr>
-							<tr>
-								<td class="text-right">
-									<strong>VAT (20%)</strong>
-								</td>
-								<td class="text-right">
-									$188.00
-								</td>
-							</tr>
-							<tr>
-								<td class="text-right">
-									<strong>Total</strong>
-								</td>
-								<td class="text-right">
-									$1,132.00
-								</td>
-							</tr>
-							</tbody>
-							</table>
 							<p class="checkout">
-								<a href="cart.html" class="btn btn-primary"><i class="fa fa-shopping-cart"></i> View Cart</a>&nbsp;&nbsp;&nbsp;<a href="checkout.html" class="btn btn-primary"><i class="fa fa-share"></i> Checkout</a>
+								<a href="cart.phtml" class="btn btn-primary"><i class="fa fa-shopping-cart"></i> View Cart</a>&nbsp;&nbsp;&nbsp;<a href="checkout.phtml" class="btn btn-primary"><i class="fa fa-share"></i> Checkout</a>
 							</p>
 						</div>
 						</li>

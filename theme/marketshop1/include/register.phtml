@@ -1,0 +1,145 @@
+<h1 class="title">Register Account</h1>
+<p>
+	If you already have an account with us, please login at the <a href="<%=g_secure_url%>login.phtml">Login Page</a>.
+</p>	  
+<form class="form-horizontal" id="register-form" method="post">
+	<input type="hidden" name="shopper_id" value="0" />
+	<div class="alert alert-success display-hide"><i class="fa fa-check-circle"></i> The registration is completed successfully.</div>
+	<div class="alert alert-warning display-hide"><i class="fa fa-warning"></i> The information has not been saved properly. Please contact system administrator.</div>
+	<div class="alert alert-danger display-hide"><i class="fa fa-exclamation-circle"></i> You have some form errors. Please check below. </div>
+	<fieldset id="account">
+		<legend>Your Personal Details</legend>
+		<div style="display: none;" class="form-group required">
+			<label class="col-sm-2 control-label">Customer Group</label>
+			<div class="col-sm-10">
+				<div class="radio">
+					<label>
+					<input type="radio" checked="checked" value="1" name="customer_group_id">
+					Default</label>
+				</div>
+			</div>
+		</div>
+		<div class="form-group required">
+			<label for="new_email" class="col-sm-2 control-label">E-Mail</label>
+			<div class="col-sm-10">
+				<input type="email" class="form-control" id="new_email" placeholder="E-Mail" value="" name="new_email">
+			</div>
+		</div>
+		<div class="form-group required">
+			<label for="firstname" class="col-sm-2 control-label">First Name</label>
+			<div class="col-sm-10">
+				<input type="text" class="form-control" id="firstname" placeholder="First Name" value="" name="firstname">
+			</div>
+		</div>
+		<div class="form-group required">
+			<label for="lastname" class="col-sm-2 control-label">Last Name</label>
+			<div class="col-sm-10">
+				<input type="text" class="form-control" id="lastname" placeholder="Last Name" value="" name="lastname">
+			</div>
+		</div>
+		<div class="form-group required">
+			<label for="telephone" class="col-sm-2 control-label">Telephone</label>
+			<div class="col-sm-10">
+				<input type="tel" class="form-control" id="telephone" placeholder="Telephone" value="" name="telephone">
+			</div>
+		</div>
+	</fieldset>
+	<fieldset id="address">
+		<legend>Your Address</legend>
+		<div class="form-group">
+			<label for="company" class="col-sm-2 control-label">Company</label>
+			<div class="col-sm-10">
+				<input type="text" class="form-control" id="company" placeholder="Company" value="" name="company">
+			</div>
+		</div>
+		<div class="form-group required">
+			<label for="address" class="col-sm-2 control-label">Address </label>
+			<div class="col-sm-10">
+				<input type="text" class="form-control" id="address" placeholder="address" value="" name="address">
+			</div>
+		</div>
+		<div class="form-group required">
+			<label for="city" class="col-sm-2 control-label">City</label>
+			<div class="col-sm-10">
+				<input type="text" class="form-control" id="city" placeholder="City" value="" name="city">
+			</div>
+		</div>
+		<div class="form-group required">
+			<label for="postcode" class="col-sm-2 control-label">Post Code</label>
+			<div class="col-sm-10">
+				<input type="text" class="form-control" id="postcode" placeholder="Post Code" value="" name="postcode">
+			</div>
+		</div>
+		<div class="form-group required">
+			<label for="country" class="col-sm-2 control-label">Country</label>
+			<div class="col-sm-10">
+				<select class="form-control" id="country" name="country">
+					<option value=""> --- Please Select --- </option>
+					<%
+						sql = "SELECT CountryID, CountryName, ISOCode2 FROM A_GlobalCountries"
+						set rsCntry = dbconn.Execute(sql)
+						int i = 0
+
+						do while not rsCntry.Eof
+							country = rsCntry("CountryName")
+							country_id = Trim(rsCntry("ISOCode2"))
+							Response.Write("<option value=""" & country_id & """>" & country & "</option>")
+							rsCntry.MoveNext
+						i = i + 1
+						loop
+						rsCntry.Close
+					%>
+					
+				</select>
+			</div>
+		</div>
+		<div class="form-group required">
+			<label for="state" class="col-sm-2 control-label">Region / State</label>
+			<div class="col-sm-10">
+				<select class="form-control" id="state" name="state">
+					
+				</select>
+			</div>
+		</div>
+	</fieldset>
+	<fieldset>
+		<legend>Your Password</legend>
+		<div class="form-group required">
+			<label for="new_password1" class="col-sm-2 control-label">Password</label>
+			<div class="col-sm-10">
+				<input type="password" class="form-control" id="new_password1" placeholder="Password" value="" name="new_password1">
+			</div>
+		</div>
+		<div class="form-group required">
+			<label for="new_password2" class="col-sm-2 control-label">Password Confirm</label>
+			<div class="col-sm-10">
+				<input type="password" class="form-control" id="new_password2" placeholder="Password Confirm" value="" name="new_password2">
+			</div>
+		</div>
+	</fieldset>
+	<!--
+	<fieldset>
+		<legend>Newsletter</legend>
+		<div class="form-group">
+			<label class="col-sm-2 control-label">Subscribe</label>
+			<div class="col-sm-10">
+				<label class="radio-inline">
+				<input type="radio" value="1" name="newsletter">
+				Yes</label>
+				<label class="radio-inline">
+				<input type="radio" checked="checked" value="0" name="newsletter">
+				No</label>
+			</div>
+		</div>
+	</fieldset>
+	-->
+	<div class="buttons">
+		<div class="pull-right">
+			<!--
+			<input type="checkbox" value="1" name="agree">
+			&nbsp;I have read and agree to the <a class="agree" href="#"><b>Privacy Policy</b></a> &nbsp; 
+			-->
+			<input type="submit" class="btn btn-primary" value="Continue">
+		</div>
+	</div>
+</form>

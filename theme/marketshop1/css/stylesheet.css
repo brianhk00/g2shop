@@ -935,6 +935,7 @@ visibility:hidden;
 	font-size:15px;
 }
 .product-list .product-thumb .description { margin-bottom:0px; }
+.product-list .product-thumb .description1 { margin-bottom:0px; padding-left:250px;}
 .product-list .product-thumb .button-group .btn-primary {
 	float:left;
 	margin-right:5px;
@@ -1972,4 +1973,7 @@ div.required .control-label:before {
 	content: '* ';
 	color: #F00;
 	font-weight: bold;
+}
+.display-hide, .display-none {
+    display: none;
 }

@@ -1,0 +1,293 @@
+<h1 class="title">My Order</h1>
+<div class="row">
+	<div class="col-md-12">
+		<div class="panel panel-default">
+			<div class="panel-heading clearfix">
+				<h4 class="panel-title">Order Details</h4>
+			</div>
+			<div class="panel-body">
+				<div class="row static-info">
+					<div class="col-md-5 name"> Order #: </div>
+					<div class="col-md-7 value"> <%=order_id%>
+					</div>
+				</div>
+				<div class="row static-info">
+					<div class="col-md-5 name"> Order Date & Time: </div>
+					<div class="col-md-7 value"> <%=order_date%> </div>
+				</div>
+				<div class="row static-info">
+					<div class="col-md-5 name"> Order Status: </div>
+					<div class="col-md-7 value">
+						<%=order_status%>
+					</div>
+				</div>
+				<div class="row static-info">
+					<div class="col-md-5 name"> P.O. #: </div>
+					<div class="col-md-7 value"> <%=order_po_number%> </div>
+				</div>
+			</div>
+		</div>
+	</div>
+</div>
+<div class="row">
+	<div class="col-md-6 col-sm-12">
+		<div class="panel panel-default">
+			<div class="panel-heading clearfix">
+				<h4 class="panel-title">Billing Address</h4>
+			</div>
+			<div class="panel-body">
+				<div class="row">
+					<label class="col-sm-12">
+						<%=order_billing_name%>
+					</label>
+				</div>
+				<div class="row">
+					<label class="col-sm-12">
+						<%=order_billing_company%>
+					</label>
+				</div>
+				<div class="row">
+					<label class="col-sm-12">
+						<%=order_billing_address%>
+					</label>
+				</div>
+				<div class="row">
+					<label class="col-sm-12">
+						<%=order_billing_city%>, 
+						<%=order_billing_state%>&nbsp;<%=order_billing_zip%>
+					</label>
+				</div>
+				<div class="row">
+					<label class="col-sm-12">
+						<%=order_billing_country%>
+					</label>
+				</div>
+				<div class="row">
+					<label class="col-sm-12">
+						<i class="fa fa-phone"></i>&nbsp;<%=order_billing_phone%>
+					</label>
+				</div>
+			</div>
+		</div>
+	</div>
+	<div class="col-md-6 col-sm-12">
+		<div class="panel panel-default">
+			<div class="panel-heading clearfix">
+				<h4 class="panel-title">Shipping Address</h4>
+			</div>
+			<div class="panel-body">
+				<div class="row">
+					<label class="col-sm-12">
+						<%=order_shipping_name%>
+					</label>
+				</div>
+				<div class="row">
+					<label class="col-sm-12">
+						<%=order_shipping_company%>
+					</label>
+				</div>
+				<div class="row">
+					<label class="col-sm-12">
+						<%=order_shipping_address%>
+					</label>
+				</div>
+				<div class="row">
+					<label class="col-sm-12">
+						<%=order_shipping_city%>, 
+						<%=order_shipping_state%>&nbsp;<%=order_shipping_zip%>
+					</label>
+				</div>
+				<div class="row">
+					<label class="col-sm-12">
+						<%=order_shipping_country%>
+					</label>
+				</div>
+				<div class="row">
+					<label class="col-sm-12">
+						<i class="fa fa-phone"></i>&nbsp;<%=order_shipping_phone%>
+					</label>
+				</div>
+			</div>
+		</div>
+	</div>
+</div>
+<!--
+<div class="row">
+	<div class="col-md-6 col-sm-12">
+		<div class="panel panel-default">
+			<div class="panel-heading clearfix">
+				<h4 class="panel-title">Payment Information</h4>
+			</div>
+			<div class="panel-body">
+				<div class="row static-info">
+					<div class="col-md-5 name"> Payment: </div>
+					<div class="col-md-7 value"> <%=order_payment_method%></div>
+				</div>
+				<div class="row static-info">
+					<div class="col-md-5 name"> Credit Card Type: </div>
+					<div class="col-md-7 value"> <%=order_payment_card_type%> </div>
+				</div>
+				<div class="row static-info">
+					<div class="col-md-5 name"> Credit Card Number: </div>
+					<div class="col-md-7 value">
+						xxxx-<%=Right(order_payment_card_number,4)%>
+					</div>
+				</div>
+				<div class="row static-info">
+					<div class="col-md-5 name"> Name on the Card: </div>
+					<div class="col-md-7 value"> <%=order_customer_card_exp_month%>/<%=order_customer_card_exp_year%></div>
+				</div>
+				<div class="row static-info">
+					<div class="col-md-5 name"> Expiration Date: </div>
+					<div class="col-md-7 value"> <%=order_ip%> </div>
+				</div>
+				<% if Len(AuthNumber) > 0 then %>
+				<div class="row static-info">
+					<div class="col-md-5 name">
+						Payment ID
+					</label>
+					<div class="col-md-7 value">
+						<%=AuthNumber%>
+					</div>
+				</div>
+				<% end if %>
+			</div>
+		</div>
+	</div>
+	<div class="col-md-6 col-sm-12">
+		<div class="panel panel-default">
+			<div class="panel-heading clearfix">
+				<h4 class="panel-title">Shipping & Tax</h4>
+			</div>
+			<div class="panel-body">
+				<div class="row static-info">
+					<div class="col-md-5 name"> Ship Via: </div>
+					<div class="col-md-7 value">
+						<a href="#" id="ship_via" data-type="select" data-pk="<%=order_id%>" data-value="<%=order_shipping_sh_method%>" data-original-title="Ship Via">
+						<%=order_shipping_sh_method%>
+						</a>
+					</div>
+				</div>
+				<div class="row static-info">
+					<div class="col-md-5 name"> Shipping Total: </div>
+					<div class="col-md-7 value"> $<span id="sh_panel_shipping_total"><%=order_shipping_sh%></span> </div>
+				</div>
+				<div class="row static-info">
+					<div class="col-md-5 name"> Taxable: </div>
+					<div class="col-md-7 value"> 
+						<a href="#" id="order_taxable" data-type="select" data-pk="<%=order_id%>" data-value="<%=order_taxable%>" data-original-title="Charge Sales Tax on Sales Order">
+						<% if order_taxable then %>
+						Yes
+						<% else %>
+						No
+						<% end if %>
+						</a>
+					</div>
+				</div>
+				<div class="row static-info">
+					<div class="col-md-5 name"> Tax Rate: </div>
+					<div class="col-md-7 value"> 
+						<%=order_tax_rate%>%
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+</div>
+-->
+<div class="row">
+	<div class="col-md-12 col-sm-12">
+		<div class="panel panel-default">
+			<div class="panel-heading clearfix">
+				<h4 class="panel-title">Items Ordered</h4>
+			</div>
+			<div class="panel-body">
+				<table class="table table-hover table-striped" id="sample-table-1">
+					<thead>
+						<tr>
+							<th class="center">Product</th>
+							<th class="center">Qty</th>
+							<th class="text-right">Unit Price</th>
+							<th class="text-right">Sub Total</th>
+						</tr>
+					</thead>
+					<tbody id="order_detail">
+						<%
+							i_subtotal = 0
+							sql = "SELECT * FROM " & g_storeid & "_order_item WHERE order_id='" & order_id & "' ORDER BY row_id"
+							set rsOrderItems = dbconn.Execute(sql)
+							do while not rsOrderItems.EOF
+								order_item_description = rsOrderItems("item_description")
+								order_item_sku = rsOrderItems("sku")
+								order_item_row_id = rsOrderItems("row_id")
+								order_item_options = rsOrderItems("options")
+								order_item_quantity = rsOrderItems("quantity")
+								order_item_adjusted_price = FormatNumber(rsOrderItems("adjusted_price"),2)
+								'order_item_cost = FormatNumber(rsOrderItems("cost"),2)
+								'order_item_pack_quantity = rsOrderItems("pack_quantity")
+								order_item_cost = 0
+								'if order_item_pack_quantity = 0 then
+									order_item_pack_quantity = 1
+								'end if
+								
+								order_item_subtotal = FormatNumber(order_item_quantity * order_item_adjusted_price * order_item_pack_quantity,2)
+								i_subtotal = i_subtotal + (order_item_quantity * order_item_adjusted_price* order_item_pack_quantity)
+						%>
+						<tr>
+							<td><%=order_item_description%><br><%=order_item_sku%></td>
+							<td class="center"><%=order_item_quantity%></td>
+							<td class="text-right"><%=order_item_adjusted_price%></td>
+							<td class="text-right"><%=order_item_subtotal%></td>
+						</tr>
+						
+						<%
+								rsOrderItems.MoveNext
+							loop
+							rsOrderItems.Close
+							set rsOrderItems = nothing
+						%>
+					</tbody>
+				</table>
+				<div class="table-responsive">
+					
+				</div>
+			</div>
+		</div>
+	</div>
+</div>
+<div class="row">
+	<div class="col-md-6"> 
+		<div class="panel panel-default">
+			<div class="panel-heading clearfix">
+				<h4 class="panel-title">Comment</h4>
+			</div>
+			<div class="panel-body">
+				<%=order_comment%>
+			</div>
+		</div>
+	</div>
+	<div class="col-md-6">
+		<div class="well">
+			<div class="row static-info align-reverse">
+				<div class="col-md-8 name"> Sub Total: </div>
+				<div class="col-md-3 value text-right"> $<span id="order_subtotal"><%=FormatNumber(i_subtotal,2)%></span></div>
+			</div>
+			<div class="row static-info align-reverse">
+				<div class="col-md-8 name"> Shipping: </div>
+				<div class="col-md-3 value text-right"> $<%=order_shipping_sh%> </div>
+			</div>
+			<div class="row static-info align-reverse">
+				<div class="col-md-8 name"> Discount: </div>
+				<div class="col-md-3 value text-right"> $<%=discount_amount%> </div>
+			</div>
+			<div class="row static-info align-reverse">
+				<div class="col-md-8 name"> Tax: </div>
+				<div class="col-md-3 value text-right"> $<span id="order_tax"><%=order_tax%></span> </div>
+			</div>
+			<div class="row static-info align-reverse">
+				<div class="col-md-8 name"> Grand Total: </div>
+				<div class="col-md-3 value text-right"> $<span id="order_grand_total"><%=order_total%></span> </div>
+			</div>
+		</div>
+	</div>
+</div>

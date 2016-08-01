@@ -1,8 +1,9 @@
 <!--#INCLUDE FILE="../../local/local.phtml"-->
-<!--#INCLUDE FILE="../../language_pack.phtml"-->
+<!--#INCLUDE FILE="../i_adoopen.phtml"-->
 <!--#INCLUDE FILE="../../util/xt_func_session.phtml"-->
 <!--#INCLUDE FILE="../../util/xt_func_string.phtml"-->
 <!--#INCLUDE FILE="../../util/xt_func_util.phtml"-->
+<!--#INCLUDE FILE="../../util/xt_func_shoppingcart.phtml"-->
 <%
 	sessionID = Request("sessionID")
 	sessionID = FilterSessionString(sessionID)
@@ -13,20 +14,19 @@
 			'session key exist
 		else
 			'no key information...
-			Response.Redirect Session("StoreURL") & "/index.phtml"
+			Response.Redirect g_store_url
 		end if
 	end if
 %>
-<!--#INCLUDE FILE="../../i_login.phtml"-->
-<!--#INCLUDE FILE="../../i_adodb.phtml"-->
+<!--#INCLUDE FILE="../i_login.phtml"-->
 <% 
 	if Session("shopper_id") = "" OR Session("shopper_id") = "GUEST" then
 		Response.Redirect "login.phtml?returnPage=account_profile"
 	end If
   
-	sql = "Select * from " & Session("storeID") & "_shopper where shopper_id='"&Session("shopper_id") &"'"
+	sql = "Select * from " & g_storeid & "_shopper where shopper_id='"& Session("shopper_id") & "'"
 
-	set rsShopper= conn.execute(sql)
+	set rsShopper= dbconn.execute(sql)
 	if not rsShopper.EOF then
 		FirstName = rsShopper("FirstName")
 		LastName = rsShopper("LastName")

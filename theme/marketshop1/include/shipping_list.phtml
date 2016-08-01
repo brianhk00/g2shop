@@ -1,0 +1,217 @@
+<%
+	SELECT CASE op
+	CASE "edit"
+%>
+<h1 class="title">Shipping Information</h1>  
+<form class="form-horizontal" id="shipping-form" method="post">
+<input type="hidden" name="address_id" value="<%=id%>" />
+<div class="alert alert-success display-hide"><i class="fa fa-check-circle"></i> The registration is completed successfully.</div>
+<div class="alert alert-warning display-hide"><i class="fa fa-warning"></i> The information has not been saved properly. Please contact system administrator.</div>
+<div class="alert alert-danger display-hide"><i class="fa fa-exclamation-circle"></i> You have some form errors. Please check below. </div>
+<div class="form-group">
+	<label for="shopper_shipping_company" class="col-sm-2 control-label">Company</label>
+	<div class="col-sm-10">
+		<input type="text" class="form-control" id="shopper_shipping_company" value="<%=shopper_shipping_company%>" name="shopper_shipping_company">
+	</div>
+</div>
+<div class="form-group required">
+	<label for="shopper_shipping_firstname" class="col-sm-2 control-label">First Name </label>
+	<div class="col-sm-10">
+		<input type="text" class="form-control" id="shopper_shipping_firstname" value="<%=shopper_shipping_firstname%>" name="shopper_shipping_firstname">
+	</div>
+</div>
+<div class="form-group required">
+	<label for="shopper_shipping_lastname" class="col-sm-2 control-label">Last Name </label>
+	<div class="col-sm-10">
+		<input type="text" class="form-control" id="shopper_shipping_lastname" value="<%=shopper_shipping_lastname%>" name="shopper_shipping_lastname">
+	</div>
+</div>
+<div class="form-group required">
+	<label for="shopper_shipping_address" class="col-sm-2 control-label">Address </label>
+	<div class="col-sm-10">
+		<input type="text" class="form-control" id="shopper_shipping_address" value="<%=shopper_shipping_address%>" name="shopper_shipping_address">
+	</div>
+</div>
+<div class="form-group required">
+	<label for="shopper_shipping_city" class="col-sm-2 control-label">City</label>
+	<div class="col-sm-10">
+		<input type="text" class="form-control" id="shopper_shipping_city" value="<%=shopper_shipping_city%>" name="shopper_shipping_city">
+	</div>
+</div>
+<div class="form-group required">
+	<label for="shopper_shipping_country" class="col-sm-2 control-label">Country</label>
+	<div class="col-sm-10">
+		<select class="form-control" id="shopper_shipping_country" name="shopper_shipping_country">
+			<option value=""> --- Please Select --- </option>
+			<%
+				sql = "SELECT CountryID, CountryName, ISOCode2 FROM A_GlobalCountries"
+				set rsCntry = dbconn.Execute(sql)
+				int i = 0
+
+				do while not rsCntry.Eof
+					country = rsCntry("CountryName")
+					country_id = Trim(rsCntry("ISOCode2"))
+					if shopper_shipping_country = country_id then
+						Response.Write("<option value=""" & country_id & """ selected>" & country & "</option>")
+					else
+						Response.Write("<option value=""" & country_id & """>" & country & "</option>")
+					end if
+					rsCntry.MoveNext
+				i = i + 1
+				loop
+				rsCntry.Close
+			%>
+			
+		</select>
+	</div>
+</div>
+<div class="form-group required">
+	<label for="shopper_shipping_state" class="col-sm-2 control-label">Region / State</label>
+	<div class="col-sm-10">
+		<select class="form-control" id="shopper_shipping_state" name="shopper_shipping_state">
+			
+		</select>
+	</div>
+</div>
+<div class="form-group required">
+	<label for="shopper_shipping_zip" class="col-sm-2 control-label">Post Code</label>
+	<div class="col-sm-10">
+		<input type="text" class="form-control" id="shopper_shipping_zip" value="<%=shopper_shipping_zip%>" name="shopper_shipping_zip">
+	</div>
+</div>
+<div class="form-group required">
+	<label for="shopper_shipping_phone" class="col-sm-2 control-label">Phone</label>
+	<div class="col-sm-10">
+		<input type="text" class="form-control" id="shopper_shipping_phone" value="<%=shopper_shipping_phone%>" name="shopper_shipping_phone">
+	</div>
+</div>
+<div class="buttons">
+	<div class="pull-right">
+		<a href="<%=g_secure_url%>shipping_list.phtml" class="btn btn-default">Cancel</a>
+		<input type="submit" class="btn btn-primary" value="Continue">
+	</div>
+</div>
+</form>
+<%	
+	CASE ELSE
+%>
+
+<h1 class="title">Shipping Information</h1>
+<div class="row">
+	<div class="col-md-12">
+		<div class="table-responsive">
+			<table class="table table-striped">
+				<thead>
+					<tr>
+						<th width="30%">Name</th>
+						<th width="50%">Address</th>
+						<th>&nbsp;</th>
+					</tr>
+				</thead>
+				<tbody>
+					<%
+						b_Deafult = 1
+						sql = "SELECT * FROM " & g_storeid & "_shopper_shipping_address WHERE shopper_id = '" & Session("shopper_id") & "' AND set_default = 1"
+						set rs = dbconn.Execute(sql)
+						if not rs.EOF then
+							b_Deafult = 0
+						end if
+						rs.Close
+						set rs = nothing
+						
+						sql = "SELECT * FROM " & g_storeid & "_shopper WHERE shopper_id = '" & Session("shopper_id") & "'"
+						set rsShopper = dbconn.Execute(sql)
+						if not rsShopper.EOF then
+						
+							shopper_shipping_FirstName = rsShopper("shipping_FirstName")
+							shopper_shipping_LastName = rsShopper("shipping_LastName")
+							shopper_shipping_address = rsShopper("shipping_Address")
+							shopper_shipping_city = rsShopper("shipping_City")
+							shopper_shipping_state = rsShopper("shipping_State")
+							shopper_shipping_zip = rsShopper("shipping_ZipCode")
+							shopper_shipping_country = rsShopper("shipping_Country")
+							shopper_shipping_phone = rsShopper("shipping_Phone")
+							shopper_shipping_company = rsShopper("shipping_company")
+					%>
+					<tr>
+						<td nowrap>
+							<%=shopper_shipping_FirstName%>&nbsp;<%=shopper_shipping_LastName%><br/>
+						</td>
+						<td>
+							<address>
+							<%=shopper_shipping_address%><br />
+							<%=shopper_shipping_city%>,&nbsp;<%=shopper_shipping_state%>&nbsp;<%=shopper_shipping_zip%><br/>
+							<%=shopper_shipping_country%><br/>
+							TEL: <%=shopper_shipping_phone%>
+							</address>
+						</td>
+						<td nowrap>
+							<a href="<%=g_secure_url%>shipping_list.phtml?op=edit&id=0" class="btn btn-default btn-sm"><i class="fa fa-pencil"></i> Edit</a>
+							<% if b_Deafult = 0 then %>
+							<a href="<%=g_secure_url%>shipping_list.phtml?op=edit&id=0" class="btn btn-default btn-sm"><i class="fa fa-pencil"></i> Use as Default</a>
+							<% end if %>
+						</td>
+					</tr>
+					<%
+						end if
+						rsShopper.Close
+						set rsShopper = nothing
+					%>
+					<%
+						sql = "SELECT * FROM " & g_storeid & "_shopper_shipping_address WHERE shopper_id = '" & Session("shopper_id") & "'"
+						set rs = dbconn.Execute(sql)
+						do while not rs.EOF
+						
+							alt_address_id = rs("address_id")
+							alt_shopper_id = rs("shopper_id")
+							alt_address_name = rs("address_name")
+							alt_firstname = rs("firstname")
+							alt_lastname = rs("lastname")
+							alt_address = rs("address")
+							alt_city = rs("city")
+							alt_state = rs("state")
+							alt_zip = rs("zip")
+							alt_country= rs("country")
+							alt_phone = rs("phone")
+							alt_set_default = rs("set_default")
+							alt_company = rs("company")
+							alt_address_type = rs("address_type")
+					%>
+					<tr>
+						<td nowrap>
+							<%=alt_firstname%>&nbsp;<%=alt_lastname%><br/>
+						</td>
+						<td>
+							<address>
+							<%=alt_address%><br />
+							<%=alt_city%>,&nbsp;<%=alt_state%>&nbsp;<%=alt_zip%><br/>
+							<%=alt_country%><br/>
+							TEL: <%=alt_phone%>
+							</address>
+						</td>
+						<td nowrap>
+							<a href="<%=g_secure_url%>shipping_list.phtml?op=edit&id=<%=alt_address_id%>" class="btn btn-default btn-sm"><i class="fa fa-pencil"></i> Edit</a>
+							<% if alt_set_default <> 1 then %>
+							<a href="<%=g_secure_url%>shipping_list.phtml?op=edit&id=<%=alt_address_id%>" class="btn btn-default btn-sm"><i class="fa fa-pencil"></i> Use as Default</a>
+							<% end if %>
+						</td>
+					</tr>
+					<%
+							rs.MoveNext
+						loop
+						rs.Close
+						set rs = nothing
+					%>
+				</tbody>
+			</table>
+		</div>
+	</div>
+</div>
+<div class="buttons">
+	<div class="pull-right">
+		<a href="<%=g_secure_url%>billing_list.phtml?op=edit&id=new" class="btn btn-primary"><i class="fa fa-plus"></i> Add New</a>
+	</div>
+</div>
+<%
+	END SELECT
+%>

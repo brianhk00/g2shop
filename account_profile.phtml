@@ -1,0 +1,11 @@
+<%@ Language=VBScript %>
+<!--#INCLUDE FILE="local/local.phtml"-->
+<!--#INCLUDE FILE="core/include_store_view_selector.phtml"-->
+<!--#INCLUDE FILE="core/include_template_info.phtml"-->
+<%
+	If THEME_TEMPLATE = "" then
+		Server.Execute("_account_profile.phtml")
+	Else
+		Server.Execute("theme/" & THEME_TEMPLATE & "/account_profile.phtml")
+	End if
+%>

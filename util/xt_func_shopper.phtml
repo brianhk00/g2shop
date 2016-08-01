@@ -19,7 +19,7 @@ function IsValidShopperLogin(str_db,str_email,str_password, ByRef str_cid, ByRef
  	
 	dim sql,rs,bEC
 	sql="SELECT * FROM :9_shopper WHERE (Email='"&str_email&"' AND Password='"&str_password&"')"
-	sql=Replace(sql, ":9", Session("StoreID"))
+	sql=Replace(sql, ":9", g_storeid)
 	
 	set rs=server.CreateObject("ADODB.Recordset")
 	rs.Open sql,str_db
@@ -53,7 +53,7 @@ function IsValidShopperLogin(str_db,str_email,str_password, ByRef str_cid, ByRef
 					
 		
 		Set x1Conn = Server.CreateObject("ADODB.Connection")
-		x1Conn.open Session("ConnectionString")
+		x1dbconn.open Session("ConnectionString")
 		
 		if Len(rs("affiliate_id")) > 0 then
 			Session("PARTNER") = rs("affiliate_id")
@@ -65,9 +65,9 @@ function IsValidShopperLogin(str_db,str_email,str_password, ByRef str_cid, ByRef
 			end if
 
 			sql="SELECT disable FROM :9_affiliate WHERE affiliate_id='"& rs("affiliate_id") &"'"
-			sql = Replace(sql, ":9", Session("StoreID"))
+			sql = Replace(sql, ":9", g_storeid)
 
-			set rsAff = x1Conn.execute(sql)
+			set rsAff = x1dbconn.execute(sql)
 				if not rsAff.EOF then
 					status = rsAff("disable")
 				end if
@@ -86,20 +86,20 @@ function IsValidShopperLogin(str_db,str_email,str_password, ByRef str_cid, ByRef
 			if Len(imftp_id) > 0 then
 				
 				sql = "SELECT IMFTP_TableID FROM A_IMFTP WHERE IMFTP_ID=" & imftp_id
-				set rsx = x1Conn.Execute(sql)
+				set rsx = x1dbconn.Execute(sql)
 				if not rsx.EOF then
 					Session("IMFILEID") = Trim(rsx(0))
 				else
-					Session("IMFILEID") = Session("StoreID")
+					Session("IMFILEID") = g_storeid
 				end if
 				rsx.Close
 			else
-				Session("IMFILEID") = Session("StoreID")
+				Session("IMFILEID") = g_storeid
 			end if
 								
 		end if
 
-		x1Conn.Close
+		x1dbconn.Close
 		
 		if(rs("IsSameAddress")) then
 			str_state = x_state
@@ -117,7 +117,7 @@ Function IsBillToInfoValid(ByRef str_status_msg,ByRef str_firstname,ByRef str_la
 							ByRef str_zip,ByRef str_phone)
 							
 	'================================================================================
-	sql = "SELECT setting_values FROM " & Session("StoreID") & "_setting WHERE setting_type = 'M_NEW_CUSTOMER_REG_REQ'"
+	sql = "SELECT setting_values FROM " & g_storeid & "_setting WHERE setting_type = 'M_NEW_CUSTOMER_REG_REQ'"
   set rsSetting=server.CreateObject("ADODB.Recordset")
 	rsSetting.Open sql,Session("ConnectionString")
 	
@@ -230,7 +230,7 @@ Function IsShipToInfoValid(ByRef str_status_msg,ByRef str_firstname,ByRef str_la
 	end if
 	
 	'================================================================================
-	sql = "SELECT setting_values FROM " & Session("StoreID") & "_setting WHERE setting_type = 'M_NEW_CUSTOMER_REG_REQ'"
+	sql = "SELECT setting_values FROM " & g_storeid & "_setting WHERE setting_type = 'M_NEW_CUSTOMER_REG_REQ'"
   set rsSetting=server.CreateObject("ADODB.Recordset")
 	rsSetting.Open sql,Session("ConnectionString")
 	
@@ -355,7 +355,7 @@ function AddNewShopper(ByRef str_db,ByRef str_cid,ByRef status_msg_hldr,_
 						ByRef str_country,ByRef str_phone,ByRef str_email,str_is_same_address,ByRef str_password,_
 						cc_type,cc_number,cc_exp_month,cc_exp_year)
 
-	Dim field_names,field_values,str_sql,rs,dbconn
+	Dim field_names,field_values,str_sql,rs,dbconnx
  	
  	if((str_db="")Or(str_cid="")) then
 		AddToHTMLMsgHldr status_msg_hldr,"Insuffiecient info specified to add new customer.",true
@@ -365,7 +365,7 @@ function AddNewShopper(ByRef str_db,ByRef str_cid,ByRef status_msg_hldr,_
  	
  	'verify email and password are together unique
 	str_sql="SELECT * FROM :9_shopper WHERE (EMail='"&str_email&"')"
-	str_sql=Replace(str_sql, ":9", Session("StoreID"))
+	str_sql=Replace(str_sql, ":9", g_storeid)
 	Set rs=server.CreateObject("ADODB.RecordSet")
 	rs.Open str_sql,str_db
 	if(Not rs.EOF) then
@@ -457,12 +457,12 @@ function AddNewShopper(ByRef str_db,ByRef str_cid,ByRef status_msg_hldr,_
 	field_values = Left(field_values,Len(field_values)-1)
 	
 	str_sql="INSERT INTO :9_shopper (" & field_names & ") VALUES(" & field_values & ")"
-	str_sql=Replace(str_sql, ":9", Session("StoreID"))
+	str_sql=Replace(str_sql, ":9", g_storeid)
 	
-	Set dbconn=server.CreateObject("ADODB.Connection")
-	dbconn.Open str_db
-	dbconn.Execute str_sql
-	dbconn.Close
+	Set dbconnx=server.CreateObject("ADODB.Connection")
+	dbconnx.Open str_db
+	dbconnx.Execute str_sql
+	dbconnx.Close
 	AddNewShopper=true
 	
 End Function
@@ -470,7 +470,7 @@ End Function
 function AddNewShopperBasic(ByRef str_db,ByRef str_cid,ByRef status_msg_hldr,_
 						ByRef str_email,ByRef str_password)
 
-	Dim field_names,field_values,str_sql,rs,dbconn
+	Dim field_names,field_values,str_sql,rs,dbconnx
  	
  	if((str_db="")Or(str_cid="")) then
 		AddToHTMLMsgHldr status_msg_hldr,"Insuffiecient info specified to add new customer.",true
@@ -480,7 +480,7 @@ function AddNewShopperBasic(ByRef str_db,ByRef str_cid,ByRef status_msg_hldr,_
  	
  	'verify email and password are together unique
 	str_sql="SELECT * FROM :9_shopper WHERE (EMail='"&str_email&"')"
-	str_sql=Replace(str_sql, ":9", Session("StoreID"))
+	str_sql=Replace(str_sql, ":9", g_storeid)
 	Set rs=server.CreateObject("ADODB.RecordSet")
 	rs.Open str_sql,str_db
 	if(Not rs.EOF) then
@@ -529,12 +529,12 @@ function AddNewShopperBasic(ByRef str_db,ByRef str_cid,ByRef status_msg_hldr,_
 	field_values = Left(field_values,Len(field_values)-1)
 	
 	str_sql="INSERT INTO :9_shopper (" & field_names & ") VALUES(" & field_values & ")"
-	str_sql=Replace(str_sql, ":9", Session("StoreID"))
+	str_sql=Replace(str_sql, ":9", g_storeid)
 	
-	Set dbconn=server.CreateObject("ADODB.Connection")
-	dbconn.Open str_db
-	dbconn.Execute str_sql
-	dbconn.Close
+	Set dbconnx=server.CreateObject("ADODB.Connection")
+	dbconnx.Open str_db
+	dbconnx.Execute str_sql
+	dbconnx.Close
 	AddNewShopperBasic=true
 	
 End Function
@@ -542,7 +542,7 @@ End Function
 function AddNewShopperBasicEx(ByRef str_db,ByRef str_cid,ByRef status_msg_hldr,_
 						ByRef str_email,ByRef str_password, ByRef str_firstname, ByRef str_lastname)
 
-	Dim field_names,field_values,str_sql,rs,dbconn
+	Dim field_names,field_values,str_sql,rs,dbconnx
  	
  	if((str_db="")Or(str_cid="")) then
 		AddToHTMLMsgHldr status_msg_hldr,"Insuffiecient info specified to add new customer.",true
@@ -552,7 +552,7 @@ function AddNewShopperBasicEx(ByRef str_db,ByRef str_cid,ByRef status_msg_hldr,_
  	
  	'verify email and password are together unique
 	str_sql="SELECT * FROM :9_shopper WHERE (EMail='"&str_email&"')"
-	str_sql=Replace(str_sql, ":9", Session("StoreID"))
+	str_sql=Replace(str_sql, ":9", g_storeid)
 	Set rs=server.CreateObject("ADODB.RecordSet")
 	rs.Open str_sql,str_db
 	if(Not rs.EOF) then
@@ -590,12 +590,12 @@ function AddNewShopperBasicEx(ByRef str_db,ByRef str_cid,ByRef status_msg_hldr,_
 	field_values = Left(field_values,Len(field_values)-1)
 	
 	str_sql="INSERT INTO :9_shopper (" & field_names & ") VALUES(" & field_values & ")"
-	str_sql=Replace(str_sql, ":9", Session("StoreID"))
+	str_sql=Replace(str_sql, ":9", g_storeid)
 	
-	Set dbconn=server.CreateObject("ADODB.Connection")
-	dbconn.Open str_db
-	dbconn.Execute str_sql
-	dbconn.Close
+	Set dbconnx=server.CreateObject("ADODB.Connection")
+	dbconnx.Open str_db
+	dbconnx.Execute str_sql
+	dbconnx.Close
 	AddNewShopperBasicEx=true
 	
 End Function
@@ -631,7 +631,7 @@ function UpdateShopperShippingInfo(ByRef str_db,ByRef str_cid,ByRef status_msg_h
  		str_sql = str_sql & "IsSameAddress=1"
  		str_sql = str_sql & " WHERE ((shopper_id='" & str_cid & "'))"
  		
- 		str_sql=Replace(str_sql, ":9", Session("StoreID"))
+ 		str_sql=Replace(str_sql, ":9", g_storeid)
  		
 	else
 		str_sql = "UPDATE :9_shopper SET "
@@ -672,13 +672,13 @@ function UpdateShopperShippingInfo(ByRef str_db,ByRef str_cid,ByRef status_msg_h
  		'Response.Write(str_sql)
  		'Response.end
 	
-		str_sql=Replace(str_sql, ":9", Session("StoreID"))
+		str_sql=Replace(str_sql, ":9", g_storeid)
  	end if
 	
-	Set dbconn=server.CreateObject("ADODB.Connection")
-	dbconn.Open str_db
-	dbconn.Execute str_sql
-	dbconn.Close
+	Set dbconnx=server.CreateObject("ADODB.Connection")
+	dbconnx.Open str_db
+	dbconnx.Execute str_sql
+	dbconnx.Close
 	UpdateShopperShippingInfo=true
 	
 end function
@@ -693,7 +693,7 @@ function UpdateShopper(ByRef str_db,ByRef str_cid,ByRef status_msg_hldr,_
 	'returns true/false
 	'NOTE: the field value parameters update the corresponding fields whether or not the values are null or non-null
 
-	Dim str_sql,dbconn,rs, company_name
+	Dim str_sql,dbconnx,rs, company_name
  	
  	if((str_db="")Or(str_cid="")) then
 		AddToHTMLMsgHldr status_msg_hldr,"Insuffiecient info specified to update your information.",true
@@ -701,8 +701,8 @@ function UpdateShopper(ByRef str_db,ByRef str_cid,ByRef status_msg_hldr,_
  		exit function
  	end if
  	
- 	Set dbconn=server.CreateObject("ADODB.Connection")
-	dbconn.Open str_db
+ 	Set dbconnx=server.CreateObject("ADODB.Connection")
+	dbconnx.Open str_db
 	
 	'======================================================================
 	' RC4
@@ -719,11 +719,11 @@ function UpdateShopper(ByRef str_db,ByRef str_cid,ByRef status_msg_hldr,_
 	
 	Set rsUpdateShopper = Server.CreateObject("ADODB.Recordset")
  	with rsUpdateShopper
-		.ActiveConnection = dbconn
+		.ActiveConnection = dbconnx
 		.CursorLocation = 3 'adUseClient
 		.CursorType = 1 'adOpenKeyset
 		.LockType = 3 'adLockOptimistic
-		.Source = Session("StoreID") & "_shopper WHERE shopper_id='" & str_cid & "'"
+		.Source = g_storeid & "_shopper WHERE shopper_id='" & str_cid & "'"
 		.Open
 	end with
 	
@@ -747,7 +747,7 @@ function UpdateShopper(ByRef str_db,ByRef str_cid,ByRef status_msg_hldr,_
  	rsUpdateShopper.Update
 	rsUpdateShopper.Close
 	
-	dbconn.Close
+	dbconnx.Close
 	UpdateShopper=true
 
 end function
@@ -766,7 +766,7 @@ function ValidateRequiredShopperInfo(ByRef str_db, str_cid, ByRef err_code)
  	end if
  	
  	dim sql,rs,bEC, bok
-	sql="SELECT * FROM " & Session("StoreID") & "_shopper WHERE (shopper_id='" & str_cid & "')"
+	sql="SELECT * FROM " & g_storeid & "_shopper WHERE (shopper_id='" & str_cid & "')"
 	
 	set rs=server.CreateObject("ADODB.Recordset")
 	rs.Open sql,str_db
@@ -797,8 +797,8 @@ function ValidateRequiredShopperInfo(ByRef str_db, str_cid, ByRef err_code)
 		alt_shipping_address_id = ""
 		
 		'NEED TO OVERRIDE Billing and Shipping Address...
-		sql = "SELECT * FROM " & Session("StoreID") & "_shopper_billing_address WHERE billing_shopper_id = '" & Session("shopper_id") & "' AND billing_set_default=1"
-		set rsBillingAddress = conn.Execute(sql)
+		sql = "SELECT * FROM " & g_storeid & "_shopper_billing_address WHERE billing_shopper_id = '" & Session("shopper_id") & "' AND billing_set_default=1"
+		set rsBillingAddress = dbconn.Execute(sql)
 		if not rsBillingAddress.EOF then
 		
 			alt_billing_address_id = Trim(rsBillingAddress("billing_address_id"))
@@ -923,12 +923,12 @@ function SendMailToNewRegistrant(ByRef str_db,ByRef str_status_msg, ByRef str_em
 		exit function
 	end if
 
-	set dbconn=server.CreateObject("ADODB.Connection")
-	dbconn.Open str_db
+	set dbconnx=server.CreateObject("ADODB.Connection")
+	dbconnx.Open str_db
 	
 	str_sql="SELECT * FROM :9_profile"
-	str_sql = Replace(str_sql, ":9", Session("StoreID"))
-	set rs = dbconn.Execute(str_sql)
+	str_sql = Replace(str_sql, ":9", g_storeid)
+	set rs = dbconnx.Execute(str_sql)
 	
 	if not rs.EOF then
 		strDBAName = rs("Company")
@@ -937,10 +937,10 @@ function SendMailToNewRegistrant(ByRef str_db,ByRef str_status_msg, ByRef str_em
 	end if
 
 
-	strSQL = "SELECT * FROM " & Session("StoreID") & "_store_email WHERE mail_id=1006"
-	strSQL = Replace(strSQL, ":9", Session("StoreID"))
+	strSQL = "SELECT * FROM " & g_storeid & "_store_email WHERE mail_id=1006"
+	strSQL = Replace(strSQL, ":9", g_storeid)
 
-	set rsEmail = dbconn.Execute(strSQL)
+	set rsEmail = dbconnx.Execute(strSQL)
 	
 	if not rsEmail.EOF then
 		subject = rsEmail("subject")
@@ -980,10 +980,10 @@ function SendMailToNewRegistrant(ByRef str_db,ByRef str_status_msg, ByRef str_em
 
 	rsEmail.close
 
-	strSQL = "SELECT * FROM " & Session("StoreID") & "_shopper WHERE email='" & str_email & "'"
-	strSQL = Replace(strSQL, ":9", Session("StoreID"))
+	strSQL = "SELECT * FROM " & g_storeid & "_shopper WHERE email='" & str_email & "'"
+	strSQL = Replace(strSQL, ":9", g_storeid)
 
-	set rsShopper = dbconn.Execute(strSQL)
+	set rsShopper = dbconnx.Execute(strSQL)
 	
 	if not rsShopper.EOF then
 		FirstName = rsShopper("FirstName")
@@ -1049,7 +1049,7 @@ function SendMailToNewRegistrant(ByRef str_db,ByRef str_status_msg, ByRef str_em
 	'end if
 	  
 	rs.close
-	dbconn.close
+	dbconnx.close
 	SendMailToNewRegistrant = true
 	
 end function
@@ -1065,12 +1065,12 @@ function LoginShopperViaWebService(ByRef theMemberID)
   if Len(theMemberID) = 10 then
   
     'Check existing member
-    Set dbconn=server.CreateObject("ADODB.Connection")
-    dbconn.Open Session("ConnectionString")
+    Set dbconnx=server.CreateObject("ADODB.Connection")
+    dbconnx.Open Session("ConnectionString")
     
-    sql = "SELECT * FROM " & Session("StoreID") & "_shopper WHERE shopper_id='" & theMemberID & "'"
+    sql = "SELECT * FROM " & g_storeid & "_shopper WHERE shopper_id='" & theMemberID & "'"
     
-    set rs11 = dbconn.Execute(sql)
+    set rs11 = dbconnx.Execute(sql)
     
     if not rs11.EOF then
     
@@ -1176,7 +1176,7 @@ function LoginShopperViaWebService(ByRef theMemberID)
     
     rs11.Close
     
-    dbconn.Close
+    dbconnx.Close
   
   else
     LoginShopperViaWebService = false
@@ -1197,7 +1197,7 @@ function AddNewShopperByWebService(ByRef str_shopper_id, ByRef str_address, ByRe
 		.CursorLocation = 3 'adUseClient
 		.CursorType = 1 'adOpenKeyset
 		.LockType = 3 'adLockOptimistic
-		.Source = Session("StoreID") & "_shopper"
+		.Source = g_storeid & "_shopper"
 		.Open
 		.AddNew
 	end with 

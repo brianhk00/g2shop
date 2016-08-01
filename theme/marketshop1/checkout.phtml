@@ -1,0 +1,27 @@
+<%
+	Response.CodePage = 65001
+	Response.CharSet = "UTF-8"
+	g_route_page_id = "checkout"
+%>
+<!--#INCLUDE FILE="template_setting.phtml"-->
+<!--#INCLUDE FILE="../../core/checkout/include_checkout_start.phtml"-->
+<!DOCTYPE html>
+<html>
+<head>
+<!--#INCLUDE FILE="include/head.phtml"-->
+</head>
+<body>
+<!--#INCLUDE FILE="include/after_body_start.phtml"-->
+<div class="wrapper-wide">
+	<!--#INCLUDE FILE="include/header.phtml"-->
+	<div id="container">
+		<!--#INCLUDE FILE="include/checkout.phtml"-->
+	</div>
+	<!--#INCLUDE FILE="include/footer.phtml"-->
+</div>
+<!--#INCLUDE FILE="include/js.phtml"-->
+<!--#INCLUDE FILE="include/before_body_end.phtml"-->
+<!--#INCLUDE FILE="include/AbsoluteFooter.phtml"-->
+</body>
+</html>
+<!--#INCLUDE FILE="../../core/checkout/include_checkout_end.phtml"-->

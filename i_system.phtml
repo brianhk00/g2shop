@@ -1,0 +1,2174 @@
+<script language="VBScript" RUNAT="SERVER">
+function GetSystemValues(ByRef str_db, ByRef str_system_id, ByRef system_price, ByRef system_cost, ByRef system_config_opt)
+	
+	system_config_opt = ""
+	system_price = 0
+	system_cost = 0
+	
+	if(Session("LOGINGROUP")="")then
+		member_group = "D"
+	else
+		member_group = Session("LOGINGROUP")
+	end if
+	
+	sql = "SELECT * FROM :9_system_product WHERE pf_id='" & str_system_id & "'"
+	sql = Replace(sql, ":9", Session("StoreID"))
+	set rsSystem = Conn.Execute(sql)
+	
+	if not rsSystem.EOF then
+		system_name = rsSystem("name")
+		system_price = rsSystem("price_"& member_group)
+		pricing_model = rsSystem("pricing_model")
+		option_mode = rsSystem("option_mode")
+		u_markup_value = rsSystem("u_markup_"& member_group)
+	else
+		system_price = 0
+	end if	
+	rsSystem.Close
+	
+	'Initialize for pricing models..
+	select case pricing_model
+	case 0
+  
+	case 1
+	  system_price = 0 'Ignore base price.
+	case 2
+  
+	case else
+  
+	end select
+	
+	sql = "SELECT * FROM :9_sysdept WHERE config_id='" & str_system_id & "' AND sysdept_mode IN (0,1,3) ORDER BY sysdept_row"
+	sql = Replace(sql, ":9", Session("StoreID"))
+	set rsSystem = Conn.Execute(sql)			            
+	
+	do while not rsSystem.EOF
+		i_mode = rsSystem("sysdept_mode")
+		str_part_option = ""
+		str_part_option2 = ""
+		SELECT case i_mode
+		
+		case 0
+									  
+		sql = "SELECT :9_system_config.* FROM :9_system_config WHERE config_id='" & str_system_id &"' AND dept_id='" & rsSystem("sysdept_id") &"' ORDER BY row_id"
+		sql = Replace(sql, ":9", Session("StoreID"))
+		set rsPart = Server.CreateObject("ADODB.Recordset")
+										
+		rsPart.Open sql, Session("ConnectionString"), 1
+														  
+		if rsPart.RecordCount > 0 then 
+			if (rsPart.RecordCount > 1) OR (rsSystem("allow_none")) then 
+				if not rsPart.EOF then
+					if (rsSystem("allow_none") AND rsSystem("none_default")) then
+						item_default_price = 0
+						no_part_price = 0
+					else
+						item_default_price = rsPart("markup_price")
+						no_part_price = rsPart("markup_price")
+					end if
+					
+					'For Flat model(1)..
+					if pricing_model = 1 then
+					  if(Len(Request("part"&rsSystem("sysdept_id"))) > 0) then
+					  else
+					    system_price = system_price + item_default_price
+					  end if
+					end if
+					'End of Flat Model..
+					
+					str_part_option = rsPart("config_description") & "(" & rsPart("pf_id") & ")"
+					str_part_option2 = rsPart("pf_id")
+
+				else
+					item_default_price = "0"
+				end if
+			                                                
+				do while not rsPart.EOF
+				
+				  if(Len(Request("part"&rsSystem("sysdept_id"))) > 0) then
+				  	pos = InStr(Request("part"&rsSystem("sysdept_id")), "~")
+				  	item_selection = Mid(Request("part"&rsSystem("sysdept_id")),1, pos-1)
+				  	item_adjusted_price = Mid(Request("part"&rsSystem("sysdept_id")), pos+1)
+				  	if item_selection = "--" then
+				  	  item_adjusted_price = "0"
+				  	end if
+																
+				  else
+				  	if (rsSystem("allow_none") AND rsSystem("none_default")) then
+				  		item_selection="--"
+				  		item_adjusted_price = "0"
+				  	else
+				  		item_selection=""
+				  		item_adjusted_price = item_default_price
+				  	end if
+				  end if
+				
+				  select case pricing_model
+				  case 0
+				    price_diff = CDbl(rsPart("markup_price")) - CDbl(item_adjusted_price)
+				  case 1
+				    price_diff = (CDbl(rsPart("markup_price")) + CDbl(rsPart("markup_price"))* (u_markup_value/100))- (CDbl(item_adjusted_price) + CDbl(item_adjusted_price) * (u_markup_value/100))
+				  case 2
+				    price_diff = CDbl(rsPart("markup_price")) - CDbl(item_adjusted_price)
+				    price_diff = price_diff + (price_diff * (u_markup_value/100))
+				  case else
+				    price_diff = CDbl(rsPart("markup_price")) - CDbl(item_adjusted_price)
+				  end select
+				  																								  											  
+				  if item_selection = rsPart("pf_id") then
+					no_part_price = rsPart("markup_price")
+					str_part_option = rsPart("config_description") & "(" & rsPart("pf_id") & ")"
+					str_part_option2 = rsPart("pf_id")
+					
+					select case pricing_model
+					case 0
+					  price_diff1 = CDbl(rsPart("markup_price")) - CDbl(item_default_price)
+					  price_diff1 = FormatNumber(price_diff1,2)
+					  system_price = system_price + price_diff1
+					case 1
+					  price_diff1 = CDbl(rsPart("markup_price"))
+					  price_diff1 = FormatNumber(price_diff1,2)
+					  system_price = system_price + price_diff1
+					case 2
+						price_diff1 = CDbl(rsPart("markup_price")) - CDbl(item_default_price)
+						price_diff1 = price_diff1 + (price_diff1 * (u_markup_value/100))
+						price_diff1 = FormatNumber(price_diff1,2)
+						system_price = system_price + price_diff1
+					case else
+					  price_diff1 = CDbl(rsPart("markup_price")) - CDbl(item_default_price)
+					  price_diff1 = FormatNumber(price_diff1,2)
+					  system_price = system_price + price_diff1
+					end select
+					
+			      end if
+				  rsPart.MoveNext
+		        loop
+			  
+			    if rsSystem("allow_none") then
+				  if item_selection = "--" then
+				     
+				     select case pricing_model
+					 case 0
+					   system_price = system_price - CDbl(no_part_price)
+					 case 1
+						'nothing..
+					 case 2
+					   system_price = system_price - (CDbl(no_part_price) + (CDbl(no_part_price) * (u_markup_value/100)))
+					 case else
+					   system_price = system_price - CDbl(no_part_price)
+					 end select
+					 
+				     str_part_option = "None"
+				     str_part_option2 = ""
+				  end if
+			    end if
+			else
+				str_part_option = rsPart("config_description") & "(" & rsPart("pf_id") & ")"
+				str_part_option2 = rsPart("pf_id")
+				
+				'For Flat model(1)
+				if pricing_model = 1 then
+				  system_price = system_price + CDBl(rsPart("markup_price"))
+				end if
+			end if
+		end if 
+		rsPart.Close
+		
+		system_config_opt= system_config_opt & rsSystem("sysdept_name")& " : " & str_part_option & "~"
+		if not str_part_option2 = "" then
+		  str_system_options2 = str_system_options2 & str_part_option2 & ","
+		end if
+		
+		case 1
+			sql = "SELECT :9_system_config.* FROM :9_system_config WHERE config_id='" & str_system_id &"' AND dept_id='" & rsSystem("sysdept_id") &"' ORDER BY row_id"
+			sql = Replace(sql, ":9", Session("StoreID"))
+			set rsPart = Server.CreateObject("ADODB.Recordset")
+										
+			rsPart.Open sql, Session("ConnectionString"), 1
+			if rsPart.RecordCount > 0 then
+				do while not rsPart.EOF
+					option_part_id = rsPart("pf_id")
+					option_part_desc = rsPart("config_description")
+		  
+					select case option_mode
+					case 0
+					  'default.. from table..
+					  option_part_price = rsPart("markup_price")
+					  
+					case 1
+					  'apply system markup..
+					  option_part_price = rsPart("markup_price")
+					  option_part_price = FormatNumber(option_part_price + (option_part_price * (u_markup_value/100)),2)
+					  
+					case 2
+					  'from catalog
+					  option_part_price = rsPart("markup_price")
+					  
+					  sql = "SELECT * FROM :9_dept_prod WHERE pf_id='"& option_part_id & "'"
+						sql = replace(sql, ":9", Session("StoreID"))
+						Set rsDeptName = Conn.Execute(sql)
+						if not rsDeptName.EOF then
+						  dept_ID = rsDeptName("dept_id")
+						else
+						  dept_ID = ""
+						end if
+						rsDeptName.Close
+			
+						'Get Markup...
+						if not dept_id = "" then
+						  sql = "SELECT * FROM :9_dept WHERE dept_id='" & dept_ID & "'"
+						  sql = replace(sql, ":9", Session("StoreID"))
+						  Set rsDept = Conn.Execute(sql)
+							
+						  dept_markup = rsDept("markup_" & Session("LOGINGROUP"))
+						  dept_use_markup = rsDept("use_markup")
+							
+						  rsDept.Close
+						  
+						  if (dept_use_markup) then
+						    current_markup = dept_markup
+						  else
+						    current_markup = CDbl(Session("PriMarkup_"& Session("LOGINGROUP")))
+						    dept_level = Len(Trim(dept_ID))
+							  
+						    Select case dept_level
+							  
+						    case 2
+						      'Do nothing.. use global markup...
+						    case 6
+						      sql = "SELECT markup_" & Session("LOGINGROUP") & " FROM :9_dept WHERE dept_id IN ('" & Left(dept_ID, 2) & "','" & dept_ID & "') AND use_markup=1 ORDER BY dept_id DESC"
+						      sql = replace(sql, ":9", Session("StoreID"))
+						      Set rsDept = Conn.Execute(sql)
+							    
+						      if rsDept.EOF then
+						        'Do nothing...
+						      else
+						        current_markup = rsDept(0)
+						      end if
+						      rsDept.Close
+						      
+						    case 10
+						      sql = "SELECT markup_" & Session("LOGINGROUP") & " FROM :9_dept WHERE dept_id IN ('" & Left(dept_ID, 2) & "','" & Left(dept_ID,6) & "','" & dept_ID & "') AND use_markup=1 ORDER BY dept_id DESC"
+						      sql = replace(sql, ":9", Session("StoreID"))
+						      Set rsDept = Conn.Execute(sql)
+							    
+						      if rsDept.EOF then
+						        'Do nothing...
+						      else
+						        current_markup = rsDept(0)
+						      end if
+						      rsDept.Close
+							    
+						    End Select
+						    
+						  end if
+						  
+						  sql = "SELECT * FROM :9_product WHERE pf_id = '" & option_part_id & "'"
+						  sql = replace(sql, ":9", Session("StoreID"))
+						  Set rsProd = Conn.Execute(sql)
+						  if not rsProd.EOF then	
+							prod_list_price = rsProd("list_price")
+							prod_on_sale = rsProd("on_sale")
+							prod_sale_price = rsProd("sale_price")
+							prod_group_price = rsProd("price_"& Session("LOGINGROUP"))
+							prod_use_price = rsProd("use_price")
+						  end if
+						  rsProd.Close
+						  
+						  'Markup
+						  if prod_use_price then
+						    prod_list_price = prod_group_price
+						  else
+						    prod_list_price = prod_list_price + prod_list_price * (current_markup/100)
+						  end if
+							
+						  if prod_on_sale then
+							option_part_price = prod_sale_price
+						  else
+							option_part_price = FormatNumber(prod_list_price,2)
+						  end if
+						  			  
+						end if 'dept_id=""
+					  
+					case else
+					  option_part_price = rsPart("markup_price")
+		  
+					end select
+					
+					if request("part"& rsPart("pf_id")) = CStr(option_part_price) then 
+						
+						system_price = system_price + CDbl(option_part_price)
+						base_price2 = base_price2 + CDbl(option_part_price)
+			
+			      str_part_option = rsPart("config_description") & "(" & rsPart("pf_id") & ")"
+			      str_part_option2 = rsPart("pf_id")
+					else
+						str_part_option = ""
+						str_part_option2 = ""
+					end if 
+
+					if not str_part_option = "" then
+					  system_config_opt = system_config_opt & rsSystem("sysdept_name")& " : " & str_part_option & "~"
+					  str_system_options2 = str_system_options2 & str_part_option2 & ","
+					end if
+					rsPart.MoveNext
+				loop
+				rsPart.Close
+			end if
+		end select
+		
+		rsSystem.MoveNext
+	loop
+	rsSystem.Close
+	
+	'Process base price
+    select case pricing_model
+    case 0
+  
+    case 1
+      system_price = system_price - base_price2
+      
+      'Add Hidden Cost..
+      sql = "SELECT SUM(sysdept_cost) FROM :9_sysdept WHERE config_id='" & str_system_id & "' AND sysdept_mode=2"
+      sql = Replace(sql, ":9", Session("StoreID"))
+			set rsPart = Conn.Execute(sql)
+			if not rsPart.EOF then
+			  if isNumeric(rsPart(0)) then
+			      system_price = system_price + rsPart(0)
+			    end if
+			end if
+			rsPart.close
+			system_price = system_price + system_price * (u_markup_value/100)
+			system_price = system_price + base_price2
+	  
+    case 2
+  
+    case else
+  
+    end select
+  
+  'Add Desription items...BK..8/16/2001
+  sql = "SELECT sysdept_name, sysdept_description FROM :9_sysdept WHERE sysdept_mode=3 AND config_id='" & str_system_id & "'"
+	sql = Replace(sql, ":9", Session("StoreID"))
+  set rsPart = Conn.Execute(sql)
+  
+  do while not rsPart.EOF
+		'system_config_opt = system_config_opt & rsPart("sysdept_name")& " : " & rsPart("sysdept_description") & "~"
+		rsPart.MoveNext
+	loop
+  rsPart.Close
+  '.........
+  
+	if Len(system_config_opt) > 0 then
+		system_config_opt = Left(system_config_opt,Len(system_config_opt)-1)
+	end if
+	
+	if Len(str_system_options2) > 0 then
+		str_system_options2 = Left(str_system_options2,Len(str_system_options2)-1)
+	end if
+	
+	'pf_id = config_id
+	'adjusted_price = base_price
+	
+	'Neee to get cost...
+	if Len(str_system_options2) > 0 then
+		  
+	  sql = "SELECT pf_id, list_price FROM :9_product WHERE pf_id IN ('" & Replace(str_system_options2, ",", "','") & "')"
+	  sql = Replace(sql, ":9", Session("StoreID"))
+	  set rsPart = Conn.Execute(sql)
+	  
+	  Set d = CreateObject("Scripting.Dictionary")
+	  
+	  do while not rsPart.EOF
+			d.Add CStr(rsPart("pf_id")), FormatNumber(rsPart("list_price"),2)
+			rsPart.MoveNext
+		loop
+		
+		rsPart.Close
+		
+		system_cost = 0
+
+		ar_option2 = split(str_system_options2, ",")
+
+		For k = 0 to UBound(ar_option2)
+			if d.Exists(ar_option2(k)) then
+				system_cost = system_cost + d.Item(ar_option2(k))
+			end if
+		Next
+	  
+	else
+	  system_cost = 0
+	end if
+	
+	'Add hidden cost to system cost..
+  sql = "SELECT SUM(sysdept_cost) FROM :9_sysdept WHERE config_id='" & str_system_id & "' AND sysdept_mode=2"
+  sql = Replace(sql, ":9", Session("StoreID"))
+	
+	set rsPart = Conn.Execute(sql)
+	if not rsPart.EOF then
+	  if isNumeric(rsPart(0)) then
+      system_cost = system_cost + rsPart(0)
+      system_cost = FormatNumber(system_cost,2)
+    end if
+	end if
+	rsPart.close
+	
+	system_price = FormatNumber(system_price,2,,,0)
+	system_cost = FormatNumber(system_cost,2,,,0)
+	
+	GetSystemValues = true
+	
+End Function
+
+
+function GetSystemValuesEx(ByRef str_db, ByRef str_system_id, ByRef system_price, ByRef system_cost, ByRef system_config_opt)
+	
+	system_config_opt = ""
+	system_price = 0
+	system_cost = 0
+	
+	if(Session("LOGINGROUP")="")then
+		member_group = "D"
+	else
+		member_group = Session("LOGINGROUP")
+	end if
+	
+	sql = "SELECT * FROM :9_system_product WHERE pf_id='" & str_system_id & "'"
+	sql = Replace(sql, ":9", Session("StoreID"))
+	set rsSystem = Conn.Execute(sql)
+	
+	if not rsSystem.EOF then
+		system_name = rsSystem("name")
+		system_price = rsSystem("price_"& member_group)
+		pricing_model = rsSystem("pricing_model")
+		option_mode = rsSystem("option_mode")
+		u_markup_value = rsSystem("u_markup_"& member_group)
+	else
+		system_price = 0
+	end if	
+	rsSystem.Close
+	
+	'Initialize for pricing models..
+	select case pricing_model
+	case 0
+  
+	case 1
+	  system_price = 0 'Ignore base price.
+	case 2
+  
+	case else
+  
+	end select
+	
+	sql = "SELECT * FROM :9_sysdept WHERE config_id='" & str_system_id & "' AND sysdept_mode IN (0,1,3) ORDER BY sysdept_row"
+	sql = Replace(sql, ":9", Session("StoreID"))
+	set rsSystem = Conn.Execute(sql)			            
+	
+	do while not rsSystem.EOF
+		i_mode = rsSystem("sysdept_mode")
+		str_part_option = ""
+		str_part_option2 = ""
+		SELECT case i_mode
+		
+		case 0
+									  
+		sql = "SELECT :9_system_config.* FROM :9_system_config WHERE config_id='" & str_system_id &"' AND dept_id='" & rsSystem("sysdept_id") &"' ORDER BY row_id"
+		sql = Replace(sql, ":9", Session("StoreID"))
+		set rsPart = Server.CreateObject("ADODB.Recordset")
+										
+		rsPart.Open sql, Session("ConnectionString"), 1
+														  
+		if rsPart.RecordCount > 0 then 
+			if (rsPart.RecordCount > 1) OR (rsSystem("allow_none")) then 
+				if not rsPart.EOF then
+					if (rsSystem("allow_none") AND rsSystem("none_default")) then
+						item_default_price = 0
+						no_part_price = 0
+					else
+						item_default_price = rsPart("markup_price")
+						no_part_price = rsPart("markup_price")
+					end if
+					
+					'For Flat model(1)..
+					if pricing_model = 1 then
+					  if(Len(Request("part"&rsSystem("sysdept_id"))) > 0) then
+					  else
+					    system_price = system_price + item_default_price
+					  end if
+					end if
+					'End of Flat Model..
+					
+					'str_part_option = rsPart("config_description") & "(" & rsPart("pf_id") & ")"
+					str_part_option = Trim(rsPart("config_description"))
+					str_part_option2 = Trim(rsPart("pf_id"))
+
+				else
+					item_default_price = "0"
+				end if
+			                                                
+				do while not rsPart.EOF
+				
+				  if(Len(Request("part"&rsSystem("sysdept_id"))) > 0) then
+				  	pos = InStr(Request("part"&rsSystem("sysdept_id")), "~")
+				  	item_selection = Mid(Request("part"&rsSystem("sysdept_id")),1, pos-1)
+				  	item_adjusted_price = Mid(Request("part"&rsSystem("sysdept_id")), pos+1)
+				  	if item_selection = "--" then
+				  	  item_adjusted_price = "0"
+				  	end if
+																
+				  else
+				  	if (rsSystem("allow_none") AND rsSystem("none_default")) then
+				  		item_selection="--"
+				  		item_adjusted_price = "0"
+				  	else
+				  		item_selection=""
+				  		item_adjusted_price = item_default_price
+				  	end if
+				  end if
+				
+				  select case pricing_model
+				  case 0
+				    price_diff = CDbl(rsPart("markup_price")) - CDbl(item_adjusted_price)
+				  case 1
+				    price_diff = (CDbl(rsPart("markup_price")) + CDbl(rsPart("markup_price"))* (u_markup_value/100))- (CDbl(item_adjusted_price) + CDbl(item_adjusted_price) * (u_markup_value/100))
+				  case 2
+				    price_diff = CDbl(rsPart("markup_price")) - CDbl(item_adjusted_price)
+				    price_diff = price_diff + (price_diff * (u_markup_value/100))
+				  case else
+				    price_diff = CDbl(rsPart("markup_price")) - CDbl(item_adjusted_price)
+				  end select
+				  																								  											  
+				  if item_selection = rsPart("pf_id") then
+					no_part_price = rsPart("markup_price")
+					'str_part_option = rsPart("config_description") & "(" & rsPart("pf_id") & ")"
+					str_part_option = Trim(rsPart("config_description"))
+					str_part_option2 = rsPart("pf_id")
+					
+					select case pricing_model
+					case 0
+					  price_diff1 = CDbl(rsPart("markup_price")) - CDbl(item_default_price)
+					  price_diff1 = FormatNumber(price_diff1,2)
+					  system_price = system_price + price_diff1
+					case 1
+					  price_diff1 = CDbl(rsPart("markup_price"))
+					  price_diff1 = FormatNumber(price_diff1,2)
+					  system_price = system_price + price_diff1
+					case 2
+						price_diff1 = CDbl(rsPart("markup_price")) - CDbl(item_default_price)
+						price_diff1 = price_diff1 + (price_diff1 * (u_markup_value/100))
+						price_diff1 = FormatNumber(price_diff1,2)
+						system_price = system_price + price_diff1
+					case else
+					  price_diff1 = CDbl(rsPart("markup_price")) - CDbl(item_default_price)
+					  price_diff1 = FormatNumber(price_diff1,2)
+					  system_price = system_price + price_diff1
+					end select
+					
+			      end if
+				  rsPart.MoveNext
+		        loop
+			  
+			    if rsSystem("allow_none") then
+				  if item_selection = "--" then
+				     
+				     select case pricing_model
+					 case 0
+					   system_price = system_price - CDbl(no_part_price)
+					 case 1
+						'nothing..
+					 case 2
+					   system_price = system_price - (CDbl(no_part_price) + (CDbl(no_part_price) * (u_markup_value/100)))
+					 case else
+					   system_price = system_price - CDbl(no_part_price)
+					 end select
+					 
+				     str_part_option = "None"
+				     str_part_option2 = ""
+				  end if
+			    end if
+			else
+				'str_part_option = rsPart("config_description") & "(" & rsPart("pf_id") & ")"
+				str_part_option = rsPart("config_description")
+				str_part_option2 = rsPart("pf_id")
+				
+				'For Flat model(1)
+				if pricing_model = 1 then
+				  system_price = system_price + CDBl(rsPart("markup_price"))
+				end if
+			end if
+		end if 
+		rsPart.Close
+		
+		'system_config_opt= system_config_opt & Trim(rsSystem("sysdept_name")) & chr(2) & Trim(str_part_option) & chr(1)
+		system_config_opt= system_config_opt & Trim(rsSystem("sysdept_name")) & chr(1)
+		system_config_opt= system_config_opt & Trim(str_part_option) & chr(1)
+		system_config_opt= system_config_opt & "0.00" & chr(1)
+		system_config_opt= system_config_opt & "0.00" & chr(1)
+		system_config_opt= system_config_opt & Trim(str_part_option2) & chr(2)
+		if not str_part_option2 = "" then
+		  str_system_options2 = str_system_options2 & str_part_option2 & ","
+		end if
+		
+		case 1
+			sql = "SELECT :9_system_config.* FROM :9_system_config WHERE config_id='" & str_system_id &"' AND dept_id='" & rsSystem("sysdept_id") &"' ORDER BY row_id"
+			sql = Replace(sql, ":9", Session("StoreID"))
+			set rsPart = Server.CreateObject("ADODB.Recordset")
+										
+			rsPart.Open sql, Session("ConnectionString"), 1
+			if rsPart.RecordCount > 0 then
+				do while not rsPart.EOF
+					option_part_id = rsPart("pf_id")
+					option_part_desc = rsPart("config_description")
+		  
+					select case option_mode
+					case 0
+					  'default.. from table..
+					  option_part_price = rsPart("markup_price")
+					  
+					case 1
+					  'apply system markup..
+					  option_part_price = rsPart("markup_price")
+					  option_part_price = FormatNumber(option_part_price + (option_part_price * (u_markup_value/100)),2)
+					  
+					case 2
+					  'from catalog
+					  option_part_price = rsPart("markup_price")
+					  
+					  sql = "SELECT * FROM :9_dept_prod WHERE pf_id='"& option_part_id & "'"
+						sql = replace(sql, ":9", Session("StoreID"))
+						Set rsDeptName = Conn.Execute(sql)
+						if not rsDeptName.EOF then
+						  dept_ID = rsDeptName("dept_id")
+						else
+						  dept_ID = ""
+						end if
+						rsDeptName.Close
+			
+						'Get Markup...
+						if not dept_id = "" then
+						  sql = "SELECT * FROM :9_dept WHERE dept_id='" & dept_ID & "'"
+						  sql = replace(sql, ":9", Session("StoreID"))
+						  Set rsDept = Conn.Execute(sql)
+							
+						  dept_markup = rsDept("markup_" & Session("LOGINGROUP"))
+						  dept_use_markup = rsDept("use_markup")
+							
+						  rsDept.Close
+						  
+						  if (dept_use_markup) then
+						    current_markup = dept_markup
+						  else
+						    current_markup = CDbl(Session("PriMarkup_"& Session("LOGINGROUP")))
+						    dept_level = Len(Trim(dept_ID))
+							  
+						    Select case dept_level
+							  
+						    case 2
+						      'Do nothing.. use global markup...
+						    case 6
+						      sql = "SELECT markup_" & Session("LOGINGROUP") & " FROM :9_dept WHERE dept_id IN ('" & Left(dept_ID, 2) & "','" & dept_ID & "') AND use_markup=1 ORDER BY dept_id DESC"
+						      sql = replace(sql, ":9", Session("StoreID"))
+						      Set rsDept = Conn.Execute(sql)
+							    
+						      if rsDept.EOF then
+						        'Do nothing...
+						      else
+						        current_markup = rsDept(0)
+						      end if
+						      rsDept.Close
+						      
+						    case 10
+						      sql = "SELECT markup_" & Session("LOGINGROUP") & " FROM :9_dept WHERE dept_id IN ('" & Left(dept_ID, 2) & "','" & Left(dept_ID,6) & "','" & dept_ID & "') AND use_markup=1 ORDER BY dept_id DESC"
+						      sql = replace(sql, ":9", Session("StoreID"))
+						      Set rsDept = Conn.Execute(sql)
+							    
+						      if rsDept.EOF then
+						        'Do nothing...
+						      else
+						        current_markup = rsDept(0)
+						      end if
+						      rsDept.Close
+							    
+						    End Select
+						    
+						  end if
+						  
+						  sql = "SELECT * FROM :9_product WHERE pf_id = '" & option_part_id & "'"
+						  sql = replace(sql, ":9", Session("StoreID"))
+						  Set rsProd = Conn.Execute(sql)
+						  if not rsProd.EOF then	
+							prod_list_price = rsProd("list_price")
+							prod_on_sale = rsProd("on_sale")
+							prod_sale_price = rsProd("sale_price")
+							prod_group_price = rsProd("price_"& Session("LOGINGROUP"))
+							prod_use_price = rsProd("use_price")
+						  end if
+						  rsProd.Close
+						  
+						  'Markup
+						  if prod_use_price then
+						    prod_list_price = prod_group_price
+						  else
+						    prod_list_price = prod_list_price + prod_list_price * (current_markup/100)
+						  end if
+							
+						  if prod_on_sale then
+							option_part_price = prod_sale_price
+						  else
+							option_part_price = FormatNumber(prod_list_price,2)
+						  end if
+						  			  
+						end if 'dept_id=""
+					  
+					case else
+					  option_part_price = rsPart("markup_price")
+		  
+					end select
+					
+					if request("part"& rsPart("pf_id")) = CStr(option_part_price) then 
+						
+						system_price = system_price + CDbl(option_part_price)
+						base_price2 = base_price2 + CDbl(option_part_price)
+			
+			      str_part_option = rsPart("config_description") & "(" & rsPart("pf_id") & ")"
+			      str_part_option2 = rsPart("pf_id")
+					else
+						str_part_option = ""
+						str_part_option2 = ""
+					end if 
+
+					if not str_part_option = "" then
+					  system_config_opt = system_config_opt & rsSystem("sysdept_name")& " : " & str_part_option & "~"
+					  str_system_options2 = str_system_options2 & str_part_option2 & ","
+					end if
+					rsPart.MoveNext
+				loop
+				rsPart.Close
+			end if
+		end select
+		
+		rsSystem.MoveNext
+	loop
+	rsSystem.Close
+	
+	'Process base price
+    select case pricing_model
+    case 0
+  
+    case 1
+      system_price = system_price - base_price2
+      
+      'Add Hidden Cost..
+      sql = "SELECT SUM(sysdept_cost) FROM :9_sysdept WHERE config_id='" & str_system_id & "' AND sysdept_mode=2"
+      sql = Replace(sql, ":9", Session("StoreID"))
+			set rsPart = Conn.Execute(sql)
+			if not rsPart.EOF then
+			  if isNumeric(rsPart(0)) then
+			      system_price = system_price + rsPart(0)
+			    end if
+			end if
+			rsPart.close
+			system_price = system_price + system_price * (u_markup_value/100)
+			system_price = system_price + base_price2
+	  
+    case 2
+  
+    case else
+  
+    end select
+  
+  'Add Desription items...BK..8/16/2001
+  sql = "SELECT sysdept_name, sysdept_description FROM :9_sysdept WHERE sysdept_mode=3 AND config_id='" & str_system_id & "'"
+	sql = Replace(sql, ":9", Session("StoreID"))
+  set rsPart = Conn.Execute(sql)
+  
+  do while not rsPart.EOF
+		'system_config_opt = system_config_opt & rsPart("sysdept_name")& " : " & rsPart("sysdept_description") & "~"
+		rsPart.MoveNext
+	loop
+  rsPart.Close
+  '.........
+  
+	if Len(system_config_opt) > 0 then
+		system_config_opt = Left(system_config_opt,Len(system_config_opt)-1)
+	end if
+	
+	if Len(str_system_options2) > 0 then
+		str_system_options2 = Left(str_system_options2,Len(str_system_options2)-1)
+	end if
+	
+	'pf_id = config_id
+	'adjusted_price = base_price
+	
+	'Neee to get cost...
+	if Len(str_system_options2) > 0 then
+		  
+	  sql = "SELECT pf_id, list_price FROM :9_product WHERE pf_id IN ('" & Replace(str_system_options2, ",", "','") & "')"
+	  sql = Replace(sql, ":9", Session("StoreID"))
+	  set rsPart = Conn.Execute(sql)
+	  
+	  Set d = CreateObject("Scripting.Dictionary")
+	  
+	  do while not rsPart.EOF
+			d.Add CStr(rsPart("pf_id")), FormatNumber(rsPart("list_price"),2)
+			rsPart.MoveNext
+		loop
+		
+		rsPart.Close
+		
+		system_cost = 0
+
+		ar_option2 = split(str_system_options2, ",")
+
+		For k = 0 to UBound(ar_option2)
+			if d.Exists(ar_option2(k)) then
+				system_cost = system_cost + d.Item(ar_option2(k))
+			end if
+		Next
+	  
+	else
+	  system_cost = 0
+	end if
+	
+	'Add hidden cost to system cost..
+  sql = "SELECT SUM(sysdept_cost) FROM :9_sysdept WHERE config_id='" & str_system_id & "' AND sysdept_mode=2"
+  sql = Replace(sql, ":9", Session("StoreID"))
+	
+	set rsPart = Conn.Execute(sql)
+	if not rsPart.EOF then
+	  if isNumeric(rsPart(0)) then
+      system_cost = system_cost + rsPart(0)
+      system_cost = FormatNumber(system_cost,2)
+    end if
+	end if
+	rsPart.close
+	
+	system_price = FormatNumber(system_price,2,,,0)
+	system_cost = FormatNumber(system_cost,2,,,0)
+	
+	GetSystemValuesEx = true
+	
+End Function
+
+
+function AddItemToShoppingCart(ByRef str_db, ByRef ar_shoppingcart, ByRef str_pf_id, ByRef str_op, ByRef cart_price, ByRef part_cost, ByRef cart_index, ByRef warranty_index, ByRef cart_qty)
+
+	'Initialize...
+	if IsNumeric(part_cost) then
+	else
+		part_cost = "0.00"
+	end if
+
+	Set dbconn = Server.CreateObject("ADODB.Connection")
+	dbconn.open Session("ConnectionString")
+
+	if Session("DEMOVERSION") = "1" then
+		g_storeid = "bk01"
+	else
+		g_storeid = Session("StoreID")
+	end if
+	
+	dim ar_SHTABLE1(10)
+	dim ar_SHTABLE2(10)
+
+	Select Case str_op
+
+	case "0" 'Private catalog
+		
+		sql = "SELECT * FROM " & Session("StoreID") & "_product WHERE pf_id = '" & str_pf_id & "'"			
+		Set rsCart = Conn.Execute(sql)
+		
+		if not rsCart.EOF then
+			prod_sku = Trim(rsCart("sku"))
+			prod_name = Trim(rsCart("name"))
+			prod_list_price = rsCart("list_price")
+			prod_weight = rsCart("weight")
+			prod_taxable = rsCart("is_nontaxable")
+			prod_ship = rsCart("is_noship")
+			prod_warranty = Trim(rsCart("warranty_id"))
+			
+			prod_mfg_sku = Trim(rsCart("manu_part_num"))
+			prod_im_sku = Trim(rsCart("IM_part_num"))
+			prod_td_sku = Trim(rsCart("TD_part_num"))
+			prod_ec_sku = Trim(rsCart("espec_sku"))
+			prod_sn_sku = Trim(rsCart("SN_PART_num"))
+			
+			prod_mfg_name = Trim(rsCart("vendor_name"))
+
+			if len(prod_mfg_sku) > 0 then
+			else
+				prod_mfg_sku = prod_sku
+			end if
+			
+			s_SHTABLE = ""
+
+			if Session("SHITEMMODE") = 1 then
+				
+				if prod_ship = 0 then
+
+					'take care of product weight..
+					l_wt = CDbl(prod_weight)
+					f_wt = Fix(CDbl(prod_weight))
+
+					if l_wt > f_wt then
+						p_wt = f_wt + 1
+					else
+						p_wt = f_wt
+					end if
+
+					sql = "SELECT * FROM " & Session("StoreID") & "_custom_shipping_ex WHERE SH_INDEX=1 OR C1='" & p_wt & "' ORDER BY SH_INDEX"
+					set rsSHTable = Conn.Execute(sql)
+
+					if not rsSHTable.EOF then
+
+						'Field Names...
+						ar_SHTABLE1(0) = Trim(rsSHTable("C3"))
+						ar_SHTABLE1(1) = Trim(rsSHTable("C4"))
+						ar_SHTABLE1(2) = Trim(rsSHTable("C5"))
+						ar_SHTABLE1(3) = Trim(rsSHTable("C6"))
+						ar_SHTABLE1(4) = Trim(rsSHTable("C7"))
+						ar_SHTABLE1(5) = Trim(rsSHTable("C8"))
+						ar_SHTABLE1(6) = Trim(rsSHTable("C9"))
+						ar_SHTABLE1(7) = Trim(rsSHTable("C10"))
+						ar_SHTABLE1(8) = Trim(rsSHTable("C11"))
+						ar_SHTABLE1(9) = Trim(rsSHTable("C12"))
+
+						rsSHTable.MoveNext
+
+					end if
+
+					if not rsSHTable.EOF then
+
+						'Weight Rates...
+						ar_SHTABLE2(0) = Trim(rsSHTable("C3"))
+						ar_SHTABLE2(1) = Trim(rsSHTable("C4"))
+						ar_SHTABLE2(2) = Trim(rsSHTable("C5"))
+						ar_SHTABLE2(3) = Trim(rsSHTable("C6"))
+						ar_SHTABLE2(4) = Trim(rsSHTable("C7"))
+						ar_SHTABLE2(5) = Trim(rsSHTable("C8"))
+						ar_SHTABLE2(6) = Trim(rsSHTable("C9"))
+						ar_SHTABLE2(7) = Trim(rsSHTable("C10"))
+						ar_SHTABLE2(8) = Trim(rsSHTable("C11"))
+						ar_SHTABLE2(9) = Trim(rsSHTable("C12"))
+
+						rsSHTable.MoveNext
+						
+					else
+					
+					  'sql3 = "SELECT * FROM " & Session("StoreID") & "_custom_shipping_ex WHERE SH_INDEX<>10000  ORDER BY SH_INDEX DESC"
+					  'set rsSHTable2 = Conn.Execute(sql3)
+					  'if not rsSHTable2.EOF then
+					    'ar_SHTABLE2(0) = Trim(rsSHTable2("C3"))
+						  'ar_SHTABLE2(1) = Trim(rsSHTable2("C4"))
+						  'ar_SHTABLE2(2) = Trim(rsSHTable2("C5"))
+						  'ar_SHTABLE2(3) = Trim(rsSHTable2("C6"))
+						  'ar_SHTABLE2(4) = Trim(rsSHTable2("C7"))
+						  'ar_SHTABLE2(5) = Trim(rsSHTable2("C8"))
+						  'ar_SHTABLE2(6) = Trim(rsSHTable2("C9"))
+						  'ar_SHTABLE2(7) = Trim(rsSHTable2("C10"))
+						  'ar_SHTABLE2(8) = Trim(rsSHTable2("C11"))
+						  'ar_SHTABLE2(9) = Trim(rsSHTable2("C12"))
+					  'end if
+					  'rsSHTable2.Close
+
+					end if
+
+					rsSHTable.Close
+
+					'Overwrite with item specific table....
+					sql = "SELECT * FROM " & Session("StoreID") & "_custom_shipping_ex WHERE SH_INDEX=10000 AND C1='" & str_pf_id & "'"
+
+					set rsSHTable = Conn.Execute(sql)
+					if not rsSHTable.EOF then
+						
+						if Len(Trim(rsSHTable("C3"))) > 0 then
+							ar_SHTABLE2(0) = Trim(rsSHTable("C3"))
+						end if
+						if Len(Trim(rsSHTable("C4"))) > 0 then
+							ar_SHTABLE2(1) = Trim(rsSHTable("C4"))
+						end if
+						if Len(Trim(rsSHTable("C5"))) > 0 then
+							ar_SHTABLE2(2) = Trim(rsSHTable("C5"))
+						end if
+						if Len(Trim(rsSHTable("C6"))) > 0 then
+							ar_SHTABLE2(3) = Trim(rsSHTable("C6"))
+						end if
+						if Len(Trim(rsSHTable("C7"))) > 0 then
+							ar_SHTABLE2(4) = Trim(rsSHTable("C7"))
+						end if
+						if Len(Trim(rsSHTable("C8"))) > 0 then
+							ar_SHTABLE2(5) = Trim(rsSHTable("C8"))
+						end if
+						if Len(Trim(rsSHTable("C9"))) > 0 then
+							ar_SHTABLE2(6) = Trim(rsSHTable("C9"))
+						end if
+						if Len(Trim(rsSHTable("C10"))) > 0 then
+							ar_SHTABLE2(7) = Trim(rsSHTable("C10"))
+						end if
+						if Len(Trim(rsSHTable("C11"))) > 0 then
+							ar_SHTABLE2(8) = Trim(rsSHTable("C11"))
+						end if
+						if Len(Trim(rsSHTable("C12"))) > 0 then
+							ar_SHTABLE2(9) = Trim(rsSHTable("C12"))
+						end if
+
+					end if
+					rsSHTable.Close
+
+					For ii = 0 to 9
+						if Len(ar_SHTABLE1(ii)) > 0 then
+							s_SHTABLE = s_SHTABLE & ar_SHTABLE1(ii) & "~"
+							s_SHTABLE = s_SHTABLE & ar_SHTABLE2(ii) & "|"
+						end if
+					next
+
+					if Len(s_SHTABLE) > 0 then
+						s_SHTABLE = Left(s_SHTABLE, Len(s_SHTABLE)-1)
+					end if
+
+				else
+					'Free shipping...
+					sql = "SELECT * FROM " & Session("StoreID") & "_custom_shipping_ex WHERE SH_INDEX=1 OR C1='" & CInt(prod_weight) & "' ORDER BY SH_INDEX"
+					set rsSHTable = Conn.Execute(sql)
+
+					if not rsSHTable.EOF then
+
+						'Field Names...
+						ar_SHTABLE1(0) = Trim(rsSHTable("C3"))
+						ar_SHTABLE1(1) = Trim(rsSHTable("C4"))
+						ar_SHTABLE1(2) = Trim(rsSHTable("C5"))
+						ar_SHTABLE1(3) = Trim(rsSHTable("C6"))
+						ar_SHTABLE1(4) = Trim(rsSHTable("C7"))
+						ar_SHTABLE1(5) = Trim(rsSHTable("C8"))
+						ar_SHTABLE1(6) = Trim(rsSHTable("C9"))
+						ar_SHTABLE1(7) = Trim(rsSHTable("C10"))
+						ar_SHTABLE1(8) = Trim(rsSHTable("C11"))
+						ar_SHTABLE1(9) = Trim(rsSHTable("C12"))
+
+					end if
+
+					'Weight Rates...
+					ar_SHTABLE2(0) = "0"
+					ar_SHTABLE2(1) = "0"
+					ar_SHTABLE2(2) = "0"
+					ar_SHTABLE2(3) = "0"
+					ar_SHTABLE2(4) = "0"
+					ar_SHTABLE2(5) = "0"
+					ar_SHTABLE2(6) = "0"
+					ar_SHTABLE2(7) = "0"
+					ar_SHTABLE2(8) = "0"
+					ar_SHTABLE2(9) = "0"
+
+					For ii = 0 to 9
+						if Len(ar_SHTABLE1(ii)) > 0 then
+							s_SHTABLE = s_SHTABLE & ar_SHTABLE1(ii) & "~"
+							s_SHTABLE = s_SHTABLE & ar_SHTABLE2(ii) & "|"
+						end if
+					next
+
+					if Len(s_SHTABLE) > 0 then
+						s_SHTABLE = Left(s_SHTABLE, Len(s_SHTABLE)-1)
+					end if
+					
+				end if
+
+			end if
+			
+			'=====================================================================================
+			cart_price = GetAdjustedPriceFromPrivateCatalog(str_pf_id, cart_price)
+			'=====================================================================================
+			
+			if IsNumeric(cart_qty) then
+			else
+			  cart_qty = 1
+			end if
+			
+			if IsNumeric(prod_list_price) AND IsNumeric(prod_taxable) AND IsNumeric(prod_ship) AND cart_qty > 0 then
+			
+				ar_shoppingcart(cartProductID, cart_index) = str_pf_id
+				ar_shoppingcart(cartProductName, cart_index) = prod_name
+				ar_shoppingcart(cartOptions, cart_index) = ""
+				if IsNumeric(cart_qty) then
+				  ar_shoppingcart(cartOrderQuantity, cart_index) = cart_qty
+				else
+				  ar_shoppingcart(cartOrderQuantity, cart_index) = 1
+				end if
+				ar_shoppingcart(cartProductUnitPrice, cart_index) = cart_price
+				ar_shoppingcart(cartProductUnitWeight, cart_index) = prod_weight
+				ar_shoppingcart(cartTaxable, cart_index) = prod_taxable
+				ar_shoppingcart(cartShip, cart_index) = prod_ship
+				ar_shoppingcart(cartProductMode, cart_index) = "0"
+				ar_shoppingcart(cartProductUnitCost, cart_index) = prod_list_price
+				ar_shoppingcart(cartProductMfgNumber, cart_index) = prod_mfg_sku
+				ar_shoppingcart(cartProductWarranty, cart_index) = prod_warranty
+				
+				'ADDED BY BK 7/14/2004
+				ar_shoppingcart(cartTDNumber, cart_index) = prod_td_sku
+				ar_shoppingcart(cartIMNumber, cart_index) = prod_im_sku
+				ar_shoppingcart(cartECNumber, cart_index) = prod_ec_sku
+				ar_shoppingcart(cartSNNumber, cart_index) = prod_sn_sku
+				
+				ar_shoppingcart(cartMfg, cart_index) = prod_mfg_name
+
+
+				if Len(warranty_index) > 0 then
+					ar_shoppingcart(cartProductWarrantySelection, cart_index) = warranty_index
+				else
+					ar_shoppingcart(cartProductWarrantySelection, cart_index) = "0"
+				end if
+
+				if Len(s_SHTABLE) > 0 then
+					ar_shoppingcart(cartProductSHRate, cart_index) = s_SHTABLE
+				else
+					ar_shoppingcart(cartProductSHRate, cart_index) = "0"
+				end if
+			
+			else
+				AddItemToShoppingCart = false
+				exit function
+			end if
+			
+		else
+			AddItemToShoppingCart = false
+			exit function
+		end if
+		
+		rsCart.Close
+	
+	case "3" 'Public catalog (Ingram)
+		
+		if Session("ENABLEINT") = "2" OR Session("ENABLEINT")="3" then
+			if Session("IMPRICE") = "1" then
+				bUseIMFile = true
+				sql = "SELECT * FROM " & Session("IMFILEID") & "_IMPRICE WHERE INGRAM_PART_NUMBER='" & str_pf_id & "'"
+			else
+				bUseIMFile = false
+				sql = "SELECT * FROM PART_MASTER_CA WHERE part_id = '" & str_pf_id & "'"
+			end if
+		else
+			if Session("IMPRICE") = "1" then
+				bUseIMFile = true
+				sql = "SELECT * FROM " & Session("IMFILEID") & "_IMPRICE WHERE INGRAM_PART_NUMBER='" & str_pf_id & "'"
+			else
+				bUseIMFile = false
+				sql = "SELECT * FROM PART_MASTER WHERE part_id = '" & str_pf_id & "'"
+			end if
+		end if
+			
+		if bUseIMFile then
+			Set vendor_conn = Server.CreateObject("ADODB.Connection")
+			vendor_conn.open Session("IMFileConnectionString")
+			Set rsCart = vendor_conn.Execute(sql)
+		else
+			Set vendor_conn = Server.CreateObject("ADODB.Connection")
+			vendor_conn.open Session("MasterConnectionString")
+			Set rsCart = vendor_conn.Execute(sql)
+		end if
+						
+		Set rsCart = vendor_conn.Execute(sql)
+		if not rsCart.EOF then
+
+			s_SHTABLE = ""
+
+			if Session("SHITEMMODE") = 1 then
+				
+				if prod_ship = 0 then
+
+					sql = "SELECT * FROM " & Session("StoreID") & "_custom_shipping_ex WHERE SH_INDEX=1 OR C1='" & CInt(rsCart("WEIGHT")) & "' ORDER BY SH_INDEX"
+					set rsSHTable = Conn.Execute(sql)
+
+					if not rsSHTable.EOF then
+
+						'Field Names...
+						ar_SHTABLE1(0) = Trim(rsSHTable("C3"))
+						ar_SHTABLE1(1) = Trim(rsSHTable("C4"))
+						ar_SHTABLE1(2) = Trim(rsSHTable("C5"))
+						ar_SHTABLE1(3) = Trim(rsSHTable("C6"))
+						ar_SHTABLE1(4) = Trim(rsSHTable("C7"))
+						ar_SHTABLE1(5) = Trim(rsSHTable("C8"))
+						ar_SHTABLE1(6) = Trim(rsSHTable("C9"))
+						ar_SHTABLE1(7) = Trim(rsSHTable("C10"))
+						ar_SHTABLE1(8) = Trim(rsSHTable("C11"))
+						ar_SHTABLE1(9) = Trim(rsSHTable("C12"))
+
+						rsSHTable.MoveNext
+
+					end if
+
+					if not rsSHTable.EOF then
+
+						'Weight Rates...
+						ar_SHTABLE2(0) = Trim(rsSHTable("C3"))
+						ar_SHTABLE2(1) = Trim(rsSHTable("C4"))
+						ar_SHTABLE2(2) = Trim(rsSHTable("C5"))
+						ar_SHTABLE2(3) = Trim(rsSHTable("C6"))
+						ar_SHTABLE2(4) = Trim(rsSHTable("C7"))
+						ar_SHTABLE2(5) = Trim(rsSHTable("C8"))
+						ar_SHTABLE2(6) = Trim(rsSHTable("C9"))
+						ar_SHTABLE2(7) = Trim(rsSHTable("C10"))
+						ar_SHTABLE2(8) = Trim(rsSHTable("C11"))
+						ar_SHTABLE2(9) = Trim(rsSHTable("C12"))
+
+						rsSHTable.MoveNext
+
+					end if
+
+					rsSHTable.Close
+					
+
+					For ii = 0 to 9
+						if Len(ar_SHTABLE1(ii)) > 0 then
+							s_SHTABLE = s_SHTABLE & ar_SHTABLE1(ii) & "~"
+							s_SHTABLE = s_SHTABLE & ar_SHTABLE2(ii) & "|"
+						end if
+					next
+
+					if Len(s_SHTABLE) > 0 then
+						s_SHTABLE = Left(s_SHTABLE, Len(s_SHTABLE)-1)
+					end if
+					
+				end if
+
+			end if
+		
+			if IsNumeric(cart_price) AND IsNumeric(part_cost) then
+			
+				if bUseIMFile then
+					ar_shoppingcart(cartProductID, cart_index) = str_pf_id
+					ar_shoppingcart(cartProductName, cart_index) = Trim(rsCart("INGRAM_PART_DESCRIPTION_LINE1")) & " " & Trim(rsCart("INGRAM_PART_DESCRIPTION_LINE2"))
+					ar_shoppingcart(cartOptions, cart_index) = ""
+					ar_shoppingcart(cartOrderQuantity, cart_index) = 1
+					ar_shoppingcart(cartProductUnitPrice, cart_index) = cart_price
+					
+					'=========================================================================
+					if IsNumeric(rsCart("WEIGHT")) then
+					  if rsCart("WEIGHT") > 0 then
+					    ar_shoppingcart(cartProductUnitWeight, cart_index) = rsCart("WEIGHT")
+					  else
+					    ar_shoppingcart(cartProductUnitWeight, cart_index) = 1
+					  end if
+					else
+					  ar_shoppingcart(cartProductUnitWeight, cart_index) = 1   
+					end if
+					'=========================================================================
+					
+					'ar_shoppingcart(cartProductUnitWeight, cart_index) = rsCart("WEIGHT")
+					
+					ar_shoppingcart(cartTaxable, cart_index) = 0
+					ar_shoppingcart(cartShip, cart_index) = 0
+					ar_shoppingcart(cartProductMode, cart_index) = "3"
+
+					ar_shoppingcart(cartProductUnitCost, cart_index) = FormatNumber(rsCart("CUSTOMER_PRICE"))
+					ar_shoppingcart(cartProductMfgNumber, cart_index) = Trim(rsCart("VENDOR_PART_NUMBER"))
+
+					if Len(s_SHTABLE) > 0 then
+						ar_shoppingcart(cartProductSHRate, cart_index) = s_SHTABLE
+					else
+						ar_shoppingcart(cartProductSHRate, cart_index) = "0"
+					end if
+
+					'ADDED BY BK 7/14/2004
+					ar_shoppingcart(cartTDNumber, cart_index) = ""
+					ar_shoppingcart(cartIMNumber, cart_index) = str_pf_id
+					ar_shoppingcart(cartECNumber, cart_index) = ""
+					
+					ar_shoppingcart(cartMfg, cart_index) = Trim(rsCart("VENDOR_NAME"))
+
+				else
+					ar_shoppingcart(cartProductID, cart_index) = str_pf_id
+					ar_shoppingcart(cartProductName, cart_index) = Trim(rsCart("part_description1")) & " " & Trim(rsCart("part_description2"))
+					ar_shoppingcart(cartOptions, cart_index) = ""
+					ar_shoppingcart(cartOrderQuantity, cart_index) = 1
+					ar_shoppingcart(cartProductUnitPrice, cart_index) = cart_price
+					ar_shoppingcart(cartProductUnitWeight, cart_index) = rsCart("part_weight")
+					ar_shoppingcart(cartTaxable, cart_index) = 0
+					ar_shoppingcart(cartShip, cart_index) = 0
+					ar_shoppingcart(cartProductMode, cart_index) = "3"
+					ar_shoppingcart(cartProductUnitCost, cart_index) = part_cost
+					ar_shoppingcart(cartProductMfgNumber, cart_index) = Trim(rsCart("vendor_part_number"))
+
+					'ADDED BY BK 7/14/2004
+					ar_shoppingcart(cartTDNumber, cart_index) = ""
+					ar_shoppingcart(cartIMNumber, cart_index) = str_pf_id
+					ar_shoppingcart(cartECNumber, cart_index) = ""
+					
+					ar_shoppingcart(cartMfg, cart_index) = Trim(rsCart("vendor_name"))
+
+				end if
+			else
+				AddItemToShoppingCart = false
+				exit function
+			end if
+			
+		else
+			AddItemToShoppingCart = false
+			exit function
+		end if
+		rsCart.Close
+		vendor_conn.Close
+	
+	case "4" 'System...
+		sql = "SELECT * FROM :9_system_product WHERE pf_id = '" & str_pf_id & "'"
+		sql = Replace(sql, ":9", Session("StoreID"))
+			
+		Set rsCart = Conn.Execute(sql)
+		
+		if not rsCart.EOF then
+			prod_name = rsCart("name")
+			prod_weight = rsCart("weight")
+			prod_taxable = rsCart("is_nontaxable")
+			prod_ship = rsCart("is_noship")
+
+			s_SHTABLE = ""
+
+			if Session("SHITEMMODE") = 1 then
+				
+				if prod_ship = 0 then
+
+					'take care of product weight..
+					l_wt = CDbl(prod_weight)
+					f_wt = Fix(CDbl(prod_weight))
+
+					if l_wt > f_wt then
+						p_wt = f_wt + 1
+					else
+						p_wt = f_wt
+					end if
+
+					sql = "SELECT * FROM " & Session("StoreID") & "_custom_shipping_ex WHERE SH_INDEX=1 OR C1='" & p_wt & "' ORDER BY SH_INDEX"
+					set rsSHTable = Conn.Execute(sql)
+
+					if not rsSHTable.EOF then
+
+						'Field Names...
+						ar_SHTABLE1(0) = Trim(rsSHTable("C3"))
+						ar_SHTABLE1(1) = Trim(rsSHTable("C4"))
+						ar_SHTABLE1(2) = Trim(rsSHTable("C5"))
+						ar_SHTABLE1(3) = Trim(rsSHTable("C6"))
+						ar_SHTABLE1(4) = Trim(rsSHTable("C7"))
+						ar_SHTABLE1(5) = Trim(rsSHTable("C8"))
+						ar_SHTABLE1(6) = Trim(rsSHTable("C9"))
+						ar_SHTABLE1(7) = Trim(rsSHTable("C10"))
+						ar_SHTABLE1(8) = Trim(rsSHTable("C11"))
+						ar_SHTABLE1(9) = Trim(rsSHTable("C12"))
+
+						rsSHTable.MoveNext
+
+					end if
+
+					if not rsSHTable.EOF then
+
+						'Weight Rates...
+						ar_SHTABLE2(0) = Trim(rsSHTable("C3"))
+						ar_SHTABLE2(1) = Trim(rsSHTable("C4"))
+						ar_SHTABLE2(2) = Trim(rsSHTable("C5"))
+						ar_SHTABLE2(3) = Trim(rsSHTable("C6"))
+						ar_SHTABLE2(4) = Trim(rsSHTable("C7"))
+						ar_SHTABLE2(5) = Trim(rsSHTable("C8"))
+						ar_SHTABLE2(6) = Trim(rsSHTable("C9"))
+						ar_SHTABLE2(7) = Trim(rsSHTable("C10"))
+						ar_SHTABLE2(8) = Trim(rsSHTable("C11"))
+						ar_SHTABLE2(9) = Trim(rsSHTable("C12"))
+
+						rsSHTable.MoveNext
+
+					end if
+
+					rsSHTable.Close
+					
+
+					For ii = 0 to 9
+						if Len(ar_SHTABLE1(ii)) > 0 then
+							s_SHTABLE = s_SHTABLE & ar_SHTABLE1(ii) & "~"
+							s_SHTABLE = s_SHTABLE & ar_SHTABLE2(ii) & "|"
+						end if
+					next
+
+					if Len(s_SHTABLE) > 0 then
+						s_SHTABLE = Left(s_SHTABLE, Len(s_SHTABLE)-1)
+					end if
+					
+				end if
+
+			end if
+			
+			if IsNumeric(cart_price) AND IsNumeric(part_cost) AND IsNumeric(prod_taxable) AND IsNumeric(prod_ship) then
+				ar_shoppingcart(cartProductID, cart_index) = str_pf_id
+				ar_shoppingcart(cartProductName, cart_index) = prod_name
+				ar_shoppingcart(cartOptions, cart_index) = ""
+				ar_shoppingcart(cartOrderQuantity, cart_index) = 1
+				ar_shoppingcart(cartProductUnitPrice, cart_index) = cart_price 'Remove Dbl..
+				ar_shoppingcart(cartProductUnitWeight, cart_index) = prod_weight
+				ar_shoppingcart(cartTaxable, cart_index) = prod_taxable
+				ar_shoppingcart(cartShip, cart_index) = prod_ship
+				ar_shoppingcart(cartProductMode, cart_index) = "4"
+				ar_shoppingcart(cartProductUnitCost, cart_index) = part_cost
+				ar_shoppingcart(cartProductMfgNumber, cart_index) = ""
+
+				if Len(s_SHTABLE) > 0 then
+					ar_shoppingcart(cartProductSHRate, cart_index) = s_SHTABLE
+				else
+					ar_shoppingcart(cartProductSHRate, cart_index) = "0"
+				end if
+
+				'ADDED BY BK 7/14/2004
+				ar_shoppingcart(cartTDNumber, cart_index) = ""
+				ar_shoppingcart(cartIMNumber, cart_index) = ""
+				ar_shoppingcart(cartECNumber, cart_index) = ""
+				ar_shoppingcart(cartMfg, cart_index) = ""
+
+			else
+				AddItemToShoppingCart = false
+				exit function
+			end if
+			
+		else
+			AddItemToShoppingCart = false
+			exit function
+		end if
+		
+		rsCart.Close
+	
+	case "5" 'TECH DATA CATALOG
+		
+		'Look for pf_id from product table
+		sql = "SELECT * FROM products WHERE PART_NUM = ':1'"
+		sql = replace(sql, ":1", str_pf_id)
+		
+		if Session("TDPRICE") = "2" then
+			Set vendor_conn = Server.CreateObject("ADODB.Connection")
+			vendor_conn.open Session("TDFileConnectionString")
+			sql = "SELECT * FROM " & Session("StoreID") & "_products WHERE PART_NUM = '" & str_pf_id & "'"
+			Set rsCart = vendor_conn.Execute(sql)
+		else
+			Set vendor_conn = Server.CreateObject("ADODB.Connection")
+			vendor_conn.open Session("MasterConnectionString")
+			sql = "SELECT * FROM products WHERE PART_NUM = '" & str_pf_id & "'"
+			Set rsCart = vendor_conn.Execute(sql)
+		end if
+		
+		Set rsCart = vendor_conn.Execute(sql)
+		if not rsCart.EOF then
+			
+			if IsNumeric(cart_price) AND IsNumeric(part_cost) then
+				ar_shoppingcart(cartProductID, cart_index) = str_pf_id
+				ar_shoppingcart(cartProductName, cart_index) = Trim(rsCart("DESCR"))
+				ar_shoppingcart(cartOptions, cart_index) = ""
+				ar_shoppingcart(cartOrderQuantity, cart_index) = 1
+				ar_shoppingcart(cartProductUnitPrice, cart_index) = cart_price
+			
+				'Get Weight...
+				if Session("TDPRICE") = "2" then
+					sql = "SELECT SHIPWGTH FROM " & Session("StoreID") & "_prodaux WHERE TD_PART = '" & str_pf_id & "'"
+				else
+					sql = "SELECT SHIPWGTH FROM prodaux WHERE TD_PART = '" & str_pf_id & "'"
+				end if
+				
+				set rsWeight = vendor_conn.Execute(sql)
+				if not rsWeight.EOF then
+				  product_weight = Trim(rsWeight("SHIPWGTH"))
+					product_weight = Left(product_weight, Len(product_weight)-3)
+					ar_shoppingcart(cartProductUnitWeight, iCount) = CDbl(product_weight)
+				else
+					ar_shoppingcart(cartProductUnitWeight, iCount) = 1
+				end if
+				rsWeight.Close
+
+				s_SHTABLE = ""
+
+				if Session("SHITEMMODE") = 1 then
+					
+					if prod_ship = 0 then
+
+						sql = "SELECT * FROM " & Session("StoreID") & "_custom_shipping_ex WHERE SH_INDEX=1 OR C1='" & CInt(product_weight) & "' ORDER BY SH_INDEX"
+						set rsSHTable = Conn.Execute(sql)
+
+						if not rsSHTable.EOF then
+
+							'Field Names...
+							ar_SHTABLE1(0) = Trim(rsSHTable("C3"))
+							ar_SHTABLE1(1) = Trim(rsSHTable("C4"))
+							ar_SHTABLE1(2) = Trim(rsSHTable("C5"))
+							ar_SHTABLE1(3) = Trim(rsSHTable("C6"))
+							ar_SHTABLE1(4) = Trim(rsSHTable("C7"))
+							ar_SHTABLE1(5) = Trim(rsSHTable("C8"))
+							ar_SHTABLE1(6) = Trim(rsSHTable("C9"))
+							ar_SHTABLE1(7) = Trim(rsSHTable("C10"))
+							ar_SHTABLE1(8) = Trim(rsSHTable("C11"))
+							ar_SHTABLE1(9) = Trim(rsSHTable("C12"))
+
+							rsSHTable.MoveNext
+
+						end if
+
+						if not rsSHTable.EOF then
+
+							'Weight Rates...
+							ar_SHTABLE2(0) = Trim(rsSHTable("C3"))
+							ar_SHTABLE2(1) = Trim(rsSHTable("C4"))
+							ar_SHTABLE2(2) = Trim(rsSHTable("C5"))
+							ar_SHTABLE2(3) = Trim(rsSHTable("C6"))
+							ar_SHTABLE2(4) = Trim(rsSHTable("C7"))
+							ar_SHTABLE2(5) = Trim(rsSHTable("C8"))
+							ar_SHTABLE2(6) = Trim(rsSHTable("C9"))
+							ar_SHTABLE2(7) = Trim(rsSHTable("C10"))
+							ar_SHTABLE2(8) = Trim(rsSHTable("C11"))
+							ar_SHTABLE2(9) = Trim(rsSHTable("C12"))
+
+							rsSHTable.MoveNext
+
+						end if
+
+						rsSHTable.Close
+						
+
+						For ii = 0 to 9
+							if Len(ar_SHTABLE1(ii)) > 0 then
+								s_SHTABLE = s_SHTABLE & ar_SHTABLE1(ii) & "~"
+								s_SHTABLE = s_SHTABLE & ar_SHTABLE2(ii) & "|"
+							end if
+						next
+
+						if Len(s_SHTABLE) > 0 then
+							s_SHTABLE = Left(s_SHTABLE, Len(s_SHTABLE)-1)
+						end if
+						
+					end if
+
+				end if
+			
+				ar_shoppingcart(cartTaxable, cart_index) = 0
+				ar_shoppingcart(cartShip, cart_index) = 0
+				ar_shoppingcart(cartProductMode, cart_index) = "5"
+
+				SELECT CASE Session("TDPRICE")
+				CASE "1"
+					
+					x_part_cost = "0.00"
+
+					set conn3=server.CreateObject("ADODB.Connection")
+					conn3.Open Session("PriceConnectionString")
+					
+					sql = "SELECT td_cost, td_qty FROM :9_tdprice WHERE td_part_nbr='" & str_pf_id & "'"
+					sql = replace(sql, ":9", Session("StoreID"))
+					Set rsPANDA = conn3.Execute(sql)
+						
+					if not rsPANDA.EOF then
+						x_part_cost = TRIM(rsPANDA("td_cost"))
+					else
+						x_part_cost = "0.00"
+					end if
+							
+					rsPANDA.Close
+					conn3.Close
+
+					ar_shoppingcart(cartProductUnitCost, cart_index) = x_part_cost
+
+				CASE "2"
+					ar_shoppingcart(cartProductUnitCost, cart_index) = FormatNumber(rsCart("COST"))
+				CASE ELSE
+					ar_shoppingcart(cartProductUnitCost, cart_index) = part_cost
+				END SELECT
+
+				'ar_shoppingcart(cartProductUnitCost, cart_index) = part_cost 'Get if from db
+				ar_shoppingcart(cartProductMfgNumber, cart_index) = Trim(rsCart("MANU_PART"))
+
+				if Len(s_SHTABLE) > 0 then
+					ar_shoppingcart(cartProductSHRate, cart_index) = s_SHTABLE
+				else
+					ar_shoppingcart(cartProductSHRate, cart_index) = "0"
+				end if
+
+				'ADDED BY BK 7/14/2004
+				ar_shoppingcart(cartTDNumber, cart_index) = str_pf_id
+				ar_shoppingcart(cartIMNumber, cart_index) = ""
+				ar_shoppingcart(cartECNumber, cart_index) = ""
+				ar_shoppingcart(cartMfg, cart_index) = ""
+				
+
+			else
+				AddItemToShoppingCart = false
+				exit function
+			end if
+			
+		else
+			AddItemToShoppingCart = false
+			exit function
+		end if
+		rsCart.Close
+		vendor_conn.Close	
+
+	case "7" 'ESPEC CATALOG
+
+		Set conn_ss2 = Server.CreateObject("ADODB.Connection")
+		conn_ss2.open Session("SSPriceConnectionString")
+		
+		prod_ship = 0 'no free shipping option for espec item.
+
+		sql = "SELECT * FROM " & g_storeid & "_ssprice WHERE sku = '" & str_pf_id & "'"
+		Set rsCart = conn_ss2.Execute(sql)
+		if not rsCart.EOF then
+			prod_ss_sku = str_pf_id
+			prod_name = Trim(rsCart("DESCR"))
+			prod_mfg_sku = Trim(rsCart("VEND_PART"))
+			e_cart_price = rsCart("price_" & Session("LOGINGROUP"))
+			prod_list_price = rsCart("COST")
+			prod_im_sku = Trim(rsCart("IM_ID"))
+			prod_td_sku = Trim(rsCart("TD_ID"))
+			prod_sn_sku = Trim(rsCart("SN_ID"))
+			
+			'2010/01/05 jerry added code
+			prod_dh_sku = Trim(rsCart("DH_ID"))
+
+			prod_weight = Trim(rsCart("SHIPWEIGHT"))
+			
+			prod_mfg_name = Trim(rsCart("VEND_NAME"))
+			
+			prod_s_category = Trim(rsCart("S_CATEGORY"))
+			
+			'check for free shipping option in private catalog.
+			if rsCart("sku") > 2000000000 AND rsCart("sku") > 2010000000 then
+			  sql = "SELECT * FROM " & Session("StoreID") & "_product WHERE productid = '" & str_pf_id & "'"
+	      Set rsProd = Conn.Execute(sql)
+	      if not rsProd.EOF then
+	        prod_ship = rsProd("is_noship")
+	      end if
+	      rsProd.Close
+			end if
+
+		end if
+		rsCart.Close
+		
+		if Len(prod_s_category) > 0 then
+		  
+		  sqlc = "SELECT warranty_id FROM " & Session("StoreID") & "_ss_dept WHERE dept_id='" & prod_s_category & "'"
+		  set rsc = dbconn.Execute(sqlc)
+		  if not rsc.EOF then
+		    prod_warranty = Trim(rsc(0))
+		  else
+		    prod_warranty = ""
+		  end if
+		  rsc.Close
+		
+		end if
+
+		if Len(prod_weight) > 0 then
+			ar_prod_weight = Split(prod_weight, " ")
+			prod_weight = ar_prod_weight(0)
+		else
+			prod_weight = "1"
+		end if
+
+		s_SHTABLE = ""
+
+		if Session("SHITEMMODE") = 1 then
+			
+			if prod_ship = 0 then
+
+				'take care of product weight..
+				l_wt = CDbl(prod_weight)
+				f_wt = Fix(CDbl(prod_weight))
+
+				if l_wt > f_wt then
+					p_wt = f_wt + 1
+				else
+					p_wt = f_wt
+				end if
+
+				sql = "SELECT * FROM " & Session("StoreID") & "_custom_shipping_ex WHERE SH_INDEX=1 OR C1='" & p_wt & "' ORDER BY SH_INDEX"
+				set rsSHTable = Conn.Execute(sql)
+
+				if not rsSHTable.EOF then
+
+					'Field Names...
+					ar_SHTABLE1(0) = Trim(rsSHTable("C3"))
+					ar_SHTABLE1(1) = Trim(rsSHTable("C4"))
+					ar_SHTABLE1(2) = Trim(rsSHTable("C5"))
+					ar_SHTABLE1(3) = Trim(rsSHTable("C6"))
+					ar_SHTABLE1(4) = Trim(rsSHTable("C7"))
+					ar_SHTABLE1(5) = Trim(rsSHTable("C8"))
+					ar_SHTABLE1(6) = Trim(rsSHTable("C9"))
+					ar_SHTABLE1(7) = Trim(rsSHTable("C10"))
+					ar_SHTABLE1(8) = Trim(rsSHTable("C11"))
+					ar_SHTABLE1(9) = Trim(rsSHTable("C12"))
+
+					rsSHTable.MoveNext
+
+				end if
+
+				if not rsSHTable.EOF then
+
+					'Weight Rates...
+					ar_SHTABLE2(0) = Trim(rsSHTable("C3"))
+					ar_SHTABLE2(1) = Trim(rsSHTable("C4"))
+					ar_SHTABLE2(2) = Trim(rsSHTable("C5"))
+					ar_SHTABLE2(3) = Trim(rsSHTable("C6"))
+					ar_SHTABLE2(4) = Trim(rsSHTable("C7"))
+					ar_SHTABLE2(5) = Trim(rsSHTable("C8"))
+					ar_SHTABLE2(6) = Trim(rsSHTable("C9"))
+					ar_SHTABLE2(7) = Trim(rsSHTable("C10"))
+					ar_SHTABLE2(8) = Trim(rsSHTable("C11"))
+					ar_SHTABLE2(9) = Trim(rsSHTable("C12"))
+
+					rsSHTable.MoveNext
+
+				end if
+
+				rsSHTable.Close
+
+				'Overwrite with item specific table....
+				sql = "SELECT * FROM " & Session("StoreID") & "_custom_shipping_ex WHERE SH_INDEX=10000 AND C1='" & str_pf_id & "'"
+
+				set rsSHTable = Conn.Execute(sql)
+				if not rsSHTable.EOF then
+					
+					if Len(Trim(rsSHTable("C3"))) > 0 then
+						ar_SHTABLE2(0) = Trim(rsSHTable("C3"))
+					end if
+					if Len(Trim(rsSHTable("C4"))) > 0 then
+						ar_SHTABLE2(1) = Trim(rsSHTable("C4"))
+					end if
+					if Len(Trim(rsSHTable("C5"))) > 0 then
+						ar_SHTABLE2(2) = Trim(rsSHTable("C5"))
+					end if
+					if Len(Trim(rsSHTable("C6"))) > 0 then
+						ar_SHTABLE2(3) = Trim(rsSHTable("C6"))
+					end if
+					if Len(Trim(rsSHTable("C7"))) > 0 then
+						ar_SHTABLE2(4) = Trim(rsSHTable("C7"))
+					end if
+					if Len(Trim(rsSHTable("C8"))) > 0 then
+						ar_SHTABLE2(5) = Trim(rsSHTable("C8"))
+					end if
+					if Len(Trim(rsSHTable("C9"))) > 0 then
+						ar_SHTABLE2(6) = Trim(rsSHTable("C9"))
+					end if
+					if Len(Trim(rsSHTable("C10"))) > 0 then
+						ar_SHTABLE2(7) = Trim(rsSHTable("C10"))
+					end if
+					if Len(Trim(rsSHTable("C11"))) > 0 then
+						ar_SHTABLE2(8) = Trim(rsSHTable("C11"))
+					end if
+					if Len(Trim(rsSHTable("C12"))) > 0 then
+						ar_SHTABLE2(9) = Trim(rsSHTable("C12"))
+					end if
+
+				end if
+				rsSHTable.Close
+
+				For ii = 0 to 9
+					if Len(ar_SHTABLE1(ii)) > 0 then
+						s_SHTABLE = s_SHTABLE & ar_SHTABLE1(ii) & "~"
+						s_SHTABLE = s_SHTABLE & ar_SHTABLE2(ii) & "|"
+					end if
+				next
+
+				if Len(s_SHTABLE) > 0 then
+					s_SHTABLE = Left(s_SHTABLE, Len(s_SHTABLE)-1)
+				end if
+
+			else
+				'Free shipping...
+				sql = "SELECT * FROM " & Session("StoreID") & "_custom_shipping_ex WHERE SH_INDEX=1 OR C1='" & CInt(prod_weight) & "' ORDER BY SH_INDEX"
+				set rsSHTable = Conn.Execute(sql)
+
+				if not rsSHTable.EOF then
+
+					'Field Names...
+					ar_SHTABLE1(0) = Trim(rsSHTable("C3"))
+					ar_SHTABLE1(1) = Trim(rsSHTable("C4"))
+					ar_SHTABLE1(2) = Trim(rsSHTable("C5"))
+					ar_SHTABLE1(3) = Trim(rsSHTable("C6"))
+					ar_SHTABLE1(4) = Trim(rsSHTable("C7"))
+					ar_SHTABLE1(5) = Trim(rsSHTable("C8"))
+					ar_SHTABLE1(6) = Trim(rsSHTable("C9"))
+					ar_SHTABLE1(7) = Trim(rsSHTable("C10"))
+					ar_SHTABLE1(8) = Trim(rsSHTable("C11"))
+					ar_SHTABLE1(9) = Trim(rsSHTable("C12"))
+
+				end if
+
+				'Weight Rates...
+				ar_SHTABLE2(0) = "0"
+				ar_SHTABLE2(1) = "0"
+				ar_SHTABLE2(2) = "0"
+				ar_SHTABLE2(3) = "0"
+				ar_SHTABLE2(4) = "0"
+				ar_SHTABLE2(5) = "0"
+				ar_SHTABLE2(6) = "0"
+				ar_SHTABLE2(7) = "0"
+				ar_SHTABLE2(8) = "0"
+				ar_SHTABLE2(9) = "0"
+
+				For ii = 0 to 9
+					if Len(ar_SHTABLE1(ii)) > 0 then
+						s_SHTABLE = s_SHTABLE & ar_SHTABLE1(ii) & "~"
+						s_SHTABLE = s_SHTABLE & ar_SHTABLE2(ii) & "|"
+					end if
+				next
+
+				if Len(s_SHTABLE) > 0 then
+					s_SHTABLE = Left(s_SHTABLE, Len(s_SHTABLE)-1)
+				end if
+				
+			end if
+
+		end if
+
+		if IsNumeric(prod_list_price) then
+			ar_shoppingcart(cartProductID, cart_index) = str_pf_id
+			ar_shoppingcart(cartProductName, cart_index) = prod_name
+			ar_shoppingcart(cartOptions, cart_index) = ""
+			ar_shoppingcart(cartOrderQuantity, cart_index) = 1
+			ar_shoppingcart(cartProductUnitPrice, cart_index) = e_cart_price
+			ar_shoppingcart(cartProductUnitWeight, cart_index) = prod_weight
+			ar_shoppingcart(cartTaxable, cart_index) = 0
+			ar_shoppingcart(cartShip, cart_index) = prod_ship
+			ar_shoppingcart(cartProductMode, cart_index) = "7"
+			ar_shoppingcart(cartProductUnitCost, cart_index) = prod_list_price
+			ar_shoppingcart(cartProductMfgNumber, cart_index) = prod_mfg_sku
+			
+			ar_shoppingcart(cartProductWarranty, cart_index) = prod_warranty
+			
+			if Len(warranty_index) > 0 then
+				ar_shoppingcart(cartProductWarrantySelection, cart_index) = warranty_index
+			else
+				ar_shoppingcart(cartProductWarrantySelection, cart_index) = "0"
+			end if
+
+			if Len(s_SHTABLE) > 0 then
+				ar_shoppingcart(cartProductSHRate, cart_index) = s_SHTABLE
+			else
+				ar_shoppingcart(cartProductSHRate, cart_index) = "0"
+			end if
+
+			'ADDED BY BK 7/14/2004
+			ar_shoppingcart(cartTDNumber, cart_index) = prod_td_sku
+			ar_shoppingcart(cartIMNumber, cart_index) = prod_im_sku
+			ar_shoppingcart(cartECNumber, cart_index) = prod_ec_sku
+
+			'2010/01/05 jerry added code
+			ar_shoppingcart(cartDHNumber, cart_index) = prod_dh_sku
+			
+			
+			ar_shoppingcart(cartMfg, cart_index) = prod_mfg_name
+			ar_shoppingcart(cartSNNumber, cart_index) = prod_sn_sku
+
+		else
+			AddItemToShoppingCart = false
+			exit function
+		end if
+
+		conn_ss2.close
+
+	case else
+	
+	End Select
+	
+	dbconn.Close
+	
+	AddItemToShoppingCart = true
+
+end function
+
+function GetAdjustedPriceFromPrivateCatalog(ByVal s_pfid, ByRef d_AdjustedPrice)
+
+	dim catalogPrice
+	catalogPrice = 0
+	
+	Set dbconn = Server.CreateObject("ADODB.Connection")
+	dbconn.open Session("ConnectionString")
+	
+	
+	strSQL = "SELECT * FROM " & Session("StoreID") & "_product WHERE pf_id = '" & s_pfid & "'"
+			
+	Set rsProd = dbconn.Execute(strSQL)
+				
+	if not rsProd.EOF then	
+		prod_list_price = rsProd("list_price")
+		prod_retail_price = rsProd("retail_price")
+		prod_on_sale = rsProd("on_sale")
+		prod_sale_price = rsProd("sale_price")
+
+    if Session("LOGINGROUP") = "A" OR Session("LOGINGROUP") = "B" OR Session("LOGINGROUP") = "C" OR Session("LOGINGROUP") = "D" then
+			prod_group_price = rsProd("price_"& Session("LOGINGROUP"))
+		else
+			prod_group_price = rsProd("price_D")
+		end If
+		
+		If Session("StoreID") = "nlesystem" Then
+			
+			If prod_retail_price > 0 Then
+				prod_group_price = prod_retail_price
+			End if
+		
+		End if
+
+		prod_use_price = rsProd("use_price")
+		cont_ok = true
+
+	else
+		cont_ok = false
+	end if
+	rsProd.Close
+	
+	
+	sql = "SELECT * FROM " & Session("StoreID") & "_dept_prod WHERE pf_id='"& s_pfid & "'"
+	Set rsDeptName = Conn.Execute(sql)
+	if not rsDeptName.EOF then
+	  deptid = Trim(rsDeptName("dept_id"))
+	else
+	  deptid = ""
+	end if
+	rsDeptName.Close
+	
+	if deptid = "" then
+		'NO CATEGORY INFO FOUND..
+		catalogPrice = d_AdjustedPrice
+	else
+
+        if Session("LOGINGROUP") = "A" OR Session("LOGINGROUP") = "B" OR Session("LOGINGROUP") = "C" OR Session("LOGINGROUP") = "D" then
+			prod_login_group = Session("LOGINGROUP")
+		else
+			prod_login_group = "D"
+		end if
+	
+		sql = "SELECT * FROM " & Session("StoreID") & "_dept WHERE dept_id='" & deptid & "'"
+		Set rsDeptName = Conn.Execute(sql)
+		if not rsDeptName.EOF then
+					
+		  dept_markup = rsDeptName("markup_" &prod_login_group)
+		  dept_use_markup = rsDeptName("use_markup")
+		  
+		end if
+					
+		rsDeptName.Close
+		
+		if (dept_use_markup) then
+		  current_markup = dept_markup
+		else
+		
+			current_markup = CDbl(Session("PriMarkup_"& prod_login_group))
+					  
+		  dept_level = Len(Trim(deptid))
+					  
+		  Select case dept_level
+					  
+		  case 2
+		    'Do nothing.. use global markup...
+		  case 6
+		    sql = "SELECT markup_" & prod_login_group & " FROM " & Session("StoreID") & "_dept WHERE dept_id IN ('" & Left(deptid, 2) & "','" & deptid & "') AND use_markup=1 ORDER BY dept_id DESC"
+		    Set rsDeptMarkup = Conn.Execute(sql)
+					    
+		    if rsDeptMarkup.EOF then
+		      'Do nothing...
+		    else
+		      current_markup = rsDeptMarkup(0)
+		    end if
+					    
+		    rsDeptMarkup.Close
+		  case 10
+					    
+		    sql = "SELECT markup_" &prod_login_group & " FROM " & Session("StoreID") & "_dept WHERE dept_id IN ('" & Left(deptid, 2) & "','" & Left(deptid,6) & "','" & deptid & "') AND use_markup=1 ORDER BY dept_id DESC"
+		    Set rsDeptMarkup = Conn.Execute(sql)
+					    
+		    if rsDeptMarkup.EOF then
+		      'Do nothing...
+		    else
+		      current_markup = rsDeptMarkup(0)
+		    end if
+					    
+		    rsDeptMarkup.Close
+					    
+		  End Select
+		
+		
+		end if
+		
+		'Get price rule dept...
+		dept_pricerule = "0"
+		if GetCategoryPriceRule(Session("ConnectionString"), deptid, dept_pricerule, "000") then
+			b_use_pricerule = true
+		else
+			b_use_pricerule = false
+		end if
+		
+		
+		'if prod_use_price then
+			prod_list_price = prod_group_price
+		'else
+			'if b_use_pricerule then
+				'x_price = ApplyPriceRule(Session("ConnectionString"), dept_pricerule, prod_list_price)
+				'if x_price = "0.00" then
+					'prod_list_price = prod_list_price + prod_list_price * (current_markup/100)
+				'else
+					'prod_list_price = x_price
+				'end if
+			'else
+				'prod_list_price = prod_list_price + prod_list_price * (current_markup/100)
+			'end if
+			
+		'end if
+
+		if prod_on_sale then
+			catalogPrice = prod_sale_price
+		else
+			catalogPrice = FormatNumber(prod_list_price,2)
+		end if
+	
+	end if
+	
+	dbconn.Close
+	
+	GetAdjustedPriceFromPrivateCatalog = catalogPrice
+	
+end function
+
+
+function GetCategoryPriceRule(str_db, str_dept_id, str_dept_pricerule, str_default)
+	
+	'Initialize..
+	f_pricerule = 0
+	dim b_pricerule, a_pricerule
+	
+	b_pricerule = false
+	a_pricerule = "0"
+	
+	Set dbconn = Server.CreateObject("ADODB.Connection")
+	dbconn.open str_db
+	
+	sql = "SELECT pri_pricerule_flag, pub_pricerule_flag FROM :9_profile"
+	sql = Replace(sql, ":9", Session("StoreID"))
+	set rsGlobal= conn.Execute(sql)
+					
+	if not rsGlobal.EOF then	  	
+		pri_pricerule_flag = rsGlobal("pri_pricerule_flag")
+		pub_pricerule_flag = rsGlobal("pub_pricerule_flag")
+		
+		if str_default = "000" then
+			if not (pri_pricerule_flag > 0) then
+				a_pricerule = "0"
+			else
+				if pri_pricerule_flag = 1 then
+					a_pricerule = str_default
+				end if
+			end if
+		else
+			if not (pub_pricerule_flag > 0) then
+				a_pricerule = "0"
+			else
+				if pub_pricerule_flag = 1 then
+					a_pricerule = str_default
+				end if
+			end if
+		end if
+	  	
+	else
+		a_pricerule = "0"
+	end if
+					
+	rsGlobal.Close
+	
+	'GRP
+	sql = "SELECT dept_pricerule FROM :9_dept WHERE dept_id='" & Left(str_dept_id,2) & "'"
+  sql = Replace(sql, ":9", Session("StoreID"))
+  set rsSub=conn.Execute(sql)
+  
+  if not rsSub.EOF then
+		pricerule_flag = rsSub("dept_pricerule")
+		if not (pricerule_flag > 0) then
+			a_pricerule = "0"
+		else
+			if pricerule_flag = 1 then
+				a_pricerule = Left(str_dept_id,2)
+			end if
+		end if
+  else
+		a_pricerule = "0"
+  end if
+  
+  if Len(str_dept_id) > 2 then
+		'CAT
+		sql = "SELECT dept_pricerule FROM :9_dept WHERE dept_id='" & Left(str_dept_id,6) & "'"
+		sql = Replace(sql, ":9", Session("StoreID"))
+		set rsSub=conn.Execute(sql)
+  
+		if not rsSub.EOF then
+			pricerule_flag = rsSub("dept_pricerule")
+			if not (pricerule_flag > 0) then
+				a_pricerule = "0"
+			else
+				if pricerule_flag = 1 then
+					a_pricerule = Left(str_dept_id,6)
+				end if
+			end if
+		else
+			a_pricerule = "0"
+		end if
+  end if
+  
+  if Len(str_dept_id) > 6 then
+		'CAT
+		sql = "SELECT dept_pricerule FROM :9_dept WHERE dept_id='" & Left(str_dept_id,10) & "'"
+		sql = Replace(sql, ":9", Session("StoreID"))
+		set rsSub=conn.Execute(sql)
+  
+		if not rsSub.EOF then
+			pricerule_flag = rsSub("dept_pricerule")
+			if not (pricerule_flag > 0) then
+				a_pricerule = "0"
+			else
+				if pricerule_flag = 1 then
+					a_pricerule = Left(str_dept_id,10)
+				end if
+			end if
+		else
+			a_pricerule = "0"
+		end if
+  end if
+  
+  if a_pricerule = "0" then
+		b_pricerule = false
+  else
+		b_pricerule = true
+  end if
+	
+	str_dept_pricerule = a_pricerule
+	
+	dbconn.Close
+	
+	GetCategoryPriceRule = b_pricerule
+end function
+
+function ApplyPriceRule(ByRef str_db, ByRef rule_dept, ByRef str_price)
+	dim retPrice
+	retPrice = 0
+	
+	call Numberize(str_price)
+	
+	set dbconn = Server.CreateObject("ADODB.Connection")
+	dbconn.Open str_db
+	
+	sql = "SELECT pricerule_rule FROM :9_pricerule WHERE pricerule_from <= " & str_price & " AND pricerule_to > " & str_price & " AND pricerule_dept='" & rule_dept & "'"
+	sql = Replace(sql, ":9", Session("StoreID"))
+	
+	set rsPrice = dbconn.Execute(sql)
+	if not rsPrice.EOF then
+		iRule = rsPrice("pricerule_rule")
+		if IsNumeric(iRule) then
+			retPrice = CDbl(str_price)*(iRule/100 + 1)
+		else
+			retPrice = 0
+		end if
+	else
+		retPrice = 0
+	end if
+	rsPrice.Close
+	
+	dbconn.Close
+	ApplyPriceRule = FormatNumber(retPrice, 2,,,0)
+	
+end function
+	
+
+</script>

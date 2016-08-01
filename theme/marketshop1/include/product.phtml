@@ -63,6 +63,14 @@
 							</li>
 							<li></li>
 						</ul>
+						<form name = "BuyForm" action="<%=Session("g_secure_url")%>tp_cart.phtml" method="post">
+						<input type="hidden" name="basket_action" value="A">
+						<input type="hidden" name="pf_id" value="<%=pf_id%>">
+						<input type="hidden" name="product_mode" value="<%=product_mode%>">
+						<input type="hidden" name="adjusted_price" value="<%=adjusted_price%>">
+						<input type="hidden" name="sessionID" value="<%=Session("SESSIONKEY")%>">
+						<input type="hidden" name="pf_ids" value="">
+						<input type="hidden" name="pf_qtys" value="">
 						<div id="product">
 							<!--
 							<h3 class="subtitle">Available Options</h3>
@@ -81,19 +89,20 @@
 								<div>
 									<div class="qty">
 										<label class="control-label" for="input-quantity">Qty</label>
-										<input type="text" name="quantity" value="1" size="2" id="input-quantity" class="form-control"/>
+										<input type="text" name="qty" value="1" size="2" id="input-quantity" class="form-control"/>
 										<a class="qtyBtn plus" href="javascript:void(0);">+</a><br/>
 										<a class="qtyBtn mines" href="javascript:void(0);">-</a>
 										<div class="clear">
 										</div>
 									</div>
-									<button type="button" id="button-cart" class="btn btn-primary btn-lg">Add to Cart</button>
+									<button type="button" id="button-cart" class="btn btn-primary btn-lg" onclick="BuyForm.submit(this);">Add to Cart</button>
 								</div>
 								<div>
 									<button type="button" class="wishlist" onclick=""><i class="fa fa-heart"></i> Add to Wish List</button>
 								</div>
 							</div>
 						</div>
+						</form>
 						<div class="rating" itemprop="aggregateRating" itemscope itemtype="http://schema.org/AggregateRating">
 							<meta itemprop="ratingValue" content="0"/>
 							<p>
@@ -373,7 +382,7 @@
 		<aside id="column-right" class="col-sm-3 hidden-xs">
 		<!--#INCLUDE FILE="../custom/include_best_sellers.phtml"-->
 		<%
-			g_static_block_code = "TPL_MARKETSHOP1_LEFT1"
+			g_static_block_code = "TPL_MARKETSHOP1_PRODUCT_RIGHT"
 		%>
 		<!--#INCLUDE FILE="../../../core/cms/include_show_static_block.phtml"-->
 		<!--#INCLUDE FILE="../custom/include_specials.phtml"-->

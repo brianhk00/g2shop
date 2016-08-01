@@ -1,0 +1,38 @@
+<%
+	Response.CodePage = 65001
+	Response.CharSet = "UTF-8"
+%>
+<!--#INCLUDE FILE="template_setting.phtml"-->
+<!--#INCLUDE FILE="../../core/account/include_account_profile_start.phtml"-->
+<!DOCTYPE html>
+<html>
+<head>
+<!--#INCLUDE FILE="include/head.phtml"-->
+</head>
+<body>
+<div class="wrapper-wide">
+	<!--#INCLUDE FILE="include/header.phtml"-->
+	<div id="container">
+		<div class="container">
+			<div class="row">
+				<!--Middle Part Start-->
+				<div class="col-sm-9" id="content">
+					<!--#INCLUDE FILE="include/account_profile.phtml"-->
+				</div>
+				<!--Middle Part End -->
+				<!--Right Part Start -->
+				<aside id="column-right" class="col-sm-3 hidden-xs">
+					<!--#INCLUDE FILE="include/myaccount_menu.phtml"-->
+				</aside>
+				<!--Right Part End -->
+			</div>
+		</div>
+	</div>
+	<!--#INCLUDE FILE="include/footer.phtml"-->
+</div>
+<!--#INCLUDE FILE="include/js.phtml"-->
+<!--#INCLUDE FILE="include/before_body_end.phtml"-->
+<!--#INCLUDE FILE="include/AbsoluteFooter.phtml"-->
+</body>
+</html>
+<!--#INCLUDE FILE="../../core/account/include_account_profile_end.phtml"-->

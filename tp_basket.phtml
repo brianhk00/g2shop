@@ -1,0 +1,1220 @@
+<%@ Language=VBScript %>
+<!--#INCLUDE FILE="util/xt_func_session.phtml"-->
+<!--#INCLUDE FILE="util/xt_func_string.phtml"-->
+<%
+	sessionID = Request("sessionID")
+	sessionID = FilterSessionString(sessionID)
+	if Len(sessionID) > 0 then
+		Session("SESSIONKEY") = sessionID
+	else
+		if Len(Session("SESSIONKEY")) > 0 then
+			'session key exist
+		else
+			'no key information...
+			Response.Redirect Session("StoreURL") & "/index.phtml"
+		end if
+	end if
+	
+%>
+
+<SCRIPT LANGUAGE=VBScript RUNAT=Server>
+Function IsValidCoupon(ByRef str_coupon_id, ByRef str_Pfid, ByRef str_Coupons, ByRef i_Subtotal, ByRef i_price, ByRef i_coupon_err_code)
+
+	if i_Subtotal < 0 then
+		i_coupon_err_code = 21 'Subtotal less than 0
+		IsValidCoupon = False
+		Exit Function
+	end if
+
+	set dbconn=server.CreateObject("ADODB.Connection")
+	dbconn.Open Session("ConnectionString")
+
+	sql = "SELECT * FROM " & Session("StoreID") & "_coupon WHERE coupon_id='" & str_coupon_id & "'"
+	set rs = dbconn.Execute(sql)
+	
+	if not rs.EOF then
+		coupon_status = rs("coupon_status")
+		coupon_type = rs("coupon_type")
+		coupon_type_var = rs("coupon_type_var")
+		min_purchase = rs("min_purchase")
+		min_purchase_amt = rs("min_purchase_amt")
+		coupon_expiration = rs("expiration")
+		coupon_expiration_date  = rs("expiration_date")
+		coupon_flag  = rs("coupon_flag")
+		other_flag  = rs("other_flag")
+		use_inventory = rs("use_inventory")
+		inventory_qty  = rs("inventory_qty")
+		
+		if min_purchase = 1 AND i_Subtotal < min_purchase_amt then
+			i_coupon_err_code = 4 'Not meet min purchase amount
+			IsValidCoupon = False
+			Exit Function
+		end if
+
+	else
+		i_coupon_err_code = 1 'NO COUPON ID EXISTS
+		IsValidCoupon = False
+		Exit Function
+	end if
+
+	rs.Close
+
+	'TODO :PER PRODUCT...
+	if coupon_flag = 1 then
+		
+		if Len(str_Pfid) > 0 then
+			
+			b_product_found = false
+
+			sql = "SELECT pf_id FROM " & Session("StoreID") & "_coupon_product WHERE coupon_id='" & str_coupon_id & "'"
+			set rsCP = dbconn.Execute(sql)
+
+			do while not rsCP.EOF
+				if InStr(str_Pfid, Trim(rsCP(0)) & "|*|") then
+					b_product_found = true
+				end if
+				rsCP.MoveNext
+			loop
+			rsCP.Close
+
+			if not b_product_found then
+				i_coupon_err_code = 5 'No product been purchased
+				IsValidCoupon = False
+				Exit Function
+			end if
+
+		else
+			'No product in the basket
+			i_coupon_err_code = 5 'No product been purchased
+			IsValidCoupon = False
+			Exit Function
+		end if
+
+	end if
+
+	if coupon_flag = 1 then
+		'do something...don't know it yet...
+	else
+
+		Select case coupon_type
+		case 1
+			if coupon_type_var > i_Subtotal then
+				coupon_discount = i_Subtotal
+			else
+				coupon_discount = coupon_type_var
+			end if
+		case 2
+			coupon_discount = i_Subtotal * (coupon_type_var/100)
+		case else
+			coupon_discount = 0
+		End Select
+
+		i_price = coupon_discount * -1
+
+	end if
+
+	dbconn.Close
+
+	i_coupon_err_code = 0
+	IsValidCoupon = True
+
+End Function
+</Script>
+
+<!-- #INCLUDE File="util/xt_func_order.phtml" -->
+<!-- #INCLUDE File="util/xt_func_quote.phtml" -->
+<!--#INCLUDE FILE="util/xt_func_string.phtml"-->
+<!--#INCLUDE FILE="i_login.phtml"-->
+<!--#include FILE="cart.inc"-->
+<!--#INCLUDE FILE="i_adodb.phtml"-->
+<%
+	
+	ReDim ARYTempCart(21,20)
+
+	'Initialize shopping cart
+	dim iCount, ARYShoppingCart
+	iCount = Session("ItemCount")
+	ARYShoppingCart = Session("MyShoppingCart")
+	db = Session("ConnectionString")
+
+	if Request.Form("|Continue|.x").Count > 0 then
+		BASKET_ACTION = "S"
+	else
+		if Request.Form("|Update|.x").Count > 0 then
+			BASKET_ACTION = "U"
+		else
+			if Request.Form("|CheckOut|.x").Count > 0 then
+				BASKET_ACTION = "C"
+			else
+			  if Request.Form("|OnePageCheckOut|.x").Count > 0 then
+				  BASKET_ACTION = "OPC"
+			  else
+			    if Request.Form("|PAYPALEXPRESS|.x").Count > 0 then
+				    ORDER_ACTION = "PPE"
+				    BASKET_ACTION = "OPC"
+			    else
+			      if Request.Form("|PAYPALPAYLATER|.x").Count > 0 then
+				      ORDER_ACTION = "PPL"
+				      BASKET_ACTION = "OPC"
+				    else
+				      if Request.Form("|RFQ|.x").Count > 0 then
+					      BASKET_ACTION = "R"
+				      else
+					      if Request.Form("|SaveQuote|.x").Count > 0 then
+						      BASKET_ACTION = "Q"
+					      else
+						      if Request.Form("|SaveOrder|.x").Count > 0 then
+							      BASKET_ACTION = "SO"
+						      end if
+					      end if
+				      end if
+				    end if
+				  end if
+			  end if
+			end if
+		end if
+	end if
+
+    if BASKET_ACTION = "" then
+        BASKET_ACTION = Request("BASKET_ACTION")
+        BASKET_ACTION = Left(BASKET_ACTION, 3)
+    end if 
+	
+   'Response.Write(".." & BASKET_ACTION & "..")
+    'Response.End
+	'=======================================================
+    sh_option = Trim(Request("UPSCharge"))
+    if len(sh_option) > 0 then
+    sp1 = instr(sh_option, "~")
+    if sp1 > 0 then
+        ar_sp1 = Split(sh_option, "~")
+        sh_detail = ar_sp1(0)
+        sh_ups_charge = ar_sp1(1)
+    else
+        sh_detail = ""
+        sh_ups_charge = "0.00"
+    end if
+    
+    Session("shopper_shipping_method2") = sh_detail
+	    Session("shopper_shipping") = sh_ups_charge
+    else
+    sh_detail = ""
+    sh_ups_charge = "0.00"
+    end if
+  '======================================================	
+
+	
+	Select Case BASKET_ACTION
+	
+	CASE "S"
+		Response.Redirect (Session("StoreURL")& "/index.phtml?sessionID=" & Session("SESSIONKEY"))		
+	CASE "U"
+		'Update quantity and price...
+		Total_Price = 0
+		Total_Taxable = 0
+		Total_Weight = 0
+		Cart_Item_Count =0
+
+		'UPDATED BY BK 10/16/2002 FOR CUSTOM SHIPPING TABLE
+		Total_Ship_item = 0
+		Total_Ship_amount = 0
+
+		'=============================================================================
+		'ADDED BY BK 11/19/2003 - FOR COUPON VALIDATION
+		iSubtotal = 0
+		iWarrantyTotal = 0
+		sPfid = ""
+		'=============================================================================
+	
+		For i = 1 to iCount
+
+			'Reset error msg..
+			ARYShoppingCart(cartError, i) = ""
+
+			Quantity = Request("OrderQuantity" + CStr(i))
+
+			If IsNumeric(Quantity) Then
+				Quantity = abs(CLng(Quantity))
+			Else
+				Quantity = 1
+			End If
+
+			if ARYShoppingCart(cartProductMode, i) = "0" then
+			'=============================================================================
+			'Check Inventory here...and override the qty if necessary.
+			if Session("IV_MODE") = "2" AND  ARYShoppingCart(cartProductMode, i) = "0" then
+				isql = "SELECT stock, bundle_flag FROM " & Session("StoreID") & "_product WHERE pf_id='" & ARYShoppingCart(cartProductID, i) & "'"
+				set rsInventory = Conn.Execute(isql)
+				if not rsInventory.EOF then
+					iStock = rsInventory(0)
+					prod_bundle_flag = rsInventory(1)
+
+					if prod_bundle_flag = 1 then
+						'Override in stock qty.
+						
+						iisql = "SELECT * FROM " & Session("StoreID") & "_product INNER JOIN " & Session("StoreID") & "_prod_cross ON " & Session("StoreID") & "_product.pf_id = " & Session("StoreID") & "_prod_cross.pf_id2 WHERE pf_id1='" & ARYShoppingCart(cartProductID, i) &"' ORDER BY name"
+						
+						iiStock = 99999
+						set rsBundle = Conn.Execute(iisql)
+						do while not rsBundle.EOF 
+							ixStock = rsBundle("stock")
+							if IsNumeric(ixStock) Then
+							else	
+								ixStock = 0
+							end If
+
+							if ixStock < iiStock then
+								iiStock = ixStock
+							end if
+							
+							rsBundle.MoveNext
+
+						loop
+						rsBundle.Close
+
+						iStock = iiStock
+
+					end if
+
+				else
+					iStock = 0
+				end if
+
+				rsInventory.Close
+
+				if iStock < Quantity then
+					Quantity = iStock
+					ARYShoppingCart(cartError, i) = "We are sorry. We have only " & iStock & " in our stock currently."
+				end if
+
+			end if
+			'=============================================================================
+			end if
+			
+			ARYShoppingCart(cartOrderQuantity, i) = Quantity
+
+			wid = Request("wid" + CStr(i))
+			ARYShoppingCart(cartProductWarrantySelection, i) = wid
+
+			if not ARYShoppingCart(cartTaxable, i) then
+				Total_Taxable = Total_Taxable + (ARYShoppingCart(cartOrderQuantity, i) * ARYShoppingCart(cartProductUnitPrice, i))
+			end if
+			
+			Total_Price = Total_Price + (ARYShoppingCart(cartOrderQuantity, i) * ARYShoppingCart(cartProductUnitPrice, i))
+			
+			if not ARYShoppingCart(cartShip, i) then
+				Total_Weight = Total_Weight + (ARYShoppingCart(cartOrderQuantity, i) * ARYShoppingCart(cartProductUnitWeight, i))
+				'UPDATED BY BK 10/16/2002 FOR CUSTOM SHIPPING TABLE
+				Total_Ship_item = Total_Ship_item + ARYShoppingCart(cartOrderQuantity, i)
+				Total_Ship_amount = Total_Ship_amount + (ARYShoppingCart(cartOrderQuantity, i) * ARYShoppingCart(cartProductUnitPrice, i))
+			end if
+
+			Cart_Item_Count = Cart_Item_Count + ARYShoppingCart(cartOrderQuantity, i)
+
+			'FOR WARRANTY..
+			if IsNumeric(ARYShoppingCart(cartProductWarrantySelection, i)) then
+			  if CInt(ARYShoppingCart(cartProductWarrantySelection, i)) > 0 then
+  				
+				  s_warranty_amount = "0.00"
+
+				  sql = "SELECT * FROM " & Session("StoreID") & "_warranty_item WHERE warranty_id='" & ARYShoppingCart(cartProductWarranty, i) & "'"
+  				
+				  set rsWarranty = Conn.Execute(sql)
+				  do while not rsWarranty.EOF
+
+  					
+					  if rsWarranty("warranty_item_flag") = 1 then
+						  'amount
+						  warranty_amount = rsWarranty("warranty_item_value")
+					  else
+						  warranty_amount = ARYShoppingCart(cartProductUnitPrice, i) * (rsWarranty("warranty_item_value")/100)
+					  end if
+
+					  warranty_amount = warranty_amount * ARYShoppingCart(cartOrderQuantity, i)
+
+					  if rsWarranty("row_id") = CInt(ARYShoppingCart(cartProductWarrantySelection, i)) then
+						  s_warranty_amount = FormatNumber(warranty_amount,2)
+					  end if
+
+					  rsWarranty.MoveNext
+				  loop
+				  rsWarranty.close
+
+				  if s_warranty_amount > 0 then
+					  iSubtotal = iSubtotal + s_warranty_amount
+					  iWarrantyTotal = iWarrantyTotal + s_warranty_amount
+				  end if
+
+			  end if
+			  
+			end if
+
+			if ARYShoppingCart(cartProductMode, i) = "9" then
+			else
+				sPfid = sPfid & ARYShoppingCart(cartProductID, i) & "|*|"
+				iSubtotal = iSubtotal + ARYShoppingCart(cartProductUnitPrice, i)*CInt(ARYShoppingCart(cartOrderQuantity, i))
+			end if
+
+		Next
+
+		'=============================================================================
+		'ADDED BY BK 11/19/2003 - FOR COUPON VALIDATION
+		'=============================================================================
+		iCount = 0
+		For i = 1 to UBound(ARYShoppingCart, 2)
+				
+			if Len(ARYShoppingCart(cartProductID,i)) > 0 then
+
+				if ARYShoppingCart(cartProductMode, i) = "9" then
+					
+					iPrice = ARYShoppingCart(cartProductUnitPrice, i)
+
+					if IsValidCoupon(ARYShoppingCart(cartProductID,i), sPfid, "", iSubtotal, iPrice, coupon_err_code) then
+						
+						iCount = iCount + 1
+						For j = 1 to UBound(ARYShoppingCart, 1)
+							ARYTempCart(j,iCount) = ARYShoppingCart(j,i)
+						Next
+
+						ARYTempCart(cartProductUnitPrice, i) = iPrice
+
+					else
+						'skip...
+					end if
+
+				else
+
+					iCount = iCount + 1
+					For j = 1 to UBound(ARYShoppingCart, 1)
+						ARYTempCart(j,iCount) = ARYShoppingCart(j,i)
+					Next
+
+				end if
+			end if
+			
+		Next
+
+		'NEED TO UPDATE TOTAL VALUES...
+		Total_Price = 0
+		For i = 1 to iCount
+			Total_Price = Total_Price + (ARYTempCart(cartOrderQuantity, i) * ARYTempCart(cartProductUnitPrice, i))
+		Next
+
+		'=============================================================================
+
+		'Save..
+		Session("ItemCount") = iCount		
+		Session("TotalPrice") = Total_Price + iWarrantyTotal
+
+		if Session("ENABLEINT") = "2" OR Session("ENABLEINT")="3" then
+			Session("TotalTaxable") = Total_Taxable + iWarrantyTotal
+		else
+			Session("TotalTaxable") = Total_Taxable
+		end if
+
+		Session("TotalWeight") = Total_Weight
+		Session("CartItemCount") = Cart_Item_Count
+		'Session("MyShoppingCart") = ARYShoppingCart
+		Session("MyShoppingCart") = ARYTempCart
+
+		'UPDATED BY BK 10/16/2002 FOR CUSTOM SHIPPING TABLE
+		Session("TotalShipItem") = Total_Ship_item
+		Session("TotalShipAmount") = Total_Ship_amount
+		
+		UpdateSession Session("SESSIONKEY"), "sCartItem", CStr(Cart_Item_Count)
+		UpdateSession Session("SESSIONKEY"), "sCartTotal", FormatNumber(Total_Price,2,,,0)
+		
+		'Save Shipping Information...
+		shx_method = Request("sh_method")
+		if shx_method = "2" then
+			shx_option = Request("UPSCharge")
+			if len(shx_option) > 0 then
+				sp1 = instr(shx_option, "~")
+				shx_detail = left(shx_option, sp1-1)				
+				Session("SH1") = shx_detail
+			else
+				Session("SH1") = ""
+			end if
+		end if
+
+		Response.Redirect (Session("SecureURL")& "/basket.phtml")
+		
+	CASE "C"
+
+		'Checkout..
+		Total_Price = 0
+		Total_Taxable = 0
+		Total_Weight = 0
+		Cart_Item_Count =0
+
+		'UPDATED BY BK 10/16/2002 FOR CUSTOM SHIPPING TABLE
+		Total_Ship_item = 0
+		Total_Ship_amount = 0
+
+		'=============================================================================
+		'ADDED BY BK 11/19/2003 - FOR COUPON VALIDATION
+		iSubtotal = 0
+		iWarrantyTotal = 0
+		sPfid = ""
+		'=============================================================================
+	
+		For i = 1 to iCount
+			
+			'Reset error msg..
+			ARYShoppingCart(cartError, i) = ""
+
+			Quantity = Request("OrderQuantity" + CStr(i))
+
+			If IsNumeric(Quantity) Then
+				Quantity = abs(CLng(Quantity))
+			Else
+				Quantity = 1
+			End If
+
+			if ARYShoppingCart(cartProductMode, i) = "0" then
+			'=============================================================================
+			'Check Inventory here...and override the qty if necessary.
+			if Session("IV_MODE") = "2" AND  ARYShoppingCart(cartProductMode, i) = "0" then
+				isql = "SELECT stock, bundle_flag FROM " & Session("StoreID") & "_product WHERE pf_id='" & ARYShoppingCart(cartProductID, i) & "'"
+				set rsInventory = Conn.Execute(isql)
+				if not rsInventory.EOF then
+					iStock = rsInventory(0)
+					prod_bundle_flag = rsInventory(1)
+
+					if prod_bundle_flag = 1 then
+						'Override in stock qty.
+						
+						iisql = "SELECT * FROM " & Session("StoreID") & "_product INNER JOIN " & Session("StoreID") & "_prod_cross ON " & Session("StoreID") & "_product.pf_id = " & Session("StoreID") & "_prod_cross.pf_id2 WHERE pf_id1='" & ARYShoppingCart(cartProductID, i) &"' ORDER BY name"
+						
+						iiStock = 99999
+						set rsBundle = Conn.Execute(iisql)
+						do while not rsBundle.EOF 
+							ixStock = rsBundle("stock")
+							if IsNumeric(ixStock) Then
+							else	
+								ixStock = 0
+							end If
+
+							if ixStock < iiStock then
+								iiStock = ixStock
+							end if
+							
+							rsBundle.MoveNext
+
+						loop
+						rsBundle.Close
+
+						iStock = iiStock
+
+					end if
+
+				else
+					iStock = 0
+				end if
+
+				rsInventory.Close
+
+				if iStock < Quantity then
+					Quantity = iStock
+					ARYShoppingCart(cartError, i) = "We are sorry. We have only " & iStock & " in our stock currently."
+				end if
+
+			end if
+			'=============================================================================
+			end if
+
+			ARYShoppingCart(cartOrderQuantity, i) = Quantity
+			
+			wid = Request("wid" + CStr(i))
+			ARYShoppingCart(cartProductWarrantySelection, i) = wid
+
+			if not ARYShoppingCart(cartTaxable, i) then
+				Total_Taxable = Total_Taxable + (ARYShoppingCart(cartOrderQuantity, i) * ARYShoppingCart(cartProductUnitPrice, i))
+			end if
+			
+			Total_Price = Total_Price + (ARYShoppingCart(cartOrderQuantity, i) * ARYShoppingCart(cartProductUnitPrice, i))
+			
+			if not ARYShoppingCart(cartShip, i) then
+				Total_Weight = Total_Weight + (ARYShoppingCart(cartOrderQuantity, i) * ARYShoppingCart(cartProductUnitWeight, i))
+				'UPDATED BY BK 10/16/2002 FOR CUSTOM SHIPPING TABLE
+				Total_Ship_item = Total_Ship_item + ARYShoppingCart(cartOrderQuantity, i)
+				Total_Ship_amount = Total_Ship_amount + (ARYShoppingCart(cartOrderQuantity, i) * ARYShoppingCart(cartProductUnitPrice, i))
+			end if
+
+			Cart_Item_Count = Cart_Item_Count + ARYShoppingCart(cartOrderQuantity, i)
+
+			'FOR WARRANTY..
+			if IsNumeric(ARYShoppingCart(cartProductWarrantySelection, i)) then
+			  if CInt(ARYShoppingCart(cartProductWarrantySelection, i)) > 0 then
+  				
+				  s_warranty_amount = "0.00"
+
+				  sql = "SELECT * FROM " & Session("StoreID") & "_warranty_item WHERE warranty_id='" & ARYShoppingCart(cartProductWarranty, i) & "'"
+  				
+				  set rsWarranty = Conn.Execute(sql)
+				  do while not rsWarranty.EOF
+  					
+					  if rsWarranty("warranty_item_flag") = 1 then
+						  'amount
+						  warranty_amount = rsWarranty("warranty_item_value")
+					  else
+						  warranty_amount = ARYShoppingCart(cartProductUnitPrice, i) * (rsWarranty("warranty_item_value")/100)
+					  end if
+
+					  warranty_amount = warranty_amount * ARYShoppingCart(cartOrderQuantity, i)
+
+					  if rsWarranty("row_id") = CInt(ARYShoppingCart(cartProductWarrantySelection, i)) then
+						  s_warranty_amount = FormatNumber(warranty_amount,2)
+					  end if
+
+					  rsWarranty.MoveNext
+				  loop
+				  rsWarranty.close
+
+				  if s_warranty_amount > 0 then
+					  iSubtotal = iSubtotal + s_warranty_amount
+					  iWarrantyTotal = iWarrantyTotal + s_warranty_amount
+				  end if
+
+			  end if
+			end if
+
+			if ARYShoppingCart(cartProductMode, i) = "9" then
+			else
+				sPfid = sPfid & ARYShoppingCart(cartProductID, i) & "|*|"
+				iSubtotal = iSubtotal + ARYShoppingCart(cartProductUnitPrice, i)*CInt(ARYShoppingCart(cartOrderQuantity, i))
+			end if
+
+		Next
+
+		'=============================================================================
+		'ADDED BY BK 11/19/2003 - FOR COUPON VALIDATION
+		'=============================================================================
+		iCount = 0
+		For i = 1 to UBound(ARYShoppingCart, 2)
+				
+			if Len(ARYShoppingCart(cartProductID,i)) > 0 then
+
+				if ARYShoppingCart(cartProductMode, i) = "9" then
+					
+					iPrice = ARYShoppingCart(cartProductUnitPrice, i)
+
+					if IsValidCoupon(ARYShoppingCart(cartProductID,i), sPfid, "", iSubtotal, iPrice, coupon_err_code) then
+						
+						iCount = iCount + 1
+						For j = 1 to UBound(ARYShoppingCart, 1)
+							ARYTempCart(j,iCount) = ARYShoppingCart(j,i)
+						Next
+
+						ARYTempCart(cartProductUnitPrice, i) = iPrice
+
+					else
+						'skip...
+					end if
+
+				else
+
+					iCount = iCount + 1
+					For j = 1 to UBound(ARYShoppingCart, 1)
+						ARYTempCart(j,iCount) = ARYShoppingCart(j,i)
+					Next
+
+				end if
+			end if
+			
+		Next
+
+
+		'NEED TO UPDATE TOTAL VALUES...
+		Total_Price = 0
+		For i = 1 to iCount
+			Total_Price = Total_Price + (ARYTempCart(cartOrderQuantity, i) * ARYTempCart(cartProductUnitPrice, i))
+		Next
+
+		'=============================================================================
+
+		'Session("MyShoppingCart") = ARYShoppingCart
+		Session("MyShoppingCart") = ARYTempCart
+		Session("ItemCount") = iCount
+
+		Session("TotalPrice") = Total_Price + iWarrantyTotal
+
+		if Session("ENABLEINT") = "2" OR Session("ENABLEINT")="3" then
+			Session("TotalTaxable") = Total_Taxable + iWarrantyTotal
+		else
+			Session("TotalTaxable") = Total_Taxable
+		end if
+
+		Session("TotalWeight") = Total_Weight
+		Session("CartItemCount") = Cart_Item_Count
+
+		'UPDATED BY BK 10/16/2002 FOR CUSTOM SHIPPING TABLE
+		Session("TotalShipItem") = Total_Ship_item
+		Session("TotalShipAmount") = Total_Ship_amount
+		
+		UpdateSession Session("SESSIONKEY"), "sCartItem", CStr(Cart_Item_Count)
+		UpdateSession Session("SESSIONKEY"), "sCartTotal", FormatNumber(Total_Price,2,,,0)
+		
+		'Save Shipping Information...
+		shx_method = Request("sh_method")
+		if shx_method = "2" then
+			shx_option = Request("UPSCharge")
+			if len(shx_option) > 0 then
+				sp1 = instr(shx_option, "~")
+				shx_detail = left(shx_option, sp1-1)				
+				Session("SH1") = shx_detail
+			else
+				Session("SH1") = ""
+			end if
+		end if
+
+		'Response.Redirect (Session("SecureURL")& "/checkout.phtml")
+		if Session("ENABLE_OCI") = 1 then
+		  Response.Redirect (Session("SecureURL")& "/oci_return.phtml")
+		else
+		  Response.Redirect (Session("SecureURL")& "/checkout.phtml")
+		end if
+		
+  CASE "OPC"
+
+		'Checkout..
+		Total_Price = 0
+		Total_Taxable = 0
+		Total_Weight = 0
+		Cart_Item_Count =0
+
+		'UPDATED BY BK 10/16/2002 FOR CUSTOM SHIPPING TABLE
+		Total_Ship_item = 0
+		Total_Ship_amount = 0
+
+		'=============================================================================
+		'ADDED BY BK 11/19/2003 - FOR COUPON VALIDATION
+		iSubtotal = 0
+		iWarrantyTotal = 0
+		sPfid = ""
+		'=============================================================================
+	
+		For i = 1 to iCount
+			
+			'Reset error msg..
+			ARYShoppingCart(cartError, i) = ""
+
+			Quantity = Request("OrderQuantity" + CStr(i))
+
+			If IsNumeric(Quantity) Then
+				Quantity = abs(CLng(Quantity))
+			Else
+				Quantity = 1
+			End If
+
+			if ARYShoppingCart(cartProductMode, i) = "0" then
+			'=============================================================================
+			'Check Inventory here...and override the qty if necessary.
+			if Session("IV_MODE") = "2" AND  ARYShoppingCart(cartProductMode, i) = "0" then
+				isql = "SELECT stock, bundle_flag FROM " & Session("StoreID") & "_product WHERE pf_id='" & ARYShoppingCart(cartProductID, i) & "'"
+				set rsInventory = Conn.Execute(isql)
+				if not rsInventory.EOF then
+					iStock = rsInventory(0)
+					prod_bundle_flag = rsInventory(1)
+
+					if prod_bundle_flag = 1 then
+						'Override in stock qty.
+						
+						iisql = "SELECT * FROM " & Session("StoreID") & "_product INNER JOIN " & Session("StoreID") & "_prod_cross ON " & Session("StoreID") & "_product.pf_id = " & Session("StoreID") & "_prod_cross.pf_id2 WHERE pf_id1='" & ARYShoppingCart(cartProductID, i) &"' ORDER BY name"
+						
+						iiStock = 99999
+						set rsBundle = Conn.Execute(iisql)
+						do while not rsBundle.EOF 
+							ixStock = rsBundle("stock")
+							if IsNumeric(ixStock) Then
+							else	
+								ixStock = 0
+							end If
+
+							if ixStock < iiStock then
+								iiStock = ixStock
+							end if
+							
+							rsBundle.MoveNext
+
+						loop
+						rsBundle.Close
+
+						iStock = iiStock
+
+					end if
+
+				else
+					iStock = 0
+				end if
+
+				rsInventory.Close
+
+				if iStock < Quantity then
+					Quantity = iStock
+					ARYShoppingCart(cartError, i) = "We are sorry. We have only " & iStock & " in our stock currently."
+				end if
+
+			end if
+			'=============================================================================
+			end if
+
+			ARYShoppingCart(cartOrderQuantity, i) = Quantity
+			
+			wid = Request("wid" + CStr(i))
+			ARYShoppingCart(cartProductWarrantySelection, i) = wid
+
+			if not ARYShoppingCart(cartTaxable, i) then
+				Total_Taxable = Total_Taxable + (ARYShoppingCart(cartOrderQuantity, i) * ARYShoppingCart(cartProductUnitPrice, i))
+			end if
+			
+			Total_Price = Total_Price + (ARYShoppingCart(cartOrderQuantity, i) * ARYShoppingCart(cartProductUnitPrice, i))
+			
+			if not ARYShoppingCart(cartShip, i) then
+				Total_Weight = Total_Weight + (ARYShoppingCart(cartOrderQuantity, i) * ARYShoppingCart(cartProductUnitWeight, i))
+				'UPDATED BY BK 10/16/2002 FOR CUSTOM SHIPPING TABLE
+				Total_Ship_item = Total_Ship_item + ARYShoppingCart(cartOrderQuantity, i)
+				Total_Ship_amount = Total_Ship_amount + (ARYShoppingCart(cartOrderQuantity, i) * ARYShoppingCart(cartProductUnitPrice, i))
+			end if
+
+			Cart_Item_Count = Cart_Item_Count + ARYShoppingCart(cartOrderQuantity, i)
+
+			'FOR WARRANTY..
+			if IsNumeric(ARYShoppingCart(cartProductWarrantySelection, i)) then
+			  if CInt(ARYShoppingCart(cartProductWarrantySelection, i)) > 0 then
+  				
+				  s_warranty_amount = "0.00"
+
+				  sql = "SELECT * FROM " & Session("StoreID") & "_warranty_item WHERE warranty_id='" & ARYShoppingCart(cartProductWarranty, i) & "'"
+  				
+				  set rsWarranty = Conn.Execute(sql)
+				  do while not rsWarranty.EOF
+  					
+					  if rsWarranty("warranty_item_flag") = 1 then
+						  'amount
+						  warranty_amount = rsWarranty("warranty_item_value")
+					  else
+						  warranty_amount = ARYShoppingCart(cartProductUnitPrice, i) * (rsWarranty("warranty_item_value")/100)
+					  end if
+
+					  warranty_amount = warranty_amount * ARYShoppingCart(cartOrderQuantity, i)
+
+					  if rsWarranty("row_id") = CInt(ARYShoppingCart(cartProductWarrantySelection, i)) then
+						  s_warranty_amount = FormatNumber(warranty_amount,2)
+					  end if
+
+					  rsWarranty.MoveNext
+				  loop
+				  rsWarranty.close
+
+				  if s_warranty_amount > 0 then
+					  iSubtotal = iSubtotal + s_warranty_amount
+					  iWarrantyTotal = iWarrantyTotal + s_warranty_amount
+				  end if
+
+			  end if
+			end if
+
+			if ARYShoppingCart(cartProductMode, i) = "9" then
+			else
+				sPfid = sPfid & ARYShoppingCart(cartProductID, i) & "|*|"
+				iSubtotal = iSubtotal + ARYShoppingCart(cartProductUnitPrice, i)*CInt(ARYShoppingCart(cartOrderQuantity, i))
+			end if
+
+		Next
+
+		'=============================================================================
+		'ADDED BY BK 11/19/2003 - FOR COUPON VALIDATION
+		'=============================================================================
+		iCount = 0
+		For i = 1 to UBound(ARYShoppingCart, 2)
+				
+			if Len(ARYShoppingCart(cartProductID,i)) > 0 then
+
+				if ARYShoppingCart(cartProductMode, i) = "9" then
+					
+					iPrice = ARYShoppingCart(cartProductUnitPrice, i)
+
+					if IsValidCoupon(ARYShoppingCart(cartProductID,i), sPfid, "", iSubtotal, iPrice, coupon_err_code) then
+						
+						iCount = iCount + 1
+						For j = 1 to UBound(ARYShoppingCart, 1)
+							ARYTempCart(j,iCount) = ARYShoppingCart(j,i)
+						Next
+
+						ARYTempCart(cartProductUnitPrice, i) = iPrice
+
+					else
+						'skip...
+					end if
+
+				else
+
+					iCount = iCount + 1
+					For j = 1 to UBound(ARYShoppingCart, 1)
+						ARYTempCart(j,iCount) = ARYShoppingCart(j,i)
+					Next
+
+				end if
+			end if
+			
+		Next
+
+
+		'NEED TO UPDATE TOTAL VALUES...
+		Total_Price = 0
+		For i = 1 to iCount
+			Total_Price = Total_Price + (ARYTempCart(cartOrderQuantity, i) * ARYTempCart(cartProductUnitPrice, i))
+		Next
+
+		'=============================================================================
+
+		'Session("MyShoppingCart") = ARYShoppingCart
+		Session("MyShoppingCart") = ARYTempCart
+		Session("ItemCount") = iCount
+
+		Session("TotalPrice") = Total_Price + iWarrantyTotal
+
+		if Session("ENABLEINT") = "2" OR Session("ENABLEINT")="3" then
+			Session("TotalTaxable") = Total_Taxable + iWarrantyTotal
+		else
+			Session("TotalTaxable") = Total_Taxable
+		end if
+
+		Session("TotalWeight") = Total_Weight
+		Session("CartItemCount") = Cart_Item_Count
+
+		'UPDATED BY BK 10/16/2002 FOR CUSTOM SHIPPING TABLE
+		Session("TotalShipItem") = Total_Ship_item
+		Session("TotalShipAmount") = Total_Ship_amount
+		
+		UpdateSession Session("SESSIONKEY"), "sCartItem", CStr(Cart_Item_Count)
+		UpdateSession Session("SESSIONKEY"), "sCartTotal", FormatNumber(Total_Price,2,,,0)
+		
+		'Save Shipping Information...
+		shx_method = Request("sh_method")
+		'if shx_method = "2" then
+		shx_option = Trim(Request("UPSCharge"))
+		
+		if len(shx_option) > 0 then
+			sp1 = instr(shx_option, "~")
+			sh_ups_charge = mid(shx_option, sp1+1)
+			shx_detail = left(shx_option, sp1-1)				
+			Session("SH1") = shx_detail
+		else
+		  sh_ups_charge = "0"
+			Session("SH1") = ""
+		end if
+		'end if
+		
+		if IsNumeric(sh_ups_charge) then
+		  sh_ups_charge = CDbl(sh_ups_charge)
+		else
+		  sh_ups_charge = 0
+		end if
+    
+    if ORDER_ACTION = "PPE" then
+      total = Session("TotalPrice") + Session("shopper_tax") + CDbl(sh_ups_charge)
+      Response.Redirect("paypal_express_checkout1.phtml?paylater=0&debit_amount=" & total)
+    else
+      if ORDER_ACTION = "PPL" then
+        total = Session("TotalPrice") + Session("shopper_tax") + CDbl(sh_ups_charge)
+      Response.Redirect("paypal_express_checkout1.phtml?paylater=1&debit_amount=" & total)
+      else
+		    Response.Redirect (Session("SecureURL")& "/one_page_checkout.phtml")
+		  end if
+		end if
+		
+	case "R"
+		'Request for quote
+		Total_Price = 0
+		Total_Taxable = 0
+		Total_Weight = 0
+		Cart_Item_Count =0
+
+		'UPDATED BY BK 10/16/2002 FOR CUSTOM SHIPPING TABLE
+		Total_Ship_item = 0
+		Total_Ship_amount = 0
+	
+		For i = 1 to iCount
+			Quantity = Request("OrderQuantity" + CStr(i))
+			If IsNumeric(Quantity) Then
+				ARYShoppingCart(cartOrderQuantity, i) = abs(CLng(Quantity))
+			Else
+				ARYShoppingCart(cartOrderQuantity, i) = 1
+			End If
+
+			if not ARYShoppingCart(cartTaxable, i) then
+				Total_Taxable = Total_Taxable + (ARYShoppingCart(cartOrderQuantity, i) * ARYShoppingCart(cartProductUnitPrice, i))
+			end if
+			
+			Total_Price = Total_Price + (ARYShoppingCart(cartOrderQuantity, i) * ARYShoppingCart(cartProductUnitPrice, i))
+			
+			if not ARYShoppingCart(cartShip, i) then
+				Total_Weight = Total_Weight + (ARYShoppingCart(cartOrderQuantity, i) * ARYShoppingCart(cartProductUnitWeight, i))
+				'UPDATED BY BK 10/16/2002 FOR CUSTOM SHIPPING TABLE
+				Total_Ship_item = Total_Ship_item + ARYShoppingCart(cartOrderQuantity, i)
+				Total_Ship_amount = Total_Ship_amount + (ARYShoppingCart(cartOrderQuantity, i) * ARYShoppingCart(cartProductUnitPrice, i))
+			end if
+
+			Cart_Item_Count = Cart_Item_Count + ARYShoppingCart(cartOrderQuantity, i)
+
+		Next
+
+		Session("MyShoppingCart") = ARYShoppingCart
+		Session("ItemCount") = iCount
+		Session("TotalPrice") = Total_Price
+		Session("TotalTaxable") = Total_Taxable
+		Session("TotalWeight") = Total_Weight
+		Session("CartItemCount") = Cart_Item_Count
+
+		'UPDATED BY BK 10/16/2002 FOR CUSTOM SHIPPING TABLE
+		Session("TotalShipItem") = Total_Ship_item
+		Session("TotalShipAmount") = Total_Ship_amount
+		
+		UpdateSession Session("SESSIONKEY"), "sCartItem", CStr(Cart_Item_Count)
+		UpdateSession Session("SESSIONKEY"), "sCartTotal", FormatNumber(Total_Price,2,,,0)
+
+		Response.Redirect (Session("SecureURL")& "/quote.phtml")
+	
+	Case "Q" 'Save quote...
+	
+		'Update quantity and price...	
+		For i = 1 to iCount
+			Quantity = Request("OrderQuantity" + CStr(i))
+			If IsNumeric(Quantity) Then
+				ARYShoppingCart(cartOrderQuantity, i) = abs(CLng(Quantity))
+			Else
+				ARYShoppingCart(cartOrderQuantity, i) = 1
+			End If
+			
+		Next
+		
+		'Delete all quote items...
+		sql = "DELETE FROM :9_quote_item WHERE quote_id=" & Session("QuoteMode")
+		sql = Replace(sql, ":9", Session("StoreID"))
+	
+		Conn.Execute(sql)
+	
+		'Insert quote items..
+		For i = 1 to iCount
+			if AddQuotedItems(Session("ConnectionString"),Session("QuoteMode"), i, ARYShoppingCart(cartProductID, i), ARYShoppingCart(cartProductName, i),_
+					ARYShoppingCart(cartOrderQuantity, i), ARYShoppingCart(cartProductUnitPrice, i),_
+					ARYShoppingCart(cartOptions, i), ARYShoppingCart(cartProductMode, i),_
+					ARYShoppingCart(cartTaxable, i), ARYShoppingCart(cartProductUnitCost, i),_
+					ARYShoppingCart(cartProductMfgNumber, i), ARYShoppingCart(cartProductUnitWeight, i)) then
+					
+			end if
+		Next
+	
+		'Resetting....
+		iCount = 0
+		Session("ItemCount") = iCount
+		Session("CartItemCount") = 0
+		Session("TotalPrice") = 0
+		Session("TotalWeight")= 0
+
+		Session("shooper_id") = ""
+		Session("order_id") = ""
+		Session("shopper_tax") = 0
+		Session("shopper_shipping") = 0
+	
+		Response.Redirect ("confirm_quote_save.phtml")
+	
+	Case "SO" 'save order...
+		
+		'Update quantity and price...	
+		For i = 1 to iCount
+			Quantity = Request("OrderQuantity" + CStr(i))
+			If IsNumeric(Quantity) Then
+				ARYShoppingCart(cartOrderQuantity, i) = abs(CLng(Quantity))
+			Else
+				ARYShoppingCart(cartOrderQuantity, i) = 1
+			End If
+			
+		Next
+		
+		'Delete all 
+		sql = "DELETE FROM " & Session("StoreID") & "_order_item WHERE order_id=" & Session("SOMode")
+		sql = Replace(sql, ":9", Session("StoreID"))
+	
+		Conn.Execute(sql)
+
+		if AddShoppingCartItemToOrder(ARYShoppingCart, Session("SOMode"), iCount) then
+
+		end if
+		
+		'Resetting....
+		iCount = 0
+		Session("ItemCount") = iCount
+		Session("CartItemCount") = 0
+		Session("TotalPrice") = 0
+		Session("TotalWeight")= 0
+
+		Session("shooper_id") = ""
+		Session("order_id") = ""
+		Session("shopper_tax") = 0
+		Session("shopper_shipping") = 0
+		
+		Response.Redirect ("confirm_so_save.phtml")
+			
+	Case Else
+		
+		'Update quantity and price...
+		Total_Price = 0
+		Total_Taxable = 0
+		Total_Weight = 0
+		Cart_Item_Count =0
+
+		'UPDATED BY BK 10/16/2002 FOR CUSTOM SHIPPING TABLE
+		Total_Ship_item = 0
+		Total_Ship_amount = 0
+
+		'=============================================================================
+		'ADDED BY BK 11/19/2003 - FOR COUPON VALIDATION
+		iSubtotal = 0
+		iWarrantyTotal = 0
+		sPfid = ""
+		'=============================================================================
+	
+		For i = 1 to iCount
+
+			if not ARYShoppingCart(cartTaxable, i) then
+				Total_Taxable = Total_Taxable + (ARYShoppingCart(cartOrderQuantity, i) * ARYShoppingCart(cartProductUnitPrice, i))
+			end if
+			
+			Total_Price = Total_Price + (ARYShoppingCart(cartOrderQuantity, i) * ARYShoppingCart(cartProductUnitPrice, i))
+			
+			if not ARYShoppingCart(cartShip, i) then
+				Total_Weight = Total_Weight + (ARYShoppingCart(cartOrderQuantity, i) * ARYShoppingCart(cartProductUnitWeight, i))
+				'UPDATED BY BK 10/16/2002 FOR CUSTOM SHIPPING TABLE
+				Total_Ship_item = Total_Ship_item + ARYShoppingCart(cartOrderQuantity, i)
+				Total_Ship_amount = Total_Ship_amount + (ARYShoppingCart(cartOrderQuantity, i) * ARYShoppingCart(cartProductUnitPrice, i))
+			end if
+
+			Cart_Item_Count = Cart_Item_Count + ARYShoppingCart(cartOrderQuantity, i)
+
+			'FOR WARRANTY..
+			if IsNumeric(ARYShoppingCart(cartProductWarrantySelection, i)) then
+			  if CInt(ARYShoppingCart(cartProductWarrantySelection, i)) > 0 then
+
+				  s_warranty_amount = "0.00"
+
+				  sql = "SELECT * FROM " & Session("StoreID") & "_warranty_item WHERE warranty_id='" & ARYShoppingCart(cartProductWarranty, i) & "'"
+  				
+				  set rsWarranty = Conn.Execute(sql)
+				  do while not rsWarranty.EOF
+
+					  if rsWarranty("warranty_item_flag") = 1 then
+						  'amount
+						  warranty_amount = rsWarranty("warranty_item_value")
+					  else
+						  warranty_amount = ARYShoppingCart(cartProductUnitPrice, i) * (rsWarranty("warranty_item_value")/100)
+					  end if
+
+					  warranty_amount = warranty_amount * ARYShoppingCart(cartOrderQuantity, i)
+
+					  if rsWarranty("row_id") = CInt(ARYShoppingCart(cartProductWarrantySelection, i)) then
+						  s_warranty_amount = FormatNumber(warranty_amount,2)
+					  end if
+
+					  rsWarranty.MoveNext
+				  loop
+				  rsWarranty.close
+
+				  if s_warranty_amount > 0 then
+					  iSubtotal = iSubtotal + s_warranty_amount
+					  iWarrantyTotal = iWarrantyTotal + s_warranty_amount
+				  end if
+
+			  end if
+			
+			end if
+
+			if ARYShoppingCart(cartProductMode, i) = "9" then
+			else
+				sPfid = sPfid & ARYShoppingCart(cartProductID, i) & "|*|"
+				iSubtotal = iSubtotal + ARYShoppingCart(cartProductUnitPrice, i)*CInt(ARYShoppingCart(cartOrderQuantity, i))
+			end if
+			
+		Next
+
+		'=============================================================================
+		'ADDED BY BK 11/19/2003 - FOR COUPON VALIDATION
+		'=============================================================================
+		iCount = 0
+		For i = 1 to UBound(ARYShoppingCart, 2)
+				
+			if Len(ARYShoppingCart(cartProductID,i)) > 0 then
+
+				if ARYShoppingCart(cartProductMode, i) = "9" then
+					
+					iPrice = ARYShoppingCart(cartProductUnitPrice, i)
+
+					if IsValidCoupon(ARYShoppingCart(cartProductID,i), sPfid, "", iSubtotal, iPrice, coupon_err_code) then
+						
+						iCount = iCount + 1
+						For j = 1 to UBound(ARYShoppingCart, 1)
+							ARYTempCart(j,iCount) = ARYShoppingCart(j,i)
+						Next
+
+						ARYTempCart(cartProductUnitPrice, i) = iPrice
+
+					else
+						'skip...
+					end if
+
+				else
+
+					iCount = iCount + 1
+					For j = 1 to UBound(ARYShoppingCart, 1)
+						ARYTempCart(j,iCount) = ARYShoppingCart(j,i)
+					Next
+
+				end if
+			end if
+			
+		Next
+
+		'NEED TO UPDATE TOTAL VALUES...
+		Total_Price = 0
+		For i = 1 to iCount
+			Total_Price = Total_Price + (ARYTempCart(cartOrderQuantity, i) * ARYTempCart(cartProductUnitPrice, i))
+		Next
+		
+		'=============================================================================
+
+		'Save..
+		Session("ItemCount") = iCount		
+		Session("TotalPrice") = Total_Price + iWarrantyTotal
+
+		if Session("ENABLEINT") = "2" OR Session("ENABLEINT")="3" then
+			Session("TotalTaxable") = Total_Taxable + iWarrantyTotal
+		else
+			Session("TotalTaxable") = Total_Taxable
+		end if
+
+		Session("TotalWeight") = Total_Weight
+		Session("CartItemCount") = Cart_Item_Count
+		'Session("MyShoppingCart") = ARYShoppingCart
+		Session("MyShoppingCart") = ARYTempCart
+
+		'UPDATED BY BK 10/16/2002 FOR CUSTOM SHIPPING TABLE
+		Session("TotalShipItem") = Total_Ship_item
+		Session("TotalShipAmount") = Total_Ship_amount
+		
+		UpdateSession Session("SESSIONKEY"), "sCartItem", CStr(Cart_Item_Count)
+		UpdateSession Session("SESSIONKEY"), "sCartTotal", FormatNumber(Total_Price,2,,,0)
+
+    Response.Write(Session("ItemCount"))
+    if (Trim(Request("actionflag"))) = "q" then
+      Response.Redirect (Session("SecureURL")& "/quote.phtml")
+    else
+		  Response.Redirect (Session("SecureURL")& "/basket.phtml")
+		end if
+
+	End Select
+
+%>
+
+<!--#INCLUDE FILE="i_adoclose.phtml"-->

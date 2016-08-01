@@ -1,0 +1,111 @@
+<%
+	Response.CodePage = 65001
+	Response.CharSet = "UTF-8"
+%>
+<%response.Expires=-1%>
+<!-- #INCLUDE File="../local/local.phtml" -->
+<!-- #INCLUDE File="../core/i_adoopen.phtml" -->
+<!-- #INCLUDE File="../util/xt_func_util.phtml" -->
+<!-- #INCLUDE File="../util/xt_func_string.phtml" -->
+<%
+	'--POST DATA------------------------------------------
+	shopper_id = Trim(Request("shopper_id"))
+	
+	new_email = Trim(Request("new_email"))
+	shopper_password = Trim(Request("new_password1"))
+	shopper_firstname = Trim(Request("firstname"))
+	shopper_lastname = Trim(Request("lastname"))
+	
+	shopper_billing_firstname = Trim(Request("firstname"))
+	shopper_billing_lastname = Trim(Request("lastname"))
+	shopper_billing_address = Trim(Request("address"))
+	shopper_billing_city = Trim(Request("city"))
+	shopper_billing_country = Trim(Request("country"))
+	shopper_billing_state = Trim(Request("state"))
+	shopper_billing_zip = Trim(Request("postcode"))
+	shopper_billing_phone = Trim(Request("telephone"))
+	
+	same_as_billing = "1"
+	shopper_shipping_firstname = Trim(Request("firstname"))
+	shopper_shipping_lastname = Trim(Request("lastname"))
+	shopper_shipping_address = Trim(Request("address"))
+	shopper_shipping_city = Trim(Request("city"))
+	shopper_shipping_country = Trim(Request("country"))
+	shopper_shipping_state = Trim(Request("state"))
+	shopper_shipping_zip = Trim(Request("postcode"))
+	shopper_shipping_phone = Trim(Request("telephone"))
+	
+	billing_address_id = "0"
+	shipping_address_id = "0"
+	
+	member_group = "D"
+	use_shopper_tax = "0"
+	shopper_tax = "0"
+	
+	'--END OF POST DATA-----------------------------------
+	
+	if shopper_id = "0" then
+		Set rsUpdate = Server.CreateObject("ADODB.Recordset")
+		with rsUpdate
+			.ActiveConnection = dbconn
+			.CursorLocation = 3
+			.CursorType = 1
+			.LockType = 3
+			.Source = g_storeid & "_shopper WHERE shopper_id='0'"
+			.Open
+			.AddNew
+		end with
+		
+		'GET NEW SHOPPER_ID and SAVE EMAIL Address
+		rsUpdate("shopper_id") = GetUniqueLongIntegerID()
+		rsUpdate("Email") = new_email
+		rsUpdate("Password") = shopper_password
+		
+	else
+		Set rsUpdate = Server.CreateObject("ADODB.Recordset")
+		with rsUpdate
+			.ActiveConnection = dbconn
+			.CursorLocation = 3
+			.CursorType = 1
+			.LockType = 3
+			.Source = g_storeid & "_shopper WHERE shopper_id='" & shopper_id & "'"
+			.Open
+		end with
+	end if
+	
+	rsUpdate("FirstName") = shopper_firstname
+	rsUpdate("LastName") = shopper_lastname
+	
+	rsUpdate("billing_firstname") = shopper_billing_firstname
+	rsUpdate("billing_lastname") = shopper_billing_lastname
+	rsUpdate("Address") = shopper_billing_address
+	rsUpdate("City") = shopper_billing_city
+	rsUpdate("Country") = shopper_billing_country
+	rsUpdate("State") = shopper_billing_state
+	rsUpdate("ZipCode") = shopper_billing_zip
+	rsUpdate("Phone") = shopper_billing_phone
+	
+	rsUpdate("shipping_FirstName") = shopper_shipping_firstname
+	rsUpdate("shipping_LastName") = shopper_shipping_lastname
+	rsUpdate("shipping_Address") = shopper_shipping_address
+	rsUpdate("shipping_City") = shopper_shipping_city
+	rsUpdate("shipping_Country") = shopper_shipping_country
+	rsUpdate("shipping_State") = shopper_shipping_state
+	rsUpdate("shipping_ZipCode") = shopper_shipping_zip
+	rsUpdate("shipping_Phone") = shopper_shipping_phone
+	
+	rsUpdate("member_group") = member_group
+	rsUpdate("use_shopper_tax") = use_shopper_tax
+	rsUpdate("shopper_tax") = shopper_tax
+	
+	If dbconn.Errors.Count > 0 Then
+		dbconn.Errors.Clear
+		rsUpdate.CancelUpdate
+	else
+		rsUpdate.Update
+	End If
+	
+	rsUpdate.Close
+	set rsUpdate = nothing
+	
+%>
