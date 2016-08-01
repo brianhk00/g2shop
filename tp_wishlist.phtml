@@ -1,0 +1,67 @@
+<%@  language="VBScript" %>
+<%
+	Response.CodePage = 65001
+	Response.CharSet = "UTF-8"
+%>
+<!--#INCLUDE FILE="local/local.phtml"-->
+<!--#INCLUDE FILE="core/i_adoopen.phtml"-->
+<!--#INCLUDE FILE="util/xt_func_session.phtml"-->
+<!--#INCLUDE FILE="core/i_initsession.phtml"-->
+<!--#INCLUDE FILE="util/xt_func_string.phtml"-->
+<!--#INCLUDE FILE="util/xt_func_util.phtml"-->
+<%
+	Session("shopper_id") = GetSession(Session("SESSIONKEY"), "sCID")
+	Session("Shopper_Name") = GetSession(Session("SESSIONKEY"), "sCName")
+	Session("PARTNER") = GetSession(Session("SESSIONKEY"), "sAffID")
+%>
+<%
+
+	op = Request("op")
+	sku = Request("sku")
+	sku = FilterSKUString(sku)
+	
+	flag = Trim(Request("flag"))
+	
+	if op = "DL" then
+		if Len(sku) > 0 then
+			sql = "DELETE FROM " & g_storeid & "_wishlist WHERE shopper_id='" & Session("shopper_id") & "' AND pf_id='" & sku & "'"
+			dbconn.Execute sql
+		end if
+	else
+		if Len(sku) > 0 then
+			
+			SELECT CASE flag
+			CASE "7"
+			  
+			  'Check if it is already exist...
+			  sql = "SELECT * FROM " & g_storeid & "_wishlist WHERE shopper_id='" & Session("shopper_id") & "' AND pf_id='" & sku & "' AND catalog_id=7"
+			  set rs = dbconn.Execute(sql)
+  			
+			  if not rs.EOF then
+			  else
+				  'Add entry...
+				  sql = "INSERT INTO " & g_storeid & "_wishlist(shopper_id,pf_id,catalog_id) VALUES('" & Session("shopper_id") & "','" & sku & "',7)"
+				  dbconn.Execute sql
+			  end if
+  			
+			  rs.Close
+    		
+			CASE ELSE
+			  'Check if it is already exist...
+			  sql = "SELECT * FROM " & g_storeid & "_wishlist WHERE shopper_id='" & Session("shopper_id") & "' AND pf_id='" & sku & "'"
+			  set rs = dbconn.Execute(sql)
+  			
+			  if not rs.EOF then
+			  else
+				  'Add entry...
+				  sql = "INSERT INTO " & g_storeid & "_wishlist(shopper_id,pf_id) VALUES('" & Session("shopper_id") & "','" & sku & "')"
+				  dbconn.Execute sql
+			  end if
+  			
+			  rs.Close
+		  END SELECT
+		end if
+	end if
+	response.redirect(g_secure_url & "mywishlist.phtml")
+%>
+<!--#INCLUDE FILE="core/i_adoclosed.phtml"-->

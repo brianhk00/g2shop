@@ -98,7 +98,12 @@
 									<button type="button" id="button-cart" class="btn btn-primary btn-lg" onclick="BuyForm.submit(this);">Add to Cart</button>
 								</div>
 								<div>
-									<button type="button" class="wishlist" onclick=""><i class="fa fa-heart"></i> Add to Wish List</button>
+									<% if Session("shopper_id") = "" OR Session("shopper_id") = "GUEST" then %>
+									<p>&nbsp;</p>
+									<p>Please <a href="<%=g_secure_url%>login.phtml">log in</a> to add to your wish list.</p>
+									<% else %>
+									<button type="button" class="wishlist" onclick="setLocation('<%=g_secure_url%>tp_wishlist.phtml?sku=<%=pf_id%>')"><i class="fa fa-heart"></i> Add to Wish List</button>
+									<% end if %>
 								</div>
 							</div>
 						</div>

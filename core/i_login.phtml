@@ -18,19 +18,19 @@
 		if Session("shopper_id") = "" then
 		  Session("REFERER_URL2") = curPageURL()
 		  UpdateSession Session("SESSIONKEY"), "sREFERER2", Session("REFERER_URL2")
-			Response.Redirect "login.asp?st=1"
+			Response.Redirect "login.phtml?st=1"
 		end if
 	else
 	  if forceLogin then
 	    
 	    if Session("shopper_id") = "" then
-	      if InStr(curPageURL(), "basket.asp") >= 1 then
+	      if InStr(curPageURL(), "basket.phtml") >= 1 then
 	        Session("REFERER_URL2") = Request.ServerVariables("HTTP_REFERER")
 	      else
 	        Session("REFERER_URL2") = curPageURL()
 	      end if
 		    UpdateSession Session("SESSIONKEY"), "sREFERER2", Session("REFERER_URL2")
-			  Response.Redirect "login.asp?st=1"
+			  Response.Redirect "login.phtml?st=1"
 		  end if
 	  end if
 	end if

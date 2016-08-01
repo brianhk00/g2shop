@@ -1,0 +1,162 @@
+<!--#INCLUDE FILE="../../local/local.phtml"-->
+<!--#INCLUDE FILE="../i_adoopen.phtml"-->
+<!--#INCLUDE FILE="../../util/xt_func_session.phtml"-->
+<!--#INCLUDE FILE="../../util/xt_func_string.phtml"-->
+<!--#INCLUDE FILE="../../util/xt_func_util.phtml"-->
+<!-- #INCLUDE File="../../util/xt_func_rc4.phtml" -->
+<!--#INCLUDE FILE="../../util/xt_func_shoppingcart.phtml"-->
+<%
+	sessionID = Request("sessionID")
+	sessionID = FilterSessionString(sessionID)
+	if Len(sessionID) > 0 then
+		Session("SESSIONKEY") = sessionID
+	else
+		if Len(Session("SESSIONKEY")) > 0 then
+			'session key exist
+		else
+			'no key information...
+			Response.Redirect g_store_url
+		end if
+	end if
+%>
+<!--#INCLUDE FILE="../i_login.phtml"-->
+
+<%
+	order_id = Trim(Request("orderid"))
+	
+	sql = "SELECT * FROM " & g_storeid & "_order WHERE order_id='" & order_id & "'"
+	set rsOrder = dbconn.Execute(sql)
+	if not rsOrder.EOF then
+		
+		order_date = rsOrder("date_entered")
+		order_date = ConvertToTimeZone(order_date)
+		order_status = rsOrder("status")
+		order_ip = rsOrder("order_ip_addr")
+		order_po_number = rsOrder("po_number")
+		order_salesrep_id = rsOrder("salesrep_id")
+		
+		order_email = rsOrder("shopper_email")
+		order_customer_name = rsOrder("CardName")
+		order_taxable = rsOrder("order_taxable")
+		order_price_group = rsOrder("order_price_group")
+		if Len(order_price_group) > 0 then
+		else	
+			order_price_group = "D"
+		end if
+		order_billing_company = rsOrder("bill_company")
+		order_billing_address = rsOrder("CardAddress")
+		order_billing_city = rsOrder("CardCity")
+		order_billing_state = rsOrder("CardState")
+		order_billing_zip = rsOrder("CardZip")
+		order_billing_country = rsOrder("CardCountry")
+		order_billing_phone = rsOrder("bill_phone")
+		
+		order_shipping_firstname = rsOrder("ShipFirstName")
+		order_shipping_lastname = rsOrder("ShipLastName")
+		order_shipping_company = rsOrder("ship_company")
+		order_shipping_address = rsOrder("ShipAddress")
+		order_shipping_city = rsOrder("ShipCity")
+		order_shipping_state = rsOrder("ShipState")
+		order_shipping_zip = rsOrder("ShipZip")
+		order_shipping_country = rsOrder("ShipCountry")
+		order_shipping_phone = rsOrder("ShipPhone")
+		
+		'order_billing_name = rsOrder("bill_contact")
+		order_billing_contact_firstname = Trim(rsOrder("bill_contact_firstname"))
+		order_billing_contact_lastname = Trim(rsOrder("bill_contact_lastname"))
+		order_billing_name = order_billing_contact_firstname & " " & order_billing_contact_lastname
+		'order_shipping_name = rsOrder("ship_contact")
+		order_shipping_name = order_shipping_firstname & " " & order_shipping_lastname
+		
+		order_payment_method = rsOrder("PaymentMethod")
+		order_payment_card_type = rsOrder("CardType")
+		order_payment_card_number = rsOrder("CardNumber")
+		
+		order_payment_card_number = EnDeCrypt(order_payment_card_number, g_crypt_key)
+		if Len(order_payment_card_number) > 0 then
+			order_payment_card_number = Right(order_payment_card_number, 4)
+		end if
+		
+		order_customer_card_name = rsOrder("CardName")
+		order_customer_card_exp_month = rsOrder("CardExpirationMonth")
+		order_customer_card_exp_year = rsOrder("CardExpirationYear")
+		
+		order_shipping_sh_method = rsOrder("SH_method")
+		order_shipping_sh = rsOrder("SH")
+		order_shipping_sh = FormatNumber(order_shipping_sh)
+		
+		order_comment = rsOrder("Order_Comments")
+		order_notes = rsOrder("notes")
+		
+		order_tax = rsOrder("tax")
+		order_tax = FormatNumber(order_tax)
+		order_total = rsOrder("total")
+		order_total = FormatNumber(order_total)
+		order_tax_rate = rsOrder("order_tax_rate")
+		order_tax_rate = FormatNumber(order_tax_rate,2)
+		discount_amount = rsOrder("discount_amount")
+		discount_amount = FormatNumber(discount_amount)
+		
+		if Len(order_comment) > 0 then
+		else
+			order_comment = "..."
+		end if
+	
+		if Len(order_notes) > 0 then
+		else
+			order_notes = "..."
+		end if
+		
+		'TODO...
+		SELECT CASE order_payment_method
+		CASE "visa"
+			order_payment_method = "Credit Card"
+		CASE "master"
+			order_payment_method = "Credit Card"
+		CASE "discover"
+			order_payment_method = "Credit Card"
+		CASE "amex"
+			order_payment_method = "Credit Card"
+		CASE "cod"
+			order_payment_method = "COD"
+		END SELECT
+		
+		'FOR EMAIL ..
+		pf_email_to = order_email
+		pf_email_to_name = order_customer_name
+		pf_email_subject = "Order #" & order_id
+		
+		
+		AuthNumber =  rsOrder("AuthNumber")
+		
+	end if
+	rsOrder.Close
+	set rsOrder = nothing
+	
+	bShowUPS = false
+	bShowFedEx = false
+	bShowUSPS = false
+	bShowCustomFlatTable = false
+	bShowCustomShippingTable = false
+	sql = "SELECT * FROM " & g_storeid & "_profile"
+	set rsProfile = dbconn.Execute(sql)
+	if not rsProfile.EOF then
+		SH_display_flag = rsProfile("SH_display_flag")
+		
+		if InStr(SH_display_flag, "UPS") then
+			bShowUPS = true
+		end if
+		
+		if InStr(SH_display_flag, "FedEx") then
+			bShowFedEx = true
+		end if
+		
+		if InStr(SH_display_flag, "USPS") then
+			bShowUSPS = true
+		end if
+		
+	end if
+	rsProfile.Close
+	set rsProfile = nothing
+
+%>

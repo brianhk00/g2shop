@@ -1,0 +1,198 @@
+
+<h1 class="title">My Wish List</h1>
+<div class="table-responsive">
+	<table class="table table-bordered table-hover">
+	<thead>
+	<tr>
+		<td class="text-center">
+			Image
+		</td>
+		<td class="text-left">
+			Product Name
+		</td>
+		<td class="text-right">
+			Stock
+		</td>
+		<td class="text-right">
+			Unit Price
+		</td>
+		<td class="text-right">
+			Action
+		</td>
+	</tr>
+	</thead>
+	<tbody>
+	<%
+		sql = "SELECT * FROM " & g_storeid & "_wishlist WHERE shopper_id='" & Session("shopper_id") & "' ORDER BY date_added"
+		set rsWishList = dbconn.Execute(sql)
+		do while not rsWishList.EOF
+			pf_id = rsWishList("pf_id")
+			catalog_id = rsWishList("catalog_id")
+			
+			SELECT CASE catalog_id
+			CASE 7
+			
+			CASE ELSE
+				
+				sql = "SELECT * FROM " & g_storeid & "_product WHERE pf_id = '" & pf_id & "'"
+				Set rsProd = dbconn.Execute(sql)			
+				if not rsProd.EOF then	
+					prod_name = rsProd("name")
+					prod_desc = rsProd("description")
+					prod_sku = rsProd("SKU")
+					prod_detail = rsProd("details")
+					prod_list_price = rsProd("list_price")
+					prod_retail_price = rsProd("retail_price")
+					prod_thumb_image = rsProd("thumb_image")
+					prod_image_file = rsProd("image_file")
+					if Len(prod_image_file) > 0 then
+					else
+						prod_image_file = "--"
+					end If
+					prod_on_sale = rsProd("on_sale")
+					prod_sale_price = rsProd("sale_price")
+					prod_is_noship = rsProd("is_noship")
+					prod_dist_flag = rsProd("dist_flag")
+					if Session("LOGINGROUP") = "A" OR Session("LOGINGROUP") = "B" OR Session("LOGINGROUP") = "C" OR Session("LOGINGROUP") = "D" then
+						prod_group_price = rsProd("price_"& Session("LOGINGROUP"))
+					else
+						prod_group_price = rsProd("price_D")
+					end if
+					prod_use_price = rsProd("use_price")
+					prod_mm_url = rsProd("mm_link")
+					prod_mm_type = rsProd("mm_type")
+					prod_stock = rsProd("stock")
+					if IsNumeric(prod_stock)then
+					else
+						prod_stock = 1
+					end if
+					prod_stock_status = rsProd("stock_status")
+					prod_iv_text = Trim(rsProd("iv_text"))
+					prod_warranty = Trim(rsProd("warranty_id"))
+					prod_manu_part_num = Trim(rsProd("manu_part_num"))
+					prod_bundle_flag = rsProd("bundle_flag")
+					prod_bundle_group_id = Trim(rsProd("bundle_group_id"))
+					prod_map_flag = rsProd("map_price_flag")
+					prod_discontinued = rsProd("discontinued")
+					item_status = rsProd("item_status")
+					related_item_category = Trim(rsProd("related_item_category"))
+					page_title = Trim(rsProd("page_title"))
+					prod_espec_sku = Trim(rsProd("espec_sku"))
+					buynow_link = Trim(rsProd("buynow_link"))
+					vendor_name = Trim(rsProd("vendor_name"))
+					vendor_number = Trim(rsProd("vendor_number"))
+					prod_use_icecat_images = rsProd("use_icecat_images")
+					prod_include_icecat_specdata = rsProd("include_icecat_specdata")
+					
+					if Len(prod_detail) > 0 then
+						prod_detail = Replace(prod_detail, "\n", "<br>")
+					end if
+					
+					cont_ok = true
+				else
+					cont_ok = false
+				end if
+				rsProd.Close
+				set rsProd = nothing
+				'===================================================
+				'SEO URLs
+				if Len(prod_url_key) > 0 then
+					w_product_link = g_store_url & prod_url_key & ".htm"
+				else
+					w_product_link = g_store_url & "ssproduct.phtml?pf_id=" & pf_id
+				end if
+				'===================================================
+				
+				ssImgSize = "upload/w_" & "50" & ",h_" & "50" & ",c_pad/"
+				
+				if prod_image_file = "--" then
+					cloudImg = g_noimage_url
+					ssImg = Replace(cloudImg, "upload/", ssImgSize)
+				else
+					if prod_mm_type = 1 then
+						if Len(prod_espec_sku) > 0 AND prod_use_icecat_images = 1 then
+							'USE ICECAT IMAGE
+							icecat_id = 0
+							if Session("ENABLEINT") = "2" OR Session("ENABLEINT") = "3" then
+								sql = "SELECT * FROM A_ssprice_CA WHERE sku='" & prod_espec_sku & "'"
+							else
+								sql = "SELECT * FROM A_ssprice_main WHERE sku='" & prod_espec_sku & "'"
+							end If
+
+							set rsPA = conn_ss1.Execute(sql)
+							if not rsPA.EOF then
+								image_published = rsPA("image_published")
+								categoryid = Trim(rsPA("CATEGORY"))
+								icecat_id = rsPA("icecat_id")
+							end if
+							rsPA.Close
+
+							sql = "SELECT cloudinary_url FROM [192.168.5.134].[icecat].dbo.cloudinary_images WHERE product_id = " & icecat_id
+							Set rsCloudImage = conn_ss1.Execute(sql)
+							If Not rsCloudImage.EOF Then
+								cloudImg = Trim(rsCloudImage("cloudinary_url"))
+							Else
+								sql = "SELECT * FROM " & g_storeid & "_product_image WHERE image_name = '" & prod_image_file & "'"
+								Set rsCloudImage2 = dbconn.Execute(sql)
+								If Not rsCloudImage2.EOF Then
+									cloudImg = Trim(rsCloudImage2("cloud_url"))
+								Else
+									cloudImg = g_noimage_url
+								End If
+								rsCloudImage2.Close
+								Set rsCloudImage2 = Nothing
+							End If
+							rsCloudImage.Close
+							Set rsCloudImage = Nothing
+							ssImg = Replace(cloudImg, "upload/", ssImgSize)
+						else
+							sql = "SELECT * FROM " & g_storeid & "_product_image WHERE image_name = '" & prod_image_file & "'"
+							Set rsCloudImage2 = dbconn.Execute(sql)
+							If Not rsCloudImage2.EOF Then
+								cloudImg = Trim(rsCloudImage2("cloud_url"))
+							Else
+								cloudImg = g_noimage_url
+							End If
+							rsCloudImage2.Close
+							Set rsCloudImage2 = Nothing
+							ssImg = Replace(cloudImg, "upload/", ssImgSize)
+						end if
+					else
+						ssImg = "http://a4.res.cloudinary.com/dd3llssvr/image/fetch/" & "w_" & "50" & ",h_" & "50" & ",c_pad,c_fill/" & g_store_url & "assets/pmedia/prod_img/" & Server.URLEncode(prod_thumb_image)
+					end if
+				end if
+				
+				thumb_image_link = ssImg
+				
+			END SELECT
+	%>
+	<tr>
+		<td class="text-center">
+			<a href="<%=w_product_link%>"><img src="<%=thumb_image_link%>" alt="<%=prod_name%>" title="<%=prod_name%>"/></a>
+		</td>
+		<td class="text-left">
+			<a href="<%=prod_name%>"><%=prod_name%></a>
+		</td>
+		<td class="text-right">
+			In Stock
+		</td>
+		<td class="text-right">
+			<div class="price">
+				 $<%=FormatNumber(prod_group_price,2)%>
+			</div>
+		</td>
+		<td class="text-right">
+			<a class="btn btn-danger" title="" data-toggle="tooltip" href="<%=g_secure_url%>tp_wishlist.phtml?op=DL&sku=<%=pf_id%>" data-original-title="Remove"><i class="fa fa-times"></i></a>
+		</td>
+	</tr>
+	<%
+			rsWishList.MoveNext
+		loop
+		rsWishList.Close
+		set rsWishList = nothing
+	%>
+	
+	</tbody>
+	</table>
+</div>
+		
