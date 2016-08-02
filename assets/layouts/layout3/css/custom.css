@@ -7,11 +7,11 @@
     padding-right: 20px; } }
 	
 table.dataTable tbody th, table.dataTable tbody td {
-    font-size: 12px;
+    font-size: 13px;
 }
 
 table.dataTable thead tr th {
-    font-size: 12px;
+    font-size: 13px;
 }
 /*
 body {

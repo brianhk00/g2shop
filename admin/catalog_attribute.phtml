@@ -1,3 +1,7 @@
+<%
+	Response.CodePage = 65001
+	Response.CharSet = "UTF-8"
+%>
 <!-- #INCLUDE File="local/local.phtml" -->
 <!-- #INCLUDE File="util/xt_func_util.phtml" -->
 <!-- #INCLUDE File="util/xt_func_string.phtml" -->
@@ -28,8 +32,8 @@
 						<div class="container-fluid">
 							<!-- BEGIN PAGE TITLE -->
 							<div class="page-title">
-								<h1>Dashboard
-									<small>dashboard & statistics</small>
+								<h1>Filter Attibutes
+									<small>overview &amp; list</small>
 								</h1>
 							</div>
 							<!-- END PAGE TITLE -->
@@ -41,7 +45,55 @@
 						<div class="container-fluid">
 							<!-- BEGIN PAGE CONTENT INNER -->
 							<div class="page-content-inner">
-								
+								<table class="table table-hover" id="sample-table-1">
+									<thead>
+										<tr>
+											<th class="center">#</th>
+											<th>Filter Name</th>
+											<th></th>
+										</tr>
+									</thead>
+									<tbody>
+										<%
+											sql = "SELECT * FROM " & g_storeid & "_eav_attribute"
+											set rs = dbconn.Execute(sql)
+											do while not rs.EOF
+												attribute_id = rs("attribute_id")
+												frontend_label = rs("frontend_label")
+												if Session("CURRENT_ADMIN_VIEW_ID") <> "1" then
+													frontend_label = TranslateX(frontend_label, 20, attribute_id, 1)
+												end if
+										%>
+										<tr>
+											<td class="center"><%=attribute_id%></td>
+											<td><%=frontend_label%></td>
+											<td class="center">
+											<div class="visible-md visible-lg hidden-sm hidden-xs">
+												<a href="catalog_attribute_detail.phtml?id=<%=attribute_id%>" class="btn btn-transparent btn-xs" tooltip-placement="top" tooltip="Edit"><i class="fa fa-pencil"></i></a>
+											</div>
+											<div class="visible-xs visible-sm hidden-md hidden-lg">
+												<div class="btn-group" dropdown is-open="status.isopen">
+													<button type="button" class="btn btn-primary btn-o btn-sm dropdown-toggle" dropdown-toggle>
+														<i class="fa fa-cog"></i>&nbsp;<span class="caret"></span>
+													</button>
+													<ul class="dropdown-menu pull-right dropdown-light" role="menu">
+														<li>
+															<a href="catalog_attribute_detail.phtml?id=<%=attribute_id%>">
+																Edit
+															</a>
+														</li>
+													</ul>
+												</div>
+											</div></td>
+										</tr>
+										<%
+												rs.MoveNext
+											loop
+											rs.Close
+											set rs = nothing
+										%>
+									</tbody>
+								</table>
 							</div>
 							<!-- END PAGE CONTENT INNER -->
 						</div>

@@ -1,0 +1,15 @@
+<%response.Expires=-1%>
+<!-- #INCLUDE File="../local/local.phtml" -->
+<!-- #INCLUDE File="../util/xt_func_util.phtml" -->
+<!-- #INCLUDE File="../util/xt_func_string.phtml" -->
+<%
+	page_id = Trim(Request("page_id"))
+	page_id = Replace(page_id, ", ", "','")
+	sql = "DELETE FROM " & g_storeid & "_pages WHERE page_id IN ('" & page_id & "')"
+	dbconn.execute sql
+	
+	sql = "DELETE FROM " & g_storeid & "_rewrite WHERE rewrite_system_id  = '" & pf_id & "' AND rewrite_system_type = 3"
+	dbconn.execute sql
+	
+	response.redirect("../design_cms.phtml")
+%>

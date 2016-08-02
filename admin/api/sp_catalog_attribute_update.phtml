@@ -1,0 +1,135 @@
+<%response.Expires=-1%>
+<%
+	Response.CodePage = 65001
+	Response.CharSet = "UTF-8"
+%>
+<!-- #INCLUDE File="../local/local.phtml" -->
+<!-- #INCLUDE File="../util/xt_func_util.phtml" -->
+<!-- #INCLUDE File="../util/xt_func_string.phtml" -->
+<%
+	attribute_id = Trim(Request("attribute_id"))
+	frontend_label = Trim(Request("frontend_label"))
+	attribute_option_data = Trim(Request("attribute_option_data"))
+	
+	if attribute_id = "0" then
+		Set rsUpdate = Server.CreateObject("ADODB.Recordset")
+		with rsUpdate
+			.ActiveConnection = dbconn
+			.CursorLocation = 3
+			.CursorType = 1
+			.LockType = 3
+			.Source = g_storeid & "_eav_attribute WHERE attribute_id=0"
+			.Open
+			.AddNew
+		end with
+		
+	else
+		Set rsUpdate = Server.CreateObject("ADODB.Recordset")
+		with rsUpdate
+			.ActiveConnection = dbconn
+			.CursorLocation = 3
+			.CursorType = 1
+			.LockType = 3
+			.Source = g_storeid & "_eav_attribute WHERE attribute_id=" & attribute_id
+			.Open
+		end with
+	end if
+	
+	if Session("CURRENT_ADMIN_VIEW_ID") = "1" then
+		rsUpdate("frontend_label") = frontend_label
+	else
+		x = rsUpdate("frontend_label")
+		if x = frontend_label then
+			r = SaveX(attribute_id, 20, "varchar", 1, "")
+		else
+			r = SaveX(attribute_id, 20, "varchar", 1, frontend_label)
+		end if
+	end if
+	
+	
+	If dbconn.Errors.Count > 0 Then
+		dbconn.Errors.Clear
+		rsUpdate.CancelUpdate
+	else
+		rsUpdate.Update
+	End If
+	
+	rsUpdate.Close
+	set rsUpdate = nothing
+	
+	ar_attribute_option_data = Split(attribute_option_data, "%%")
+	
+	s_ids = ""
+	for kk = 0 to Ubound(ar_attribute_option_data)
+		if Len(ar_attribute_option_data(kk)) > 0 then
+			ar_option_data = Split(ar_attribute_option_data(kk), "||")
+			s_ids = s_ids & ar_option_data(0) & ","
+		end if
+	next
+	
+	if Len(s_ids) > 0 then
+		s_ids = Left(s_ids, Len(s_ids)-1)
+		
+		sqld = "DELETE FROM " & g_storeid & "_eav_attribute_option WHERE attribute_id=" & attribute_id & " AND option_id NOT IN (" & s_ids & ")"
+		dbconn.execute(sqld)
+		
+	end if
+	
+	for kk = 0 to Ubound(ar_attribute_option_data)
+		if Len(ar_attribute_option_data(kk)) > 0 then
+			'Response.Write(ar_attribute_option_data(kk) & "<br>")
+			ar_option_data = Split(ar_attribute_option_data(kk), "||")
+			
+			if ar_option_data(0) = "0" then
+				'New DATA
+				Set rsUpdate = Server.CreateObject("ADODB.Recordset")
+				with rsUpdate
+					.ActiveConnection = dbconn
+					.CursorLocation = 3 'adUseClient
+					.CursorType = 1 'adOpenKeyset
+					.LockType = 3 'adLockOptimistic
+					.Source = g_storeid & "_eav_attribute_option WHERE option_id=0"
+					.Open
+					.AddNew
+				end with
+				rsUpdate("attribute_id") = attribute_id
+			else
+				'UPDATE DATA
+				'New DATA
+				Set rsUpdate = Server.CreateObject("ADODB.Recordset")
+				with rsUpdate
+					.ActiveConnection = dbconn
+					.CursorLocation = 3 'adUseClient
+					.CursorType = 1 'adOpenKeyset
+					.LockType = 3 'adLockOptimistic
+					.Source = g_storeid & "_eav_attribute_option WHERE option_id=" & ar_option_data(0)
+					.Open
+				end with
+			end if
+			
+			if Session("CURRENT_ADMIN_VIEW_ID") = "1" then
+				rsUpdate("option_name") = ar_option_data(1)
+			else
+				x = rsUpdate("option_name")
+				if x = ar_option_data(1) then
+					r = SaveX(rsUpdate("option_id"), 21, "varchar", 1, "")
+				else
+					r = SaveX(rsUpdate("option_id"), 21, "varchar", 1, ar_option_data(1))
+				end if
+			end if
+			
+			rsUpdate("sort_order") = ar_option_data(2)
+			
+			If dbconn.Errors.Count > 0 Then
+				dbconn.Errors.Clear
+				rsUpdate.CancelUpdate
+			else
+				rsUpdate.Update
+			End If
+			
+			rsUpdate.Close
+			set rsUpdate = nothing
+			
+		end if
+	next
+%>

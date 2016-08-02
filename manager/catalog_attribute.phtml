@@ -1,6 +1,11 @@
 <%
 	Response.CodePage = 65001
 	Response.CharSet = "UTF-8"
+	
+	storeviewid = Trim(Request("storeviewid"))
+	if Len(storeviewid) > 0 then
+		Session("CURRENT_ADMIN_VIEW_ID")  = storeviewid
+	end if
 %>
 <!-- #INCLUDE File="local/local.phtml" -->
 <!-- #INCLUDE File="util/xt_func_util.phtml" -->

@@ -1,0 +1,388 @@
+<%
+	Response.CodePage = 65001
+	Response.CharSet = "UTF-8"
+%>
+<!-- #INCLUDE File="local/local.phtml" -->
+<!-- #INCLUDE File="util/xt_func_util.phtml" -->
+<!-- #INCLUDE File="util/xt_func_string.phtml" -->
+<!-- #INCLUDE File="include/i_login.phtml" -->
+<%
+	g_access_key = "04-06"
+%>
+<!-- #INCLUDE File="include/i_access.phtml" -->
+<%
+	block_id=Trim(Request("block_id"))
+	if block_id = "0" then
+		did = Trim(Request("did"))
+		if Len(did) > 0 then
+			sql = "SELECT * FROM " & g_storeid & "_static_block WHERE block_id=" & did
+			set rs = dbconn.Execute(sql)
+			if not rs.EOF then
+				block_status = rs("block_status")
+				block_content = Trim(rs("block_content"))
+			end if
+			rs.Close
+			set rs = nothing
+		end if
+	else
+		sql = "SELECT * FROM " & g_storeid & "_static_block WHERE block_id=" & block_id
+		set rs = dbconn.Execute(sql)
+		if not rs.EOF then
+			block_title = Trim(rs("block_title"))
+			block_identifier = Trim(rs("block_identifier"))
+			block_status = rs("block_status")
+			block_content = Trim(rs("block_content"))
+		end if
+		rs.Close
+		set rs = nothing
+	end if
+%>
+<!--#INCLUDE FILE="include/doctype.phtml"-->
+<head>
+<!--#INCLUDE FILE="include/head.phtml"-->
+<!-- BEGIN PAGE LEVEL PLUGINS -->
+<link rel="stylesheet" href="assets/plugins/jquery-ui/jquery-ui-1.10.4.custom.min.css" />
+<link href="../assets/global/plugins/bootstrap-modal/css/bootstrap-modal-bs3patch.css" rel="stylesheet" type="text/css" />
+<link href="../assets/global/plugins/bootstrap-modal/css/bootstrap-modal.css" rel="stylesheet" type="text/css" />
+<!-- END PAGE LEVEL PLUGINS -->
+</head>
+<body class="page-container-bg-solid">
+<div class="page-wrapper">
+	<div class="page-wrapper-row">
+		<div class="page-wrapper-top">
+			<!--#INCLUDE FILE="include/header.phtml"-->
+		</div>
+	</div>
+	<div class="page-wrapper-row full-height">
+		<div class="page-wrapper-middle">
+			<!-- BEGIN CONTAINER -->
+			<div class="page-container">
+				<!-- BEGIN CONTENT -->
+				<div class="page-content-wrapper">
+					<!-- BEGIN CONTENT BODY -->
+					<!-- BEGIN PAGE HEAD-->
+					<!-- END PAGE HEAD-->
+					<!-- BEGIN PAGE CONTENT BODY -->
+					<div class="page-content">
+						<div class="container-fluid">
+							<!-- BEGIN PAGE CONTENT INNER -->
+							<div class="page-content-inner">
+								<div class="row">
+									<div class="col-md-12">
+										<form id="form_edit_1" class="form-horizontal form-row-seperated" action="#">
+											<div class="portlet">
+												<div class="portlet-title">
+													<div class="caption">
+													<i class="fa fa-shopping-cart"></i>
+													<%
+													if Len(block_title) > 0 then
+														Response.Write(block_title)
+													else
+														Response.Write("New Static Block")
+													end if
+													%>
+													</div>
+													<div class="actions btn-set">
+														<button type="button" onclick="location.href='design_staticblocks.phtml';" name="back" class="btn btn-default">
+															<i class="fa fa-angle-left"></i> Back
+														</button>
+														<button class="btn btn-success" onclick="savebutton='1';">
+															<i class="fa fa-check"></i> Save
+														</button>
+														<button class="btn btn-success" onclick="savebutton='0';">
+															<i class="fa fa-check-circle"></i> Save & Continue Edit
+														</button>
+														<div class="btn-group">
+															<a class="btn btn-success dropdown-toggle" href="javascript:;" data-toggle="dropdown">
+																<i class="fa fa-share"></i> More
+																<i class="fa fa-angle-down"></i>
+															</a>
+															<div class="dropdown-menu pull-right">
+																<li>
+																	<a href="javascript:;" id="DuplicateEntry"> Duplicate </a>
+																</li>
+																<li>
+																	<a href="#" id="DeleteEntry"> Delete </a>
+																</li>
+															</div>
+														</div>
+													</div>
+												</div>
+												<div class="alert alert-danger display-hide">
+												<button class="close" data-close="alert"></button> You have some form errors. Please check below. 
+												</div>
+												<div class="alert alert-success display-hide">
+												<button class="close" data-close="alert"></button> The information has been saved.
+												</div>
+												<div class="alert alert-warning display-hide">
+												<button class="close" data-close="alert"></button> The information has not been saved properly. Please contact system administrator.
+												</div>
+												<div class="portlet-body">
+													<input type="hidden" id="block_id" name="block_id" value="<%=block_id%>" />
+													<div class="form-group">
+														<label class="col-sm-2 control-label" for="block_title">
+															Block Title<span class="symbol required"></span>
+														</label>
+														<div class="col-sm-9">
+															<input type="text" class="form-control" id="block_title" name="block_title" value="<%=block_title%>">
+														</div>
+													</div>
+													<div class="form-group">
+														<label class="col-sm-2 control-label" for="block_identifier">
+															Identifier <span class="symbol required"></span>
+														</label>
+														<div class="col-sm-9">
+															<input type="text" id="block_identifier" name="block_identifier" class="form-control" value="<%=block_identifier%>">
+														</div>
+													</div>
+													<div class="form-group">
+														<label class="col-sm-2 control-label" for="block_status">
+															Status <span class="symbol required"></span>
+														</label>
+														<div class="col-sm-9">
+															<select id="block_status"  name="block_status" class="form-control select">
+																<option value="1" <%if block_status = 1 then%>selected<%end if%>>Enabled</option>
+																<option value="2" <%if block_status = 2 then%>selected<%end if%>>Disabled</option>
+															</select>
+														</div>
+													</div>
+													<div class="form-group">
+														<label class="col-sm-2 control-label" for="block_content">
+															Content <span class="symbol required"></span>
+														</label>
+														<div class="col-sm-9">
+															<textarea id="block_content" name="block_content" class="form-control" style="height:200px;"><%=block_content%></textarea>
+															<button class="btn btn-primary btn-xs" type="button" id="wysiwyg_description">
+															<i class="fa fa-file-code-o"></i>
+															WYSIWYG Editor
+															</button>
+														</div>
+													</div>
+												</div>
+											</div>
+										</div>
+									</div>
+								</div>
+							</div>
+							<!-- END PAGE CONTENT INNER -->
+						</div>
+					</div>
+					<!-- END PAGE CONTENT BODY -->
+					<!-- END CONTENT BODY -->
+				</div>
+				<!-- END CONTENT -->
+			</div>
+			<!-- END CONTAINER -->
+		</div>
+	</div>
+	<div class="page-wrapper-row">
+		<div class="page-wrapper-bottom">
+			<!--#INCLUDE FILE="include/footer.phtml"-->
+		</div>
+	</div>
+</div>
+<div id="ajax-modal" class="modal container fade" tabindex="-1" style="display: none;"></div>
+<div id="dialog-confirm" title="Delete Confirmation" style="display: none;">
+<p><span class="ui-icon ui-icon-alert" style="float:left; margin:0 7px 20px 0;"></span>You are about to permanently delete this block. Are you sure?</p>
+</div>
+<div id="dialog-confirm-duplicate" title="Delete Confirmation" style="display: none;">
+<p><span class="ui-icon ui-icon-alert" style="float:left; margin:0 7px 20px 0;"></span>Do you want to create duplicate?</p>
+</div>
+<!--#INCLUDE FILE="include/js.phtml"-->
+<!-- BEGIN PAGE LEVEL PLUGINS -->
+<script src="../assets/global/plugins/jquery-validation/js/jquery.validate.min.js" type="text/javascript"></script>
+<script src="../assets/global/plugins/jquery-validation/js/additional-methods.min.js" type="text/javascript"></script>
+<script src="assets/plugins/jquery-ui/jquery-ui-1.10.1.custom.min.js" type="text/javascript"></script>
+<script src="../assets/global/plugins/bootstrap-modal/js/bootstrap-modalmanager.js" type="text/javascript"></script>
+<script src="../assets/global/plugins/bootstrap-modal/js/bootstrap-modal.js" type="text/javascript"></script>
+<!-- END PAGE LEVEL PLUGINS -->
+
+<!-- BEGIN PAGE LEVEL SCRIPTS -->
+<script language="javascript">
+var savebutton = "1";
+</script>
+<script language="javascript">
+var FormValidator = function () {
+	var runValidator1 = function() {
+		// for more info visit the official plugin documentation: 
+		// http://docs.jquery.com/Plugins/Validation
+
+		var form1 = $('#form_edit_1');
+		var error1 = $('.alert-danger', form1);
+		var success1 = $('.alert-success', form1);
+		var warning1 = $('.alert-warning', form1);
+
+		form1.validate({
+			errorElement: 'span', //default input error message container
+			errorClass: 'help-block help-block-error', // default input error message class
+			focusInvalid: false, // do not focus the last invalid input
+			ignore: "",  // validate all fields including form hidden input
+			//RULES
+			rules: {
+				block_title: {
+					minlength: 3,
+					required: true
+				},
+				block_identifier: {
+					minlength: 8,
+					required: true
+				},
+				block_status: {
+					required: true
+				},
+				block_content: {
+					required: true
+				}
+			},
+			messages: {
+				block_identifier:
+				{
+					required: "Please specify block identifier.",
+					minlength: "The identifier must be greater than 8 chracter length.",
+					remote: "The specified identifier is not unique."
+				}
+			},
+
+			invalidHandler: function (event, validator) { //display error alert on form submit              
+				success1.hide();
+				error1.show();
+				App.scrollTo(error1, -200);
+			},
+
+			errorPlacement: function (error, element) { // render error placement for each input type
+				var cont = $(element).parent('.input-group');
+				if (cont) {
+					cont.after(error);
+				} else {
+					element.after(error);
+				}
+			},
+
+			highlight: function (element) { // hightlight error inputs
+
+				$(element)
+					.closest('.form-group').addClass('has-error'); // set error class to the control group
+			},
+
+			unhighlight: function (element) { // revert the change done by hightlight
+				$(element)
+					.closest('.form-group').removeClass('has-error'); // set error class to the control group
+			},
+
+			success: function (label) {
+				label
+					.closest('.form-group').removeClass('has-error'); // set success class to the control group
+			},
+
+			submitHandler: function (form) {
+				success1.hide();
+				error1.hide();
+				warning1.hide();
+				
+				$.ajax({
+					type: "POST",
+					url: "api/sp_design_staticblocks_update.phtml",
+					data: form1.serialize(),
+					success: function() {
+						success1.show();
+						if (savebutton == "1")
+						{
+						setTimeout(function () {
+								window.location.replace("design_staticblocks.phtml");
+							}, 500);
+						}
+					},
+					error: function() {
+						warning1.show();
+					}
+				});
+			}
+		});
+
+	};
+	return {
+		//main function to initiate template pages
+		init: function () {
+			runValidator1();
+		}
+	};
+}();
+</script>
+<script>
+//MODAL
+var UIModals = function () {
+	//function to initiate bootstrap extended modals
+	var initModals = function () {
+		$.fn.modalmanager.defaults.resize = true;
+		$.fn.modal.defaults.spinner = $.fn.modalmanager.defaults.spinner =
+			'<div class="loading-spinner" style="width: 200px; margin-left: -100px;">' +
+			'<div class="progress progress-striped active">' +
+			'<div class="progress-bar" style="width: 100%;"></div>' +
+			'</div>' +
+			'</div>';
+			
+		var $modal = $('#ajax-modal');
+		$('#wysiwyg_description').on('click', function () {
+			$('body').modalmanager('loading');
+			setTimeout(function () {
+				$modal.load('api/modal_ajax_wysiwyg_editor.phtml?id=block_content', '', function () {
+					$modal.modal();
+				});
+			}, 100);
+		});
+		$modal.on('click', '.update_1', function () {
+			editor_1.updateElement();
+			$('#block_content').val($('#wysiwig_text_1').val());
+			$modal.modal('hide');
+		});
+		
+	};
+	return {
+		init: function () {
+			initModals();
+		}
+	};
+}();
+</script>
+<script type="text/javascript">
+jQuery(document).ready(function() {
+	FormValidator.init();
+	UIModals.init();
+	$('#DeleteEntry').on('click', function () {
+		$("#dialog-confirm").dialog({
+			resizable: false,
+			height:170,
+			modal: true,
+			buttons: {
+				"Confirm Delete": function() {
+					$( this ).dialog( "close" );
+					location.replace('api/tp_design_staticblocks_delete.phtml?did=<%=block_id%>')
+				},
+				Cancel: function() {
+					$( this ).dialog( "close" );
+				}
+			}
+		});
+	});	
+	
+	$('#DuplicateEntry').on('click', function () {
+		$("#dialog-confirm-duplicate").dialog({
+			resizable: false,
+			height:170,
+			modal: true,
+			buttons: {
+				"Confirm": function() {
+					$( this ).dialog( "close" );
+					location.replace('design_staticblocks_detail.phtml?block_id=0&did=<%=block_id%>')
+				},
+				Cancel: function() {
+					$( this ).dialog( "close" );
+				}
+			}
+		});
+	});	
+});	
+</script>
+<!-- END PAGE LEVEL SCRIPTS -->
+</body>
+</html>

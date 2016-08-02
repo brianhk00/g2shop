@@ -1,0 +1,117 @@
+<%response.Expires=-1%>
+<!-- #INCLUDE File="../local/local.phtml" -->
+<!-- #INCLUDE File="../util/xt_func_util.phtml" -->
+<!-- #INCLUDE File="../util/xt_func_string.phtml" -->
+<%
+	page_id = Trim(Request("page_id"))
+	page_title = CheckString(Trim(Request("page_title")))
+	page_url_key = Trim(Request("url_key"))
+	page_text = CheckString(Trim(Request("page_text")))
+	page_status = Trim(Request("page_status"))
+	
+	if page_id = "0" then
+		Set rsUpdate = Server.CreateObject("ADODB.Recordset")
+		with rsUpdate
+			.ActiveConnection = dbconn
+			.CursorLocation = 3
+			.CursorType = 1
+			.LockType = 3
+			.Source = g_storeid & "_pages WHERE page_id=0"
+			.Open
+			.AddNew
+		end with
+		rsUpdate("page_date_created") = Now()
+	else
+		Set rsUpdate = Server.CreateObject("ADODB.Recordset")
+		with rsUpdate
+			.ActiveConnection = dbconn
+			.CursorLocation = 3
+			.CursorType = 1
+			.LockType = 3
+			.Source = g_storeid & "_pages WHERE page_id='" & page_id & "'"
+			.Open
+		end with
+	end if
+	
+	rsUpdate("page_title") = page_title
+	rsUpdate("page_url_key") = page_url_key
+	rsUpdate("page_text") = page_text
+	rsUpdate("page_status") = page_status
+	rsUpdate("page_size") = Len(page_text)
+	rsUpdate("page_date_modified") = Now()
+
+	If dbconn.Errors.Count > 0 Then
+		dbconn.Errors.Clear
+		rsUpdate.CancelUpdate
+	else
+		rsUpdate.Update
+	End If
+	
+	rsUpdate.Close
+	set rsUpdate = nothing
+	
+	if page_id = "0" then
+		sql = "SELECT  ident_current('" & g_storeid & "_pages') AS [LastID_1]"
+		set rs = dbconn.Execute(sql)
+		if not rs.EOF then
+			page_id = rs(0)
+		end if
+	end if
+	'====================================================================================================================
+	'UPDATE _rewrite table....
+	'====================================================================================================================
+	
+	sql = "SELECT rewrite_id FROM " & g_storeid & "_rewrite WHERE rewrite_system_id='" & page_id & "' AND rewrite_system_type = 3"
+	set rsRewrite = dbconn.Execute(sql)
+	if not rsRewrite.EOF then
+		rewrite_id = rsRewrite("rewrite_id")
+	else
+		rewrite_id = 0
+	end if
+	
+	rsRewrite.Close
+	set rsRewrite = nothing
+	
+	if rewrite_id = 0 then
+		Set rsUpdate = Server.CreateObject("ADODB.Recordset")
+		with rsUpdate
+			.ActiveConnection = dbconn
+			.CursorLocation = 3
+			.CursorType = 1
+			.LockType = 3
+			.Source = g_storeid & "_rewrite WHERE rewrite_id=0"
+			.Open
+			.AddNew
+		end with
+		
+		rsUpdate("rewrite_type") = 1
+		rsUpdate("rewrite_system_type") = 3
+		rsUpdate("rewrite_system_id") = page_id
+		rsUpdate("rewrite_redirect_type") = ""
+	
+	else
+		Set rsUpdate = Server.CreateObject("ADODB.Recordset")
+		with rsUpdate
+			.ActiveConnection = dbconn
+			.CursorLocation = 3
+			.CursorType = 1
+			.LockType = 3
+			.Source = g_storeid & "_rewrite WHERE rewrite_id=" & rewrite_id
+			.Open
+		end with
+	end if
+	
+	rsUpdate("rewrite_request_path") = page_url_key
+	
+	If dbconn.Errors.Count > 0 Then
+		dbconn.Errors.Clear
+		rsUpdate.CancelUpdate
+	else
+		rsUpdate.Update
+	End If
+	
+	rsUpdate.Close
+	set rsUpdate = nothing
+	
+
+%>

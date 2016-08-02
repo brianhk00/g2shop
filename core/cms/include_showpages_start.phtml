@@ -1,69 +1,23 @@
 <!--#INCLUDE FILE="../../local/local.phtml"-->
-<!--#INCLUDE FILE="../../language_pack.phtml"-->
+<!--#INCLUDE FILE="../i_adoopen.phtml"-->
 <!--#INCLUDE FILE="../../util/xt_func_session.phtml"-->
 <!--#INCLUDE FILE="../../i_initsession.phtml"-->
+<!--#INCLUDE FILE="../../util/xt_func_string.phtml"-->
+<!--#INCLUDE FILE="../../util/xt_func_seo.phtml"-->
+<!--#INCLUDE File="../../util/xt_func_util.phtml" -->
+<!--#INCLUDE FILE="../../util/xt_func_shoppingcart.phtml"-->
 <%
 	Session("shopper_id") = GetSession(Session("SESSIONKEY"), "sCID")
 	Session("Shopper_Name") = GetSession(Session("SESSIONKEY"), "sCName")
 	Session("PARTNER") = GetSession(Session("SESSIONKEY"), "sAffID")
 %>
-<!--#INCLUDE FILE="../../i_adodb.phtml"-->
-<!--#INCLUDE FILE="../../util/xt_func_string.phtml"-->
-<!--#INCLUDE FILE="../../util/xt_func_seo.phtml"-->
-<!--#INCLUDE File="../../util/xt_func_util.phtml" -->
 
-<Script language="VBScript" RUNAT=SERVER>
-function GetSystemFlatModel(ByRef str_db, ByRef str_config_id, ByRef markup, ByRef system_price)
-
-  set dbconn=server.CreateObject("ADODB.Connection")
-  dbconn.Open str_db
-  
-  sql = "SELECT markup_price, dept_id FROM :9_system_config WHERE config_id='" & str_config_id & "' AND dept_id IN ("
-  sql = sql & "SELECT sysdept_id FROM :9_sysdept WHERE config_id='" & str_config_id & "' AND sysdept_mode=0 AND NOT (allow_none=1 AND none_default=1)) "
-  sql = sql & "ORDER BY dept_id, row_id"
-  sql = Replace(sql, ":9", Session("StoreID"))
-  
-  set rs1 = dbconn.Execute(sql)
-  
-  temp_dept = ""
-  system_price = 0
-  
-  do while not rs1.EOF
-  
-	markup_price = rs1("markup_price")
-	if not rs1("dept_id") = temp_dept then
-	  system_price = system_price + markup_price
-	  temp_dept = rs1("dept_id")
-	end if
-	rs1.MoveNext
-  loop
-  rs1.Close
-  
-  'system_price = system_price + (system_price * markup/100)
-  'Add Hidden Cost..
-  sql = "SELECT SUM(sysdept_cost) FROM :9_sysdept WHERE config_id='" & str_config_id & "' AND sysdept_mode=2"
-  sql = Replace(sql, ":9", Session("StoreID"))
-  set rsPart = Conn.Execute(sql)
-  if not rsPart.EOF then
-    if isNumeric(rsPart(0)) then
-      system_price = system_price + rsPart(0)
-    end if
-  end if
-  rsPart.close
-  system_price = system_price + (system_price * markup/100)
-  
-  GetSystemFlatModel = true
-  
-end function
-</Script>
 
 <%
 	pid = FilterStringEx(Trim(Request("pid")), "[^0-9]")
-	
 	If pid = "" Then
 		pid = "0"
 	End If
-	
 	'=================================================================================================
 	'overwrite pf_id if urlkey present
 	'=================================================================================================
@@ -73,7 +27,7 @@ end function
 		url_key = Replace(url_key, "/", "")
 		
 		sql = "SELECT * FROM " & g_storeid & "_rewrite WHERE rewrite_request_path='" & url_key & "'"
-		set rsRewrite = conn.Execute(sql)
+		set rsRewrite = dbconn.Execute(sql)
 		if not rsRewrite.EOF then
 			rewrite_type = rsRewrite("rewrite_type")
 			rewrite_system_type = rsRewrite("rewrite_system_type")
@@ -96,7 +50,7 @@ end function
 	'=================================================================================================
 
 	sql = "SELECT * FROM " & g_storeid & "_pages WHERE page_id=" & pid
-	set rsPage = Conn.Execute(sql)
+	set rsPage = dbconn.Execute(sql)
 	
 	if not rsPage.EOF then
 		page_title = rsPage("page_title")
@@ -130,4 +84,7 @@ end function
 			t1_page_title = Session("StoreTitle") & " - " & stripHTML(page_title)
 
 	End If
+	
+	'======================================================================================
+	g_page_text = page_text
 %>
