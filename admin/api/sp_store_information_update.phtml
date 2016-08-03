@@ -1,0 +1,454 @@
+<%response.Expires=-1%>
+<%
+	Response.CodePage = 65001
+	Response.CharSet = "UTF-8"
+%>
+<!-- #INCLUDE File="../local/local.phtml" -->
+<!-- #INCLUDE File="../util/xt_func_util.phtml" -->
+<!-- #INCLUDE File="../util/xt_func_string.phtml" -->
+<%
+	'--POST DATA------------------------------------------
+	formid = Trim(Request("formid"))
+	
+	SELECT CASE formid
+	CASE "pan1"
+		address	= Trim(Request("address"))
+		city	= Trim(Request("city"))
+		company	= Trim(Request("company"))
+		email	= Trim(Request("email"))
+		phone	= Trim(Request("phone"))
+		state	= Trim(Request("state"))
+		zip	= Trim(Request("zip"))
+		
+		Set rsUpdate = Server.CreateObject("ADODB.Recordset")
+		with rsUpdate
+			.ActiveConnection = dbconn
+			.CursorLocation = 3
+			.CursorType = 1
+			.LockType = 3
+			.Source = g_storeid & "_profile"
+			.Open
+		end with
+		
+		rsUpdate("Address") = address
+		rsUpdate("City") = city
+		rsUpdate("Company") = company
+		rsUpdate("Phone") = phone
+		rsUpdate("State") = state
+		rsUpdate("Zip") = zip
+		rsUpdate("Email") = email
+		
+		If dbconn.Errors.Count > 0 Then
+			dbconn.Errors.Clear
+			rsUpdate.CancelUpdate
+		else
+			rsUpdate.Update
+		End If
+		
+		rsUpdate.Close
+		set rsUpdate = nothing
+		
+	CASE "pan2"
+		'--POST DATA------------------------------------------
+		store_payment_gateway_enabled = Trim(Request("store_payment_gateway_enabled"))
+		store_payment_cc_type = Trim(Request("store_payment_cc_type"))
+		store_payment_cc_use_card_id = Trim(Request("store_payment_cc_use_card_id"))
+		
+		store_payment_authorizenet_api_login_id = Trim(Request("store_payment_authorizenet_api_login_id"))
+		store_payment_authorizenet_payment_action = Trim(Request("store_payment_authorizenet_payment_action"))
+		store_payment_authorizenet_transaction_key = Trim(Request("store_payment_authorizenet_transaction_key"))
+		
+		store_payment_paypal_payflowpro_payment_action = Trim(Request("store_payment_paypal_payflowpro_payment_action"))
+		store_payment_paypal_payflowpro_partner = Trim(Request("store_payment_paypal_payflowpro_partner"))
+		store_payment_paypal_payflowpro_user = Trim(Request("store_payment_paypal_payflowpro_user"))
+		store_payment_paypal_payflowpro_vendor = Trim(Request("store_payment_paypal_payflowpro_vendor"))
+		store_payment_paypal_payflowpro_password = Trim(Request("store_payment_paypal_payflowpro_password"))
+		
+		store_payment_paypal_payflowlink_partner = Trim(Request("store_payment_paypal_payflowlink_partner"))
+		store_payment_paypal_payflowlink_user = Trim(Request("store_payment_paypal_payflowlink_user"))
+		store_payment_paypal_payflowlink_vendor = Trim(Request("store_payment_paypal_payflowlink_vendor"))
+		store_payment_paypal_payflowlink_password = Trim(Request("store_payment_paypal_payflowlink_password"))
+		
+		store_payment_paypal_paymentpro_payment_action = Trim(Request("store_payment_paypal_paymentpro_payment_action"))
+		store_payment_paypal_paymentpro_paypal_email_address = Trim(Request("store_payment_paypal_paymentpro_paypal_email_address"))
+		store_payment_paypal_paymentpro_api_username = Trim(Request("store_payment_paypal_paymentpro_api_username"))
+		store_payment_paypal_paymentpro_api_password = Trim(Request("store_payment_paypal_paymentpro_api_password"))
+		store_payment_paypal_paymentpro_api_signature = Trim(Request("store_payment_paypal_paymentpro_api_signature"))
+		store_payment_paypal_paymentpro_sandbox_mode = Trim(Request("store_payment_paypal_paymentpro_sandbox_mode"))
+		
+		store_payment_paypal_expresscheckout_payment_action = Trim(Request("store_payment_paypal_expresscheckout_payment_action"))
+		store_payment_paypal_expresscheckout_paypal_email_address = Trim(Request("store_payment_paypal_expresscheckout_paypal_email_address"))
+		store_payment_paypal_expresscheckout_api_username = Trim(Request("store_payment_paypal_expresscheckout_api_username"))
+		store_payment_paypal_expresscheckout_api_password = Trim(Request("store_payment_paypal_expresscheckout_api_password"))
+		store_payment_paypal_expresscheckout_api_signature = Trim(Request("store_payment_paypal_expresscheckout_api_signature"))
+		store_payment_paypal_expresscheckout_sandbox_mode = Trim(Request("store_payment_paypal_expresscheckout_sandbox_mode"))
+		
+		store_payment_check_enabled = Trim(Request("store_payment_check_enabled"))
+		store_payment_check_title = Trim(Request("store_payment_check_title"))
+		
+		store_payment_purchase_order_enabled = Trim(Request("store_payment_purchase_order_enabled"))
+		store_payment_purchase_order_title = Trim(Request("store_payment_purchase_order_title"))
+		
+		'--SAVE DATA------------------------------------------
+		if SetSettingValue("store_payment_gateway_enabled", store_payment_gateway_enabled) then
+		end if
+		if SetSettingValue("store_payment_cc_type", store_payment_cc_type) then
+		end if
+		if SetSettingValue("store_payment_cc_use_card_id", store_payment_cc_use_card_id) then
+		end if
+		
+		if SetSettingValue("store_payment_authorizenet_api_login_id", store_payment_authorizenet_api_login_id) then
+		end if
+		if SetSettingValue("store_payment_authorizenet_payment_action", store_payment_authorizenet_payment_action) then
+		end if
+		if SetSettingValue("store_payment_authorizenet_transaction_key", store_payment_authorizenet_transaction_key) then
+		end if
+		
+		if SetSettingValue("store_payment_paypal_payflowpro_payment_action", store_payment_paypal_payflowpro_payment_action) then
+		end if
+		if SetSettingValue("store_payment_paypal_payflowpro_partner", store_payment_paypal_payflowpro_partner) then
+		end if
+		if SetSettingValue("store_payment_paypal_payflowpro_user", store_payment_paypal_payflowpro_user) then
+		end if
+		if SetSettingValue("store_payment_paypal_payflowpro_vendor", store_payment_paypal_payflowpro_vendor) then
+		end if
+		if SetSettingValue("store_payment_paypal_payflowpro_password", store_payment_paypal_payflowpro_password) then
+		end if
+		
+		if SetSettingValue("store_payment_paypal_payflowlink_partner", store_payment_paypal_payflowlink_partner) then
+		end if
+		if SetSettingValue("store_payment_paypal_payflowlink_user", store_payment_paypal_payflowlink_user) then
+		end if
+		if SetSettingValue("store_payment_paypal_payflowlink_vendor", store_payment_paypal_payflowlink_vendor) then
+		end if
+		if SetSettingValue("store_payment_paypal_payflowlink_password", store_payment_paypal_payflowlink_password) then
+		end if
+		
+		if SetSettingValue("store_payment_paypal_paymentpro_payment_action", store_payment_paypal_paymentpro_payment_action) then
+		end if
+		if SetSettingValue("store_payment_paypal_paymentpro_paypal_email_address", store_payment_paypal_paymentpro_paypal_email_address) then
+		end if
+		if SetSettingValue("store_payment_paypal_paymentpro_api_username", store_payment_paypal_paymentpro_api_username) then
+		end if
+		if SetSettingValue("store_payment_paypal_paymentpro_api_password", store_payment_paypal_paymentpro_api_password) then
+		end if
+		if SetSettingValue("store_payment_paypal_paymentpro_api_signature", store_payment_paypal_paymentpro_api_signature) then
+		end if
+		if SetSettingValue("store_payment_paypal_paymentpro_sandbox_mode", store_payment_paypal_paymentpro_sandbox_mode) then
+		end if
+		
+		if SetSettingValue("store_payment_paypal_expresscheckout_payment_action", store_payment_paypal_expresscheckout_payment_action) then
+		end if
+		if SetSettingValue("store_payment_paypal_expresscheckout_paypal_email_address", store_payment_paypal_expresscheckout_paypal_email_address) then
+		end if
+		if SetSettingValue("store_payment_paypal_expresscheckout_api_username", store_payment_paypal_expresscheckout_api_username) then
+		end if
+		if SetSettingValue("store_payment_paypal_expresscheckout_api_password", store_payment_paypal_expresscheckout_api_password) then
+		end if
+		if SetSettingValue("store_payment_paypal_expresscheckout_api_signature", store_payment_paypal_expresscheckout_api_signature) then
+		end if
+		if SetSettingValue("store_payment_paypal_expresscheckout_sandbox_mode", store_payment_paypal_expresscheckout_sandbox_mode) then
+		end if
+		
+		if SetSettingValue("store_payment_check_enabled", store_payment_check_enabled) then
+		end if
+		if SetSettingValue("store_payment_check_title", store_payment_check_title) then
+		end if
+		
+		if SetSettingValue("store_payment_purchase_order_enabled", store_payment_purchase_order_enabled) then
+		end if
+		if SetSettingValue("store_payment_purchase_order_title", store_payment_purchase_order_title) then
+		end if
+	
+	CASE "pan3"
+		
+		'==============POST DATA======================================
+		SH_display_flag = Trim(Request("SH_display_flag"))
+		if Len(SH_display_flag) > 0 then
+			SH_display_flag = Replace(SH_display_flag, ", ", ",")
+		else
+			SH_display_flag = ""
+		end if
+		'------------------------------------------------------------
+		'FEDEX
+		'------------------------------------------------------------
+		fedex_account = Trim(Request("fedex_account"))
+		fedex_handling = Trim(Request("fedex_handling"))
+		fedex_markup = Trim(Request("fedex_markup"))
+		fedex_meter = Trim(Request("fedex_meter"))
+		fedex_service_flag = Trim(Request("fedex_service_flag"))
+		
+		if Len(fedex_service_flag) > 0 then
+			fedex_service_flag = Replace(fedex_service_flag, ", ", "*")
+		else
+			fedex_service_flag = ""
+		end if
+			
+		if Len(fedex_handling) > 0 then
+			if Not IsNumeric(fedex_handling) then
+				fedex_handling = "0"
+			end if
+		else
+			fedex_handling = "0"
+		end if
+					
+		if Len(fedex_markup) > 0 then
+			if Not IsNumeric(fedex_markup) then
+				fedex_markup = "0"
+			end if
+		else
+			fedex_markup = "1"
+		end if
+					
+		if Len(show_fedex_tracking) > 0 then
+			show_fedex_tracking = "1"			
+		else
+			show_fedex_tracking = "0"
+		end if
+		
+		'------------------------------------------------------------
+		'UPS
+		'------------------------------------------------------------
+		sh_handling = Trim(Request("sh_handling"))
+		sh_markup = Trim(Request("sh_markup"))
+		ups_xml_key = Trim(Request("ups_xml_key"))
+		ups_xml_password = Trim(Request("ups_xml_password"))
+		ups_xml_userid = Trim(Request("ups_xml_userid"))
+		ups_ins = Request("ups_ins")
+		GND = Request("GND")
+		DM1 = Request("DM1")
+		DA1 = Request("DA1")
+		DP1 = Request("DP1")
+		DM2 = Request("DM2")
+		DA2 = Request("DA2")
+		DS3 = Request("DS3")
+		X07 = Request("X07")
+		X08 = Request("X08")
+		X11 = Request("X11")
+		X54 = Request("X54")
+		X65 = Request("X65")
+		
+		ups_xml_flag = ""
+					
+		if GND = "1" then
+			ups_xml_flag = ups_xml_flag & "03*"
+		end if
+		if DM1 = "1" then
+			ups_xml_flag = ups_xml_flag & "14*"
+		end if
+		if DA1 = "1" then
+			ups_xml_flag = ups_xml_flag & "01*"
+		end if
+		if DP1 = "1" then
+			ups_xml_flag = ups_xml_flag & "13*"
+		end if
+		if DM2 = "1" then
+			ups_xml_flag = ups_xml_flag & "59*"
+		end if
+		if DA2 = "1" then
+			ups_xml_flag = ups_xml_flag & "02*"
+		end if
+		if DS3 = "1" then
+			ups_xml_flag = ups_xml_flag & "12*"
+		end if
+				
+		if X07 = "1" then
+			ups_xml_flag = ups_xml_flag & "07*"
+		end if
+		if X08 = "1" then
+			ups_xml_flag = ups_xml_flag & "08*"
+		end if
+		if X11 = "1" then
+			ups_xml_flag = ups_xml_flag & "11*"
+		end if
+		if X54 = "1" then
+			ups_xml_flag = ups_xml_flag & "54*"
+		end if
+		if X65 = "1" then
+			ups_xml_flag = ups_xml_flag & "65*"
+		end if
+				
+		if Len(ups_xml_flag) > 0 then
+			ups_xml_flag = Left(ups_xml_flag, Len(ups_xml_flag)-1)
+		end if
+		
+		
+		flags = ""
+						
+		if(GND = "1")then
+			flags = flags + "1"
+		else
+			flags = flags + "0"
+		end if
+			
+		if(DM1 = "1")then
+			flags = flags + "1"
+		else
+			flags = flags + "0"
+		end if
+					
+		if(DA1 = "1")then
+			flags = flags + "1"
+		else
+			flags = flags + "0"
+		end if
+					
+		if(DP1 = "1")then
+			flags = flags + "1"
+		else
+			flags = flags + "0"
+		end if
+					
+		if(DM2 = "1")then
+			flags = flags + "1"
+		else
+			flags = flags + "0"
+		end if
+					
+		if(DA2 = "1")then
+			flags = flags + "1"
+		else
+			flags = flags + "0"
+		end if
+					
+		if(DS3 = "1")then
+			flags = flags + "1"
+		else
+			flags = flags + "0"
+		end if
+					
+		flags = flags + "0"
+		
+		
+		
+		if Len(sh_handling) > 0 then
+			if Not IsNumeric(sh_handling) then
+				sh_handling = "0"
+			end if
+		else
+			sh_handling = "0"
+		end if
+					
+		if Len(sh_markup) > 0 then
+			if Not IsNumeric(sh_markup) then
+				sh_markup = "0"
+			end if
+		else
+			sh_markup = "1"
+		end if
+		
+		if Len(ups_ins) > 0 then
+			if Not IsNumeric(ups_ins) then
+				ups_ins = "0"
+			end if
+		else
+			ups_ins = "0"
+		end if
+		
+		'------------------------------------------------------------
+		'USPS
+		'------------------------------------------------------------
+		usps_handling = Trim(Request("usps_handling"))
+		usps_markup = Trim(Request("usps_markup"))
+		usps_password = Trim(Request("usps_password"))
+		usps_userid = Trim(Request("usps_userid"))
+		usps_service_flag = Trim(Request("usps_service_flag"))
+		
+		if Len(usps_handling) > 0 then
+			if Not IsNumeric(usps_handling) then
+				usps_handling = "0"
+			end if
+		else
+			usps_handling = "0"
+		end if
+					
+		if Len(usps_markup) > 0 then
+			if Not IsNumeric(usps_markup) then
+				usps_markup = "0"
+			end if
+		else
+			usps_markup = "1"
+		end if
+					
+		if Len(show_usps_tracking) > 0 then
+			show_usps_tracking = "1"			
+		else
+			show_usps_tracking = "0"
+		end if
+		
+		if Len(usps_service_flag) > 0 then
+			usps_service_flag = Replace(usps_service_flag, ", ", "*")
+		else
+			usps_service_flag = ""
+		end if
+		'------------------------------------------------------------
+		
+		'------------------------------------------------------------
+		'Setting
+		'------------------------------------------------------------
+		warehouse_city = Trim(Request("warehouse_city"))
+		warehouse_country = Trim(Request("warehouse_country"))
+		warehouse_state = Trim(Request("warehouse_state"))
+		warehouse_zip = Trim(Request("warehouse_zip"))
+		
+		
+		'--SAVE DATA------------------------------------------
+		Set rsUpdate = Server.CreateObject("ADODB.Recordset")
+		with rsUpdate
+			.ActiveConnection = dbconn
+			.CursorLocation = 3
+			.CursorType = 1
+			.LockType = 3
+			.Source = g_storeid & "_profile"
+			.Open
+		end with
+		
+		rsUpdate("SH_display_flag") = SH_display_flag
+		
+		rsUpdate("warehouse_city") = warehouse_city
+		rsUpdate("warehouse_state") = warehouse_state
+		rsUpdate("warehouse_zip") = warehouse_zip
+		rsUpdate("warehouse_country") = warehouse_country
+		rsUpdate("assume_res") = assume_res
+		
+		rsUpdate("sh_ups_flags") = flags
+		rsUpdate("sh_handling") = sh_handling
+		rsUpdate("sh_markup") = sh_markup
+		rsUpdate("ups_xml_key") = ups_xml_key
+		rsUpdate("ups_xml_password") = ups_xml_password
+		rsUpdate("ups_xml_userid") = ups_xml_userid
+		rsUpdate("ups_xml_flag") = ups_xml_flag
+		rsUpdate("UPS_insurance") = ups_ins
+		rsUpdate("show_ups_tracking") = 1
+		
+		rsUpdate("fedex_handling") = fedex_handling
+		rsUpdate("fedex_markup") = fedex_markup
+		rsUpdate("show_fedex_tracking") = 1
+		rsUpdate("fedex_account") = fedex_account
+		rsUpdate("fedex_meter") = fedex_meter
+		rsUpdate("fedex_service_flag") = fedex_service_flag
+		
+		rsUpdate("usps_handling") = usps_handling
+		rsUpdate("usps_markup") = usps_markup
+		rsUpdate("usps_password") = usps_password
+		rsUpdate("usps_userid") = usps_userid
+		rsUpdate("usps_service_flag") = usps_service_flag
+		rsUpdate("show_usps_tracking") = 1
+		rsUpdate("en_usps_userid") = ""
+		rsUpdate("en_usps_password") = ""
+		
+		If dbconn.Errors.Count > 0 Then
+			dbconn.Errors.Clear
+			rsUpdate.CancelUpdate
+		else
+			rsUpdate.Update
+		End If
+		
+		rsUpdate.Close
+		set rsUpdate = nothing
+
+	CASE "pan4"	
+		
+			
+	END SELECT
+%>

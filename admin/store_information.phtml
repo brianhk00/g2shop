@@ -1,7 +1,164 @@
+<%
+	Response.CodePage = 65001
+	Response.CharSet = "UTF-8"
+%>
 <!-- #INCLUDE File="local/local.phtml" -->
 <!-- #INCLUDE File="util/xt_func_util.phtml" -->
 <!-- #INCLUDE File="util/xt_func_string.phtml" -->
+<!-- #INCLUDE File="../util/xt_func_misc_option.phtml" -->
 <!-- #INCLUDE File="include/i_login.phtml" -->
+<%
+	sql = "SELECT * FROM " & g_storeid & "_profile"
+	set rs = dbconn.Execute(sql)
+	if not rs.EOF then
+	
+		company = rs("Company")
+		address = rs("Address")
+		city = rs("City")
+		state = rs("State")
+		zip = rs("Zip")
+		szCountry = rs("Country")
+		phone = rs("Phone")
+		email = rs("Email")
+		
+		profile_visa = rs("visa")
+		profile_mastercard = rs("MasterCard")
+		profile_americanexpress = rs("AmericanExpress")
+		profile_discover = rs("Discover")
+		profile_cod = rs("cod")
+		profile_billme = rs("billme")
+		'profile_check = rs("HasCheckPayment")
+		
+		
+		SH_display_flag = rs("SH_display_flag")
+		'Warehouse Information...
+		warehouse_city = Trim(rs("warehouse_city"))
+		warehouse_state = Trim(rs("warehouse_state"))
+		warehouse_zip = Trim(rs("warehouse_zip"))
+		warehouse_country = Trim(rs("warehouse_country"))
+		assume_res = Trim(rs("assume_res"))
+		
+		'UPS
+		sh_handling = rs("sh_handling")
+		sh_handling = CStr(FormatNumber(sh_handling,2))
+		sh_markup = rs("sh_markup")
+		sh_markup = CStr(FormatNumber(sh_markup,2))
+		ups_xml_userid = Trim(rs("ups_xml_userid"))
+		ups_xml_password = Trim(rs("ups_xml_password"))
+		ups_xml_key = Trim(rs("ups_xml_key"))
+		ups_xml_flag = Trim(rs("ups_xml_flag"))
+		sh_ups_flags = rs("sh_ups_flags")
+		
+		'UPS tables...(2)
+		GND="0"
+		DM1="0"
+		DA1="0"
+		DP1="0"
+		DM2="0"
+		DA2="0"
+		DS3="0"
+			
+		if mid(sh_ups_flags,1,1) = "1" then
+			GND = "1"
+		end if
+		if mid(sh_ups_flags,2,1) = "1" then
+			DM1 = "1"
+		end if
+		if mid(sh_ups_flags,3,1) = "1" then
+			DA1 = "1"
+		end if
+		if mid(sh_ups_flags,4,1) = "1" then
+			DP1 = "1"
+		end if
+		if mid(sh_ups_flags,5,1) = "1" then
+			DM2 = "1"
+		end if
+		if mid(sh_ups_flags,6,1) = "1" then
+			DA2 = "1"
+		end if
+		if mid(sh_ups_flags,7,1) = "1" then
+			DS3 = "1"
+		end if
+	
+		'FedEx Settings
+		fedex_markup = rs("fedex_markup")
+		fedex_markup = CStr(FormatNumber(fedex_markup,2))
+		fedex_handling = rs("fedex_handling")
+		fedex_handling = CStr(FormatNumber(fedex_handling,2))
+		show_fedex_tracking = rs("show_fedex_tracking")
+		fedex_service_flag = Trim(rs("fedex_service_flag"))
+		
+		fedex_account = Trim(rs("fedex_account"))
+		fedex_meter = Trim(rs("fedex_meter")) 
+		
+		'USPS Settings
+		usps_userid = Trim(rs("usps_userid"))
+		usps_password = Trim(rs("usps_password"))
+		usps_markup = rs("usps_markup")
+		usps_markup = CStr(FormatNumber(usps_markup,2))
+		usps_handling = rs("usps_handling")
+		usps_handling = CStr(FormatNumber(usps_handling,2))
+		show_usps_tracking = rs("show_usps_tracking")
+		usps_service_flag = Trim(rs("usps_service_flag"))
+		ups_ins = rs("UPS_insurance")
+		ups_ins = FormatNumber(ups_ins,2)
+		
+	end if
+	rs.Close
+	set rs = nothing
+	
+	goodgree_payment_enable = GetSettingValue("goodgree_payment_enable", "0")
+	goodgree_payment_mode = GetSettingValue("goodgree_payment_mode", "sandbox")
+	goodgree_payment_sandbox_sk = GetSettingValue("goodgree_payment_sandbox_sk", "")
+	goodgree_payment_live_sk = GetSettingValue("goodgree_payment_live_sk", "")
+	goodgree_payment_payment_action = GetSettingValue("goodgree_payment_payment_action", "authorize_capture")
+	goodgree_payment_descriptor = GetSettingValue("goodgree_payment_descriptor", "")
+	goodgree_payment_account_id = GetSettingValue("goodgree_payment_account_id", "")
+	goodgree_payment_access_token = GetSettingValue("goodgree_payment_access_token", "")
+	goodgree_payment_access_token_sandbox = GetSettingValue("goodgree_payment_access_token_sandbox", "")
+	
+	store_payment_gateway_enabled = GetSettingValue("store_payment_gateway_enabled", "0")
+	store_payment_cc_type = GetSettingValue("store_payment_cc_type", "")
+	store_payment_cc_use_card_id = GetSettingValue("store_payment_cc_use_card_id", "0")
+	
+	store_payment_authorizenet_api_login_id = GetSettingValue("store_payment_authorizenet_api_login_id", "")
+	store_payment_authorizenet_payment_action = GetSettingValue("store_payment_authorizenet_payment_action", "authorize")
+	store_payment_authorizenet_transaction_key = GetSettingValue("store_payment_authorizenet_transaction_key", "")
+	
+	store_payment_paypal_payflowpro_payment_action = GetSettingValue("store_payment_paypal_payflowpro_payment_action", "Authorization")
+	store_payment_paypal_payflowpro_partner = GetSettingValue("store_payment_paypal_payflowpro_partner", "")
+	store_payment_paypal_payflowpro_user = GetSettingValue("store_payment_paypal_payflowpro_user", "")
+	store_payment_paypal_payflowpro_vendor = GetSettingValue("store_payment_paypal_payflowpro_vendor", "")
+	store_payment_paypal_payflowpro_password = GetSettingValue("store_payment_paypal_payflowpro_password", "")
+	
+	store_payment_paypal_payflowlink_partner = GetSettingValue("store_payment_paypal_payflowlink_partner", "")
+	store_payment_paypal_payflowlink_user = GetSettingValue("store_payment_paypal_payflowlink_user", "")
+	store_payment_paypal_payflowlink_vendor = GetSettingValue("store_payment_paypal_payflowlink_vendor", "")
+	store_payment_paypal_payflowlink_password = GetSettingValue("store_payment_paypal_payflowlink_password", "")
+	
+	store_payment_paypal_paymentpro_payment_action = GetSettingValue("store_payment_paypal_paymentpro_payment_action", "Authorization")
+	store_payment_paypal_paymentpro_paypal_email_address = GetSettingValue("store_payment_paypal_paymentpro_paypal_email_address", "")
+	store_payment_paypal_paymentpro_api_username = GetSettingValue("store_payment_paypal_paymentpro_api_username", "")
+	store_payment_paypal_paymentpro_api_password = GetSettingValue("store_payment_paypal_paymentpro_api_password", "")
+	store_payment_paypal_paymentpro_api_signature = GetSettingValue("store_payment_paypal_paymentpro_api_signature", "")
+	store_payment_paypal_paymentpro_sandbox_mode = GetSettingValue("store_payment_paypal_paymentpro_sandbox_mode", "0")
+	
+	store_payment_paypal_expresscheckout_payment_action = GetSettingValue("store_payment_paypal_expresscheckout_payment_action", "0")
+	store_payment_paypal_expresscheckout_paypal_email_address = GetSettingValue("store_payment_paypal_expresscheckout_paypal_email_address", "")
+	store_payment_paypal_expresscheckout_api_username = GetSettingValue("store_payment_paypal_expresscheckout_api_username", "")
+	store_payment_paypal_expresscheckout_api_password = GetSettingValue("store_payment_paypal_expresscheckout_api_password", "")
+	store_payment_paypal_expresscheckout_api_signature = GetSettingValue("store_payment_paypal_expresscheckout_api_signature", "")
+	store_payment_paypal_expresscheckout_sandbox_mode = GetSettingValue("store_payment_paypal_expresscheckout_sandbox_mode", "0")
+	
+	store_payment_check_enabled = GetSettingValue("store_payment_check_enabled", "0")
+	store_payment_check_title = GetSettingValue("store_payment_check_title", "Check/Money Order")
+	
+	store_payment_purchase_order_enabled = GetSettingValue("store_payment_purchase_order_enabled", "0")
+	store_payment_purchase_order_title = GetSettingValue("store_payment_purchase_order_title", "Purchase Order")
+	
+
+
+%>
 <!--#INCLUDE FILE="include/doctype.phtml"-->
 <head>
 <!--#INCLUDE FILE="include/head.phtml"-->
@@ -28,8 +185,8 @@
 						<div class="container-fluid">
 							<!-- BEGIN PAGE TITLE -->
 							<div class="page-title">
-								<h1>Dashboard
-									<small>dashboard & statistics</small>
+								<h1>Store
+									<small>information & settings</small>
 								</h1>
 							</div>
 							<!-- END PAGE TITLE -->
@@ -41,7 +198,980 @@
 						<div class="container-fluid">
 							<!-- BEGIN PAGE CONTENT INNER -->
 							<div class="page-content-inner">
-								
+								<div class="row">
+									<div class="col-md-12">
+										<form id="form_edit_1" class="form-horizontal form-row-seperated" action="#">
+										<input type="hidden" id="formid" name="formid" value="pan1" />
+											<div class="portlet box blue-steel">
+												<div class="portlet-title">
+													<div class="caption font-grey">
+														<i class="icon-share font-grey"></i>
+														<span class="caption-subject bold uppercase"> General Information</span>
+													</div>
+													<div class="tools">
+														<a href="javascript:;" class="collapse"> </a>
+													</div>
+													<div class="actions">
+														<button type="submit" class="btn btn-circle green">
+														<i class="fa fa-check"></i> Save </button>
+													</div>
+												</div>
+												<div class="portlet-body">
+													<div class="alert alert-danger display-hide">
+													<button class="close" data-close="alert"></button> You have some form errors. Please check below. 
+													</div>
+													<div class="alert alert-success display-hide">
+													<button class="close" data-close="alert"></button> The information has been saved.
+													</div>
+													<div class="alert alert-warning display-hide">
+													<button class="close" data-close="alert"></button> The information has not been saved properly. Please contact system administrator.
+													</div>
+													<div class="form-group">
+														<label class="col-sm-2 control-label" for="company">
+															Company <span class="symbol required">*</span>
+														</label>
+														<div class="col-sm-9">
+															<input type="text" placeholder="" class="form-control input-sm" id="company" name="company" value="<%=company%>">
+														</div>
+													</div>
+													<div class="form-group">
+														<label class="col-sm-2 control-label" for="address">
+															Street Address <span class="symbol required">*</span>
+														</label>
+														<div class="col-sm-9">
+															<input type="text" placeholder="" id="address" name="address" class="form-control input-sm" value="<%=address%>">
+														</div>
+													</div>
+													<div class="form-group">
+														<label class="col-sm-2 control-label" for="city">
+															City <span class="symbol required">*</span>
+														</label>
+														<div class="col-sm-9">
+															<input type="text"  id="city" name="city" class="form-control input-sm" value="<%=city%>">
+														</div>
+													</div>
+													<div class="form-group">
+														<label class="col-sm-2 control-label" for="state">
+															State / Province <span class="symbol required">*</span>
+														</label>
+														<div class="col-sm-9">
+															<select class="form-control input-sm" id="state" name="state">
+															<%=GetStatesOptionTags(state)%>	
+															</select>
+														</div>
+													</div>
+													<div class="form-group">
+														<label class="col-sm-2 control-label" for="zip">
+															Zip / Postal Code <span class="symbol required">*</span>
+														</label>
+														<div class="col-sm-9">
+															<input type="text"  id="zip" name="zip" class="form-control input-sm" value="<%=zip%>">
+														</div>
+													</div>
+													<div class="form-group">
+														<label class="col-sm-2 control-label" for="phone">
+															Phone Number <span class="symbol required">*</span>
+														</label>
+														<div class="col-sm-9">
+															<input type="text"  id="phone" name="phone" class="form-control input-sm" value="<%=phone%>">
+														</div>
+													</div>
+													<div class="form-group">
+														<label class="col-sm-2 control-label" for="email">
+															Email Address <span class="symbol required">*</span>
+														</label>
+														<div class="col-sm-9">
+															<input type="text"  id="email" name="email" class="form-control input-sm" value="<%=email%>">
+														</div>
+													</div>
+												</div>
+											</div>
+										</form>
+									</div>
+								</div>
+								<div class="row">
+									<div class="col-md-12">
+										<form id="form_edit_2" class="form-horizontal form-row-seperated" action="#">
+										<input type="hidden" id="formid" name="formid" value="pan2" />
+											<div class="portlet box blue-steel">
+												<div class="portlet-title">
+													<div class="caption font-grey">
+														<i class="icon-share font-grey"></i>
+														<span class="caption-subject bold uppercase"> Payments</span>
+													</div>
+													<div class="tools">
+														<a href="javascript:;" class="collapse"> </a>
+													</div>
+													<div class="actions">
+														<button type="submit" class="btn btn-circle green">
+														<i class="fa fa-check"></i> Save </button>
+													</div>
+													<ul class="nav nav-tabs">
+														<li class="active">
+															<a href="#portlet_tab1" data-toggle="tab"> Settings </a>
+														</li>
+														<li>
+															<a href="#portlet_tab2" data-toggle="tab"> Authorize.net </a>
+														</li>
+														<li class="dropdown">
+															
+															<a href="javascript:;" class="dropdown-toggle" data-toggle="dropdown" aria-expanded="false"> <i class="fa fa-paypal"></i>Paypal
+																<i class="fa fa-angle-down"></i>
+															</a>
+															<ul class="dropdown-menu" role="menu">
+																<li>
+																	<a href="#portlet_tab3_1" tabindex="-1" data-toggle="tab"> Payflow Pro </a>
+																</li>
+																<li>
+																	<a href="#portlet_tab3_2" tabindex="-1" data-toggle="tab"> Payflow Link </a>
+																</li>
+																<li>
+																	<a href="#portlet_tab3_3" tabindex="-1" data-toggle="tab"> Payments Pro </a>
+																</li>
+																<li>
+																	<a href="#portlet_tab3_4" tabindex="-1" data-toggle="tab"> Express Checkout </a>
+																</li>
+															</ul>
+														</li>
+														<li>
+															<a href="#portlet_tab4" data-toggle="tab"> Check / Money Order </a>
+														</li>
+														<li>
+															<a href="#portlet_tab5" data-toggle="tab"> Purchase Order </a>
+														</li>
+													</ul>
+												</div>
+												<div class="portlet-body">
+													<div class="alert alert-danger display-hide">
+													<button class="close" data-close="alert"></button> You have some form errors. Please check below. 
+													</div>
+													<div class="alert alert-success display-hide">
+													<button class="close" data-close="alert"></button> The information has been saved.
+													</div>
+													<div class="alert alert-warning display-hide">
+													<button class="close" data-close="alert"></button> The information has not been saved properly. Please contact system administrator.
+													</div>
+													<div class="tab-content">
+														<div class="tab-pane active" id="portlet_tab1">
+															<div class="form-group">
+																<label class="col-sm-2 control-label" for="store_payment_gateway_enabled">
+																	Gateway Enable <span class="symbol required"></span>
+																</label>
+																<div class="col-sm-4">
+																	<select id="store_payment_gateway_enabled" name="store_payment_gateway_enabled" class="form-control select input-sm">
+																		<option value="0" <% if store_payment_gateway_enabled = "0" then%>selected<% end if %>>No</option>
+																		<option value="6" <% if store_payment_gateway_enabled = "6" then%>selected<% end if %>>Authorize.net</option>
+																		<option value="2" <% if store_payment_gateway_enabled = "2" then%>selected<% end if %>>Paypal Payflow Pro</option>
+																		<option value="5" <% if store_payment_gateway_enabled = "5" then%>selected<% end if %>>Paypal Payflow Link</option>
+																		<option value="91" <% if store_payment_gateway_enabled = "91" then%>selected<% end if %>>Paypal Payment Pro</option>
+																		<option value="18" <% if store_payment_gateway_enabled = "18" then%>selected<% end if %>>Stripe</option>
+																	</select>
+																</div>
+																<div class="col-sm-4">
+																</div>
+															</div>
+															<div class="form-group">
+																<label class="col-sm-2 control-label" for="store_payment_cc_type">
+																	Credit Card Types <span class="symbol required"></span>
+																</label>
+																<div class="col-sm-4">
+																	<select id="store_payment_cc_type" name="store_payment_cc_type" class="form-control select input-sm" size="5" multiple="multiple">
+																	<option value="AE">American Express</option>
+																	<option value="VI" selected="selected">Visa</option>
+																	<option value="MC" selected="selected">MasterCard</option>
+																	<option value="DI" selected="selected">Discover</option>
+																	<option value="OT" selected="selected">JCB Card</option>
+																	</select>
+																</div>
+															</div>
+															<div class="form-group">
+																<label class="col-sm-2 control-label" for="store_payment_cc_use_card_id">
+																	Credit Card Verification <span class="symbol required"></span>
+																</label>
+																<div class="col-sm-4">
+																	<select id="store_payment_cc_use_card_id" name="store_payment_cc_use_card_id" class="form-control select input-sm">
+																	<option value="1" <% if store_payment_cc_use_card_id = "1" then%>selected<% end if %>>Yes</option>
+																	<option value="0" <% if store_payment_cc_use_card_id = "0" then%>selected<% end if %>>No</option>
+																	</select>
+																</div>
+															</div>
+														</div>
+														<div class="tab-pane" id="portlet_tab2">
+															<div class="form-group">
+																<label class="col-sm-2 control-label" for="store_payment_authorizenet_payment_action">
+																	Payment Action <span class="symbol required"></span>
+																</label>
+																<div class="col-sm-4">
+																	<select id="store_payment_authorizenet_payment_action" name="store_payment_authorizenet_payment_action" class="form-control select input-sm">
+																		<option value="authorize" <% if store_payment_authorizenet_payment_action = "authorize" then%>selected<% end if %>>Authorize Only</option>
+																		<option value="authorize_capture" <% if store_payment_authorizenet_payment_action = "authorize_capture" then%>selected<% end if %>>Authorize and Capture</option>
+																	</select>
+																</div>
+															</div>
+															<div class="form-group">
+																<label class="col-sm-2 control-label" for="store_payment_authorizenet_api_login_id">
+																	API Login ID <span class="symbol required"></span>
+																</label>
+																<div class="col-sm-9">
+																	<input type="text" placeholder="" class="form-control input-sm" id="store_payment_authorizenet_api_login_id" name="store_payment_authorizenet_api_login_id" value="<%=store_payment_authorizenet_api_login_id%>">
+																</div>
+															</div>
+															<div class="form-group">
+																<label class="col-sm-2 control-label" for="store_payment_authorizenet_transaction_key">
+																	Transaction Key <span class="symbol required"></span>
+																</label>
+																<div class="col-sm-9">
+																	<input type="text" placeholder="" class="form-control input-sm" id="store_payment_authorizenet_transaction_key" name="store_payment_authorizenet_transaction_key" value="<%=store_payment_authorizenet_transaction_key%>">
+																</div>
+															</div>
+														</div>
+														<div class="tab-pane" id="portlet_tab3_1">
+															<h3>Payflow Pro</h3>
+															<div class="form-group">
+																<label class="col-sm-2 control-label" for="store_payment_paypal_payflowpro_payment_action">
+																	Payment Action <span class="symbol required"></span>
+																</label>
+																<div class="col-sm-4">
+																	<select id="store_payment_paypal_payflowpro_payment_action" name="store_payment_paypal_payflowpro_payment_action" class="form-control select input-sm">
+																	<option value="Authorization" <% if store_payment_paypal_payflowpro_payment_action = "Authorization" then%>selected<% end if %>>Authorization</option>
+																	<option value="Sale" <% if store_payment_paypal_payflowpro_payment_action = "Sale" then%>selected<% end if %>>Sale</option>
+																	</select>
+																</div>
+															</div>
+															<div class="form-group">
+																<label class="col-sm-2 control-label" for="store_payment_paypal_payflowpro_partner">
+																	Partner <span class="symbol required"></span>
+																</label>
+																<div class="col-sm-9">
+																	<input type="text" placeholder="" class="form-control input-sm" id="store_payment_paypal_payflowpro_partner" name="store_payment_paypal_payflowpro_partner" value="<%=store_payment_paypal_payflowpro_partner%>">
+																</div>
+															</div>
+															<div class="form-group">
+																<label class="col-sm-2 control-label" for="store_payment_paypal_payflowpro_user">
+																	User <span class="symbol required"></span>
+																</label>
+																<div class="col-sm-9">
+																	<input type="text" placeholder="" class="form-control input-sm" id="store_payment_paypal_payflowpro_user" name="store_payment_paypal_payflowpro_user" value="<%=store_payment_paypal_payflowpro_user%>">
+																</div>
+															</div>
+															<div class="form-group">
+																<label class="col-sm-2 control-label" for="store_payment_paypal_payflowpro_vendor">
+																	Vendor <span class="symbol required"></span>
+																</label>
+																<div class="col-sm-9">
+																	<input type="text" placeholder="" class="form-control input-sm" id="store_payment_paypal_payflowpro_vendor" name="store_payment_paypal_payflowpro_vendor" value="<%=store_payment_paypal_payflowpro_vendor%>">
+																</div>
+															</div>
+															<div class="form-group">
+																<label class="col-sm-2 control-label" for="store_payment_paypal_payflowpro_password">
+																	Password <span class="symbol required"></span>
+																</label>
+																<div class="col-sm-9">
+																	<input type="text" placeholder="" class="form-control input-sm" id="store_payment_paypal_payflowpro_password" name="store_payment_paypal_payflowpro_password" value="<%=store_payment_paypal_payflowpro_password%>">
+																</div>
+															</div>
+														</div>
+														<div class="tab-pane" id="portlet_tab3_2">
+															<h3>Payflow Link</h3>
+															<div class="form-group">
+																<label class="col-sm-2 control-label" for="store_payment_paypal_payflowlink_partner">
+																	Partner <span class="symbol required"></span>
+																</label>
+																<div class="col-sm-9">
+																	<input type="text" placeholder="" class="form-control input-sm" id="store_payment_paypal_payflowlink_partner" name="store_payment_paypal_payflowlink_partner" value="<%=store_payment_paypal_payflowlink_partner%>">
+																</div>
+															</div>
+															<div class="form-group">
+																<label class="col-sm-2 control-label" for="store_payment_paypal_payflowlink_user">
+																	User <span class="symbol required"></span>
+																</label>
+																<div class="col-sm-9">
+																	<input type="text" placeholder="" class="form-control input-sm" id="store_payment_paypal_payflowlink_user" name="store_payment_paypal_payflowlink_user" value="<%=store_payment_paypal_payflowlink_user%>">
+																</div>
+															</div>
+															<div class="form-group">
+																<label class="col-sm-2 control-label" for="store_payment_paypal_payflowlink_vendor">
+																	Vendor <span class="symbol required"></span>
+																</label>
+																<div class="col-sm-9">
+																	<input type="text" placeholder="" class="form-control input-sm" id="store_payment_paypal_payflowlink_vendor" name="store_payment_paypal_payflowlink_vendor" value="<%=store_payment_paypal_payflowlink_vendor%>">
+																</div>
+															</div>
+															<div class="form-group">
+																<label class="col-sm-2 control-label" for="store_payment_paypal_payflowlink_password ">
+																	Password <span class="symbol required"></span>
+																</label>
+																<div class="col-sm-9">
+																	<input type="text" placeholder="" class="form-control input-sm" id="store_payment_paypal_payflowlink_password " name="store_payment_paypal_payflowlink_password " value="<%=store_payment_paypal_payflowlink_password %>">
+																</div>
+															</div>
+														</div>
+														<div class="tab-pane" id="portlet_tab3_3">
+															<h3>Payments Pro</h3>
+															<div class="form-group">
+																<label class="col-sm-2 control-label" for="store_payment_paypal_paymentpro_payment_action">
+																	Payment Action <span class="symbol required"></span>
+																</label>
+																<div class="col-sm-4">
+																	<select id="store_payment_paypal_paymentpro_payment_action" name="store_payment_paypal_paymentpro_payment_action" class="form-control select input-sm">
+																	<option value="Authorization" <% if store_payment_paypal_paymentpro_payment_action = "Authorization" then%>selected<% end if %>>Authorization</option>
+																	<option value="Sale" <% if store_payment_paypal_paymentpro_payment_action = "Sale" then%>selected<% end if %>>Sale</option>
+																	</select>
+																</div>
+															</div>
+															<div class="form-group">
+																<label class="col-sm-2 control-label" for="store_payment_paypal_paymentpro_paypal_email_address">
+																	Paypal Email Address <span class="symbol required"></span>
+																</label>
+																<div class="col-sm-9">
+																	<input type="text" placeholder="" class="form-control input-sm" id="store_payment_paypal_paymentpro_paypal_email_address" name="store_payment_paypal_paymentpro_paypal_email_address" value="<%=store_payment_paypal_paymentpro_paypal_email_address%>">
+																</div>
+															</div>
+															<div class="form-group">
+																<label class="col-sm-2 control-label" for="store_payment_paypal_paymentpro_api_username">
+																	API Username <span class="symbol required"></span>
+																</label>
+																<div class="col-sm-9">
+																	<input type="text" placeholder="" class="form-control input-sm" id="store_payment_paypal_paymentpro_api_username" name="store_payment_paypal_paymentpro_api_username" value="<%=store_payment_paypal_paymentpro_api_username%>">
+																</div>
+															</div>
+															<div class="form-group">
+																<label class="col-sm-2 control-label" for="store_payment_paypal_paymentpro_api_password">
+																	API Password <span class="symbol required"></span>
+																</label>
+																<div class="col-sm-9">
+																	<input type="text" placeholder="" class="form-control input-sm" id="store_payment_paypal_paymentpro_api_password" name="store_payment_paypal_paymentpro_api_password" value="<%=store_payment_paypal_paymentpro_api_password%>">
+																</div>
+															</div>
+															<div class="form-group">
+																<label class="col-sm-2 control-label" for="store_payment_paypal_paymentpro_api_signature">
+																	API Signature <span class="symbol required"></span>
+																</label>
+																<div class="col-sm-9">
+																	<input type="text" placeholder="" class="form-control input-sm" id="store_payment_paypal_paymentpro_api_signature" name="store_payment_paypal_paymentpro_api_signature" value="<%=store_payment_paypal_paymentpro_api_signature%>">
+																</div>
+															</div>
+															<div class="form-group">
+																<label class="col-sm-2 control-label" for="store_payment_paypal_paymentpro_sandbox_mode">
+																	Mode <span class="symbol required"></span>
+																</label>
+																<div class="col-sm-4">
+																	<select id="store_payment_paypal_paymentpro_sandbox_mode" name="store_payment_paypal_paymentpro_sandbox_mode" class="form-control select input-sm">
+																	<option value="1" <% if store_payment_paypal_paymentpro_sandbox_mode = "1" then%>selected<% end if %>>Yes</option>
+																	<option value="0" <% if store_payment_paypal_paymentpro_sandbox_mode = "0" then%>selected<% end if %>>No</option>
+																	</select>
+																</div>
+															</div>
+																					
+														</div>
+														<div class="tab-pane" id="portlet_tab3_4">
+															<h3>Express Checkout</h3>
+															<div class="form-group">
+																<label class="col-sm-2 control-label" for="store_payment_paypal_expresscheckout_payment_action">
+																	Payment Action <span class="symbol required"></span>
+																</label>
+																<div class="col-sm-4">
+																	<select id="store_payment_paypal_expresscheckout_payment_action " name="store_payment_paypal_expresscheckout_payment_action " class="form-control select input-sm">
+																	<option value="0" <% if store_payment_paypal_expresscheckout_payment_action = "0" then%>selected<% end if %>>Disable</option>
+																	<option value="Authorization" <% if store_payment_paypal_expresscheckout_payment_action = "Authorization" then%>selected<% end if %>>Authorization</option>
+																	<option value="Sale" <% if store_payment_paypal_expresscheckout_payment_action = "Sale" then%>selected<% end if %>>Sale</option>
+																	</select>
+																</div>
+															</div>
+															<div class="form-group">
+																<label class="col-sm-2 control-label" for="store_payment_paypal_expresscheckout_paypal_email_address">
+																	Paypal Email Address <span class="symbol required"></span>
+																</label>
+																<div class="col-sm-9">
+																	<input type="text" placeholder="" class="form-control input-sm" id="store_payment_paypal_expresscheckout_paypal_email_address" name="store_payment_paypal_expresscheckout_paypal_email_address" value="<%=store_payment_paypal_expresscheckout_paypal_email_address%>">
+																</div>
+															</div>
+															<div class="form-group">
+																<label class="col-sm-2 control-label" for="store_payment_paypal_expresscheckout_api_username">
+																	API Username <span class="symbol required"></span>
+																</label>
+																<div class="col-sm-9">
+																	<input type="text" placeholder="" class="form-control input-sm" id="store_payment_paypal_expresscheckout_api_username" name="store_payment_paypal_expresscheckout_api_username" value="<%=store_payment_paypal_expresscheckout_api_username%>">
+																</div>
+															</div>
+															<div class="form-group">
+																<label class="col-sm-2 control-label" for="store_payment_paypal_expresscheckout_api_password">
+																	API Password <span class="symbol required"></span>
+																</label>
+																<div class="col-sm-9">
+																	<input type="text" placeholder="" class="form-control input-sm" id="store_payment_paypal_expresscheckout_api_password" name="store_payment_paypal_expresscheckout_api_password" value="<%=store_payment_paypal_expresscheckout_api_password%>">
+																</div>
+															</div>
+															<div class="form-group">
+																<label class="col-sm-2 control-label" for="store_payment_paypal_expresscheckout_api_signature">
+																	API Signature <span class="symbol required"></span>
+																</label>
+																<div class="col-sm-9">
+																	<input type="text" placeholder="" class="form-control input-sm" id="store_payment_paypal_expresscheckout_api_signature" name="store_payment_paypal_expresscheckout_api_signature" value="<%=store_payment_paypal_expresscheckout_api_signature%>">
+																</div>
+															</div>
+															<div class="form-group">
+																<label class="col-sm-2 control-label" for="store_payment_paypal_expresscheckout_sandbox_mode">
+																	Mode <span class="symbol required"></span>
+																</label>
+																<div class="col-sm-4">
+																	<select id="store_payment_paypal_expresscheckout_sandbox_mode" name="store_payment_paypal_expresscheckout_sandbox_mode" class="form-control select input-sm">
+																	<option value="1" <% if store_payment_paypal_expresscheckout_sandbox_mode = "1" then%>selected<% end if %>>Yes</option>
+																	<option value="0" <% if store_payment_paypal_expresscheckout_sandbox_mode = "0" then%>selected<% end if %>>No</option>
+																	</select>
+																</div>
+															</div>
+														</div>
+														<div class="tab-pane" id="portlet_tab4">
+															<div class="form-group">
+																<label class="col-sm-2 control-label" for="store_payment_check_enabled">
+																	Enabled <span class="symbol required"></span>
+																</label>
+																<div class="col-sm-4">
+																	<select id="store_payment_check_enabled" name="store_payment_check_enabled" class="form-control select input-sm">
+																		<option value="1" <% if store_payment_check_enabled = "1" then%>selected<% end if %>>Yes</option>
+																		<option value="0" <% if store_payment_check_enabled = "0" then%>selected<% end if %>>No</option>
+																	</select>
+																</div>
+															</div>
+															<div class="form-group">
+																<label class="col-sm-2 control-label" for="store_payment_check_title">
+																	Title <span class="symbol required"></span>
+																</label>
+																<div class="col-sm-9">
+																	<input type="text" placeholder="" class="form-control input-sm" id="store_payment_check_title" name="store_payment_check_title" value="<%=store_payment_check_title%>">
+																</div>
+															</div>
+														</div>
+														<div class="tab-pane" id="portlet_tab5">
+															<div class="form-group">
+																<label class="col-sm-2 control-label" for="store_payment_purchase_order_enabled">
+																	Enabled <span class="symbol required"></span>
+																</label>
+																<div class="col-sm-4">
+																	<select id="store_payment_purchase_order_enabled" name="store_payment_purchase_order_enabled" class="form-control select input-sm">
+																		<option value="1" <% if store_payment_purchase_order_enabled = "1" then%>selected<% end if %>>Yes</option>
+																		<option value="0" <% if store_payment_purchase_order_enabled = "0" then%>selected<% end if %>>No</option>
+																	</select>
+																</div>
+															</div>
+															<div class="form-group">
+																<label class="col-sm-2 control-label" for="store_payment_purchase_order_title">
+																	Title <span class="symbol required"></span>
+																</label>
+																<div class="col-sm-9">
+																	<input type="text" placeholder="" class="form-control input-sm" id="store_payment_purchase_order_title" name="store_payment_purchase_order_title" value="<%=store_payment_purchase_order_title%>">
+																</div>
+															</div>
+														</div>
+													</div>
+												</div>
+											</div>
+										</form>
+									</div>
+								</div>
+								<div class="row">
+									<div class="col-md-12">
+										<form id="form_edit_3" class="form-horizontal form-row-seperated" action="#">
+										<input type="hidden" id="formid" name="formid" value="pan3" />
+											<div class="portlet box blue-steel">
+												<div class="portlet-title">
+													<div class="caption font-grey">
+														<i class="icon-share font-grey"></i>
+														<span class="caption-subject bold uppercase"> Shipping</span>
+													</div>
+													<div class="tools">
+														<a href="javascript:;" class="collapse"> </a>
+													</div>
+													<div class="actions">
+														<button type="submit" class="btn btn-circle green">
+														<i class="fa fa-check"></i> Save </button>
+													</div>
+													<ul class="nav nav-tabs">
+														<li class="active">
+															<a href="#portlet3_tab1" data-toggle="tab"> Settings </a>
+														</li>
+														<li>
+															<a href="#portlet3_tab2" data-toggle="tab"> UPS </a>
+														</li>
+														<li>
+															<a href="#portlet3_tab3" data-toggle="tab"> FedEx </a>
+														</li>
+														<li>
+															<a href="#portlet3_tab4" data-toggle="tab"> USPS </a>
+														</li>
+														<li>
+															<a href="#portlet3_tab5" data-toggle="tab"> Flat Rate</a>
+														</li>
+														<li>
+															<a href="#portlet3_tab6" data-toggle="tab"> Table Rate</a>
+														</li>
+													</ul>
+												</div>
+												<div class="portlet-body">
+													<div class="alert alert-danger display-hide">
+													<button class="close" data-close="alert"></button> You have some form errors. Please check below. 
+													</div>
+													<div class="alert alert-success display-hide">
+													<button class="close" data-close="alert"></button> The information has been saved.
+													</div>
+													<div class="alert alert-warning display-hide">
+													<button class="close" data-close="alert"></button> The information has not been saved properly. Please contact system administrator.
+													</div>
+													<div class="tab-content">
+														<div class="tab-pane active" id="portlet3_tab1">
+															<div class="form-group">
+																<label class="col-sm-3 control-label" for="warehouse_city">
+																	City <span class="symbol required"></span>
+																</label>
+																<div class="col-sm-9">
+																	<input type="text"  id="warehouse_city" name="warehouse_city" class="form-control input-sm" value="<%=warehouse_city%>">
+																</div>
+															</div>
+															<div class="form-group">
+																<label class="col-sm-3 control-label" for="warehouse_country">
+																	Country <span class="symbol required"></span>
+																</label>
+																<div class="col-sm-9">
+																	<select id="warehouse_country" name="warehouse_country"  class="form-control input-sm">
+																		<option value="US" <%if warehouse_country = "US" then %>selected<%end if%>>United States</option>
+																		<option value="CA" <%if warehouse_country = "CA" then %>selected<%end if%>>CANADA</option>
+																	</select></div>
+															</div>
+															<div class="form-group">
+																<label class="col-sm-3 control-label" for="warehouse_state">
+																	State <span class="symbol required"></span>
+																</label>
+																<div class="col-sm-9">
+																	<select id="warehouse_state" name="warehouse_state" class="form-control input-sm" size=1>
+																	<%
+																		SELECT CASE Session("ENABLEINT")
+																		CASE "0"
+																			Response.Write(GetStatesOptionTags(warehouse_state))
+																		CASE "1"
+																			Response.Write(GetStatesOptionTagsInt(warehouse_state, "0"))
+																		CASE "2"
+																			Response.Write(GetStatesOptionTagsInt(warehouse_state, "1"))
+																		CASE "3"
+																			Response.Write(GetStatesOptionTagsInt(warehouse_state, "0"))
+																		CASE ELSE
+																			Response.Write(GetStatesOptionTags(warehouse_state))
+																		END SELECT
+																	%>
+																	</select>
+																</div>
+															</div>
+															<div class="form-group">
+																<label class="col-sm-3 control-label" for="warehouse_zip">
+																	Zip / Postal Code <span class="symbol required"></span>
+																</label>
+																<div class="col-sm-9">
+																	<input type="text"  id="warehouse_zip" name="warehouse_zip" class="form-control input-sm" value="<%=warehouse_zip%>">
+																</div>
+															</div>
+															<div class="form-group">
+																<label class="col-sm-3 control-label" for="form-field-1">
+																	Default Destination Type <span class="symbol required"></span>
+																</label>
+																<div class="col-sm-9">
+																	<label class="radio-inline">
+																		<input type="radio" value="1" name="assume_res" class="grey" <% if assume_res = "1" then%>checked<%end if%>>
+																		Residential
+																	</label>
+																	<label class="radio-inline">
+																		<input type="radio" value="0" name="assume_res" class="grey" <% if assume_res = "0" then%>checked<%end if%>>
+																		Commercial
+																	</label>
+																</div>
+															</div>
+														</div>
+														<div class="tab-pane" id="portlet3_tab2">
+															<div class="form-group">
+																<label class="col-sm-3 control-label" for="form-field-1">
+																	Enable <span class="symbol required"></span>
+																</label>
+																<div class="col-sm-9">
+																	<label class="mt-checkbox mt-checkbox-outline">
+																		<input type="checkbox" id="SH_display_flag" name="SH_display_flag" value="UPS" <% if InStr(SH_display_flag, "UPS")>0 then%> checked <% end if%>>
+																		<span></span>
+																	</label>
+																</div>
+															</div>
+															<div class="form-group">
+																<label class="col-sm-3 control-label" for="ups_xml_password">
+																	Password <span class="symbol required"></span>
+																</label>
+																<div class="col-sm-9">
+																	<input type="text"  id="ups_xml_password" name="ups_xml_password" class="form-control input-sm" value="<%=ups_xml_password%>">
+																</div>
+															</div>
+															<div class="form-group">
+																<label class="col-sm-3 control-label" for="ups_xml_key">
+																	Access License Number <span class="symbol required"></span>
+																</label>
+																<div class="col-sm-9">
+																	<input type="text"  id="ups_xml_key" name="ups_xml_key" class="form-control input-sm" value="<%=ups_xml_key%>">
+																</div>
+															</div>
+															<div class="form-group">
+																<label class="col-sm-3 control-label" for="ups_xml_userid">
+																	User ID <span class="symbol required"></span>
+																</label>
+																<div class="col-sm-9">
+																	<input type="text"  id="ups_xml_userid" name="ups_xml_userid" class="form-control input-sm" value="<%=ups_xml_userid%>">
+																</div>
+															</div>
+															<div class="form-group">
+																<label class="col-sm-3 control-label" for="form-field-1">
+																	Allowed Methods <span class="symbol required"></span>
+																</label>
+																<div class="col-sm-9">
+																	<div class="mt-checkbox-list">
+																		<label class="mt-checkbox mt-checkbox-outline">
+																			<input type="checkbox" name="DA1" value="1" <%if DA1="1" then%>checked<%end if%> class="grey">
+																			Next Day Air<span></span>
+																		</label>
+																		<label class="mt-checkbox mt-checkbox-outline">
+																			<input type="checkbox" name="DA2" value="1" <%if DA2="1" then%>checked<%end if%> class="grey">
+																			2nd Day Air<span></span>
+																		</label>
+																		<label class="mt-checkbox mt-checkbox-outline">
+																			<input type="checkbox" name="GND" value="1" <%if GND="1" then%>checked<%end if%> class="grey">
+																			Ground<span></span> 
+																		</label>
+																		<label class="mt-checkbox mt-checkbox-outline">
+																			<input type="checkbox" name="DS3" value="1" <%if DS3="1" then%>checked<%end if%> class="grey">
+																			3Day Select<span></span>
+																		</label>
+																		<label class="mt-checkbox mt-checkbox-outline">
+																			<input type="checkbox" name="DP1" value="1" <%if DP1="1" then%>checked<%end if%> class="grey">
+																			Next Day Air Saver<span></span>
+																		</label>
+																		<label class="mt-checkbox mt-checkbox-outline">
+																			<input type="checkbox" name="DM1" value="1" <%if DM1="1" then%>checked<%end if%> class="grey">
+																			Next Day Air Early AM<span></span>
+																		</label>
+																		<label class="mt-checkbox mt-checkbox-outline">
+																			<input type="checkbox" name="DM2" value="1" <%if DM2="1" then%>checked<%end if%> class="grey">
+																			2nd Day Early AM<span></span>
+																		</label>
+																		<label class="mt-checkbox mt-checkbox-outline">
+																			<input type="checkbox" name="X07" value="1" <%if X07="1" then%>checked<%end if%> class="grey">
+																			Worldwide Express<span></span>
+																		</label>
+																		<label class="mt-checkbox mt-checkbox-outline">
+																			<input type="checkbox" name="X08" value="1" <%if X08="1" then%>checked<%end if%> class="grey">
+																			Worldwide Expedited<span></span>
+																		</label>
+																		<label class="mt-checkbox mt-checkbox-outline">
+																			<input type="checkbox" name="X11" value="1" <%if X11="1" then%>checked<%end if%> class="grey">
+																			Standard<span></span>
+																		</label>
+																		<label class="mt-checkbox mt-checkbox-outline">
+																			<input type="checkbox" name="X54" value="1" <%if X54="1" then%>checked<%end if%> class="grey">
+																			Worldwide Express Plus<span></span>
+																		</label>
+																		<label class="mt-checkbox mt-checkbox-outline">
+																			<input type="checkbox" name="X65" value="1" <%if X65="1" then%>checked<%end if%> class="grey">
+																			Express Saver<span></span>
+																		</label>
+																	</div>
+																</div>
+															</div>
+															<div class="form-group">
+																<label class="col-sm-3 control-label" for="sh_markup">
+																	Markup Multiplier <span class="symbol required"></span>
+																</label>
+																<div class="col-sm-9">
+																	<input type="text"  id="sh_markup" name="sh_markup" class="form-control input-sm" value="<%=sh_markup%>">
+																</div>
+															</div>
+															<div class="form-group">
+																<label class="col-sm-3 control-label" for="sh_handling">
+																	Handling Fee<span class="symbol required"></span>
+																</label>
+																<div class="col-sm-9">
+																	<input type="text"  id="sh_handling" name="sh_handling" class="form-control input-sm" value="<%=sh_handling%>">
+																</div>
+															</div>
+															<div class="form-group">
+																<label class="col-sm-3 control-label" for="sh_handling">
+																	Insurance Chage (per $100.00)<span class="symbol required"></span>
+																</label>
+																<div class="col-sm-9">
+																	<input type="text"  id="ups_ins" name="ups_ins" class="form-control input-sm" value="<%=ups_ins%>">
+																</div>
+															</div>
+														</div>
+														
+														<div class="tab-pane" id="portlet3_tab3">
+															<div class="form-group">
+																<label class="col-sm-3 control-label" for="form-field-1">
+																	Enable <span class="symbol required"></span>
+																</label>
+																<div class="col-sm-9">
+																	<label class="mt-checkbox mt-checkbox-outline">
+																		<input type="checkbox" id="SH_display_flag" name="SH_display_flag" value="FedEx" <% if InStr(SH_display_flag, "FedEx")>0 then%> checked <% end if%>>
+																		<span></span>
+																	</label>
+																</div>
+															</div>
+															<div class="form-group">
+																<label class="col-sm-3 control-label" for="fedex_account">
+																	Account ID <span class="symbol required"></span>
+																</label>
+																<div class="col-sm-9">
+																	<input type="text"  id="fedex_account" name="fedex_account" class="form-control input-sm" value="<%=fedex_account%>">
+																</div>
+															</div>
+															<div class="form-group">
+																<label class="col-sm-3 control-label" for="fedex_meter">
+																	Meter Number <span class="symbol required"></span>
+																</label>
+																<div class="col-sm-9">
+																	<input type="text"  id="fedex_meter" name="fedex_meter" class="form-control input-sm" value="<%=fedex_meter%>">
+																</div>
+															</div>
+															<div class="form-group">
+																<label class="col-sm-3 control-label" for="form-field-1">
+																	Allowed Methods <span class="symbol required"></span>
+																</label>
+																<div class="col-sm-9">
+																	<div class="mt-checkbox-list">
+																		<label class="mt-checkbox mt-checkbox-outline">
+																			<input type="checkbox" name="fedex_service_flag" value="01"  <%if InStr(fedex_service_flag, "01")>0 then%>checked<%end if%> class="grey">
+																			Priority (International Priority)<span></span>
+																		</label>
+																		<label class="mt-checkbox mt-checkbox-outline">
+																			<input type="checkbox" name="fedex_service_flag" value="03"  <%if InStr(fedex_service_flag, "03")>0 then%>checked<%end if%> class="grey">
+																			2Day (International Economy)<span></span>
+																		</label>
+																		<label class="mt-checkbox mt-checkbox-outline">
+																			<input type="checkbox" name="fedex_service_flag" value="05"  <%if InStr(fedex_service_flag, "05")>0 then%>checked<%end if%> class="grey">
+																			Standard Overnight<span></span>
+																		</label>
+																		<label class="mt-checkbox mt-checkbox-outline">
+																			<input type="checkbox" name="fedex_service_flag" value="06"  <%if InStr(fedex_service_flag, "06")>0 then%>checked<%end if%> class="grey">
+																			First Overnight  (International First)<span></span>
+																		</label>
+																		<label class="mt-checkbox mt-checkbox-outline">
+																			<input type="checkbox" name="fedex_service_flag" value="20"  <%if InStr(fedex_service_flag, "20")>0 then%>checked<%end if%> class="grey">
+																			Express Saver<span></span>
+																		</label>
+																		<label class="mt-checkbox mt-checkbox-outline">
+																			<input type="checkbox" name="fedex_service_flag" value="90"  <%if InStr(fedex_service_flag, "90")>0 then%>checked<%end if%> class="grey">
+																			FedEx Home Delivery (Residential)<span></span>
+																		</label>
+																		<label class="mt-checkbox mt-checkbox-outline">
+																			<input type="checkbox" name="fedex_service_flag" value="92"  <%if InStr(fedex_service_flag, "92")>0 then%>checked<%end if%> class="grey">
+																			FedEx Ground (Commercial)<span></span>
+																		</label>
+																	</div>
+																</div>
+															</div>
+															<div class="form-group">
+																<label class="col-sm-3 control-label" for="fedex_markup">
+																	Markup Multiplier <span class="symbol required"></span>
+																</label>
+																<div class="col-sm-9">
+																	<input type="text"  id="fedex_markup" name="fedex_markup" class="form-control input-sm" value="<%=fedex_markup%>">
+																</div>
+															</div>
+															<div class="form-group">
+																<label class="col-sm-3 control-label" for="fedex_handling">
+																	Handling Fee<span class="symbol required"></span>
+																</label>
+																<div class="col-sm-9">
+																	<input type="text"  id="fedex_handling" name="fedex_handling" class="form-control input-sm" value="<%=fedex_handling%>">
+																</div>
+															</div>
+														</div>
+														<div class="tab-pane" id="portlet3_tab4">
+															<div class="form-group">
+																<label class="col-sm-3 control-label" for="form-field-1">
+																	Enable <span class="symbol required"></span>
+																</label>
+																<div class="col-sm-9">
+																	<label class="mt-checkbox mt-checkbox-outline">
+																		<input type="checkbox" id="SH_display_flag" name="SH_display_flag" value="USPS" <% if InStr(SH_display_flag, "USPS")>0 then%> checked <% end if%>>
+																		<span></span>
+																	</label>
+																</div>
+															</div>
+															<div class="form-group">
+																<label class="col-sm-3 control-label" for="usps_userid">
+																	User ID <span class="symbol required"></span>
+																</label>
+																<div class="col-sm-9">
+																	<input type="text"  id="usps_userid" name="usps_userid" class="form-control input-sm" value="<%=usps_userid%>">
+																</div>
+															</div>
+															<div class="form-group">
+																<label class="col-sm-3 control-label" for="usps_password">
+																	Password <span class="symbol required"></span>
+																</label>
+																<div class="col-sm-9">
+																	<input type="text"  id="usps_password" name="usps_password" class="form-control input-sm" value="<%=usps_password%>">
+																</div>
+															</div>
+															<div class="form-group">
+																<label class="col-sm-3 control-label" for="form-field-1">
+																	Allowed Methods <span class="symbol required"></span>
+																</label>
+																<div class="col-sm-9">
+																	<div class="mt-checkbox-list">
+																		<label class="mt-checkbox mt-checkbox-outline">
+																			<input type="checkbox" name="usps_service_flag" value="92"  <%if InStr(usps_service_flag, "92")>0 then%>checked<%end if%> class="grey">
+																			Parcel<span></span>
+																		</label>
+																		<label class="mt-checkbox mt-checkbox-outline">
+																			<input type="checkbox" name="usps_service_flag" value="01"  <%if InStr(usps_service_flag, "01")>0 then%>checked<%end if%> class="grey">
+																			Priority<span></span>
+																		</label>
+																		<label class="mt-checkbox mt-checkbox-outline">
+																			<input type="checkbox" name="usps_service_flag" value="02"  <%if InStr(usps_service_flag, "02")>0 then%>checked<%end if%> class="grey">
+																			Express<span></span>
+																		</label>
+																		<label class="mt-checkbox mt-checkbox-outline">
+																			<input type="checkbox" name="usps_service_flag" value="04"  <%if InStr(usps_service_flag, "04")>0 then%>checked<%end if%> class="grey">
+																			Global Express Mail (EMS)<span></span>
+																		</label>
+																		<label class="mt-checkbox mt-checkbox-outline">
+																			<input type="checkbox" name="usps_service_flag" value="05"  <%if InStr(usps_service_flag, "05")>0 then%>checked<%end if%> class="grey">
+																			Airmail Parcel Post<span></span>
+																		</label>
+																		<label class="mt-checkbox mt-checkbox-outline">
+																			<input type="checkbox" name="usps_service_flag" value="06"  <%if InStr(usps_service_flag, "06")>0 then%>checked<%end if%> class="grey">
+																			Economy (surface) Parcel Post<span></span>
+																		</label>
+																	</div>
+																</div>
+															</div>
+															<div class="form-group">
+																<label class="col-sm-3 control-label" for="usps_markup">
+																	Markup Multiplier <span class="symbol required"></span>
+																</label>
+																<div class="col-sm-9">
+																	<input type="text"  id="usps_markup" name="usps_markup" class="form-control input-sm" value="<%=usps_markup%>">
+																</div>
+															</div>
+															<div class="form-group">
+																<label class="col-sm-3 control-label" for="usps_handling">
+																	Handling Fee<span class="symbol required"></span>
+																</label>
+																<div class="col-sm-9">
+																	<input type="text"  id="usps_handling" name="usps_handling" class="form-control input-sm" value="<%=usps_handling%>">
+																</div>
+															</div>
+														</div>
+														<div class="tab-pane" id="portlet3_tab5">
+														</div>
+														<div class="tab-pane" id="portlet3_tab6">
+														</div>
+													</div>
+												</div>
+											</div>
+										</form>
+									</div>
+								</div>
+								<div class="row">
+									<div class="col-md-12">
+										<form id="form_edit_4" class="form-horizontal form-row-seperated" action="#">
+										<input type="hidden" id="formid" name="formid" value="pan4" />
+											<div class="portlet box blue-steel">
+												<div class="portlet-title">
+													<div class="caption font-grey">
+														<i class="icon-share font-grey"></i>
+														<span class="caption-subject bold uppercase"> Tax</span>
+													</div>
+													<div class="tools">
+														<a href="javascript:;" class="collapse"> </a>
+													</div>
+													<div class="actions">
+														<button type="submit" class="btn btn-circle green">
+														<i class="fa fa-check"></i> Save </button>
+													</div>
+												</div>
+												<div class="portlet-body">
+													<div class="alert alert-danger display-hide">
+													<button class="close" data-close="alert"></button> You have some form errors. Please check below. 
+													</div>
+													<div class="alert alert-success display-hide">
+													<button class="close" data-close="alert"></button> The information has been saved.
+													</div>
+													<div class="alert alert-warning display-hide">
+													<button class="close" data-close="alert"></button> The information has not been saved properly. Please contact system administrator.
+													</div>
+													<table class="table table-condensed table-hover" id="sample-table-3">
+														<thead>
+														<tr class="header_section">
+															<td>&nbsp;</td>
+															<th align="left" width=20%>State</th>
+															<th align="left" width=40%>Tax Collection Method</th>
+															<th align="center" width=10%>Freight</th>
+															<th align="left" width=15%>Nexus City</th>
+															<th align="left" width=15%>Nexus Zip</th>
+														</tr>
+														</thead>
+														<tbody>
+														<%
+															sql = "SELECT * FROM A_STATE_LIST_US ORDER BY state_name"
+															set rsState = dbconn.Execute(sql)
+															
+															do while not rsState.EOF
+															
+																'get values...
+																nsql = "SELECT * FROM " & g_storeid & "_nexus_tax WHERE StateID='" & rsState("state") & "'"
+																set rsNexus = dbconn.Execute(nsql)
+																if not rsNexus.EOF then
+																	n_tax_method = rsNexus("CollectionMethod")
+																	n_freight_tax = rsNexus("TaxOnFreight")
+																	n_nexus_city = rsNexus("NexusCity")
+																	n_nexus_zip = rsNexus("NexusZip")
+																else
+																	n_tax_method = "0"
+																	n_freight_tax = "0"
+																	n_nexus_city = ""
+																	n_nexus_zip = ""
+																end if
+																rsNexus.Close
+														%>
+														<tr class=alt>
+															<td>&nbsp;</td>
+															<td><%=rsState("state_name")%></td>
+															<td>
+																<select name="tax_method_<%=rsState("state")%>" class="form-control input-sm">
+																<option value="0">Do not collect tax from customers in this state</option>
+																<option value="1" style="color:red" <%if n_tax_method = "1" then%>selected<%end if%>>Use the sales tax rate of ship-to location</option>
+																<option value="2" style="color:red" <%if n_tax_method = "2" then%>selected<%end if%>>Use the sales tax rate of billing location</option>
+																<option value="3" style="color:red" <%if n_tax_method = "3" then%>selected<%end if%>>Use the sales tax rate of our nexus location</option>
+																<option value="4" style="color:red" <%if n_tax_method = "4" then%>selected<%end if%>>Use the sales tax rate of our headquater location</option>
+																<option value="6" style="color:red" <%if n_tax_method = "6" then%>selected<%end if%>>Use the use tax rate of ship-to location</option>
+																<option value="7" style="color:red" <%if n_tax_method = "7" then%>selected<%end if%>>Use the use tax rate of billing location</option>
+																</select>
+															</td>
+															<td align="center">
+																<label class="mt-checkbox mt-checkbox-outline">
+																<input type="checkbox" name="freight_tax_<%=rsState("state")%>" value="1" <%if n_freight_tax = "1" then%>checked<%end if%>>
+																<span></span>
+																</label>
+															</td>
+															<td><input type="text" name="nexus_city_<%=rsState("state")%>" value="<%=n_nexus_city%>" class="form-control input-sm"></td>
+															<td><input type="text" name="nexus_zip_<%=rsState("state")%>" value="<%=n_nexus_zip%>" class="form-control input-sm"></td>
+														</tr>
+														
+														<%
+																rsState.MoveNext
+															loop
+															rsState.Close
+														%>
+														</tbody>		
+													</table>
+												</div>
+											</div>
+										</form>
+									</div>
+								</div>
 							</div>
 							<!-- END PAGE CONTENT INNER -->
 						</div>
@@ -62,12 +1192,302 @@
 </div>
 <!--#INCLUDE FILE="include/js.phtml"-->
 <!-- BEGIN PAGE LEVEL PLUGINS -->
-
+<script src="../assets/global/plugins/jquery-validation/js/jquery.validate.min.js" type="text/javascript"></script>
+<script src="../assets/global/plugins/jquery-validation/js/additional-methods.min.js" type="text/javascript"></script>
 <!-- END PAGE LEVEL PLUGINS -->
 
 <!-- BEGIN PAGE LEVEL SCRIPTS -->
 <script type="text/javascript">
-	
+var FormValidation = function () {
+	// basic validation
+	var handleValidation1 = function() {
+		var form1 = $('#form_edit_1');
+		var error1 = $('.alert-danger', form1);
+		var success1 = $('.alert-success', form1);
+		var warning1 = $('.alert-warning', form1);
+
+		form1.validate({
+			errorElement: 'span', //default input error message container
+			errorClass: 'help-block help-block-error', // default input error message class
+			focusInvalid: false, // do not focus the last invalid input
+			ignore: "",  // validate all fields including form hidden input
+			//RULES
+			rules: {
+				company: {
+					required: true
+				},
+				address: {
+					required: true
+				},
+				city: {
+					required: true
+				},
+				state: {
+					required: true
+				},
+				zip: {
+					required: true
+				},
+				phone: {
+					required: true
+				},
+				email: {
+					required: true,
+					email: true
+				}
+				
+			},
+
+			invalidHandler: function (event, validator) { //display error alert on form submit              
+				success1.hide();
+				error1.show();
+				App.scrollTo(error1, -200);
+			},
+			/*
+			errorPlacement: function (error, element) { // render error placement for each input type
+				var cont = $(element).parent('.input-group');
+				if (cont) {
+					cont.after(error);
+				} else {
+					element.after(error);
+				}
+			},
+			*/
+
+			highlight: function (element) { // hightlight error inputs
+
+				$(element)
+					.closest('.form-group').addClass('has-error'); // set error class to the control group
+			},
+
+			unhighlight: function (element) { // revert the change done by hightlight
+				$(element)
+					.closest('.form-group').removeClass('has-error'); // set error class to the control group
+			},
+
+			success: function (label) {
+				label
+					.closest('.form-group').removeClass('has-error'); // set success class to the control group
+			},
+
+			submitHandler: function (form) {
+				success1.hide();
+				error1.hide
+				warning1.hide();
+				
+				$.ajax({
+					type: "POST",
+					url: "api/sp_store_information_update.phtml",
+					data: form1.serialize(),
+					success: function() {
+						success1.show();
+					},
+					error: function() {
+						warning1.show();
+					}
+				});
+			}
+		});
+
+
+	};
+	var handleValidation2 = function() {
+		var form1 = $('#form_edit_2');
+		var error1 = $('.alert-danger', form1);
+		var success1 = $('.alert-success', form1);
+		var warning1 = $('.alert-warning', form1);
+
+		form1.validate({
+			errorElement: 'span', //default input error message container
+			errorClass: 'help-block help-block-error', // default input error message class
+			focusInvalid: false, // do not focus the last invalid input
+			ignore: "",  // validate all fields including form hidden input
+			//RULES
+			rules: {
+				company: {
+					required: true
+				},
+				address: {
+					required: true
+				},
+				city: {
+					required: true
+				},
+				state: {
+					required: true
+				},
+				zip: {
+					required: true
+				},
+				phone: {
+					required: true
+				},
+				email: {
+					required: true,
+					email: true
+				}
+				
+			},
+
+			invalidHandler: function (event, validator) { //display error alert on form submit              
+				success1.hide();
+				error1.show();
+				App.scrollTo(error1, -200);
+			},
+			/*
+			errorPlacement: function (error, element) { // render error placement for each input type
+				var cont = $(element).parent('.input-group');
+				if (cont) {
+					cont.after(error);
+				} else {
+					element.after(error);
+				}
+			},
+			*/
+
+			highlight: function (element) { // hightlight error inputs
+
+				$(element)
+					.closest('.form-group').addClass('has-error'); // set error class to the control group
+			},
+
+			unhighlight: function (element) { // revert the change done by hightlight
+				$(element)
+					.closest('.form-group').removeClass('has-error'); // set error class to the control group
+			},
+
+			success: function (label) {
+				label
+					.closest('.form-group').removeClass('has-error'); // set success class to the control group
+			},
+
+			submitHandler: function (form) {
+				success1.hide();
+				error1.hide
+				warning1.hide();
+				
+				$.ajax({
+					type: "POST",
+					url: "api/sp_store_information_update.phtml",
+					data: form1.serialize(),
+					success: function() {
+						success1.show();
+					},
+					error: function() {
+						warning1.show();
+					}
+				});
+			}
+		});
+
+
+	};
+	var handleValidation3 = function() {
+		var form1 = $('#form_edit_3');
+		var error1 = $('.alert-danger', form1);
+		var success1 = $('.alert-success', form1);
+		var warning1 = $('.alert-warning', form1);
+
+		form1.validate({
+			errorElement: 'span', //default input error message container
+			errorClass: 'help-block help-block-error', // default input error message class
+			focusInvalid: false, // do not focus the last invalid input
+			ignore: "",  // validate all fields including form hidden input
+			//RULES
+			rules: {
+				company: {
+					required: true
+				},
+				address: {
+					required: true
+				},
+				city: {
+					required: true
+				},
+				state: {
+					required: true
+				},
+				zip: {
+					required: true
+				},
+				phone: {
+					required: true
+				},
+				email: {
+					required: true,
+					email: true
+				}
+				
+			},
+
+			invalidHandler: function (event, validator) { //display error alert on form submit              
+				success1.hide();
+				error1.show();
+				App.scrollTo(error1, -200);
+			},
+			/*
+			errorPlacement: function (error, element) { // render error placement for each input type
+				var cont = $(element).parent('.input-group');
+				if (cont) {
+					cont.after(error);
+				} else {
+					element.after(error);
+				}
+			},
+			*/
+
+			highlight: function (element) { // hightlight error inputs
+
+				$(element)
+					.closest('.form-group').addClass('has-error'); // set error class to the control group
+			},
+
+			unhighlight: function (element) { // revert the change done by hightlight
+				$(element)
+					.closest('.form-group').removeClass('has-error'); // set error class to the control group
+			},
+
+			success: function (label) {
+				label
+					.closest('.form-group').removeClass('has-error'); // set success class to the control group
+			},
+
+			submitHandler: function (form) {
+				success1.hide();
+				error1.hide
+				warning1.hide();
+				
+				$.ajax({
+					type: "POST",
+					url: "api/sp_store_information_update.phtml",
+					data: form1.serialize(),
+					success: function() {
+						success1.show();
+					},
+					error: function() {
+						warning1.show();
+					}
+				});
+			}
+		});
+
+
+	};
+	return {
+		//main function to initiate the module
+		init: function () {
+			handleValidation1();
+			handleValidation2();
+			handleValidation3();
+		}
+	};
+
+}();
+</script>
+<script type="text/javascript">
+jQuery(document).ready(function() { 
+   FormValidation.init();
+});
 </script>
 <!-- END PAGE LEVEL SCRIPTS -->
 </body>

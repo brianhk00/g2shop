@@ -1,0 +1,171 @@
+<!-- #INCLUDE File="../util/xt_func_string.phtml" -->
+<%
+	Response.CodePage = 65001
+	Response.CharSet = "UTF-8"
+%>
+<%
+	Const adTypeBinary = 1
+	Const adSaveCreateOverWrite = 2
+	Const adSaveCreateNotExist = 1 
+				
+	g_storeid = "hubutu"
+	
+	
+	Server.ScriptTimeout=2000
+	mysqlsvr = "DRIVER={MySQL ODBC 5.2 UNICODE Driver};Server=104.207.233.67;Database=hubutuco_mage4;Uid=hubutuco_magento;Pwd=uI39bGS0Gvio;Charset=ucs2;"
+	Set conn = Server.CreateObject("ADODB.connection")
+	conn.open mysqlsvr
+	
+	
+	g_connection_string = "Provider=SQLOLEDB;Data Source=localhost;Database=GSHOP;uid=dinamall_hanta_user;pwd=hanta_pw0105;"
+	Set dbconn = Server.CreateObject("ADODB.Connection")
+	dbconn.open g_connection_string
+	
+	sql = "SELECT * FROM catalog_category_flat_store_4 WHERE path like '1/2/%' AND path not like '1/2/8%' "
+	sql = sql & " AND (NAME NOT LIKE '%a%' AND NAME NOT LIKE '%o%' AND NAME NOT LIKE '%e%' AND NAME NOT LIKE '%s%' AND NAME NOT LIKE '%t%' AND NAME NOT LIKE '%m%')"
+	sql = sql & " ORDER BY path"
+	
+	set rs = conn.Execute(sql)
+	do while not rs.EOF
+		sPath = Replace(rs("path"), "1/2/", "")
+		
+		sPath = Replace(sPath, "504", "505")
+		sPath = Replace(sPath, "515", "516")
+		sPath = Replace(sPath, "494", "495")
+		
+		dept_name = rs("name")
+		ar_path = Split(sPath, "/")
+		
+		dept_id = ""
+		for i = 0 to Ubound(ar_path)
+			if i = 0 then
+				if Len(ar_path(i)) = 3 then
+					dept_id = Right(ar_path(i),2)
+				end if
+				if Len(ar_path(i)) = 2 then
+					dept_id = ar_path(i)
+				end if
+				if Len(ar_path(i)) = 1 then
+					dept_id = "0" & ar_path(i)
+				end if
+			else
+				if Len(ar_path(i)) = 3 then
+					dept_id = dept_id & "-" & ar_path(i)
+				end if
+				if Len(ar_path(i)) = 2 then
+					dept_id = dept_id & "-" & "0" & ar_path(i)
+				end if
+				if Len(ar_path(i)) = 1 then
+					dept_id = dept_id & "-" & "00" & ar_path(i)
+				end if
+			end if
+		next
+		
+		parent_id = "0"
+		for i = 0 to Ubound(ar_path) - 1
+			if i = 0 then
+				if Len(ar_path(i)) = 3 then
+					parent_id = Right(ar_path(i),2)
+				end if
+				if Len(ar_path(i)) = 2 then
+					parent_id = ar_path(i)
+				end if
+				if Len(ar_path(i)) = 1 then
+					parent_id = "0" & ar_path(i)
+				end if
+			else
+				if Len(ar_path(i)) = 3 then
+					parent_id = parent_id & "-" & ar_path(i)
+				end if
+				if Len(ar_path(i)) = 2 then
+					parent_id = parent_id & "-" & "0" & ar_path(i)
+				end if
+				if Len(ar_path(i)) = 1 then
+					parent_id = parent_id & "-" & "00" & ar_path(i)
+				end if
+			end if
+		next
+		
+		'Response.Write(sPath & ":" & sName & ":" & dept_id & "<br>")
+		Response.Write(dept_id & ":" & parent_id & ":" & rs("name") & ":" & new_row & ":" & url_key & "<br>")
+		
+		'=====================================================================================================
+		view_id = 4
+		table_id = "varchar"
+		entity_id = dept_id
+		type_id = 1
+		field_id = 1
+		field_value = dept_name
+		'=====================================================================================================
+	
+		sql = "SELECT lang_id FROM " & g_storeid & "_store_type_data_" &  table_id & " WHERE "
+		sql = sql & " entity_id='" & entity_id & "' "
+		sql = sql & " AND type_id=" & type_id & " "
+		sql = sql & " AND view_id=" & view_id & " "
+		sql = sql & " AND field_id=" & field_id & " "
+		
+		set rsLang = dbconn.Execute(sql)
+		if not rsLang.EOF then
+			lang_id = rsLang(0)
+		else
+			lang_id = 0
+		end if
+		rsLang.Close
+		set rsLang = nothing
+		
+		if Len(field_value) > 0 then
+		
+			if lang_id = 0 then
+				Set rsLangUpdate = Server.CreateObject("ADODB.Recordset")
+				with rsLangUpdate
+					.ActiveConnection = dbconn
+					.CursorLocation = 3
+					.CursorType = 1
+					.LockType = 3
+					.Source = g_storeid & "_store_type_data_" &  table_id & " WHERE lang_id=0"
+					.Open
+					.AddNew
+				end with
+				
+				rsLangUpdate("entity_id") = entity_id
+				rsLangUpdate("type_id") = type_id
+				rsLangUpdate("view_id") = view_id
+				rsLangUpdate("field_id") = field_id
+			else
+				Set rsLangUpdate = Server.CreateObject("ADODB.Recordset")
+				with rsLangUpdate
+					.ActiveConnection = dbconn
+					.CursorLocation = 3
+					.CursorType = 1
+					.LockType = 3
+					.Source = g_storeid & "_store_type_data_" &  table_id & " WHERE lang_id=" & lang_id
+					.Open
+				end with
+			
+			end if
+			
+
+			rsLangUpdate("field_value") = field_value
+			
+			If dbconn.Errors.Count > 0 Then
+				dbconn.Errors.Clear
+				rsLangUpdate.CancelUpdate
+			else
+				rsLangUpdate.Update
+			End If
+			
+			rsLangUpdate.Close
+			set rsLangUpdate = nothing
+		
+		else
+			
+			sql = "DELETE FROM " & g_storeid & "_store_type_data_" &  table_id & " WHERE lang_id=" & lang_id
+			dbconn.Execute(sql)
+			
+		end if
+		
+		rs.MoveNext
+	loop
+	rs.Close
+	set rs = nothing
+%>

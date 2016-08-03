@@ -1,0 +1,220 @@
+<%
+	Const adTypeBinary = 1
+	Const adSaveCreateOverWrite = 2
+	Const adSaveCreateNotExist = 1 
+				
+	g_storeid = "hubutu"
+	
+	Server.ScriptTimeout=2000
+	mysqlsvr = "DRIVER={MySQL ODBC 5.2 ANSI Driver};Server=104.207.233.67;Database=hubutuco_mage4;Uid=hubutuco_magento;Pwd=uI39bGS0Gvio;"
+	Set conn = Server.CreateObject("ADODB.connection")
+	conn.open mysqlsvr
+	
+	g_connection_string = "Provider=SQLOLEDB;Data Source=localhost;Database=GSHOP;uid=dinamall_hanta_user;pwd=hanta_pw0105;"
+	Set dbconn = Server.CreateObject("ADODB.Connection")
+	dbconn.open g_connection_string
+	
+	'DELETE ALL
+	sql = "DELETE FROM " & g_storeid & "_dept"
+	dbconn.Execute(sql)
+	
+	sql = "SELECT * FROM catalog_category_flat_store_1 WHERE path like '1/2/%' AND path not like '1/2/8%'  ORDER BY path"
+	set rs = conn.Execute(sql)
+	do while not rs.EOF
+		sPath = Replace(rs("path"), "1/2/", "")
+		
+		sPath = Replace(sPath, "504", "505")
+		sPath = Replace(sPath, "515", "516")
+		sPath = Replace(sPath, "494", "495")
+		
+		dept_name = rs("name")
+		new_row = rs("position")
+		url_key = rs("url_key")
+		ar_path = Split(sPath, "/")
+		
+		dept_id = ""
+		for i = 0 to Ubound(ar_path)
+			if i = 0 then
+				if Len(ar_path(i)) = 3 then
+					dept_id = Right(ar_path(i),2)
+				end if
+				if Len(ar_path(i)) = 2 then
+					dept_id = ar_path(i)
+				end if
+				if Len(ar_path(i)) = 1 then
+					dept_id = "0" & ar_path(i)
+				end if
+			else
+				if Len(ar_path(i)) = 3 then
+					dept_id = dept_id & "-" & ar_path(i)
+				end if
+				if Len(ar_path(i)) = 2 then
+					dept_id = dept_id & "-" & "0" & ar_path(i)
+				end if
+				if Len(ar_path(i)) = 1 then
+					dept_id = dept_id & "-" & "00" & ar_path(i)
+				end if
+			end if
+		next
+		
+		parent_id = "0"
+		for i = 0 to Ubound(ar_path) - 1
+			if i = 0 then
+				if Len(ar_path(i)) = 3 then
+					parent_id = Right(ar_path(i),2)
+				end if
+				if Len(ar_path(i)) = 2 then
+					parent_id = ar_path(i)
+				end if
+				if Len(ar_path(i)) = 1 then
+					parent_id = "0" & ar_path(i)
+				end if
+			else
+				if Len(ar_path(i)) = 3 then
+					parent_id = parent_id & "-" & ar_path(i)
+				end if
+				if Len(ar_path(i)) = 2 then
+					parent_id = parent_id & "-" & "0" & ar_path(i)
+				end if
+				if Len(ar_path(i)) = 1 then
+					parent_id = parent_id & "-" & "00" & ar_path(i)
+				end if
+			end if
+		next
+		
+		'Response.Write(sPath & ":" & sName & ":" & dept_id & "<br>")
+		Response.Write(dept_id & ":" & parent_id & ":" & dept_name & ":" & new_row & ":" & url_key & "<br>")
+		
+		Set rsUpdate = Server.CreateObject("ADODB.Recordset")
+		with rsUpdate
+			.ActiveConnection = dbconn
+			.CursorLocation = 3
+			.CursorType = 1
+			.LockType = 3
+			.Source = g_storeid & "_dept WHERE dept_id='0'"
+			.Open
+			.AddNew
+		end with
+		
+		rsUpdate("dept_id") = dept_id
+		rsUpdate("parent_dept") = parent_id
+		rsUpdate("dept_row") = new_row
+		rsUpdate("dept_name") = dept_name
+		rsUpdate("dept_detail") = ""
+		rsUpdate("dept_image") = ""
+		rsUpdate("is_hidden") = 0
+		rsUpdate("dept_list_num") = 40
+		rsUpdate("dept_show_mfg") = 0
+		rsUpdate("dept_sort_order") = "0"
+		rsUpdate("dept_title_name") = ""
+		rsUpdate("warranty_id") = "0"
+		rsUpdate("use_markup") = 0
+		rsUpdate("include_topnav") = 1
+		
+		rsUpdate("icecat_category") = ""
+		rsUpdate("icecat_category1") = ""
+		rsUpdate("icecat_category2") = ""
+		rsUpdate("icecat_category3") = ""
+		rsUpdate("icecat_category4") = ""
+		
+		rsUpdate("url_key") = url_key
+		
+		rsUpdate("markup_A") = 0
+		rsUpdate("markup_B") = 0
+		rsUpdate("markup_C") = 0
+		rsUpdate("markup_D") = 0
+		
+		if IsNumeric(dept_markup_A) then
+			rsUpdate("markup_A") = dept_markup_A
+		else
+			rsUpdate("markup_A") = 0
+		end if
+		
+		if IsNumeric(dept_markup_B) then
+			rsUpdate("markup_B") = dept_markup_B
+		else
+			rsUpdate("markup_B") = 0
+		end if
+		
+		if IsNumeric(dept_markup_C) then
+			rsUpdate("markup_C") = dept_markup_C
+		else
+			rsUpdate("markup_C") = 0
+		end if
+		
+		if IsNumeric(dept_markup_D) then
+			rsUpdate("markup_D") = dept_markup_D
+		else
+			rsUpdate("markup_D") = 0
+		end if
+		
+		If dbconn.Errors.Count > 0 Then
+			dbconn.Errors.Clear
+			rsUpdate.CancelUpdate
+		else
+			rsUpdate.Update
+		End If
+		
+		rsUpdate.Close
+		set rsUpdate = nothing
+		
+		'====================================================================================================================
+		'UPDATE _rewrite table....
+		'====================================================================================================================
+		
+		sql = "SELECT rewrite_id FROM " & g_storeid & "_rewrite WHERE rewrite_system_id='" & dept_id & "' AND rewrite_system_type = 1"
+		set rsRewrite = dbconn.Execute(sql)
+		if not rsRewrite.EOF then
+			rewrite_id = rsRewrite("rewrite_id")
+		else
+			rewrite_id = 0
+		end if
+		
+		rsRewrite.Close
+		set rsRewrite = nothing
+		
+		if rewrite_id = 0 then
+			Set rsUpdate = Server.CreateObject("ADODB.Recordset")
+			with rsUpdate
+				.ActiveConnection = dbconn
+				.CursorLocation = 3
+				.CursorType = 1
+				.LockType = 3
+				.Source = g_storeid & "_rewrite WHERE rewrite_id=0"
+				.Open
+				.AddNew
+			end with
+		else
+			Set rsUpdate = Server.CreateObject("ADODB.Recordset")
+			with rsUpdate
+				.ActiveConnection = dbconn
+				.CursorLocation = 3
+				.CursorType = 1
+				.LockType = 3
+				.Source = g_storeid & "_rewrite WHERE rewrite_id=" & rewrite_id
+				.Open
+			end with
+		end if
+		
+		rsUpdate("rewrite_type") = 1
+		rsUpdate("rewrite_system_type") = 1
+		rsUpdate("rewrite_system_id") = dept_id
+		rsUpdate("rewrite_redirect_type") = ""
+		rsUpdate("rewrite_request_path") = url_key
+		
+		If dbconn.Errors.Count > 0 Then
+			dbconn.Errors.Clear
+			rsUpdate.CancelUpdate
+		else
+			rsUpdate.Update
+		End If
+		
+		rsUpdate.Close
+		set rsUpdate = nothing
+		
+		
+		rs.MoveNext
+	loop
+	rs.Close
+	set rs = nothing
+%>

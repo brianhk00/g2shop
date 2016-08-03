@@ -1,0 +1,67 @@
+<%
+	Const adTypeBinary = 1
+	Const adSaveCreateOverWrite = 2
+	Const adSaveCreateNotExist = 1 
+				
+	g_storeid = "hubutu"
+	
+	Server.ScriptTimeout=2000
+	mysqlsvr = "DRIVER={MySQL ODBC 5.2 ANSI Driver};Server=104.207.233.67;Database=hubutuco_mage4;Uid=hubutuco_magento;Pwd=uI39bGS0Gvio;"
+	Set conn = Server.CreateObject("ADODB.connection")
+	conn.open mysqlsvr
+	
+	g_connection_string = "Provider=SQLOLEDB;Data Source=localhost;Database=GSHOP;uid=dinamall_hanta_user;pwd=hanta_pw0105;"
+	Set dbconn = Server.CreateObject("ADODB.Connection")
+	dbconn.open g_connection_string
+	
+	'DELETE ALL
+	sql = "DELETE FROM " & g_storeid & "_dept_prod"
+	dbconn.Execute(sql)
+	
+	sql = "SELECT a.product_id, b.path, a.position FROM catalog_category_product AS a, catalog_category_flat_store_1 AS b WHERE a.category_id = b.entity_id"
+	set rs = conn.Execute(sql)
+	do while not rs.EOF
+		sPath = Replace(rs(1), "1/2/", "")
+		
+		sPath = Replace(sPath, "504", "505")
+		sPath = Replace(sPath, "515", "516")
+		sPath = Replace(sPath, "494", "495")
+		ar_path = Split(sPath, "/")
+		
+		pf_id = CStr(1200000000 + rs(0))
+		pos = rs(2)
+		
+		dept_id = ""
+		for i = 0 to Ubound(ar_path)
+			if i = 0 then
+				if Len(ar_path(i)) = 3 then
+					dept_id = Right(ar_path(i),2)
+				end if
+				if Len(ar_path(i)) = 2 then
+					dept_id = ar_path(i)
+				end if
+				if Len(ar_path(i)) = 1 then
+					dept_id = "0" & ar_path(i)
+				end if
+			else
+				if Len(ar_path(i)) = 3 then
+					dept_id = dept_id & "-" & ar_path(i)
+				end if
+				if Len(ar_path(i)) = 2 then
+					dept_id = dept_id & "-" & "0" & ar_path(i)
+				end if
+				if Len(ar_path(i)) = 1 then
+					dept_id = dept_id & "-" & "00" & ar_path(i)
+				end if
+			end if
+		next
+		
+		sql = "INSERT INTO " & g_storeid & "_dept_prod(dept_id, pf_id, position) VALUES ('" & dept_id & "','" & pf_id & "'," & pos & ")"
+		Response.Write(sql & "<br>")
+		dbconn.Execute(sql)
+		
+		rs.MoveNext
+	loop
+	rs.Close
+	set rs = nothing
+%>

@@ -107,24 +107,21 @@
 																		<span></span>
 																	</label>
 																</th>
-																<th width="8%"> Quote&nbsp;# </th>
-																<th width="12%"> Date </th>
-																<th width="150"> Company </th>
-																<th width="150"> Bill To </th>
+																<th width="8%"> PO&nbsp;# </th>
+																<th width="15%"> Date </th>
+																<th width="150"> Distributor </th>
 																<th width="10%"> Amount </th>
 																<th width="10%"> Status </th>
-																<th width="10%"> Drafted By </th>
-																<th width="10%"> Description </th>
-																<th width="10%"> S.O </th>
+																<th width="10%"> Issued By </th>
 																<th width="10%"> Actions </th>
 															</tr>
 															<tr role="row" class="filter">
 																<td> </td>
 																<td>
-																	<input type="text" class="form-control form-filter input-sm" name="quote_id"> </td>
+																	<input type="text" class="form-control form-filter input-sm" name="po_id"> </td>
 																<td>
 																	<div class="input-group date date-picker margin-bottom-5" data-date-format="mm/dd/yyyy">
-																		<input type="text" class="form-control form-filter input-sm" readonly name="quote_date_from" placeholder="From">
+																		<input type="text" class="form-control form-filter input-sm" readonly name="po_date_from" placeholder="From">
 																		<span class="input-group-btn">
 																			<button class="btn btn-sm default" type="button">
 																				<i class="fa fa-calendar"></i>
@@ -132,7 +129,7 @@
 																		</span>
 																	</div>
 																	<div class="input-group date date-picker" data-date-format="mm/dd/yyyy">
-																		<input type="text" class="form-control form-filter input-sm" readonly name="quote_date_to" placeholder="To">
+																		<input type="text" class="form-control form-filter input-sm" readonly name="po_date_to" placeholder="To">
 																		<span class="input-group-btn">
 																			<button class="btn btn-sm default" type="button">
 																				<i class="fa fa-calendar"></i>
@@ -141,28 +138,44 @@
 																	</div>
 																</td>
 																<td>
-																	<input type="text" class="form-control form-filter input-sm" name="quote_customer_company"> 
-																</td>
-																<td>
-																	<input type="text" class="form-control form-filter input-sm" name="quote_customer_name"> 
-																</td>
-																<td>
-																	<div class="margin-bottom-5">
-																		<input type="text" class="form-control form-filter input-sm" name="quote_price_from" placeholder="From" /> 
-																	</div>
-																	<input type="text" class="form-control form-filter input-sm" name="quote_price_to" placeholder="To" /> 
-																</td>
-																<td>
-																	<select name="quote_status" class="form-control form-filter input-sm">
+																	<select name="po_dist_flag" class="form-control form-filter input-sm">
 																		<option value="">Select...</option>
-																		<option value="0" selected=""> Pending </option>
-																		<option value="2"> Approved - by Manager </option>
-																		<option value="1"> Closed</option>
-																		<option value="3"> Converted by Customer </option>
+																		<option value="1">INGRAM MICRO</option>
+																		<option value="2">TECH DATA</option>
+																		<option value="3">SYNNEX</option>
+																		<option value="4">D&amp;H</option>
+																		<%
+																			sql = "SELECT * FROM " & g_storeid & "_distributor ORDER BY distributor_name"
+																			set rs = dbconn.Execute(sql)
+																			do while not rs.EOF
+																		%>
+																		<option value="<%=rs("distributor_id")%>"><%=rs("distributor_name")%></option>
+																		<%
+																				rs.MoveNext
+																			loop
+																			rs.Close
+																			set rs = nothing
+																		%>
 																	</select>
 																</td>
 																<td>
-																	<select name="quote_owner" class="form-control form-filter input-sm">
+																	<div class="margin-bottom-5">
+																		<input type="text" class="form-control form-filter input-sm" name="po_amount_from" placeholder="From" /> 
+																	</div>
+																	<input type="text" class="form-control form-filter input-sm" name="po_amount_to" placeholder="To" /> 
+																</td>
+																<td>
+																	<select name="po_status" class="form-control form-filter input-sm">
+																		<option value="">Select...</option>
+																		<option value="0"> Open </option>
+																		<option value="2"> Approved </option>
+																		<option value="1"> Closed</option>
+																		<option value="3"> Partial Fulfilled</option>
+																		<option value="4"> Fulfilled </option>
+																	</select>
+																</td>
+																<td>
+																	<select name="salesrep_id" class="form-control form-filter input-sm">
 																		<option value="">Select...</option>
 																		<option value="--">admin</option>
 																		<%
@@ -178,12 +191,6 @@
 																			set rs = nothing
 																		%>
 																	</select>																	
-																</td>
-																<td>
-																	<input type="text" class="form-control form-filter input-sm" name="quote_name"> 
-																</td>
-																<td>
-																	<input type="text" class="form-control form-filter input-sm" name="quote_so"> 
 																</td>
 																<td>
 																	<div class="margin-bottom-5">
@@ -271,9 +278,9 @@ var TableDatatablesAjax = function () {
                 // So when dropdowns used the scrollable div should be removed. 
                 //"dom": "<'row'<'col-md-8 col-sm-12'pli><'col-md-4 col-sm-12'<'table-group-actions pull-right'>>r>t<'row'<'col-md-8 col-sm-12'pli><'col-md-4 col-sm-12'>>",
                 columnDefs: [ 
-					{ orderable: false, targets: [0,9] },
-					{ className: "text-center", targets: [6,7,9] },
-					{ className: "text-right", targets: [5] }
+					{ orderable: false, targets: [0,7] },
+					{ className: "text-center", targets: [5,6] },
+					{ className: "text-right", targets: [4] }
 				],
 					
                 "bStateSave": true, // save datatable state(pagination, sort, etc) in cookie.

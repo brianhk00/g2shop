@@ -25,15 +25,15 @@
 	'=======================================================================================
 	strWhere = ""
 	'---------------------------------------------------------------------------------------
-	quote_id = Trim(Request("quote_id"))
-	if Len(quote_id) > 0 then
-		if IsNumeric(quote_id) then
-			strWhere = strWhere &  " (quote_id like '%" & quote_id & "%') AND"
+	po_id = Trim(Request("po_id"))
+	if Len(po_id) > 0 then
+		if IsNumeric(po_id) then
+			strWhere = strWhere &  " (po_id like '%" & po_id & "%') AND"
 		end if
 	end if
 	'----------------------------------------------------------------------------------------
-	sMin = Trim(Request("quote_date_from"))
-	sMax = Trim(Request("quote_date_to"))
+	sMin = Trim(Request("po_date_from"))
+	sMax = Trim(Request("po_date_to"))
 	sDateRange = ""
 	if IsDate(sMin) then
 		if IsDate(sMax) then
@@ -61,34 +61,24 @@
 		strWhere = strWhere &  " " & sDateRange & " AND"
 	end if
 	'----------------------------------------------------------------------------------------
-	quote_customer_company = Trim(Request("quote_customer_company"))
-	if Len(quote_customer_company) > 1 then
-		strWhere = strWhere &  " (company_name like '%" & quote_customer_company & "%') AND"
+	po_dist_flag = Trim(Request("po_dist_flag"))
+	if Len(po_dist_flag) > 0 then
+		strWhere = strWhere &  " (po_dist_flag = '" & po_dist_flag & "') AND"
 	end if
 	'----------------------------------------------------------------------------------------
-	quote_customer_name = Trim(Request("quote_customer_name"))
-	if Len(quote_customer_name) > 1 then
-		strWhere = strWhere &  " (shopper_firstname + ' ' + shopper_lastname like '%" & quote_customer_name & "%') AND"
-	end if
-	'----------------------------------------------------------------------------------------
-	'order_ship_to = Trim(Request("order_ship_to"))
-	'if Len(order_ship_to) > 1 then
-		'strWhere = strWhere &  " (ShipFirstName + ' ' + ShipLastName like '%" & order_ship_to & "%') AND"
-	'end if
-	'----------------------------------------------------------------------------------------
-	sMin = Trim(Request("quote_price_from"))
-	sMax = Trim(Request("quote_price_to"))
+	sMin = Trim(Request("po_amount_from"))
+	sMax = Trim(Request("po_amount_to"))
 	sTotalRange = ""
 	if IsNumeric(sMin) then
 		if IsNumeric(sMax) then
-			sTotalRange = "(quote_amount between " & sMin & " AND " & sMax & ")"
+			sTotalRange = "(po_amount between " & sMin & " AND " & sMax & ")"
 		else
 			sMax = "1000000"
-			sTotalRange = "(quote_amount between " & sMin & " AND " & sMax & ")"
+			sTotalRange = "(po_amount between " & sMin & " AND " & sMax & ")"
 		end if
 	else
 		if IsNumeric(sMax) then
-			sTotalRange = "(quote_amount between 0 AND " & sMax & ")"
+			sTotalRange = "(po_amount between 0 AND " & sMax & ")"
 		end if
 	end if
 	
@@ -96,31 +86,21 @@
 		strWhere = strWhere &  " " & sTotalRange & " AND"
 	end if
 	'----------------------------------------------------------------------------------------
-	quote_status = Trim(Request("quote_status"))
-	if Len(quote_status) > 0 then
-		strWhere = strWhere &  " (quote_status = '" & quote_status & "') AND"
+	po_status = Trim(Request("po_status"))
+	if Len(po_status) > 0 then
+		strWhere = strWhere &  " (po_status = '" & po_status & "') AND"
 	end if
 	'----------------------------------------------------------------------------------------
-	quote_owner = Trim(Request("quote_owner"))
-	if Len(quote_owner) > 0 then
-		strWhere = strWhere &  " (quote_owner = '" & quote_owner & "') AND"
-	end if
-	'----------------------------------------------------------------------------------------
-	quote_name = Trim(Request("quote_name"))
-	if Len(quote_name) > 1 then
-		strWhere = strWhere &  " (quote_name like '%" & quote_name & "%') AND"
-	end if
-	'----------------------------------------------------------------------------------------
-	quote_so = Trim(Request("quote_so"))
-	if Len(quote_so) > 1 then
-		strWhere = strWhere &  " (order_id like '%" & quote_so & "%') AND"
+	salesrep_id = Trim(Request("salesrep_id"))
+	if Len(salesrep_id) > 0 then
+		strWhere = strWhere &  " (salesrep_id = '" & salesrep_id & "') AND"
 	end if
 	'----------------------------------------------------------------------------------------
 	
 	if Len(strWhere) > 0 then
 		strWhere = Left(strWhere, Len(strWhere) - 4)
 	else
-		strWhere = " quote_name LIKE '%%'"
+		strWhere = " dist_name LIKE '%%'"
 	end if
 	
 	
@@ -128,25 +108,19 @@
 	'ORDERING
 	SELECT CASE Trim(Request("order[0][column]"))
 	CASE "0"
-		sOrder = "quote_id DESC"
+		sOrder = "po_id DESC"
 	CASE "1"
-		sOrder = "quote_id " & Trim(Request("order[0][dir]"))
+		sOrder = "po_id " & Trim(Request("order[0][dir]"))
 	CASE "2"
 		sOrder = "date_created " & Trim(Request("order[0][dir]"))
 	CASE "3"
-		sOrder = "company_name " & Trim(Request("order[0][dir]"))
+		sOrder = "dist_name " & Trim(Request("order[0][dir]"))
 	CASE "4"
-		sOrder = "shopper_firstname + ' ' + shopper_lastname " & Trim(Request("order[0][dir]"))
+		sOrder = "po_amount " & Trim(Request("order[0][dir]"))
 	CASE "5"
-		sOrder = "quote_amount " & Trim(Request("order[0][dir]"))
+		sOrder = "po_status " & Trim(Request("order[0][dir]"))
 	CASE "6"
-		sOrder = "quote_status " & Trim(Request("order[0][dir]"))
-	CASE "7"
-		sOrder = "quote_owner " & Trim(Request("order[0][dir]"))
-	CASE "8"
-		sOrder = "quote_name " & Trim(Request("order[0][dir]"))
-	CASE "9"
-		sOrder = "order_id " & Trim(Request("order[0][dir]"))
+		sOrder = "salesrep_id " & Trim(Request("order[0][dir]"))
 	CASE ELSE
 		sOrder = "quote_id DESC"
 	END SELECT 
@@ -154,8 +128,6 @@
 	strOrderBy = "ORDER BY " & sOrder
 
 	'======================================================================================
-	strWhere = " dist_name LIKE '%%'"
-	strOrderBy = "ORDER BY po_id DESC"
 	
 
 	sql = "SELECT * FROM " & g_storeid & "_po WHERE " & strWhere & " " & strOrderBy
@@ -202,11 +174,13 @@
 			s_shipping_contact_first = rs("shipping_contact_first")
 			s_shipping_contact_last = rs("shipping_contact_last")
 			s_shipping_contact = rs("shipping_contact")
+			
+			s_salesrep_id = rs("salesrep_id")
 
 
 			select case po_status
 			case 0
-				s_po_status = "Pending"
+				s_po_status = "Open"
 			case 1
 				s_po_status = "Closed"
 			case 2
@@ -284,9 +258,9 @@
 				End If
 
 			case 4
-				s_po_status = "Converted"
+				s_po_status = "Fulfilled"
 			case else
-				s_po_status = "Pending"
+				s_po_status = "Open"
 			end select
 			
 
@@ -307,14 +281,19 @@
 			
 			
 			aaData = aaData & "['"
-			aaData = aaData & "<a href=\'v2_po.asp?po_id=" & s_po_id & "\'>" & s_po_id & "</a>','" 
+			aaData = aaData & "<label class=\'mt-checkbox mt-checkbox-single mt-checkbox-outline\'><input name=\'id[]\' type=\'checkbox\' class=\'checkboxes\' value=\'" &  s_quote_id & "\'/><span></span></label> " & "','" 
+			'aaData = aaData & "<a href=\'v2_po.asp?po_id=" & s_po_id & "\'>" & s_po_id & "</a>','" 
+			aaData = aaData & s_po_id & "','" 
+			aaData = aaData & s_date_created & "','"
 			aaData = aaData & s_po_dist_name & "','" 
-			aaData = aaData & s_shipping_contact & "','" 
+			'aaData = aaData & s_shipping_contact & "','" 
 			aaData = aaData & s_po_amount & "','"
 			aaData = aaData & s_po_status & "','" 
-			aaData = aaData & s_date_updated & "','"
-			aaData = aaData & "<a class=\'btn btn-blue btn-xs btn-o\' href=\'javascript:OpenPrintInvoice(" & s_po_id & ")\'><i class=\'fa fa-print\'></i></a>','"
-			aaData = aaData & "<input type=checkbox name=\'delete_po\' value=\'" & s_po_id & "\'>" &  "'],"
+			aaData = aaData & s_salesrep_id & "','" 
+			'aaData = aaData & s_date_updated & "','"
+			aaData = aaData & "<a href=\'sales_purchase_order_detail.phtml?po_id=" & s_po_id & "\' class=\'btn btn-sm btn-outline grey-salsa\'><i class=\'fa fa-search\'><\/i> View<\/a>" & "'],"
+			'aaData = aaData & "<a class=\'btn btn-blue btn-xs btn-o\' href=\'javascript:OpenPrintInvoice(" & s_po_id & ")\'><i class=\'fa fa-print\'></i></a>','"
+			'aaData = aaData & "<input type=checkbox name=\'delete_po\' value=\'" & s_po_id & "\'>" &  "'],"
 	
 			
 			aaData = Replace(aaData,"'",chr(34))
