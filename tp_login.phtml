@@ -3,6 +3,7 @@
 <!--#INCLUDE FILE="core/i_adoopen.phtml"-->
 <!--#INCLUDE FILE="util/xt_func_session.phtml"-->
 <!--#INCLUDE FILE="util/xt_func_string.phtml"-->
+<!--#INCLUDE FILE="util/xt_func_util.phtml"-->
 
 <%
 	sessionID = Request("sessionID")
@@ -55,6 +56,10 @@
 		end if
 		
 		Session("CUSTOM_CATALOG_ID_FLAG") = ""
+		
+		GUID = createGuid()
+		Session("StoreGUID") = GUID
+		Session("ShoppingCartID") = GUID
 
 		bok = true
 
@@ -112,9 +117,14 @@
 					favorite_link = rs("favorite_link")
 					
 					Session("Shopper_Name") = Shopper_Name
+					
 					Session("Shopper_State") = shipping_state
 					Session("Shopper_Zip") = shipping_zip
 					Session("shopper_country") = shipping_country
+					
+					Session("CartCountry") = shipping_country
+					Session("CartZone") = shipping_state
+					Session("CartPostCode") = shipping_zip 
 					
 					custom_price_profile = rs("custom_price_profile")
 					custom_catalog_id = Trim(rs("custom_catalog_id"))

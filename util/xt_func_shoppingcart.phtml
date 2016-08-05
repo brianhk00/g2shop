@@ -129,6 +129,25 @@ Function GetTotalTaxableAmountInCart()
 	GetTotalTaxableAmountInCart = iCart
 End Function
 
+Function GetTotalWeightInCart()
+	iCart = 0
+	
+	sql = "SELECT SUM (cartOrderQuantity * cartProductUnitWeight) FROM A_Shoppingcart WHERE StoreID = '" & g_storeid & "' AND CartID = '" & Session("ShoppingCartID") & "'"
+	set rsCart1 = dbconn.Execute(sql)
+	if not rsCart1.EOF then
+		iCart = rsCart1(0)
+	end if
+	rsCart1.Close
+	set rsCart1 = nothing
+	
+	if isNumeric(iCart) then
+	else
+		iCart = 0
+	end if
+	
+	GetTotalWeightInCart = iCart
+End Function
+
 Function GetTaxInCart()
 	iCart = 0
 	

@@ -382,14 +382,17 @@
 			usps_service_flag = ""
 		end if
 		'------------------------------------------------------------
-		
-		'------------------------------------------------------------
 		'Setting
 		'------------------------------------------------------------
 		warehouse_city = Trim(Request("warehouse_city"))
 		warehouse_country = Trim(Request("warehouse_country"))
 		warehouse_state = Trim(Request("warehouse_state"))
 		warehouse_zip = Trim(Request("warehouse_zip"))
+		'------------------------------------------------------------
+		'Table
+		'------------------------------------------------------------
+		sh_basis = Trim(Request("sh_basis"))
+		sh_custom_table_name = Trim(Request("sh_custom_table_name"))
 		
 		
 		'--SAVE DATA------------------------------------------
@@ -437,6 +440,9 @@
 		rsUpdate("en_usps_userid") = ""
 		rsUpdate("en_usps_password") = ""
 		
+		rsUpdate("sh_basis") = sh_basis
+		rsUpdate("sh_custom_table_name") = sh_custom_table_name
+		
 		If dbconn.Errors.Count > 0 Then
 			dbconn.Errors.Clear
 			rsUpdate.CancelUpdate
@@ -446,6 +452,119 @@
 		
 		rsUpdate.Close
 		set rsUpdate = nothing
+		
+		
+		'--TABLE RATE------------------------------------------
+		SH_table_data1 = Trim(Request("SH_table_data1"))
+		SH_table_data2 = Trim(Request("SH_table_data2"))
+		SH_table_data3 = Trim(Request("SH_table_data3"))
+		SH_table_data4 = Trim(Request("SH_table_data4"))
+		SH_table_data5 = Trim(Request("SH_table_data5"))
+		SH_table_data6 = Trim(Request("SH_table_data6"))
+		
+		TableSHCountry1	= Trim(Request("TableSHCountry1"))
+		TableSHCountry2	= Trim(Request("TableSHCountry2"))
+		TableSHCountry3	= Trim(Request("TableSHCountry3"))
+		TableSHCountry4	= Trim(Request("TableSHCountry4"))
+		TableSHCountry5	= Trim(Request("TableSHCountry5"))
+		TableSHCountry6 = Trim(Request("TableSHCountry6"))
+		
+		if SetSettingValue("store_shipping_table_rate_country[1]",TableSHCountry1) then
+		end if
+		if SetSettingValue("store_shipping_table_rate_country[2]",TableSHCountry2) then
+		end if
+		if SetSettingValue("store_shipping_table_rate_country[3]",TableSHCountry3) then
+		end if
+		if SetSettingValue("store_shipping_table_rate_country[4]",TableSHCountry4) then
+		end if
+		if SetSettingValue("store_shipping_table_rate_country[5]",TableSHCountry5) then
+		end if
+		if SetSettingValue("store_shipping_table_rate_country[6]",TableSHCountry6) then
+		end if
+		
+		sql="DELETE FROM " & g_storeid & "_custom_shipping"
+		dbconn.Execute sql
+		
+		if Len(SH_table_data1) > 0 then
+			ar_SH_table_data = Split(SH_table_data1, "%%")
+			for ii = 0 to UBound(ar_SH_table_data)
+				if Len(ar_SH_table_data(ii)) > 0 then
+					ar_SH_item = Split(ar_SH_table_data(ii), "||")
+					if IsNumeric(ar_SH_item(0)) AND IsNumeric(ar_SH_item(1)) then
+						sql = "INSERT INTO " & g_storeid & "_custom_shipping (range_from, range_charge, country_code) VALUES(" & ar_SH_item(0) & "," & ar_SH_item(1) & ",'" &  TableSHCountry1 & "')"
+						dbconn.Execute sql
+					end if
+				end if
+			next
+		end if
+		
+		if Len(SH_table_data2) > 0 then
+			ar_SH_table_data = Split(SH_table_data2, "%%")
+			for ii = 0 to UBound(ar_SH_table_data)
+				if Len(ar_SH_table_data(ii)) > 0 then
+					ar_SH_item = Split(ar_SH_table_data(ii), "||")
+					if IsNumeric(ar_SH_item(0)) AND IsNumeric(ar_SH_item(1)) then
+						sql = "INSERT INTO " & g_storeid & "_custom_shipping (range_from, range_charge, country_code) VALUES(" & ar_SH_item(0) & "," & ar_SH_item(1) & ",'" &  TableSHCountry2 & "')"
+						dbconn.Execute sql
+					end if
+				end if
+			next
+		end if
+		
+		if Len(SH_table_data3) > 0 then
+			ar_SH_table_data = Split(SH_table_data3, "%%")
+			for ii = 0 to UBound(ar_SH_table_data)
+				if Len(ar_SH_table_data(ii)) > 0 then
+					ar_SH_item = Split(ar_SH_table_data(ii), "||")
+					if IsNumeric(ar_SH_item(0)) AND IsNumeric(ar_SH_item(1)) then
+						sql = "INSERT INTO " & g_storeid & "_custom_shipping (range_from, range_charge, country_code) VALUES(" & ar_SH_item(0) & "," & ar_SH_item(1) & ",'" &  TableSHCountry3 & "')"
+						dbconn.Execute sql
+					end if
+				end if
+			next
+		end if
+		
+		if Len(SH_table_data4) > 0 then
+			ar_SH_table_data = Split(SH_table_data4, "%%")
+			for ii = 0 to UBound(ar_SH_table_data)
+				if Len(ar_SH_table_data(ii)) > 0 then
+					ar_SH_item = Split(ar_SH_table_data(ii), "||")
+					if IsNumeric(ar_SH_item(0)) AND IsNumeric(ar_SH_item(1)) then
+						sql = "INSERT INTO " & g_storeid & "_custom_shipping (range_from, range_charge, country_code) VALUES(" & ar_SH_item(0) & "," & ar_SH_item(1) & ",'" &  TableSHCountry4 & "')"
+						dbconn.Execute sql
+					end if
+				end if
+			next
+		end if
+		
+		if Len(SH_table_data5) > 0 then
+			ar_SH_table_data = Split(SH_table_data5, "%%")
+			for ii = 0 to UBound(ar_SH_table_data)
+				if Len(ar_SH_table_data(ii)) > 0 then
+					ar_SH_item = Split(ar_SH_table_data(ii), "||")
+					if IsNumeric(ar_SH_item(0)) AND IsNumeric(ar_SH_item(1)) then
+						sql = "INSERT INTO " & g_storeid & "_custom_shipping (range_from, range_charge, country_code) VALUES(" & ar_SH_item(0) & "," & ar_SH_item(1) & ",'" &  TableSHCountry5 & "')"
+						dbconn.Execute sql
+					end if
+				end if
+			next
+		end if
+		
+		if Len(SH_table_data6) > 0 then
+			ar_SH_table_data = Split(SH_table_data6, "%%")
+			for ii = 0 to UBound(ar_SH_table_data)
+				if Len(ar_SH_table_data(ii)) > 0 then
+					ar_SH_item = Split(ar_SH_table_data(ii), "||")
+					if IsNumeric(ar_SH_item(0)) AND IsNumeric(ar_SH_item(1)) then
+						sql = "INSERT INTO " & g_storeid & "_custom_shipping (range_from, range_charge, country_code) VALUES(" & ar_SH_item(0) & "," & ar_SH_item(1) & ",'" &  TableSHCountry6 & "')"
+						dbconn.Execute sql
+					end if
+				end if
+			next
+		end if
+		
+		
+		
 
 	CASE "pan4"	
 		

@@ -1,0 +1,55 @@
+<%
+	Response.CodePage = 65001
+	Response.CharSet = "UTF-8"
+%>
+<%response.Expires=-1%>
+<!-- #INCLUDE File="../local/local.phtml" -->
+<!-- #INCLUDE File="../core/i_adoopen.phtml" -->
+<!-- #INCLUDE File="../util/xt_func_string.phtml" -->
+<!-- #INCLUDE File="../util/xt_func_shoppingcart.phtml" -->
+<%
+	sh_data = Trim(Request("sh_data"))
+	b_show = false
+	if Len(sh_data) > 0 then
+		ar_sh_data = Split(sh_data, "|")
+		
+		if UBound(ar_sh_data) > 0 then
+			
+			sh_name = ar_sh_data(0)
+			sh_price = ar_sh_data(1)
+			Session("DefaultShippingName") = sh_name
+			b_show = true
+		end if
+	end if
+	
+	
+	cart_sub_total = FormatNumber(GetTotalAmountInCart,2)
+	cart_tax_total = FormatNumber(GetTaxInCart(),2)
+	if b_show then
+		cart_sh_total = FormatNumber(sh_price,2)
+		cart_grand_toal = FormatNumber(GetGrandTotalInCart() + sh_price,2)
+	else
+		cart_sh_total = "-1"
+		cart_grand_toal = FormatNumber(GetGrandTotalInCart(),2)
+	end if
+
+%>
+
+{
+"CartTotal" : [
+<%
+	s_total = ""
+	
+	s_total = s_total & "{""id"" : """ & "subtotal" & """,""amount"" : """ & cart_sub_total & """},"
+	s_total = s_total & "{""id"" : """ & "tax" & """,""amount"" : """ & cart_tax_total & """},"
+	s_total = s_total & "{""id"" : """ & "shipping" & """,""amount"" : """ & cart_sh_total & """},"
+	s_total = s_total & "{""id"" : """ & "grandtotal" & """,""amount"" : """ & cart_grand_toal & """},"
+	
+	if Len(s_total) > 0 then
+		s_total = Left(s_total, Len(s_total)-1)
+	end if
+	response.Write(s_total)
+%>
+]
+}
+<!-- #INCLUDE File="../core/i_adoclosed.phtml" -->

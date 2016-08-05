@@ -28,8 +28,8 @@
 						<div class="container-fluid">
 							<!-- BEGIN PAGE TITLE -->
 							<div class="page-title">
-								<h1>Dashboard
-									<small>dashboard & statistics</small>
+								<h1>Configuration
+									<small>information & settings</small>
 								</h1>
 							</div>
 							<!-- END PAGE TITLE -->
@@ -41,7 +41,425 @@
 						<div class="container-fluid">
 							<!-- BEGIN PAGE CONTENT INNER -->
 							<div class="page-content-inner">
-								
+								<div class="row">
+									<div class="col-md-12">
+										<form id="form_edit_1" class="form-horizontal form-row-seperated" action="#">
+										<div class="tabbable-bordered">
+											<ul class="nav nav-tabs">
+												<li class="active">
+													<a href="#tab_general" data-toggle="tab"> General / Web </a>
+												</li>
+												<li>
+													<a href="#tab_catalog" data-toggle="tab"> Private Catalog </a>
+												</li>
+												<% if g_store_use_icecat_catalog = "1" then %>
+												<li>
+													<a href="#tab_icecat" data-toggle="tab"> ICECAT Catalog </a>
+												</li>
+												<% end if %>
+												<li>
+													<a href="#tab_transactions" data-toggle="tab"> Transactions</a>
+												</li>
+												<li>
+													<a href="#tab_advanced" data-toggle="tab"> Advanced </a>
+												</li>
+											</ul>
+											<div class="tab-content">
+												<div class="tab-pane active" id="tab_general">
+													<div class="portlet light">
+														<div class="portlet-title">
+															<div class="caption font-green-sharp">
+																<i class="icon-share font-green-sharp"></i>
+																<span class="caption-subject bold uppercase"> Design</span>
+															</div>
+														</div>
+														<div class="portlet-body">
+															<div class="form-group">
+																<label class="col-md-2 control-label" for="configuration_general_logo">
+																	Logo <span class="symbol required"></span>
+																</label>
+																<div class="col-md-4">
+																	<input type="text" placeholder="" class="form-control input-sm" id="configuration_general_logo" name="configuration_general_logo" value="<%=configuration_general_logo%>">
+																	<span class="help-inline">Upload your logo to /media/logo</span>
+																</div>
+															</div>
+															<div class="form-group">
+																<label class="col-md-2 control-label" for="configuration_general_logo">
+																	Default Email Address <span class="symbol required"></span>
+																</label>
+																<div class="col-md-4">
+																	<input type="text" placeholder="" class="form-control input-sm" id="configuration_general_logo" name="configuration_general_logo" value="<%=configuration_general_logo%>">
+																</div>
+															</div>
+														</div>
+													</div>
+													<div class="portlet light">
+														<div class="portlet-title">
+															<div class="caption font-green-sharp">
+																<i class="icon-share font-green-sharp"></i>
+																<span class="caption-subject bold uppercase"> Meta Tags</span>
+															</div>
+														</div>
+														<div class="portlet-body">
+															<div class="form-group">
+																<label class="col-sm-2 control-label" for="configuration_general_logo">
+																	Default Page Title <span class="symbol required"></span>
+																</label>
+																<div class="col-sm-9">
+																	<input type="text" placeholder="" class="form-control input-sm" id="configuration_general_logo" name="configuration_general_logo" value="<%=configuration_general_logo%>">
+																</div>
+															</div>
+															<div class="form-group">
+																<label class="col-sm-2 control-label" for="configuration_general_logo">
+																	Meta Tags <span class="symbol required"></span>
+																</label>
+																<div class="col-sm-9">
+																	<textarea class="form-control" rows="3"></textarea>
+																</div>
+															</div>
+														</div>
+													</div>
+													<div class="portlet light">
+														<div class="portlet-title">
+															<div class="caption font-green-sharp">
+																<i class="icon-share font-green-sharp"></i>
+																<span class="caption-subject bold uppercase"> Terms & Conditions</span>
+															</div>
+														</div>
+														<div class="portlet-body">
+															<div class="form-group">
+																<label class="col-sm-2 control-label" for="configuration_general_logo">
+																	Shopping Cart <span class="symbol required"></span>
+																</label>
+																<div class="col-sm-9">
+																	<textarea class="form-control" rows="3"></textarea>
+																</div>
+															</div>
+															<div class="form-group">
+																<label class="col-sm-2 control-label" for="configuration_general_logo">
+																	Checkout <span class="symbol required"></span>
+																</label>
+																<div class="col-sm-9">
+																	<textarea class="form-control" rows="3"></textarea>
+																</div>
+															</div>
+															<div class="form-group">
+																<label class="col-sm-2 control-label" for="configuration_general_logo">
+																	Order Receipt <span class="symbol required"></span>
+																</label>
+																<div class="col-sm-9">
+																	<textarea class="form-control" rows="3"></textarea>
+																</div>
+															</div>
+														</div>
+													</div>
+												</div>
+												<div class="tab-pane" id="tab_catalog">
+													<div class="portlet light">
+														<div class="portlet-title">
+															<div class="caption font-green-sharp">
+																<i class="icon-share font-green-sharp"></i>
+																<span class="caption-subject bold uppercase"> General</span>
+															</div>
+														</div>
+														<div class="portlet-body">
+															<div class="form-group">
+																<label class="col-sm-2 control-label" for="configuration_general_logo">
+																	Show Related Items on Product Page
+																</label>
+																<div class="col-sm-4">
+																	<select class="form-control">
+                                                                        <option>Yes</option>
+                                                                        <option>No</option>
+                                                                    </select>
+																</div>
+															</div>
+														</div>
+													</div>
+													<div class="portlet light">
+														<div class="portlet-title">
+															<div class="caption font-green-sharp">
+																<i class="icon-share font-green-sharp"></i>
+																<span class="caption-subject bold uppercase"> Inventory</span>
+															</div>
+														</div>
+														<div class="portlet-body">
+															<div class="form-group">
+																<label class="col-sm-2 control-label" for="configuration_general_logo">
+																	Inventory Mode <span class="symbol required"></span>
+																</label>
+																<div class="col-sm-9">
+																	<div class="mt-radio-list">
+																		<label class="mt-radio">
+																			<input name="optionsRadios" id="optionsRadios22" type="radio" checked="" value="option1"> No Inventory Control
+																			<span></span>
+																		</label>
+																		<label class="mt-radio">
+																			<input name="optionsRadios" id="optionsRadios23" type="radio" checked="" value="option2"> Simple Inventory
+																			<span></span>
+																		</label>
+																		<label class="mt-radio">
+																			<input name="optionsRadios" id="optionsRadios24" type="radio" value="option2"> Inventory - Not Allow Backorder
+																			<span></span>
+																		</label>
+																		<label class="mt-radio">
+																			<input name="optionsRadios" id="optionsRadios24" type="radio" value="option2"> Inventory - Allow Backorder
+																			<span></span>
+																		</label>
+																	</div>
+																</div>
+															</div>
+															<div class="form-group">
+																<label class="col-sm-2 control-label" for="configuration_general_logo">
+																	Out of Stock Message <span class="symbol required"></span>
+																</label>
+																<div class="col-sm-9">
+																	<textarea class="form-control" rows="3"></textarea>
+																</div>
+															</div>
+														</div>
+													</div>
+													<div class="portlet light">
+														<div class="portlet-title">
+															<div class="caption font-green-sharp">
+																<i class="icon-share font-green-sharp"></i>
+																<span class="caption-subject bold uppercase"> Review</span>
+															</div>
+														</div>
+														<div class="portlet-body">
+															<div class="form-group">
+																<label class="col-sm-2 control-label" for="configuration_general_logo">
+																	Allow Guest to write a review
+																</label>
+																<div class="col-sm-4">
+																	<select class="form-control">
+                                                                        <option>Yes</option>
+                                                                        <option>No</option>
+                                                                    </select>
+																</div>
+															</div>
+															<div class="form-group">
+																<label class="col-sm-2 control-label" for="configuration_general_logo">
+																	Require previous purchase to write a review
+																</label>
+																<div class="col-sm-4">
+																	<select class="form-control">
+                                                                        <option>Yes</option>
+                                                                        <option>No</option>
+                                                                    </select>
+																</div>
+															</div>
+														</div>
+													</div>
+												</div>
+												<div class="tab-pane" id="tab_icecat">
+													<div class="portlet light">
+														<div class="portlet-title">
+															<div class="caption font-green-sharp">
+																<i class="icon-share font-green-sharp"></i>
+																<span class="caption-subject bold uppercase"> General</span>
+															</div>
+														</div>
+														<div class="portlet-body">
+															<div class="form-group">
+																<label class="col-sm-2 control-label" for="configuration_general_logo">
+																	Availability <span class="symbol required"></span>
+																</label>
+																<div class="col-sm-9">
+																	<div class="mt-radio-list">
+																		<label class="mt-radio">
+																			<input name="optionsRadios" id="optionsRadios22" type="radio" checked="" value="option1"> Show Availability / Disallow Backorder
+																			<span></span>
+																		</label>
+																		<label class="mt-radio">
+																			<input name="optionsRadios" id="optionsRadios23" type="radio" checked="" value="option2"> Show Availability / Allow Backorder
+																			<span></span>
+																		</label>
+																		<label class="mt-radio">
+																			<input name="optionsRadios" id="optionsRadios24" type="radio" value="option2"> Hide Availability / Disable Backorder
+																			<span></span>
+																		</label>
+																		<label class="mt-radio">
+																			<input name="optionsRadios" id="optionsRadios24" type="radio" value="option2"> Hide Availability / Allow Backorder
+																			<span></span>
+																		</label>
+																	</div>
+																</div>
+															</div>
+															<div class="form-group">
+																<label class="col-sm-2 control-label" for="configuration_general_logo">
+																	Out of Stock Items
+																</label>
+																<div class="col-sm-4">
+																	<select class="form-control">
+                                                                        <option>Hide</option>
+                                                                        <option>Show</option>
+                                                                    </select>
+																</div>
+															</div>
+															<div class="form-group">
+																<label class="col-sm-2 control-label" for="configuration_general_logo">
+																	SKU Display <span class="symbol required"></span>
+																</label>
+																<div class="col-sm-9">
+																	<div class="mt-radio-list">
+																		<label class="mt-radio">
+																			<input name="optionsRadios" id="optionsRadios22" type="radio" checked="" value="option1"> Internal Part Number
+																			<span></span>
+																		</label>
+																		<label class="mt-radio">
+																			<input name="optionsRadios" id="optionsRadios23" type="radio" checked="" value="option2"> ICECAT Part Number
+																			<span></span>
+																		</label>
+																		<label class="mt-radio">
+																			<input name="optionsRadios" id="optionsRadios24" type="radio" value="option2"> Manufacturer Part Number
+																			<span></span>
+																		</label>
+																	</div>
+																</div>
+															</div>
+															<div class="form-group">
+																<label class="col-sm-2 control-label" for="configuration_general_logo">
+																	Retail Price <span class="symbol required"></span>
+																</label>
+																<div class="col-sm-9">
+																	<div class="mt-radio-list">
+																		<label class="mt-radio">
+																			<input name="optionsRadios" id="optionsRadios22" type="radio" checked="" value="option1"> Show (if available)
+																			<span></span>
+																		</label>
+																		<label class="mt-radio">
+																			<input name="optionsRadios" id="optionsRadios23" type="radio" checked="" value="option2"> Hide
+																			<span></span>
+																		</label>
+																	</div>
+																</div>
+															</div>
+															<div class="form-group">
+																<label class="col-sm-2 control-label" for="configuration_general_logo">
+																	Price Rule <span class="symbol required"></span>
+																</label>
+																<div class="col-sm-9">
+																	<select class="form-control">
+                                                                        <option>Use Best Price</option>
+                                                                        <option>Use Ingram Micro Price First</option>
+																		<option>Use Tech Data Price First</option>
+																		<option>Use Synnex Price First</option>
+                                                                    </select>
+																</div>
+															</div>
+															<div class="form-group">
+																<label class="col-sm-2 control-label" for="configuration_general_logo">
+																	Inventory Rule
+																</label>
+																<div class="col-sm-9">
+																	<select class="form-control">
+                                                                        <option>Set out of stock if item is not available on all distributors</option>
+                                                                        <option>Set out of stock if item is not available on Ingram Micro</option>
+																		<option>Set out of stock if item is not available on Tech Data</option>
+																		<option>Set out of stock if item is not available on Synnex</option>
+																		<option>Always in stock</option>
+                                                                    </select>
+																</div>
+															</div>
+															<div class="form-group">
+																<label class="col-sm-2 control-label" for="configuration_general_logo">
+																	Real-time availability on storefront
+																</label>
+																<div class="col-sm-9">
+																	<div class="mt-checkbox-list">
+																		<label class="mt-checkbox mt-checkbox-outline">
+																			<input type="checkbox" name="DA1" value="1" <%if DA1="1" then%>checked<%end if%> class="grey">
+																			Ingram Micro<span></span>
+																		</label>
+																		<label class="mt-checkbox mt-checkbox-outline">
+																			<input type="checkbox" name="DA2" value="1" <%if DA2="1" then%>checked<%end if%> class="grey">
+																			Tech Data<span></span>
+																		</label>
+																		
+																	</div>
+																</div>
+															</div>
+														</div>
+													</div>
+												</div>
+												<div class="tab-pane" id="tab_transactions">
+													<div class="portlet light">
+														<div class="portlet-title">
+															<div class="caption font-green-sharp">
+																<i class="icon-share font-green-sharp"></i>
+																<span class="caption-subject bold uppercase"> Inventory</span>
+															</div>
+														</div>
+														<div class="portlet-body">
+															<div class="form-group">
+																<label class="col-sm-2 control-label" for="configuration_general_logo">
+																	API Login ID <span class="symbol required"></span>
+																</label>
+																<div class="col-sm-9">
+																	<input type="text" placeholder="" class="form-control input-sm" id="configuration_general_logo" name="configuration_general_logo" value="<%=configuration_general_logo%>">
+																</div>
+															</div>
+															<div class="form-group">
+																<label class="col-sm-2 control-label" for="configuration_general_logo">
+																	API Login ID <span class="symbol required"></span>
+																</label>
+																<div class="col-sm-9">
+																	<input type="text" placeholder="" class="form-control input-sm" id="configuration_general_logo" name="configuration_general_logo" value="<%=configuration_general_logo%>">
+																</div>
+															</div>
+															<div class="form-group">
+																<label class="col-sm-2 control-label" for="configuration_general_logo">
+																	API Login ID <span class="symbol required"></span>
+																</label>
+																<div class="col-sm-9">
+																	<input type="text" placeholder="" class="form-control input-sm" id="configuration_general_logo" name="configuration_general_logo" value="<%=configuration_general_logo%>">
+																</div>
+															</div>
+														</div>
+													</div>
+												</div>
+												<div class="tab-pane" id="tab_advanced">
+													<div class="portlet light">
+														<div class="portlet-title">
+															<div class="caption font-green-sharp">
+																<i class="icon-share font-green-sharp"></i>
+																<span class="caption-subject bold uppercase"> Inventory</span>
+															</div>
+														</div>
+														<div class="portlet-body">
+															<div class="form-group">
+																<label class="col-sm-2 control-label" for="configuration_general_logo">
+																	API Login ID <span class="symbol required"></span>
+																</label>
+																<div class="col-sm-9">
+																	<input type="text" placeholder="" class="form-control input-sm" id="configuration_general_logo" name="configuration_general_logo" value="<%=configuration_general_logo%>">
+																</div>
+															</div>
+															<div class="form-group">
+																<label class="col-sm-2 control-label" for="configuration_general_logo">
+																	API Login ID <span class="symbol required"></span>
+																</label>
+																<div class="col-sm-9">
+																	<input type="text" placeholder="" class="form-control input-sm" id="configuration_general_logo" name="configuration_general_logo" value="<%=configuration_general_logo%>">
+																</div>
+															</div>
+															<div class="form-group">
+																<label class="col-sm-2 control-label" for="configuration_general_logo">
+																	API Login ID <span class="symbol required"></span>
+																</label>
+																<div class="col-sm-9">
+																	<input type="text" placeholder="" class="form-control input-sm" id="configuration_general_logo" name="configuration_general_logo" value="<%=configuration_general_logo%>">
+																</div>
+															</div>
+														</div>
+													</div>
+												</div>
+											</div>
+										</div>
+										</form>
+									</div>
+								</div>
 							</div>
 							<!-- END PAGE CONTENT INNER -->
 						</div>

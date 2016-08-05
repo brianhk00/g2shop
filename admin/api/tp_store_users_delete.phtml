@@ -1,0 +1,12 @@
+<%response.Expires=-1%>
+<!-- #INCLUDE File="../local/local.phtml" -->
+<!-- #INCLUDE File="../util/xt_func_util.phtml" -->
+<!-- #INCLUDE File="../util/xt_func_string.phtml" -->
+<%
+	user_id = Trim(Request("user_id"))
+	user_id = Replace(user_id, ", ", "','")
+	sql = "DELETE FROM " & g_storeid & "_users WHERE user_id IN ('" & user_id & "')"
+	dbconn.execute sql
+	
+	response.redirect("../store_users.phtml")
+%>

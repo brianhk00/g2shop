@@ -1,0 +1,70 @@
+<%
+	Response.CodePage = 65001
+	Response.CharSet = "UTF-8"
+%>
+<%response.Expires=-1%>
+<!-- #INCLUDE File="../local/local.phtml" -->
+<!-- #INCLUDE File="../core/i_adoopen.phtml" -->
+<!-- #INCLUDE File="../util/xt_func_string.phtml" -->
+<!-- #INCLUDE File="../util/xt_func_shoppingcart.phtml" -->
+<%
+	sh_data = Trim(Request("sh_data"))
+	b_show = false
+	if Len(sh_data) > 0 then
+		ar_sh_data = Split(sh_data, "|")
+		
+		if UBound(ar_sh_data) > 0 then
+			
+			sh_name = ar_sh_data(0)
+			sh_price = ar_sh_data(1)
+			Session("DefaultShippingName") = sh_name
+			b_show = true
+		end if
+	end if
+%>
+<table class="table table-bordered">
+<tr>
+	<td class="text-right">
+		<strong>Sub-Total:</strong>
+	</td>
+	<td class="text-right">
+		$<%=FormatNumber(GetTotalAmountInCart,2)%>
+	</td>
+</tr>
+<tr>
+	<td class="text-right">
+		<strong>Tax:</strong>
+	</td>
+	<td class="text-right">
+		$<%=FormatNumber(GetTaxInCart(),2) %>
+	</td>
+</tr>
+<% if b_show then %>
+<tr>
+	<td class="text-right">
+		<strong>Shipping & Handling:</strong>
+	</td>
+	<td class="text-right">
+		$<%=FormatNumber(sh_price,2) %>
+	</td>
+</tr>
+<tr>
+	<td class="text-right">
+		<strong>Total:</strong>
+	</td>
+	<td class="text-right">
+		$<%=FormatNumber(GetGrandTotalInCart() + sh_price,2) %>
+	</td>
+</tr>
+<% else %>
+<tr>
+	<td class="text-right">
+		<strong>Total:</strong>
+	</td>
+	<td class="text-right">
+		$<%=FormatNumber(GetGrandTotalInCart(),2) %>
+	</td>
+</tr>
+<% end if %>
+
+</table>

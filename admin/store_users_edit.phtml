@@ -1,0 +1,359 @@
+<%
+	Response.CodePage = 65001
+	Response.CharSet = "UTF-8"
+%>
+<!-- #INCLUDE File="local/local.phtml" -->
+<!-- #INCLUDE File="util/xt_func_util.phtml" -->
+<!-- #INCLUDE File="util/xt_func_string.phtml" -->
+<!-- #INCLUDE File="include/i_login.phtml" -->
+<%
+	user_id = Trim(Request("user_id"))
+	
+	sql = "SELECT * FROM " & g_storeid & "_users WHERE user_id='" & user_id & "'"
+	Set rsUser = dbconn.Execute(sql)
+		
+	if not rsUser.EOF then
+		pwd = rsUser("pwd")
+		LastName = rsUser("LastName")
+		FirstName = rsUser("FirstName")
+		description = rsUser("description")
+		user_flag = rsUser("user_flag")
+		user_disable = rsUser("user_disable")
+		user_email = rsUser("Email")
+		access_flag = Trim(rsUser("access_flag"))
+		uflag = Trim(rsUser("uflag"))
+	end if
+
+	rsUser.close
+	
+	set rsUser = nothing
+	
+	new_flag = ""
+	if user_id = "0" then
+		user_id = ""
+		new_flag = "1"
+	end if
+%>
+<!--#INCLUDE FILE="include/doctype.phtml"-->
+<head>
+<!--#INCLUDE FILE="include/head.phtml"-->
+<!-- BEGIN PAGE LEVEL PLUGINS -->
+<link rel="stylesheet" href="assets/plugins/jquery-ui/jquery-ui-1.10.4.custom.min.css" />
+<!-- END PAGE LEVEL PLUGINS -->
+</head>
+<body class="page-container-bg-solid">
+<div class="page-wrapper">
+	<div class="page-wrapper-row">
+		<div class="page-wrapper-top">
+			<!--#INCLUDE FILE="include/header.phtml"-->
+		</div>
+	</div>
+	<div class="page-wrapper-row full-height">
+		<div class="page-wrapper-middle">
+			<!-- BEGIN CONTAINER -->
+			<div class="page-container">
+				<!-- BEGIN CONTENT -->
+				<div class="page-content-wrapper">
+					<!-- BEGIN CONTENT BODY -->
+					<!-- BEGIN PAGE HEAD-->
+					<!-- END PAGE HEAD-->
+					<!-- BEGIN PAGE CONTENT BODY -->
+					<div class="page-content">
+						<div class="container-fluid">
+							<!-- BEGIN PAGE CONTENT INNER -->
+							<div class="page-content-inner">
+								<div class="row">
+									<div class="col-md-12">
+										<form id="form_edit_1" class="form-horizontal form-row-seperated" action="#">
+										<input type="hidden" name="new_flag" value="<%=new_flag%>">
+											<div class="portlet">
+												<div class="portlet-title">
+													<div class="caption">
+													<i class="fa fa-user"></i>
+													<%
+													if Len(user_id) > 0 then
+														Response.Write(user_id)
+													else
+														Response.Write("New Admin User")
+													end if
+													%>
+													</div>
+													<div class="actions btn-set">
+														<button type="button" onclick="location.href='store_users.phtml';" name="back" class="btn btn-default">
+															<i class="fa fa-angle-left"></i> Back
+														</button>
+														<button class="btn btn-success" onclick="savebutton='1';">
+															<i class="fa fa-check"></i> Save
+														</button>
+														<button class="btn btn-success" onclick="savebutton='0';">
+															<i class="fa fa-check-circle"></i> Save & Continue Edit
+														</button>
+														<div class="btn-group">
+															<a class="btn btn-success dropdown-toggle" href="javascript:;" data-toggle="dropdown">
+																<i class="fa fa-share"></i> More
+																<i class="fa fa-angle-down"></i>
+															</a>
+															<div class="dropdown-menu pull-right">
+																<!--
+																<li>
+																	<a href="javascript:;" id="DuplicateEntry"> Duplicate </a>
+																</li>
+																-->
+																<li>
+																	<a href="#" id="DeleteEntry"> Delete </a>
+																</li>
+															</div>
+														</div>
+													</div>
+												</div>
+												<div class="alert alert-danger display-hide">
+												<button class="close" data-close="alert"></button> You have some form errors. Please check below. 
+												</div>
+												<div class="alert alert-success display-hide">
+												<button class="close" data-close="alert"></button> The information has been saved.
+												</div>
+												<div class="alert alert-warning display-hide">
+												<button class="close" data-close="alert"></button> The information has not been saved properly. Please contact system administrator.
+												</div>
+												<div class="portlet-body">
+													<div class="form-group">
+														<label class="col-md-3 control-label" for="user_id">
+															User ID <span class="required"> * </span>
+														</label>
+														<div class="col-md-4">
+															<input type="text" id="user_id" name="user_id" class="form-control" value="<%=user_id%>" <%if user_id <> "" then %>readonly <%end if%>>
+														</div>
+													</div>
+													<div class="form-group">
+														<label class="col-md-3 control-label" for="pwd">
+															Password <span class="required"> * </span> 
+														</label>
+														<div class="col-md-4">
+															<input type="password" placeholder="" id="pwd" name="pwd" class="form-control" value="">
+														</div>
+													</div>
+													<div class="form-group">
+														<label class="col-md-3 control-label" for="FirstName">
+															First Name <span class="required"> * </span> 
+														</label>
+														<div class="col-md-4">
+															<input type="text" placeholder="" id="FirstName" name="FirstName" class="form-control" value="<%=FirstName%>">
+														</div>
+													</div>
+													<div class="form-group">
+														<label class="col-md-3 control-label" for="LastName">
+															Last Name <span class="required"> * </span> 
+														</label>
+														<div class="col-md-4">
+															<input type="text" placeholder="" id="LastName" name="LastName" class="form-control" value="<%=LastName%>">
+														</div>
+													</div>
+													<div class="form-group">
+														<label class="col-md-3 control-label" for="user_email">
+															Email Address <span class="required"> * </span> 
+														</label>
+														<div class="col-md-4">
+															<input type="text" placeholder="" id="user_email" name="user_email" class="form-control" value="<%=user_email%>">
+														</div>
+													</div>
+													<div class="form-group">
+														<label class="col-md-3 control-label" for="description">
+															Description
+														</label>
+														<div class="col-md-4">
+															<input type="text" placeholder="" id="description" name="description" class="form-control" value="<%=description%>">
+														</div>
+													</div>
+													<div class="form-group">
+														<label class="col-md-3 control-label" for="description">
+															Status
+														</label>
+														<div class="col-md-4">
+															<div class="mt-radio-list">
+																<label class="mt-radio">
+																	<input name="user_disable" id="user_disable[0]" type="radio" <%if user_disable = false then %>checked="checked"<%end if%> value="0"> Enabled
+																	<span></span>
+																</label>
+																<label class="mt-radio">
+																	<input name="user_disable" id="user_disable[1]" type="radio" <%if user_disable = true then %>checked="checked"<%end if%> value="1"> Disabled
+																	<span></span>
+																</label>
+															</div>
+														</div>
+													</div>
+												</div>
+											</div>
+										</div>
+									</div>
+								</div>
+							</div>
+							<!-- END PAGE CONTENT INNER -->
+						</div>
+					</div>
+					<!-- END PAGE CONTENT BODY -->
+					<!-- END CONTENT BODY -->
+				</div>
+				<!-- END CONTENT -->
+			</div>
+			<!-- END CONTAINER -->
+		</div>
+	</div>
+	<div class="page-wrapper-row">
+		<div class="page-wrapper-bottom">
+			<!--#INCLUDE FILE="include/footer.phtml"-->
+		</div>
+	</div>
+</div>
+<div id="dialog-confirm" title="Delete Confirmation" style="display: none;">
+<p><span class="ui-icon ui-icon-alert" style="float:left; margin:0 7px 20px 0;"></span>You are about to permanently delete this admin user. Are you sure?</p>
+</div>
+<!--#INCLUDE FILE="include/js.phtml"-->
+<!-- BEGIN PAGE LEVEL PLUGINS -->
+<script src="../assets/global/plugins/jquery-validation/js/jquery.validate.min.js" type="text/javascript"></script>
+<script src="../assets/global/plugins/jquery-validation/js/additional-methods.min.js" type="text/javascript"></script>
+<script src="assets/plugins/jquery-ui/jquery-ui-1.10.1.custom.min.js" type="text/javascript"></script>
+<!-- END PAGE LEVEL PLUGINS -->
+
+<!-- BEGIN PAGE LEVEL SCRIPTS -->
+<script language="javascript">
+var savebutton = "1";
+</script>
+<script language="javascript">
+var savebutton = "1";
+var FormValidator = function () {
+	var runValidator1 = function() {
+		// for more info visit the official plugin documentation: 
+		// http://docs.jquery.com/Plugins/Validation
+
+		var form1 = $('#form_edit_1');
+		var error1 = $('.alert-danger', form1);
+		var success1 = $('.alert-success', form1);
+		var warning1 = $('.alert-warning', form1);
+
+		form1.validate({
+			errorElement: 'span', //default input error message container
+			errorClass: 'help-block help-block-error', // default input error message class
+			focusInvalid: false, // do not focus the last invalid input
+			ignore: "",  // validate all fields including form hidden input
+			//RULES
+			rules: {
+				<%if user_id = "" then %>
+				user_id: {
+					required: true,
+					minlength: 3,
+					"remote":
+					{
+					  url: 'api/sp_store_check_user_id.phtml',
+					  type: "post"
+					}
+				},
+				<% end if %>
+				pwd: {
+					<%if user_id = "" then %>required: true,<%end if%>
+					minlength: 5
+				},
+				FirstName: {
+					minlength: 3,
+					required: true
+				},
+				LastName: {
+					minlength: 3,
+					required: true
+				},
+				user_email: {
+					email: true,
+					required: true
+				}
+			},
+			
+			messages: {
+				user_id:
+				{
+					required: "Please specify User ID.",
+					minlength: "The User ID must be greater than 3 chracter length.",
+					remote: "The specified user id is not unique."
+				}
+			},
+
+			invalidHandler: function (event, validator) { //display error alert on form submit              
+				success1.hide();
+				warning1.hide();
+				error1.show();
+				App.scrollTo(error1, -200);
+			},
+
+
+			highlight: function (element) { // hightlight error inputs
+
+				$(element)
+					.closest('.form-group').addClass('has-error'); // set error class to the control group
+			},
+
+			unhighlight: function (element) { // revert the change done by hightlight
+				$(element)
+					.closest('.form-group').removeClass('has-error'); // set error class to the control group
+			},
+
+			success: function (label) {
+				label
+					.closest('.form-group').removeClass('has-error'); // set success class to the control group
+			},
+
+			submitHandler: function (form) {
+				success1.hide();
+				error1.hide();
+				warning1.hide();
+				
+				$.ajax({
+					type: "POST",
+					url: "api/sp_store_users_update.phtml",
+					data: form1.serialize(),
+					success: function() {
+						success1.show();
+						if (savebutton == "1")
+						{
+						setTimeout(function () {
+								window.location.replace("store_users.phtml");
+							}, 500);
+						}
+					},
+					error: function() {
+						warning1.show();
+					}
+				});
+			}
+		});
+
+	};
+	return {
+		//main function to initiate template pages
+		init: function () {
+			runValidator1();
+		}
+	};
+}();
+</script>
+<script type="text/javascript">
+jQuery(document).ready(function() {
+	FormValidator.init();
+	$('#DeleteEntry').on('click', function () {
+		$("#dialog-confirm").dialog({
+			resizable: false,
+			height:170,
+			modal: true,
+			buttons: {
+				"Confirm Delete": function() {
+					$( this ).dialog( "close" );
+					location.replace('api/tp_store_users_delete.phtml?user_id=<%=user_id%>')
+				},
+				Cancel: function() {
+					$( this ).dialog( "close" );
+				}
+			}
+		});
+	});	
+});	
+</script>
+<!-- END PAGE LEVEL SCRIPTS -->
+</body>
+</html>

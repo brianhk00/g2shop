@@ -1,0 +1,24 @@
+<%response.Expires=-1%>
+<!-- #INCLUDE File="../local/local.phtml" -->
+<%
+	country_id = Trim(Request("country_id"))
+%>
+{
+"Country" : [
+<%
+	s_country = ""
+	sql = "SELECT CountryName, ISOCode2 FROM A_GlobalCountries"
+	set rs1 = dbconn.Execute(sql)
+	do while not rs1.EOF
+		s_country = s_country & "{""id"" : """ & rs1(1) & """,""name"" : """ & rs1(0) & """},"
+		rs1.MoveNext
+	loop
+	rs1.Close
+	set rs1 = nothing
+	if Len(s_country) > 0 then
+		s_country = Left(s_country, Len(s_country)-1)
+	end if
+	response.Write(s_country)
+%>
+]
+}

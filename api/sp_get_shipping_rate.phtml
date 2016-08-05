@@ -1,0 +1,511 @@
+<%
+	Response.CodePage = 65001
+	Response.CharSet = "UTF-8"
+%>
+<%response.Expires=-1%>
+<!-- #INCLUDE File="../local/local.phtml" -->
+<!-- #INCLUDE File="../core/i_adoopen.phtml" -->
+<!-- #INCLUDE File="../util/xt_func_carrier.phtml" -->
+<!-- #INCLUDE File="../util/xt_func_shoppingcart.phtml" -->
+<%
+Sub DualSorter( byRef arrArray, DimensionToSort )
+	Dim row, j, StartingKeyValue, StartingOtherValue, _
+	NewStartingKey, NewStartingOther, _
+	swap_pos, OtherDimension
+	Const column = 1
+	
+	' Ensure that the user has picked a valid DimensionToSort
+	If DimensionToSort = 1 then
+		OtherDimension = 0
+	ElseIf DimensionToSort = 0 then
+		OtherDimension = 1
+	Else
+		'Shoot, invalid value of DimensionToSort
+		Response.Write "Invalid dimension for DimensionToSort: " & _
+		"must be value of 1 or 0."
+		Response.End
+	End If
+	
+	For row = 0 To UBound( arrArray, column ) - 1
+		'Start outer loop.
+				
+		'Take a snapshot of the first element
+		'in the array because if there is a 
+		'smaller value elsewhere in the array 
+		'we'll need to do a swap.
+		StartingKeyValue = arrArray ( row, DimensionToSort )
+		StartingOtherValue = arrArray ( row, OtherDimension )
+		
+		' Default the Starting values to the First Record
+		NewStartingKey = arrArray ( row, DimensionToSort )
+		NewStartingOther = arrArray ( row, OtherDimension )
+		
+		swap_pos = row
+		
+		For j = row + 1 to UBound( arrArray, column )
+			'Start inner loop.
+			If arrArray ( j, DimensionToSort ) < NewStartingKey Then
+				'This is now the lowest number - 
+				'remember it's position.
+				swap_pos = j
+				NewStartingKey = arrArray ( j, DimensionToSort )
+				NewStartingOther = arrArray ( j, OtherDimension )
+			End If
+		Next
+		
+		If swap_pos <> row Then
+			'If we get here then we are about to do a swap
+			'within the array.
+			arrArray ( swap_pos, DimensionToSort ) = StartingKeyValue
+			arrArray ( swap_pos, OtherDimension ) = StartingOtherValue
+			
+			arrArray ( row, DimensionToSort ) = NewStartingKey
+			arrArray ( row, OtherDimension ) = NewStartingOther
+			
+		End If	
+	Next
+End Sub
+
+SUB SaveSHRateInfo (ByRef sServiceCode, ByRef sServiceCharge)
+	For ii = 0 to Ubound(arrShipRateArray)
+
+		if arrShipRateArray(ii,0) = sServiceCode then
+			arrShipRateArray(ii,1) = CDbl(sServiceCharge)
+			Exit For
+		end if
+	Next
+End Sub
+%>
+<%
+	'===================================================
+	'POST Data...
+	'===================================================
+	dest_country = Trim(Request("dest_country"))
+	dest_state = Trim(Request("dest_state"))
+	dest_postal = Trim(Request("dest_postal"))
+	dest_country = "US"
+	dest_state = "CA"
+	dest_postal = "90010"
+	'===================================================
+	'Initialize Array...
+	'===================================================
+	Dim arrShipRateArray(30,1)
+	Dim i_shiprate_index
+
+	For i = LBound(arrShipRateArray) to UBound(arrShipRateArray)
+		 arrShipRateArray(i, 0) = "--"
+		 arrShipRateArray(i, 1) = -1
+	Next
+
+	i_shiprate_index = 0
+	
+	'===================================================
+	'Get settings
+	'===================================================
+	sql = "SELECT * FROM " & g_storeid & "_profile"
+	set rsProfile = dbconn.Execute(sql)
+	
+	orig_state = rsProfile("State")
+	orig_postal = rsProfile("Zip")
+	sh_basis = rsProfile("sh_basis")
+	sh_ups_flags = rsProfile("sh_ups_flags")
+	sh_handling = rsProfile("sh_handling")
+	sh_markup = rsProfile("sh_markup")
+	ups_insurance = rsProfile("UPS_insurance")
+	tax_on_sh = rsProfile("tax_on_sh")
+	ccv_flag = rsProfile("ccv_flag")
+		
+	ups_xml_userid = rsProfile("ups_xml_userid")
+	ups_xml_password = rsProfile("ups_xml_password")
+	ups_xml_key = rsProfile("ups_xml_key")
+	ups_xml_flag = rsProfile("ups_xml_flag")
+	
+	'Warehouse Information...
+	warehouse_city = Trim(rsProfile("warehouse_city"))
+	warehouse_state = Trim(rsProfile("warehouse_state"))
+	warehouse_zip = Trim(rsProfile("warehouse_zip"))
+	warehouse_country = Trim(rsProfile("warehouse_country"))
+	
+	'Additional SH Settings
+	assume_res = rsProfile("assume_res")
+	SH_display_flag = rsProfile("SH_display_flag")
+	sh_custom_table_name = Trim(rsProfile("sh_custom_table_name"))
+	
+	fedex_markup = rsProfile("fedex_markup")
+	fedex_handling = rsProfile("fedex_handling")
+	fedex_service_flag = Trim(rsProfile("fedex_service_flag"))
+	
+	usps_userid = Trim(rsProfile("usps_userid"))
+	usps_password = Trim(rsProfile("usps_password"))
+	usps_markup = rsProfile("usps_markup")
+	usps_handling = rsProfile("usps_handling")
+	usps_service_flag = Trim(rsProfile("usps_service_flag"))
+
+	fedex_account = Trim(rsProfile("fedex_account"))
+	fedex_meter = Trim(rsProfile("fedex_meter"))
+	
+	'========================================================
+	'0: Default - Discount Price
+	'1: Use List Price
+	
+	fedex_rate_flag = Trim(rsProfile("fedex_rate_flag"))
+
+	if dest_country <> "US" then
+		fedex_service_flag = Replace(fedex_service_flag, "01", "I1")
+		fedex_service_flag = Replace(fedex_service_flag, "03", "I3")
+		fedex_service_flag = Replace(fedex_service_flag, "06", "I6")
+	end if
+	
+	'========================================================
+	rsProfile.Close
+
+	'=====================================================================
+	if Len(ups_xml_userid) > 0 then
+	else
+		ups_xml_key = "6B81BA3933AE06F0"
+		ups_xml_userid = "brianhk"
+		ups_xml_password = "zion1132"
+	end if
+
+
+	if dest_country <> "US" OR dest_country <> "CA" then
+		if Len(usps_userid) > 0 then
+		else
+			SH_display_flag = Replace(SH_display_flag, "USPS", "")
+		end if
+	end if
+
+	'======================================================================
+	
+	if Len(SH_display_flag) > 0 then
+	else
+		SH_display_flag="UPS"
+	end if
+	
+	if Len(warehouse_city)>0 AND Len(warehouse_state)>0 AND Len(warehouse_zip)>0 Then
+		orig_postal = warehouse_zip
+		orig_state = warehouse_state
+	end if
+		
+	if (IsNull(tax_on_sh)) OR (not tax_on_sh = 1) then
+		tax_on_sh = 0
+	end if
+	
+	if Len(sh_custom_table_name)>0 then
+	else
+		sh_custom_table_name = "Default shipping"
+	end if
+	
+	if Len(ups_xml_userid) > 0 AND Len(ups_xml_password) > 0 AND Len(ups_xml_key) > 0 then
+		b_UPSXML = true
+		ups_service_codes = ups_xml_flag
+		if Len(ups_service_codes) > 0 then
+		else
+			if mid(sh_ups_flags,1,1) = "1" then
+				ups_service_codes = ups_service_codes & "03*"
+			end if
+			if mid(sh_ups_flags,2,1) = "1" then
+				ups_service_codes = ups_service_codes & "14*"
+			end if
+			if mid(sh_ups_flags,3,1) = "1" then
+				ups_service_codes = ups_service_codes & "01*"
+			end if
+			if mid(sh_ups_flags,4,1) = "1" then
+				ups_service_codes = ups_service_codes & "13*"
+			end if
+			if mid(sh_ups_flags,5,1) = "1" then
+				ups_service_codes = ups_service_codes & "59*"
+			end if
+			if mid(sh_ups_flags,6,1) = "1" then
+				ups_service_codes = ups_service_codes & "02*"
+			end if
+			if mid(sh_ups_flags,7,1) = "1" then
+				ups_service_codes = ups_service_codes & "12*"
+			end if
+		end if
+
+	else
+
+		b_UPSXML = false
+		ups_service_codes = ""
+		if mid(sh_ups_flags,1,1) = "1" then
+			ups_service_codes = ups_service_codes & "03*"
+		end if
+		if mid(sh_ups_flags,2,1) = "1" then
+			ups_service_codes = ups_service_codes & "14*"
+		end if
+		if mid(sh_ups_flags,3,1) = "1" then
+			ups_service_codes = ups_service_codes & "01*"
+		end if
+		if mid(sh_ups_flags,4,1) = "1" then
+			ups_service_codes = ups_service_codes & "13*"
+		end if
+		if mid(sh_ups_flags,5,1) = "1" then
+			ups_service_codes = ups_service_codes & "59*"
+		end if
+		if mid(sh_ups_flags,6,1) = "1" then
+			ups_service_codes = ups_service_codes & "02*"
+		end if
+		if mid(sh_ups_flags,7,1) = "1" then
+			ups_service_codes = ups_service_codes & "12*"
+		end if
+	end if
+	
+	sh_option_string = ""
+	x_sh_option_string = ""
+	
+	if Len(warehouse_country) > 0 then
+		orig_country = warehouse_country
+	else
+		orig_country= "US"
+	end if
+
+	'===================================================
+	'END OF SETTINGS
+	'===================================================
+	
+	'==================================================
+	' GET INFO FROM CART
+	'==================================================
+	ziCount = GetTotalItemsInCart()
+	zTotalWeight = GetTotalWeightInCart()
+	
+	if zTotalWeight < 1 AND zTotalWeight > 0 then
+		zTotalWeight = 1
+	end if
+	
+	'===================================================
+	'Flat Table...
+	'===================================================
+	if InStr(SH_display_flag, "C1") then
+
+		if dest_country = "USA" or dest_country = "" or dest_country = "USA APO/FPO" or dest_country = "US" then
+			strSQL = "SELECT * FROM " & g_storeid & "_shipping_profile WHERE profile_mode=0 or profile_mode=1"
+		else
+			strSQL = "SELECT * FROM " & g_storeid & "_shipping_profile WHERE profile_mode=0 or profile_mode=2"
+		end if
+
+		Set rsShippingProfile = Conn.Execute(strSQL)
+
+		do while not rsShippingProfile.EOF
+			
+			arrShipRateArray(i_shiprate_index, 0) = rsShippingProfile("profile_name")
+			arrShipRateArray(i_shiprate_index, 1) = rsShippingProfile("profile_charge")
+			i_shiprate_index = i_shiprate_index + 1
+
+			rsShippingProfile.MoveNext
+		loop
+		rsShippingProfile.Close
+
+	end if
+	
+	'===================================================
+	'Custom Table
+	'===================================================
+	if InStr(SH_display_flag, "C2") then
+	
+		SELECT CASE sh_basis
+		CASE 0
+			i_basis = GetTotalAmountInCart()
+		CASE 1
+			i_basis = zTotalWeight
+		CASE 2
+			i_basis = GetTotalItemsInCart()
+		CASE ELSE
+			i_basis = GetTotalAmountInCart()
+		END SELECT
+
+		i_sh_charge = 0
+		if i_basis > 0 then
+			sql = "SELECT * FROM " & g_storeid & "_custom_shipping ORDER BY range_from"
+			Set rsCustom = dbconn.Execute(sql)
+			do while not rsCustom.EOF
+				if rsCustom("range_from") <= i_basis then
+					i_sh_charge = rsCustom("range_charge")
+				end if
+				rsCustom.MoveNext
+			loop		
+			rsCustom.Close
+		else
+			i_sh_charge = 0
+		end if
+
+		arrShipRateArray(i_shiprate_index, 0) = sh_custom_table_name
+		arrShipRateArray(i_shiprate_index, 1) = i_sh_charge
+		i_shiprate_index = i_shiprate_index + 1
+
+	end if
+
+	'===================================================
+	'End Of Custom Table...
+	'===================================================
+	'===================================================
+	'RealTime
+	'===================================================
+
+	i_max_adjust = 1
+
+	if zTotalWeight > 150 then
+		i_max_adjust = CDbl(FormatNumber(zTotalWeight/150,2))
+	end if
+
+	if i_max_adjust > 1 then
+		zTotalWeight = 150
+	end if
+	
+	if assume_res = "1" then
+		if dest_state = "PR" OR dest_state = "GU" then
+		else
+			fedex_service_flag = Replace(fedex_service_flag, "92", "")
+			fedex_service_flag = Replace(fedex_service_flag, "**", "*")
+		end if
+	end if
+	
+	dim pStr
+		
+	pStr = "carriers=" & SH_display_flag'"UPS,USPS,FEDEX"
+	pStr = pStr & "&ExtraFee=" & "0"
+	pStr = pStr & "&MarkupPercent=" & "0"
+	pStr = pStr & "&ShipmentWeight=" & zTotalWeight
+	pStr = pStr & "&ShipmentWeight2=" & zTotalWeight2
+	pStr = pStr & "&UPSServiceFlag=" & ups_service_codes
+	pStr = pStr & "&USPSServiceFlag=" & usps_service_flag
+	pStr = pStr & "&FedExServiceFlag=" & fedex_service_flag
+	pStr = pStr & "&UPSUsername=" & ups_xml_userid
+	pStr = pStr & "&UPSPassword=" & ups_xml_password
+	pStr = pStr & "&UPSLicense=" & ups_xml_key
+	pStr = pStr & "&USPSUsername=" & usps_userid
+	pStr = pStr & "&USPSPassword=" & usps_password
+	pStr = pStr & "&FedexAccountNumber=" & fedex_account
+	pStr = pStr & "&FedexMeter=" & fedex_meter
+
+	pStr = pStr & "&OriginCity=" & ""
+	pStr = pStr & "&OriginStateProvince=" & orig_state
+	pStr = pStr & "&OriginZipPostalCode=" & orig_postal
+	pStr = pStr & "&OriginCountry=" & orig_country
+	
+	
+	if dest_country = "US" OR dest_country = "CA" then
+		pStr = pStr & "&DestinationStateProvince=" & dest_state
+		pStr = pStr & "&DestinationZipPostalCode=" & dest_postal
+	else
+		pStr = pStr & "&DestinationStateProvince=" & ""
+		pStr = pStr & "&DestinationZipPostalCode=" & dest_postal
+	end if
+
+	pStr = pStr & "&DestinationCountryCode=" & dest_country
+	pStr = pStr & "&IsResidential=" & assume_res
+	pStr = pStr & "&listrate=" & fedex_rate_flag
+	
+	'--------------???---------------------------------------------------
+    'pStr = pStr & "FedexKey=" & "wcbPDXz3ElQNZi7s"
+    'pStr = pStr & "FedexPassword=" & "QT9e2tz0b7If1xaBgtYYVOknK"
+	'--------------???---------------------------------------------------
+	'pStr = pStr & "&debugmode=1"
+	'Response.Write (pStr)
+		
+	dim xmlRecv
+	set xmlRecv = Server.CreateObject("Msxml2.ServerXMLHTTP")
+
+	xmlRecv.open "POST", "http://gateway.flashecom.com/RealTimeShippingRate.web/getrates.aspx", false
+
+	xmlRecv.setRequestHeader "Content-Type", "application/x-www-form-urlencoded"
+	xmlRecv.setTimeouts 5000, 5000, 15000, 15000
+
+	xmlRecv.send pStr
+	pResult = xmlRecv.responseText
+
+	if InStr(pResult,"UPS Ground:6.95~") then
+
+	else
+
+	ar_realtime = Split(pResult, "~")
+
+	for jj = 0 to UBound(ar_realtime)
+
+		if Len(Trim(ar_realtime(jj))) > 0 then
+			
+			rx_realtime = Split(Trim(ar_realtime(jj)), ":")
+
+			'markup / insuarance / handling fee...
+
+			if InStr(rx_realtime(0), "UPS") then
+				
+				cTotalCharge = CDbl(rx_realtime(1))
+				cTotalCharge = cTotalCharge * i_max_adjust
+				cTotalCharge = (cTotalCharge * sh_markup) + sh_handling
+				cTotalCharge = FormatNumber(cTotalCharge,2,,,0)
+
+			end if
+
+			if InStr(rx_realtime(0), "FedEx") then
+				
+				cTotalCharge = CDbl(rx_realtime(1))
+				cTotalCharge = cTotalCharge * i_max_adjust
+				cTotalCharge = (cTotalCharge * fedex_markup) + fedex_handling
+				cTotalCharge = FormatNumber(cTotalCharge,2,,,0)
+
+			end if
+
+			if InStr(rx_realtime(0), "U.S. Postal") then
+				
+				cTotalCharge = CDbl(rx_realtime(1))
+				cTotalCharge = cTotalCharge * i_max_adjust
+				cTotalCharge = (cTotalCharge * usps_markup) + usps_handling
+				cTotalCharge = FormatNumber(cTotalCharge,2,,,0)
+
+			end if
+			
+			if Len(Trim(rx_realtime(0))) > 0 then
+				arrShipRateArray(i_shiprate_index, 0) = rx_realtime(0)
+				arrShipRateArray(i_shiprate_index, 1) = CDbl(cTotalCharge)
+				i_shiprate_index = i_shiprate_index + 1
+			end if
+
+		end if
+
+	next
+	
+	end if
+	
+	'====================================================
+	call DualSorter(arrShipRateArray, 1)
+	
+	iDefaultShippingRate = 0
+	bSetDeafultShippingRate = false
+%>
+{
+"Rates" : [
+<%
+	s_rate = ""
+	For i = 0 to UBound(arrShipRateArray)
+		
+		if i = 0 then
+			if IsNumeric(arrShipRateArray(i, 1)) then
+				iDefaultShippingRate = arrShipRateArray(i, 1)
+			end if
+		end if
+		
+		if arrShipRateArray(i, 0) = "--" then
+		else
+			if bSetDeafultShippingRate = false then
+				if IsNumeric(arrShipRateArray(i, 1)) then
+					iDefaultShippingRate = arrShipRateArray(i, 1)
+				end if
+				bSetDeafultShippingRate = true
+			end if
+			
+			if arrShipRateArray(i, 1) > -1 then
+				s_name = GetCarrierServiceName(arrShipRateArray(i, 0), orig_country, dest_country)
+				s_rate = s_rate & "{""id"" : """ & arrShipRateArray(i, 0) & """,""name"" : """ & s_name & """, ""rate"" : """ & FormatNumber(arrShipRateArray(i, 1),2) & """},"
+			end if
+		end if
+	Next
+	if Len(s_rate) > 0 then
+		s_rate = Left(s_rate, Len(s_rate)-1)
+	end if
+	response.Write(s_rate)
+%>
+]
+}
+<!-- #INCLUDE File="../core/i_adoclosed.phtml" -->

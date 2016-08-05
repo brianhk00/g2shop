@@ -110,6 +110,12 @@ SUB Session_OnStart
 	Session("StoreGUID") = GUID
 	Session("ShoppingCartID") = GUID
 	'-----------------------------------------------------------------------
+	'SHIPPING RATE ESTIMATE
+	'-----------------------------------------------------------------------
+	Session("CartCountry") = ""
+	Session("CartZone") = "" 
+	Session("CartPostCode") = "" 
+	'-----------------------------------------------------------------------
 	
 	Set conn = Server.CreateObject("ADODB.Connection")
 	conn.open Session("ConnectionString")

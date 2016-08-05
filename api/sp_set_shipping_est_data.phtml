@@ -1,0 +1,9 @@
+<%
+	country_id = Trim(Request("country_id"))
+	zone_id = Trim(Request("zone_id"))
+	postcode = Trim(Request("postcode"))
+	
+	Session("CartCountry") = country_id
+	Session("CartZone") = zone_id
+	Session("CartPostCode") = postcode 
+%>

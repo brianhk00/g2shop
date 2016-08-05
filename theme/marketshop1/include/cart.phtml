@@ -65,10 +65,12 @@
 		</table>
 		</form>
 	</div>
+	<!--
 	<h2 class="subtitle">What would you like to do next?</h2>
 	<p>
 		Choose if you have a discount code or reward points you want to use or would like to estimate your delivery cost.
 	</p>
+	-->
 	<div class="row">
 		<div class="col-sm-6">
 			<div class="panel panel-default">
@@ -89,6 +91,7 @@
 			</div>
 		</div>
 		<div class="col-sm-6">
+		<!--
 			<div class="panel panel-default">
 				<div class="panel-heading">
 					<h4 class="panel-title">Use Gift Voucher</h4>
@@ -105,6 +108,7 @@
 					</div>
 				</div>
 			</div>
+		-->
 		</div>
 	</div>
 	<div class="panel panel-default">
@@ -116,30 +120,12 @@
 				<p>
 					Enter your destination to get a shipping estimate.
 				</p>
-				<form class="form-horizontal">
+				<form class="form-horizontal" id="sh-form">
 					<div class="form-group required">
 						<label class="col-sm-2 control-label" for="input-country">Country</label>
 						<div class="col-sm-10">
 							<select name="country_id" id="country_id" class="form-control">
-								<option value=""> --- Please Select --- </option>
-								<%
-									sql = "SELECT CountryID, CountryName, ISOCode2 FROM A_GlobalCountries"
-									set rsCntry = dbconn.Execute(sql)
-									int i = 0
-
-									do while not rsCntry.Eof
-										country = rsCntry("CountryName")
-										country_id = Trim(rsCntry("ISOCode2"))
-										if shopper_billing_country = country_id then
-											Response.Write("<option value=""" & country_id & """ selected>" & country & "</option>")
-										else
-											Response.Write("<option value=""" & country_id & """>" & country & "</option>")
-										end if
-										rsCntry.MoveNext
-									i = i + 1
-									loop
-									rsCntry.Close
-								%>
+								
 							</select>
 						</div>
 					</div>
@@ -152,40 +138,70 @@
 						</div>
 					</div>
 					<div class="form-group required">
-						<label class="col-sm-2 control-label" for="input-postcode">Post Code</label>
+						<label class="col-sm-2 control-label" for="postcode">Post Code</label>
 						<div class="col-sm-10">
-							<input type="text" name="postcode" value="" placeholder="Post Code" id="input-postcode" class="form-control"/>
+							<input type="text" name="postcode" value="<%=Session("CartPostCode")%>" id="postcode" class="form-control"/>
 						</div>
 					</div>
-					<input type="button" value="Get Quotes" id="button-quote" data-loading-text="Loading..." class="btn btn-primary"/>
+					<div class="row">
+						<div class="col-sm-2">
+						</div>
+						<div class="col-sm-10">
+							<input type="submit" value="Get Quotes" id="button-quote" data-loading-text="Loading..." class="btn btn-primary"/>
+						</div>
+					</div>
+				</form>
+				<br>
+				<form class="form-horizontal" id="sh-method-form" style="display:none;">
+					<div class="form-group">
+						<label class="col-sm-2 control-label" for="zone_id">Shipping Rate</label>
+						<div class="col-sm-10" id="sp_method">
+							<i class="fa fa-spinner fa-spin" style="font-size:24px" id="sh_method_spinner"></i>
+						</div>
+					</div>
+					<div class="row">
+						<div class="col-sm-2">
+						</div>
+						<div class="col-sm-10">
+							<input type="button" value="Update Total" id="button-get-total" class="btn btn-primary" style="display:none;"/>
+						</div>
+					</div>
 				</form>
 			</div>
 		</div>
 	</div>
 	<div class="row">
-		<div class="col-sm-4 col-sm-offset-8">
+		<div class="col-sm-4 col-sm-offset-8" id="cart_total_container">
 			<table class="table table-bordered">
-			<tr>
+			<tr id="cart_total_sub_total_container">
 				<td class="text-right">
 					<strong>Sub-Total:</strong>
 				</td>
-				<td class="text-right">
+				<td class="text-right" id="cart_total_sub_total_amount">
 					$<%=FormatNumber(GetTotalAmountInCart,2)%>
 				</td>
 			</tr>
-			<tr>
+			<tr id="cart_total_tax_total_container">
 				<td class="text-right">
 					<strong>Tax:</strong>
 				</td>
-				<td class="text-right">
+				<td class="text-right" id="cart_total_tax_total_amount">
 					$<%=FormatNumber(GetTaxInCart(),2) %>
 				</td>
 			</tr>
-			<tr>
+			<tr id="cart_total_sh_total_container" style="display:none">
+				<td class="text-right">
+					<strong>Shipping & Handling:</strong>
+				</td>
+				<td class="text-right" id="cart_total_sh_total_amount">
+					$0.00
+				</td>
+			</tr>
+			<tr id="cart_total_grand_total_container">
 				<td class="text-right">
 					<strong>Total:</strong>
 				</td>
-				<td class="text-right">
+				<td class="text-right" id="cart_total_grand_total_amount">
 					$<%=FormatNumber(GetGrandTotalInCart(),2) %>
 				</td>
 			</tr>

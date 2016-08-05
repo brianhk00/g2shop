@@ -100,9 +100,135 @@ jQuery(document).ready(function() {
 
 <% end if %>
 <% if g_route_page_id = "cart" then %>
+<script language="javascript">
+var FormValidation = function () {
+	var shValidation1 = function() {
+		var form1 = $('#sh-form');
+		form1.validate({
+			//RULES
+			rules: {
+				country_id: {
+					required: true
+				},
+				zone_id: {
+					required: true
+				},
+				postcode: {
+					required: true
+				}
+			},
+			messages: {
+				login_email: {
+					required: "Please enter your email address.",
+					email : "Please enter a valid email address."
+				},
+				login_password: {
+					required: "Please enter your password."
+				}
+			},
+			highlight: function (element) { // hightlight error inputs
+
+				$(element)
+					.closest('.form-group').addClass('has-error'); // set error class to the control group
+			},
+
+			unhighlight: function (element) { // revert the change done by hightlight
+				$(element)
+					.closest('.form-group').removeClass('has-error'); // set error class to the control group
+			},
+			submitHandler: function (form) {
+				$("#sp_method").html('<i class="fa fa-spinner fa-spin" style="font-size:24px" id="sh_method_spinner"></i>');
+				$("#button-get-total").hide();
+				$("#sh-method-form").show();
+				
+				$.ajax({
+					type: "POST",
+					url: "api/sp_set_shipping_est_data.phtml",
+					data: form1.serialize(),
+					success: function() {
+						jQuery.ajax({
+							type: "get",
+						
+							url: "api/sp_get_shipping_rate.phtml",
+							data: { 'dest_country': $('#country_id').val(), 'dest_state': $('#zone_id').val(), 'dest_postal': $('#post_id').val(), isAjax: true },
+							dataType: 'json',
+							success: function (data) {
+								listItems = "";
+								x = -1;
+								for (var i = 0; i < data.Rates.length; i++){
+									if (data.Rates[i].name == '<%=Session("DefaultShippingName")%>')
+									{
+										listItems+= "<li><input type='radio' id='sh_" + i + "' name='SH' value='" + data.Rates[i].name + "|" + data.Rates[i].rate + "'> <label>" + data.Rates[i].name +  " ($" +  data.Rates[i].rate + ") </label></li>";
+										x = i;
+									}
+									else
+									{
+										listItems+= "<li><input type='radio' id='sh_" + i + "' name='SH' value='" + data.Rates[i].name  + "|" + data.Rates[i].rate + "'> <label>" + data.Rates[i].name +  " ($" +  data.Rates[i].rate + ") </label></li>";
+									}
+									
+								}
+								
+								$('#sp_method').html(listItems);
+								
+								if (x == -1)
+								{
+									
+								}
+								else
+								{
+									$("#sh_" + x).prop("checked", true);
+								}
+								$("#button-get-total").show();
+								
+							}
+						});
+					},
+					error: function() {
+						//warning1.show();
+					}
+				});
+			}
+			
+		});
+
+	}
+	return {
+		//main function to initiate the module
+		init: function () {
+			shValidation1();
+		}
+	};
+
+}();
+</script>
 <script type="text/javascript">
+<% if GetTotalItemsInCart() > 0 then %>
 jQuery(document).ready(function() { 
-   //FormValidation.init();
+	FormValidation.init();
+	jQuery.ajax({
+		type:"get",
+		url: "api/sp_get_country_list.phtml",
+		data: {country_id: 'US', 'isAjax':true},
+		dataType: 'json',
+		success: function(data) {
+			var listItems= "<option value=''>--- Please Select ---</option>";
+			for (var i = 0; i < data.Country.length; i++){
+				if (data.Country[i].id == '<%=Session("CartCountry")%>')
+				{
+					listItems+= "<option value='" + data.Country[i].id + "' selected>" + data.Country[i].name + "</option>";
+				}
+				else
+				{
+					listItems+= "<option value='" + data.Country[i].id + "'>" + data.Country[i].name + "</option>";
+				}
+				
+			}
+			var select = jQuery("#country_id");
+			select.empty(); 
+			select.append(listItems);
+		}
+	});
+	
    jQuery.ajax({
 		type:"get",
 		url: "api/sp_get_zone_list.phtml",
@@ -111,7 +237,14 @@ jQuery(document).ready(function() {
 		success: function(data) {
 			var listItems= "<option value=''>--- Please Select ---</option>";
 			for (var i = 0; i < data.Zone.length; i++){
-				listItems+= "<option value='" + data.Zone[i].id + "'>" + data.Zone[i].name + "</option>";
+				if (data.Zone[i].id == '<%=Session("CartZone")%>')
+				{
+					listItems+= "<option value='" + data.Zone[i].id + "' selected>" + data.Zone[i].name + "</option>";
+				}
+				else
+				{
+					listItems+= "<option value='" + data.Zone[i].id + "'>" + data.Zone[i].name + "</option>";
+				}
 			}
 			var select = jQuery("#zone_id");
 			select.empty(); 
@@ -128,7 +261,14 @@ jQuery(document).ready(function() {
 			success: function(data) {
 				var listItems= "<option value=''>--- Please Select ---</option>";
 				for (var i = 0; i < data.Zone.length; i++){
-					listItems+= "<option value='" + data.Zone[i].id + "'>" + data.Zone[i].name + "</option>";
+					if (data.Zone[i].id == '<%=Session("CartZone")%>')
+					{
+						listItems+= "<option value='" + data.Zone[i].id + "' selected>" + data.Zone[i].name + "</option>";
+					}
+					else
+					{
+						listItems+= "<option value='" + data.Zone[i].id + "'>" + data.Zone[i].name + "</option>";
+					}
 				}
 				var select = jQuery("#zone_id");
 				select.empty(); 
@@ -136,8 +276,143 @@ jQuery(document).ready(function() {
 			}
 		});
 	});
+	
+	jQuery( "#button-get-total" ).click(function() {
+		
+		jQuery.ajax({
+			type:"get",
+			url: "api/sp_get_cart_total.phtml",
+			data: {'sh_data' : $("input[name=SH]:checked").val(), 'isAjax':true},
+			dataType: 'json',
+			success: function(data) {
+				for (var i = 0; i < data.CartTotal.length; i++){
+					
+					if (data.CartTotal[i].id == 'subtotal')
+					{
+						
+					}
+					
+					if (data.CartTotal[i].id == 'tax')
+					{
+						
+					}
+					
+					if (data.CartTotal[i].id == 'shipping')
+					{
+						if (data.CartTotal[i].amount == "-1")
+						{
+							jQuery("#cart_total_sh_total_container").hide();
+							jQuery("#cart_total_sh_total_amount").html("$0.00");
+						}
+						else
+						{
+							jQuery("#cart_total_sh_total_container").show();
+							jQuery("#cart_total_sh_total_amount").html("$" + data.CartTotal[i].amount);
+						}
+					}
+					
+					if (data.CartTotal[i].id == 'grandtotal')
+					{
+						jQuery("#cart_total_grand_total_amount").html("$" + data.CartTotal[i].amount);
+					}
+				}
+			}
+		});
+	});
+				
+	<% if Len(Session("CartCountry")) > 1 AND Len(Session("CartZone")) > 1 AND Len(Session("CartPostCode")) > 1 then %>
+	$("#sp_method").html('<i class="fa fa-spinner fa-spin" style="font-size:24px" id="sh_method_spinner"></i>');
+	$("#button-get-total").hide();
+	$("#sh-method-form").show();
+				
+	jQuery.ajax({
+		type: "get",
+	
+		url: "api/sp_get_shipping_rate.phtml",
+		data: { 'dest_country': $('#country_id').val(), 'dest_state': $('#zone_id').val(), 'dest_postal': $('#post_id').val(), isAjax: true },
+		dataType: 'json',
+		success: function (data) {
+			listItems = "";
+			x = -1;
+			for (var i = 0; i < data.Rates.length; i++){
+				if (data.Rates[i].name == '<%=Session("DefaultShippingName")%>')
+				{
+					listItems+= "<li><input type='radio' id='sh_" + i + "' name='SH' value='" + data.Rates[i].name + "|" + data.Rates[i].rate + "'> <label>" + data.Rates[i].name +  " ($" +  data.Rates[i].rate + ") </label></li>";
+					x = i;
+				}
+				else
+				{
+					listItems+= "<li><input type='radio' id='sh_" + i + "' name='SH' value='" + data.Rates[i].name  + "|" + data.Rates[i].rate + "'> <label>" + data.Rates[i].name +  " ($" +  data.Rates[i].rate + ") </label></li>";
+				}
+				
+			}
+			
+			$('#sp_method').html(listItems);
+			
+			if (x == -1)
+			{
+				
+			}
+			else
+			{
+				$("#sh_" + x).prop("checked", true);
+			}
+			
+			$("#button-get-total").show();
+			
+			jQuery.ajax({
+				type:"get",
+				url: "api/sp_get_cart_total.phtml",
+				data: {'sh_data' : $("input[name=SH]:checked").val(), 'isAjax':true},
+				dataType: 'json',
+				success: function(data) {
+					for (var i = 0; i < data.CartTotal.length; i++){
+						
+						if (data.CartTotal[i].id == 'subtotal')
+						{
+							
+						}
+						
+						if (data.CartTotal[i].id == 'tax')
+						{
+							
+						}
+						
+						if (data.CartTotal[i].id == 'shipping')
+						{
+							if (data.CartTotal[i].amount == "-1")
+							{
+								jQuery("#cart_total_sh_total_container").hide();
+								jQuery("#cart_total_sh_total_amount").html("$0.00");
+							}
+							else
+							{
+								jQuery("#cart_total_sh_total_container").show();
+								jQuery("#cart_total_sh_total_amount").html("$" + data.CartTotal[i].amount);
+							}
+						}
+						
+						if (data.CartTotal[i].id == 'grandtotal')
+						{
+							jQuery("#cart_total_grand_total_amount").html("$" + data.CartTotal[i].amount);
+						}
+					}
+				}
+			});
+			
+		}
+	});
+	<% end if %>
+	
+	
 });
+<% end if %>
 </script>
+<style>
+#sp_method li{
+	list-style: none;
+}
+</style>
 <% end if %>
 <% if g_route_page_id = "login" then %>
 <script language="javascript">

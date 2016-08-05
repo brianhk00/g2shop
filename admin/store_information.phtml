@@ -103,9 +103,86 @@
 		ups_ins = rs("UPS_insurance")
 		ups_ins = FormatNumber(ups_ins,2)
 		
+		'Table
+		sh_basis = Trim(rs("sh_basis"))
+		sh_custom_table_name = Trim(rs("sh_custom_table_name"))
+		
 	end if
 	rs.Close
 	set rs = nothing
+	
+	
+	'-------------------------------------------------------------------------------------------------
+	'Custom shipping table(1)
+	'-------------------------------------------------------------------------------------------------
+	
+	dim table_data(6)
+	table_data(1) = ""
+	table_data(2) = ""
+	table_data(3) = ""
+	table_data(4) = ""
+	table_data(5) = ""
+	table_data(6) = ""
+	
+	dim store_shipping_table_rate_country(6)
+	store_shipping_table_rate_country(1) = GetSettingValue("store_shipping_table_rate_country[1]", "")
+	store_shipping_table_rate_country(2) = GetSettingValue("store_shipping_table_rate_country[2]", "")
+	store_shipping_table_rate_country(3) = GetSettingValue("store_shipping_table_rate_country[3]", "")
+	store_shipping_table_rate_country(4) = GetSettingValue("store_shipping_table_rate_country[4]", "")
+	store_shipping_table_rate_country(5) = GetSettingValue("store_shipping_table_rate_country[5]", "")
+	store_shipping_table_rate_country(6) = GetSettingValue("store_shipping_table_rate_country[6]", "")
+	
+	for kk = 1 to 6
+		s_data = ""
+		sql = "SELECT * FROM " & g_storeid & "_custom_shipping WHERE country_code='" & store_shipping_table_rate_country(kk) & "' ORDER BY range_from"
+		
+		set rsTabs = dbconn.Execute(sql)
+		attr_id = 1
+		do while not rsTabs.EOF
+		
+			tab_from = Trim(rsTabs("range_from"))
+			tab_price = FormatNumber(rsTabs("range_charge"),2,,,0)
+			
+			s_data = s_data & "{ ""ID"": " & attr_id & ", ""From"": """ & tab_from & """, ""Price"": """ & tab_price & """},"
+			
+			attr_id = attr_id + 1
+			rsTabs.MoveNext
+		loop
+		rsTabs.Close
+		set rsTabs = nothing
+		if Len(s_data) > 0 then
+			s_data = Left(s_data, Len(s_data) - 1)
+		end if
+		s_data = "[" & s_data & "]"
+		table_data(kk) = s_data
+	next
+	
+	sql = "SELECT * FROM " & g_storeid & "_custom_shipping ORDER BY range_from"
+	Set rsCustom = dbconn.Execute(sql)
+	i = 0
+	
+	custom_sh_range = ""
+	custom_sh_charge = ""
+	
+	do while not rsCustom.EOF
+	  custom_sh_range = custom_sh_range & rsCustom("range_from") & "*"
+	  custom_sh_charge = custom_sh_charge & FormatNumber(rsCustom("range_charge"),2) & "*"
+	  rsCustom.MoveNext	
+	loop
+	
+	if Len(custom_sh_range) > 0 then
+	  custom_sh_range = Left(custom_sh_range, Len(custom_sh_range)-1)
+	  custom_sh_charge = Left(custom_sh_charge, Len(custom_sh_charge)-1)
+	else
+	  custom_sh_range = "0"
+	  custom_sh_charge = "0.00"
+	end if
+
+	rsCustom.Close
+	
+	
+	
+	'-------------------------------------------------------------------------------------------------
 	
 	goodgree_payment_enable = GetSettingValue("goodgree_payment_enable", "0")
 	goodgree_payment_mode = GetSettingValue("goodgree_payment_mode", "sandbox")
@@ -163,6 +240,8 @@
 <head>
 <!--#INCLUDE FILE="include/head.phtml"-->
 <!-- BEGIN PAGE LEVEL PLUGINS -->
+<link rel="stylesheet" href="assets/plugins/jquery-ui/jquery-ui-1.10.4.custom.min.css" />
+<link rel="stylesheet" type="text/css" href="assets/plugins/grid/grid-0.5.6.min.css" />
 <!-- END PAGE LEVEL PLUGINS -->
 </head>
 
@@ -700,9 +779,11 @@
 														<li>
 															<a href="#portlet3_tab4" data-toggle="tab"> USPS </a>
 														</li>
+														<!--
 														<li>
 															<a href="#portlet3_tab5" data-toggle="tab"> Flat Rate</a>
 														</li>
+														-->
 														<li>
 															<a href="#portlet3_tab6" data-toggle="tab"> Table Rate</a>
 														</li>
@@ -788,11 +869,11 @@
 														<div class="tab-pane" id="portlet3_tab2">
 															<div class="form-group">
 																<label class="col-sm-3 control-label" for="form-field-1">
-																	Enable <span class="symbol required"></span>
 																</label>
 																<div class="col-sm-9">
 																	<label class="mt-checkbox mt-checkbox-outline">
 																		<input type="checkbox" id="SH_display_flag" name="SH_display_flag" value="UPS" <% if InStr(SH_display_flag, "UPS")>0 then%> checked <% end if%>>
+																		Enable UPS
 																		<span></span>
 																	</label>
 																</div>
@@ -907,11 +988,11 @@
 														<div class="tab-pane" id="portlet3_tab3">
 															<div class="form-group">
 																<label class="col-sm-3 control-label" for="form-field-1">
-																	Enable <span class="symbol required"></span>
 																</label>
 																<div class="col-sm-9">
 																	<label class="mt-checkbox mt-checkbox-outline">
 																		<input type="checkbox" id="SH_display_flag" name="SH_display_flag" value="FedEx" <% if InStr(SH_display_flag, "FedEx")>0 then%> checked <% end if%>>
+																		Enable FedEx
 																		<span></span>
 																	</label>
 																</div>
@@ -989,11 +1070,11 @@
 														<div class="tab-pane" id="portlet3_tab4">
 															<div class="form-group">
 																<label class="col-sm-3 control-label" for="form-field-1">
-																	Enable <span class="symbol required"></span>
 																</label>
 																<div class="col-sm-9">
 																	<label class="mt-checkbox mt-checkbox-outline">
 																		<input type="checkbox" id="SH_display_flag" name="SH_display_flag" value="USPS" <% if InStr(SH_display_flag, "USPS")>0 then%> checked <% end if%>>
+																		Enable USPS
 																		<span></span>
 																	</label>
 																</div>
@@ -1067,6 +1148,97 @@
 														<div class="tab-pane" id="portlet3_tab5">
 														</div>
 														<div class="tab-pane" id="portlet3_tab6">
+															<div class="form-group">
+																<label class="col-sm-3 control-label" for="form-field-1">
+																</label>
+																<div class="col-sm-3">
+																	<label class="mt-checkbox mt-checkbox-outline">
+																		<input type="checkbox" id="SH_display_flag" name="SH_display_flag" value="C2" <% if InStr(SH_display_flag, "C2")>0 then%> checked <% end if%>>
+																		Enable Table Rate
+																		<span></span>
+																	</label>
+																</div>
+															</div>
+															<div class="form-group">
+																<label class="col-sm-3 control-label" for="warehouse_country">
+																	Based On <span class="symbol required"></span>
+																</label>
+																<div class="col-sm-3">
+																	<select id="sh_basis" name="sh_basis"  class="form-control input-sm">
+																		<option value="0" <%if sh_basis = 0 then %>selected <%end if%>>AMOUNT</option>
+																		<option value="1" <%if sh_basis = 1 then %>selected <%end if%>>WEIGHT</option>
+																		<option value="2" <%if sh_basis = 2 then %>selected <%end if%>># of ITEMS</option>
+																	</select>
+																</div>
+															</div>
+															<div class="form-group">
+																<label class="col-sm-3 control-label" for="sh_custom_table_name">
+																	Description <span class="symbol required">*</span>
+																</label>
+																<div class="col-sm-4">
+																	<input type="text"  id="sh_custom_table_name" name="sh_custom_table_name" class="form-control input-sm" value="<%=sh_custom_table_name%>">
+																</div>
+															</div>
+															<div class="row">
+																<%
+																		for ix = 1 to 6 
+																%>
+																<div class="col-md-4">
+																	<div class="portlet box blue-hoki">
+																		<div class="portlet-title">
+																			<div class="caption">
+																				<i class="fa fa-gift"></i>Table Rate <%=ix%> </div>
+																			<div class="actions">
+																				<a class="btn btn-default btn-sm" role="button" id="btnAddX<%=ix%>">
+																					<i class="fa fa-plus"></i> Add 
+																				</a>
+																			</div>
+																		</div>
+																		<div class="portlet-body">
+																			<div class="scroller" style="height:200px" data-rail-visible="1" data-rail-color="yellow" data-handle-color="#a1b2bd">
+																				<div class="form-group">
+																					<label class="col-sm-3 control-label" for="TableSHCountry<%=ix%>">
+																						Country <span class="symbol required"></span>
+																					</label>
+																					<div class="col-sm-9">
+																						<select id="TableSHCountry<%=ix%>" name="TableSHCountry<%=ix%>"  class="form-control input-sm">
+																							<option value="US" <%if warehouse_country = "US" then %>selected<%end if%>>United States</option>
+																							<option value="CA" <%if warehouse_country = "CA" then %>selected<%end if%>>CANADA</option>
+																						</select>
+																					</div>
+																				</div>
+																				<div class="row">
+																					<div class="col-md-12">
+																						<table id="gridx<%=ix%>"></table>
+																						<div id="dialog-table-<%=ix%>" style="display:none">
+																							<input type="hidden" id="TableSHID<%=ix%>">
+																							<table border="0">
+																								<tbody>
+																								<tr>
+																									<td style="padding:5px;"><label for="TableFrom<%=ix%>">From:</label></td>
+																									<td style="padding:5px;"><input type="text" id="TableFrom<%=ix%>" style="width:300px;font-size:14px;"></td>
+																								</tr>
+																								<tr>
+																									<td style="padding:5px;"><label for="TableSHPrice<%=ix%>">Shipping Charge:</label></td>
+																									<td style="padding:5px;"><input type="text" id="TableSHPrice<%=ix%>" style="width:300px;font-size:14px;"></td>
+																								</tr>
+																								</tbody>
+																							</table>
+																						</div>
+																					</div>
+																					<input type="hidden" name="SH_table_data<%=ix%>" id="SH_table_data<%=ix%>" value="">
+																				</div>
+																			</div>
+																		</div>
+																	</div>
+																</div>
+																<%
+																		if ix = 3 then
+																			Response.Write("</div><div class=""row"">")
+																		end if
+																	Next
+																%>
+															</div>
 														</div>
 													</div>
 												</div>
@@ -1194,9 +1366,19 @@
 <!-- BEGIN PAGE LEVEL PLUGINS -->
 <script src="../assets/global/plugins/jquery-validation/js/jquery.validate.min.js" type="text/javascript"></script>
 <script src="../assets/global/plugins/jquery-validation/js/additional-methods.min.js" type="text/javascript"></script>
+<script src="assets/plugins/jquery-ui/jquery-ui-1.10.1.custom.min.js" type="text/javascript"></script>
+<script src="assets/plugins/grid/grid-0.5.6.min.js" type="text/javascript"></script>
 <!-- END PAGE LEVEL PLUGINS -->
 
 <!-- BEGIN PAGE LEVEL SCRIPTS -->
+<script>
+var datax1, gridx1, dialogx1;
+var datax2, gridx2, dialogx2;
+var datax3, gridx3, dialogx3;
+var datax4, gridx4, dialogx4;
+var datax5, gridx5, dialogx5;
+var datax6, gridx6, dialogx6;
+</script>
 <script type="text/javascript">
 var FormValidation = function () {
 	// basic validation
@@ -1457,6 +1639,16 @@ var FormValidation = function () {
 				error1.hide
 				warning1.hide();
 				
+				//Tabs
+				<% for kk = 1 to 6 %>
+				records = gridx<%=kk%>.getAll();
+				pid = "";
+				$.each(records, function () {
+					 pid += this.record.From + "||" + this.record.Price + "%%";
+				});
+				$('#SH_table_data<%=kk%>').val(pid);
+				<% next %>
+				
 				$.ajax({
 					type: "POST",
 					url: "api/sp_store_information_update.phtml",
@@ -1489,6 +1681,87 @@ jQuery(document).ready(function() {
    FormValidation.init();
 });
 </script>
+<% for kk = 1 to 6 %>
+<script>
+jQuery(document).ready(function () {
+		
+	dataX<%=kk%> = <%=table_data(kk)%>;
+	dialogX<%=kk%> = $("#dialog-table-<%=kk%>").dialog({
+		title: "Add/Edit",
+		autoOpen: false,
+		resizable: false,
+		width: '400px',
+		modal: true,
+		buttons: {
+			"Save": SaveX<%=kk%>,
+			"Cancel": function () { $(this).dialog("close"); }
+		}
+	});
+	
+	function EditX<%=kk%>(e) {
+		$("#TableSHID<%=kk%>").val(e.data.id);
+		$("#TableFrom<%=kk%>").val(e.data.record.From);
+		$("#TableSHPrice<%=kk%>").val(e.data.record.Price);
+		$("#dialog-table-<%=kk%>").dialog("open");
+	}
+	function DeleteX<%=kk%>(e) {
+		if (confirm("Are you sure?")) {
+			gridx<%=kk%>.removeRow(e.data.id);
+		}
+	}
+	function SaveX<%=kk%>() {
+		if ($("#TableSHID<%=kk%>").val()) {
+			var id = parseInt($("#TableSHID<%=kk%>").val());
+			gridx<%=kk%>.updateRow(id, { "ID": id, "From": $("#TableFrom<%=kk%>").val(), "Price": $("#TableSHPrice<%=kk%>").val() });
+		} else {
+			gridx<%=kk%>.addRow({ "ID": gridx<%=kk%>.count() + 1, "From": $("#TableFrom<%=kk%>").val(), "Price": $("#TableSHPrice<%=kk%>").val() });
+		}
+		$(this).dialog("close");
+	}
+	 
+	gridx<%=kk%> = $("#gridx<%=kk%>").grid({
+		dataSource: dataX<%=kk%>,
+		columns: [
+			{ field: "From" },
+			{ field: "Price"},
+			{ title: "", width: 20, type: "icon", icon: "ui-icon-pencil", tooltip: "Edit", events: { "click": EditX<%=kk%> } },
+			{ title: "", width: 20, type: "icon", icon: "ui-icon-close", tooltip: "Delete", events: { "click": DeleteX<%=kk%> } }
+		]
+	});
+	
+	$("#btnAddX<%=kk%>").on("click", function () {
+		$("#TableSHID<%=kk%>").val("");
+		$("#TableFrom<%=kk%>").val("0");
+		$("#TableSHPrice<%=kk%>").val("0.00");
+		$("#dialog-table-<%=kk%>").dialog("open");
+	});
+	
+	jQuery.ajax({
+		type:"post",
+		url: "api/sp_get_country_list.phtml",
+		data: {'country_id':'<%=store_shipping_table_rate_country(kk)%>','isAjax':true},
+		dataType: 'json',
+		success: function(data) {
+			var listItems= "<option value=''>-----All-----</option>";
+			for (var i = 0; i < data.Country.length; i++){
+				if (data.Country[i].id == '<%=store_shipping_table_rate_country(kk)%>')
+				{
+					listItems+= "<option value='" + data.Country[i].id + "' selected>" + data.Country[i].name + "</option>";
+				}
+				else
+				{
+					listItems+= "<option value='" + data.Country[i].id + "'>" + data.Country[i].name + "</option>";
+				}
+			}
+			var select = jQuery("#TableSHCountry<%=kk%>"), options = '';
+			select.empty(); 
+			select.append(listItems);
+		}
+	});
+	
+});
+</script>
+<% next %>
 <!-- END PAGE LEVEL SCRIPTS -->
 </body>
 </html>
