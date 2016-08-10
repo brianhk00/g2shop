@@ -1,0 +1,271 @@
+<%response.Expires=-1%>
+<!--#INCLUDE FILE="../../util/xt_func_carrier.phtml"-->
+<!--#INCLUDE FILE="../util/xt_func_string.phtml"-->	
+<!-- #INCLUDE File="../local/local.phtml" -->
+<%
+	'Response.end
+	
+	order_id = Trim(Request("pk"))
+	name = Trim(Request("name"))
+	value = Trim(Request("value"))
+	
+	SELECT CASE name
+	CASE "order_status"
+		sql = "UPDATE " & g_storeid & "_order SET status='" & value & "' WHERE order_id='" & order_id & "'"
+		if Len(sql) > 0 then
+			dbconn.Execute(sql)
+		end if
+	CASE "order_comments"
+		sql = "UPDATE " & g_storeid & "_order SET Order_Comments='" & value & "' WHERE order_id='" & order_id & "'"
+		if Len(sql) > 0 then
+			dbconn.Execute(sql)
+		end if
+		
+	CASE "discount_amount"
+		sql = "UPDATE " & g_storeid & "_order SET discount_amount='" & value & "' WHERE order_id='" & order_id & "'"
+		if Len(sql) > 0 then
+			dbconn.Execute(sql)
+		end if
+	
+	CASE "order_shipping_sh"
+		sql = "UPDATE " & g_storeid & "_order SET SH='" & value & "' WHERE order_id='" & order_id & "'"
+		if Len(sql) > 0 then
+			dbconn.Execute(sql)
+		end if
+		
+	CASE "ship_via"
+		value = GetCarrierServiceName(value, "", "")
+		sql = "UPDATE " & g_storeid & "_order SET SH_method='" & value & "' WHERE order_id='" & order_id & "'"
+		if Len(sql) > 0 then
+			dbconn.Execute(sql)
+		end if
+		
+	CASE "order_taxable"
+		sql = "UPDATE " & g_storeid & "_order SET order_taxable=" & value & " WHERE order_id='" & order_id & "'"
+		if Len(sql) > 0 then
+			dbconn.Execute(sql)
+		end if
+		
+	CASE "order_notes"
+		sql = "UPDATE " & g_storeid & "_order SET notes='" & value & "' WHERE order_id='" & order_id & "'"
+		if Len(sql) > 0 then
+			dbconn.Execute(sql)
+		end if
+		
+	CASE "shopper_email"
+		'-----------------------------------------------------------------------------------------------------------
+		'SERVER SIDE VALIDATION EXAMPLE
+		if value = "mmformals@gmail.com" then
+			Response.Status = "400"
+			Response.Write ("email already exists")
+			Response.end
+		end if
+		'-----------------------------------------------------------------------------------------------------------
+		sql = "UPDATE " & g_storeid & "_order SET shopper_email='" & value & "' WHERE order_id='" & order_id & "'"
+		
+		if Len(sql) > 0 then
+			dbconn.Execute(sql)
+		end if
+	CASE "billing_address"
+		order_id = Trim(Request("order_id"))
+		order_billing_address = Trim(Request("order_billing_address"))
+		order_billing_city = Trim(Request("order_billing_city"))
+		order_billing_country = Trim(Request("order_billing_country"))
+		order_billing_state = Trim(Request("order_billing_state"))
+		order_billing_zip = Trim(Request("order_billing_zip"))
+		order_billing_phone = Trim(Request("order_billing_phone"))
+		order_billing_company = Trim(Request("order_billing_company"))
+		order_billing_contact_firstname = Trim(Request("order_billing_contact_firstname"))
+		order_billing_contact_lastname = Trim(Request("order_billing_contact_lastname"))
+		
+		Set rsUpdate = Server.CreateObject("ADODB.Recordset")
+		with rsUpdate
+			.ActiveConnection = dbconn
+			.CursorLocation = 3
+			.CursorType = 1
+			.LockType = 3
+			.Source = g_storeid & "_order WHERE order_id='" & order_id & "'"
+			.Open
+		end with
+		
+		rsUpdate("CardAddress") = order_billing_address
+		rsUpdate("CardCity") = order_billing_city
+		rsUpdate("CardCountry") = order_billing_country
+		rsUpdate("CardState") = order_billing_state
+		rsUpdate("CardZip") = order_billing_zip
+		rsUpdate("bill_phone") = order_billing_phone
+		rsUpdate("bill_company") = order_billing_company
+		rsUpdate("bill_contact_firstname") = order_billing_contact_firstname
+		rsUpdate("bill_contact_lastname") = order_billing_contact_lastname
+		
+		If dbconn.Errors.Count > 0 Then
+			dbconn.Errors.Clear
+			rsUpdate.CancelUpdate
+		else
+			rsUpdate.Update
+		End If
+		
+		rsUpdate.Close
+		set rsUpdate = nothing
+		
+	CASE "shipping_address"
+		order_id = Trim(Request("order_id"))
+		order_shipping_firstname = Trim(Request("order_shipping_firstname"))
+		order_shipping_lastname = Trim(Request("order_shipping_lastname"))
+		order_shipping_company = Trim(Request("order_shipping_company"))
+		order_shipping_address = Trim(Request("order_shipping_address"))
+		order_shipping_city = Trim(Request("order_shipping_city"))
+		order_shipping_country = Trim(Request("order_shipping_country"))
+		order_shipping_state = Trim(Request("order_shipping_state"))
+		order_shipping_zip = Trim(Request("order_shipping_zip"))
+		order_shipping_phone = Trim(Request("order_shipping_phone"))
+		
+		Set rsUpdate = Server.CreateObject("ADODB.Recordset")
+		with rsUpdate
+			.ActiveConnection = dbconn
+			.CursorLocation = 3
+			.CursorType = 1
+			.LockType = 3
+			.Source = g_storeid & "_order WHERE order_id='" & order_id & "'"
+			.Open
+		end with
+		
+		rsUpdate("ShipFirstName") = order_shipping_firstname
+		rsUpdate("ShipLastName") = order_shipping_lastname
+		rsUpdate("ship_company") = order_shipping_company
+		rsUpdate("ShipAddress") = order_shipping_address
+		rsUpdate("ShipCity") = order_shipping_city
+		rsUpdate("ShipCountry") = order_shipping_country
+		rsUpdate("ShipState") = order_shipping_state
+		rsUpdate("ShipZip") = order_shipping_zip
+		rsUpdate("ShipPhone") = order_shipping_phone
+		
+		If dbconn.Errors.Count > 0 Then
+			dbconn.Errors.Clear
+			rsUpdate.CancelUpdate
+		else
+			rsUpdate.Update
+		End If
+		
+		rsUpdate.Close
+		set rsUpdate = nothing
+	
+	CASE "line_item"
+		
+		order_id = Trim(Request("order_id"))
+		row_id = Trim(Request("row_id"))
+		
+		order_item_sku = Trim(Request("order_item_sku"))
+		order_item_row_mode = Trim(Request("order_item_row_mode")) 
+		order_item_description = Trim(Request("order_item_description"))
+		order_item_options = Trim(Request("order_item_options"))
+		order_item_quantity = Trim(Request("order_item_quantity"))
+		order_item_adjusted_price = Trim(Request("order_item_adjusted_price"))
+		order_item_adjusted_cost = Trim(Request("order_item_adjusted_cost"))
+		order_item_manu_part_num = Trim(Request("order_item_manu_part_num"))
+		order_item_weight = Trim(Request("order_item_weight"))
+		order_item_taxable = Trim(Request("order_item_taxable"))
+		
+		order_item_IM_part_number = Trim(Request("order_item_IM_part_number"))
+		order_item_TD_part_number = Trim(Request("order_item_TD_part_number"))
+		order_item_eConnect_part_number = Trim(Request("order_item_eConnect_part_number"))
+		order_item_mfg = Trim(Request("order_item_mfg"))
+		order_item_SN_part_number = Trim(Request("order_item_SN_part_number"))
+		order_item_DH_part_number = Trim(Request("order_item_DH_part_number"))
+		order_item_SUN_part_number = Trim(Request("order_item_SUN_part_number"))
+		
+		if row_id = "0" then
+			
+			new_row_id = 1
+			sql = "SELECT Max(row_id) FROM " & g_storeid & "_order_item WHERE order_id='" & order_id & "'"
+			set rsOrderCount = dbconn.Execute(sql)
+			if not rsOrderCount.EOF then
+				new_row_id = rsOrderCount(0) + 1
+			else
+			end if
+			rsOrderCount.Close
+			set rsOrderCount = nothing
+			
+			if IsNumeric(new_row_id) then
+			else
+				new_row_id = 1
+			end if
+			
+			Set rsUpdate = Server.CreateObject("ADODB.Recordset")
+			with rsUpdate
+				.ActiveConnection = dbconn
+				.CursorLocation = 3
+				.CursorType = 1
+				.LockType = 3
+				.Source = g_storeid & "_order_item WHERE order_id='" & order_id & "' AND row_id = '" & row_id & "'"
+				.Open
+				.AddNew
+			end with
+			
+			rsUpdate("order_id") = order_id
+			rsUpdate("row_id") = CStr(new_row_id)
+			rsUpdate("row_mode") = order_item_row_mode
+			rsUpdate("item_memo") = ""
+			rsUpdate("s_qty") = 0
+			rsUpdate("b_qty") = 0
+			rsUpdate("item_po") = 0
+			rsUpdate("item_on_order") = 0
+			rsUpdate("item_weight") = order_item_weight
+			rsUpdate("item_taxable") = order_item_taxable
+			rsUpdate("item_cost") = order_item_adjusted_cost
+			rsUpdate("item_sku2") = order_item_manu_part_num
+			
+			rsUpdate("item_IM_part_number") = order_item_IM_part_number
+			rsUpdate("item_TD_part_number") = order_item_TD_part_number
+			rsUpdate("item_eConnect_part_number") = order_item_eConnect_part_number
+			rsUpdate("item_mfg") = order_item_mfg
+			rsUpdate("item_SN_part_number") = order_item_SN_part_number
+			rsUpdate("item_DH_part_number") = order_item_DH_part_number
+			rsUpdate("item_SUN_part_number") = order_item_SUN_part_number
+			
+		else
+		
+			Set rsUpdate = Server.CreateObject("ADODB.Recordset")
+			with rsUpdate
+				.ActiveConnection = dbconn
+				.CursorLocation = 3
+				.CursorType = 1
+				.LockType = 3
+				.Source = g_storeid & "_order_item WHERE order_id='" & order_id & "' AND row_id = '" & row_id & "'"
+				.Open
+			end with
+		
+		end if
+		
+		
+		rsUpdate("sku") = order_item_sku
+		rsUpdate("options") = order_item_options
+		rsUpdate("item_description") = order_item_description
+		rsUpdate("quantity") = order_item_quantity
+		rsUpdate("adjusted_price") = order_item_adjusted_price
+		
+		
+		If dbconn.Errors.Count > 0 Then
+			dbconn.Errors.Clear
+			rsUpdate.CancelUpdate
+		else
+			rsUpdate.Update
+		End If
+		
+		rsUpdate.Close
+		set rsUpdate = nothing
+		
+	CASE "item_delete"
+		
+		order_id = Trim(Request("order_id"))
+		row_id = Trim(Request("row_id"))
+		
+		
+		sql = "DELETE FROM " & g_storeid & "_order_item WHERE order_id='" & order_id & "' AND row_id='" & row_id & "'"
+		'Response.Write(sql)
+		dbconn.Execute(sql)
+		'Dummy Response (json)
+		Response.Write("{""ORDERITEMS"" : [{""id"" : ""1"",""detail"" : ""1""}]}")
+		
+	END SELECT
+%>

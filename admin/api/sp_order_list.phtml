@@ -64,7 +64,7 @@
 	'----------------------------------------------------------------------------------------
 	order_customer_name = Trim(Request("order_customer_name"))
 	if Len(order_customer_name) > 1 then
-		strWhere = strWhere &  " (bill_contact_firstname + ' ' + bill_contact_lastname like '%" & order_customer_name & "%') AND"
+		strWhere = strWhere &  " (BillFirstName + ' ' + BillLastName like '%" & order_customer_name & "%') AND"
 	end if
 	'----------------------------------------------------------------------------------------
 	order_ship_to = Trim(Request("order_ship_to"))
@@ -115,7 +115,7 @@
 	CASE "2"
 		sOrder = "date_entered " & Trim(Request("order[0][dir]"))
 	CASE "3"
-		sOrder = "bill_contact_firstname + ' ' + bill_contact_lastname " & Trim(Request("order[0][dir]"))
+		sOrder = "BillFirstName + ' ' + BillLastName " & Trim(Request("order[0][dir]"))
 	CASE "4"
 		sOrder = "ShipFirstName + ' ' + ShipLastName " & Trim(Request("order[0][dir]"))
 	CASE "5"
@@ -140,9 +140,9 @@
 	Set dbconnx=server.CreateObject("ADODB.Connection")
 	dbconnx.Open g_connection_string
 
-	sql = "SELECT * FROM " & g_storeid & "_order WHERE " & strWhere & " " & strOrderBy
+	sql = "SELECT * FROM " & g_storeid & "_sales_order WHERE " & strWhere & " " & strOrderBy
 
-	sqlx = "SELECT COUNT(order_id) FROM " & g_storeid & "_order WHERE " & strWhere 
+	sqlx = "SELECT COUNT(order_id) FROM " & g_storeid & "_sales_order WHERE " & strWhere 
 
 	set rs = dbconnx.Execute(sql)
 
@@ -183,10 +183,10 @@
 			s_date_created = ConvertToTimeZone(s_date_created)
 			s_date_updated = ConvertToTimeZone(s_date_updated)
 			
-			s_company_name = rs("bill_company")
+			s_company_name = rs("BillCompany")
 			s_shopper = rs("CardName")
-			s_shopper_firstname = rs("bill_contact_firstname")
-			s_shopper_lastname = rs("bill_contact_lastname")
+			s_shopper_firstname = rs("BillFirstName")
+			s_shopper_lastname = rs("BillLastName")
 			
 			cardtype = rs("CardType")
 			cvv2_flag = rs("CVV2_flag")

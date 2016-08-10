@@ -15,3 +15,6 @@
 "item(s)", "개"
 "Checkout", "결제"
 "Become Prime Member", "프라임 회원되기"
+"Your order has been received.","주문이 정상적으로 접수되었습니다."
+"Your order # is %s.","주문번호는 #%s 입니다."
+"You will receive an order confirmation email with details of your order and a link to track its progress."," 주문 및 배송에 대한 알림사항!<br><br> 1. 상세 주문 내역과 배송준비 상황에 대한 이메일이 발송됩니다.<br><br> 2. 배송 시작 후 휴대폰 메세지로 운송장번호가 발송됩니다.<br><br> 3. 운송장번호는 '배송 조회하기'에서 실시간으로 조회가 가능합니다.<br><br> 4. 배송 시작일로부터 2~3일후 배송이 완료됩니다.(통관에 이상이 없을 경우. 주말/공휴일 제외)<br><br> 5. 이름/주민번호/휴대폰번호는 통관시 필수 사항이므로 반드시 본인의 정보를 사용해야 합니다.<br> 타인의 정보를 사용하여 발생되는 모든 불이익과 책임은 본인에게 있습니다.<br><br>" 

@@ -1,0 +1,298 @@
+<!-- #INCLUDE File="local/local.phtml" -->
+<!-- #INCLUDE File="util/xt_func_util.phtml" -->
+<!-- #INCLUDE File="util/xt_func_string.phtml" -->
+<!-- #INCLUDE File="include/i_login.phtml" -->
+<%
+	'-----------------------------
+	Session("CatalogConnectionString") = g_connection_string
+    Session("CatalogGlobalConnectionString") = Session("SSCatalogConnectionString")
+    Session("CatalogPriceConnectionString") = Session("SSPriceConnectionString")
+    catalogstore = g_storeid
+	'-----------------------------
+	
+	categoryid = Trim(Request("categoryid"))
+	'categoryid = "4876"
+	
+	'cat1 = Trim(Request("cat1"))
+	'cat2 = Trim(Request("cat2"))
+	'cat3 = Trim(Request("cat3"))
+	
+	'if Len(cat1) > 0 then
+		'categoryid = cat1
+	'end if
+	'if Len(cat2) > 0 then
+		'categoryid = cat2
+	'end if
+	'if Len(cat3) > 0 then
+		'categoryid = cat3
+	'end if
+
+	himg = Request("himg")
+	if Len(Request("page")) > 0 then
+		page = CInt(Request("page"))
+	else
+		page =1
+	end if
+	compareedcs = Trim(Request("compareids"))
+
+	xCount = Request.Form("attributeid").Count
+	zsql = ""
+
+	'Add option not to use product filter.
+	filterflag = Trim(Request("filterflag"))
+	'filterflag = "0"
+
+	'==========================================================================
+	'TODO
+	if InStr(Session("SSCatalogConnectionString"), "SPECSOURCE2") > 0 then
+		specsource_db = "SPECSOURCE2"
+	else
+		specsource_db = "SPECSOURCE"
+	end if
+	specsource_db = "SPECSOURCE2"
+	'==========================================================================
+  
+	'-----------------------------------------------
+	manufacturer = Trim(Request("manufacturer"))
+	
+	sp = FilterStringEx(Trim(Request("sp")), "[^0-9a-zA-Z _#/.-]")
+	sp1 = FilterStringEx(Trim(Request("sp1")), "[^0-9a-zA-Z _#/.-]")
+	sp2 = FilterStringEx(Trim(Request("sp2")), "[^0-9a-zA-Z _#/.-]")
+	sp3 = FilterStringEx(Trim(Request("sp3")), "[^0-9a-zA-Z _#/.-]")
+	sp4 = FilterStringEx(Trim(Request("sp4")), "[^0-9a-zA-Z _#/.-]")
+	sp5 = FilterStringEx(Trim(Request("sp5")), "[^0-9a-zA-Z _#/.-]")
+	sp6 = FilterStringEx(Trim(Request("sp6")), "[^0-9a-zA-Z _#/.-]")
+	sp7 = FilterStringEx(Trim(Request("sp7")), "[^0-9a-zA-Z _#/.-]")
+	sp8 = FilterStringEx(Trim(Request("sp8")), "[^0-9a-zA-Z _#/.-]")
+	sp9 = FilterStringEx(Trim(Request("sp9")), "[^0-9a-zA-Z _#/.-]")
+	
+	s_sp = ""
+	if Len(sp) > 0 then
+	  s_sp = s_sp & sp & "|"
+	end if
+	if Len(sp1) > 0 then
+	  s_sp = s_sp & sp1 & "|"
+	end if
+	if Len(sp2) > 0 then
+	  s_sp = s_sp & sp2 & "|"
+	end if
+	if Len(sp3) > 0 then
+	  s_sp = s_sp & sp3 & "|"
+	end if
+	if Len(sp4) > 0 then
+	  s_sp = s_sp & sp4 & "|"
+	end if
+	if Len(sp5) > 0 then
+	  s_sp = s_sp & sp5 & "|"
+	end if
+	if Len(sp6) > 0 then
+	  s_sp = s_sp & sp6 & "|"
+	end if
+	if Len(sp7) > 0 then
+	  s_sp = s_sp & sp7 & "|"
+	end if
+	if Len(sp8) > 0 then
+	  s_sp = s_sp & sp8 & "|"
+	end if
+	if Len(sp9) > 0 then
+	  s_sp = s_sp & sp9 & "|"
+	end if
+	
+	if Len(s_sp) > 0 then
+	  s_sp = Left(s_sp, Len(s_sp) - 1)
+	end if
+	
+	sp = ""
+	sp1 = ""
+	sp2 = ""
+	sp3 = ""
+	sp4 = ""
+	sp5 = ""
+	sp6 = ""
+	sp7 = ""
+	sp8 = ""
+	sp9 = ""
+	
+	'Response.Write("...." & s_sp)
+	
+	if Len(s_sp) > 0 then
+	  ar_sp = Split(s_sp, "|")
+	  
+	  for i = 0 to UBound(ar_sp)
+	    
+	    SELECT CASE i
+	    CASE 0
+	      sp = ar_sp(i)
+	      i_sp = "1"
+	    CASE 1
+	      sp1 = ar_sp(i)
+	      i_sp = "2"
+	    CASE 2
+	      sp2 = ar_sp(i)
+	      i_sp = "3"
+	    CASE 3
+	      sp3 = ar_sp(i)
+	      i_sp = "4"
+	    CASE 4
+	      sp4 = ar_sp(i)
+	      i_sp = "5"
+	    CASE 5
+	      sp5 = ar_sp(i)
+	      i_sp = "6"
+	    CASE 6
+	      sp6 = ar_sp(i)
+	      i_sp = "7"
+	    CASE 7
+	      sp7 = ar_sp(i)
+	      i_sp = "8"
+	    CASE 8
+	      sp8 = ar_sp(i)
+	      i_sp = "9"
+	    CASE 9
+	      sp9 = ar_sp(i)
+	      i_sp = "9"
+	    END SELECT
+	
+	  next
+	else
+	  sp = ""
+	end if
+	
+	
+	'manufacturer = FilterStringEx(manufacturer, "[^0-9]")
+	manufacturer = Trim(Request("manufacturer"))
+	manufacturer = FilterStringEx(manufacturer, "[^0-9]")
+
+	'======================================================================================
+	'NEW FEATUREID
+
+	s_selectedFeatureIds = ""
+
+
+	for each item in Request.QueryString
+
+		'Response.Write(item)
+		If InStr(item, "ga_") Then
+			If Len(Trim(Request(item))) > 0 then
+				s_selectedFeatureIds = s_selectedFeatureIds & Replace(item, "ga_" , "") & ","
+			End if
+		End if
+
+	Next
+
+	'======================================================================================
+
+	If Len(s_selectedFeatureIds) > 0 Then
+		t_selectedFeatureIds = s_selectedFeatureIds
+		s_selectedFeatureIds = Left(s_selectedFeatureIds, Len(s_selectedFeatureIds) - 1)
+	End If
+
+	If s_selectedFeatureIds <> "" Then 
+		ga = Split(s_selectedFeatureIds, ",")
+		for i=0 to UBound(ga)
+				zsql = zsql & " icecat_id IN (SELECT productid FROM [192.168.5.134].[icecat].[dbo].[icecat_productattributes] WHERE featureid=" & ga(i) & " AND displayvalue='" & Trim(request("ga_" & ga(i))) & "' ) AND"
+				s_filter_url = s_filter_url & "&ga_" & ga(i) & "=" & Trim(request("ga_" & ga(i)))
+		Next
+	End If
+
+	If Len(manufacturer) > 0 then
+		s_filter_url = s_filter_url & "&manufacturer=" & manufacturer
+	End if
+
+	if Len(zsql) > 0 then
+		zsql = Left(zsql, Len(zsql)-4)
+		filter_zsql = zsql
+	end If
+	
+
+	Set dbconn1 = Server.CreateObject("ADODB.Connection")
+	dbconn1.open Session("CatalogGlobalConnectionString")
+	
+	Set dbconn2 = Server.CreateObject("ADODB.Connection")
+	dbconn2.open Session("CatalogPriceConnectionString")
+	
+	if Len(categoryid) > 0 then
+	  sql = "SELECT value FROM A_ICECAT_Category_Name WHERE EntityId = " & categoryid
+	  set rsCatName = dbconn2.Execute(sql)
+	  if not rsCatName.EOF then
+	    s_catname = rsCatName(0)
+	  else
+	    s_catname = ""
+	  end if
+	  rsCatName.Close
+	else
+	  s_catname = ""
+	end if
+	
+%>
+<!--#INCLUDE FILE="include/doctype.phtml"-->
+<head>
+<!--#INCLUDE FILE="include/head.phtml"-->
+<!-- BEGIN PAGE LEVEL PLUGINS -->
+<!-- END PAGE LEVEL PLUGINS -->
+</head>
+
+<body class="page-container-bg-solid">
+<div class="page-wrapper">
+	<div class="page-wrapper-row">
+		<div class="page-wrapper-top">
+			<!--#INCLUDE FILE="include/header.phtml"-->
+		</div>
+	</div>
+	<div class="page-wrapper-row full-height">
+		<div class="page-wrapper-middle">
+			<!-- BEGIN CONTAINER -->
+			<div class="page-container">
+				<!-- BEGIN CONTENT -->
+				<div class="page-content-wrapper">
+					<!-- BEGIN CONTENT BODY -->
+					<!-- BEGIN PAGE HEAD-->
+					<div class="page-head">
+						<div class="container-fluid">
+							<!-- BEGIN PAGE TITLE -->
+							<div class="page-title">
+								<h1>Dashboard
+									<small>dashboard & statistics</small>
+								</h1>
+							</div>
+							<!-- END PAGE TITLE -->
+						</div>
+					</div>
+					<!-- END PAGE HEAD-->
+					<!-- BEGIN PAGE CONTENT BODY -->
+					<div class="page-content">
+						<div class="container-fluid">
+							<!-- BEGIN PAGE CONTENT INNER -->
+							<div class="row">
+								<div class="col-md-3">
+								</div>
+								<div class="col-md-9">
+								</div>
+							</div>
+							<!-- END PAGE CONTENT INNER -->
+						</div>
+					</div>
+					<!-- END PAGE CONTENT BODY -->
+					<!-- END CONTENT BODY -->
+				</div>
+				<!-- END CONTENT -->
+			</div>
+			<!-- END CONTAINER -->
+		</div>
+	</div>
+	<div class="page-wrapper-row">
+		<div class="page-wrapper-bottom">
+			<!--#INCLUDE FILE="include/footer.phtml"-->
+		</div>
+	</div>
+</div>
+<!--#INCLUDE FILE="include/js.phtml"-->
+<!-- BEGIN PAGE LEVEL PLUGINS -->
+
+<!-- END PAGE LEVEL PLUGINS -->
+
+<!-- BEGIN PAGE LEVEL SCRIPTS -->
+
+<!-- END PAGE LEVEL SCRIPTS -->
+</body>
+</html>

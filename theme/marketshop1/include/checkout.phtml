@@ -3,6 +3,7 @@
 	<!--Middle Part Start-->
 	<div id="content" class="col-sm-12">
 		<h1 class="title">Checkout</h1>
+		<form  id="checkout-form" method="post">
 		<div class="row">
 			<div class="col-sm-4">
 				<div class="panel panel-default">
@@ -57,42 +58,47 @@
 							</select>
 						</div>
 						<fieldset id="billing_address" class="required display-hide">
+							<div class="form-group required">
+							<label for="new_billing_firstname" class="control-label">First Name</label>
+							<input type="text" class="form-control" id="new_billing_firstname" value="" name="new_billing_firstname">
+							</div>
+							<div class="form-group required">
+							<label for="new_billing_lastname" class="control-label">Last Name</label>
+							<input type="text" class="form-control" id="new_billing_lastname" value="" name="new_billing_lastname">
+							</div>
 							<div class="form-group">
-							<label for="input-payment-company" class="control-label">Company</label>
-							<input type="text" class="form-control" id="input-payment-company" placeholder="Company" value="" name="company">
+							<label for="new_billing_company" class="control-label">Company</label>
+							<input type="text" class="form-control" id="new_billing_company" value="" name="new_billing_company">
 							</div>
 							<div class="form-group required">
-							<label for="input-payment-address-1" class="control-label">Address 1</label>
-							<input type="text" class="form-control" id="input-payment-address-1" placeholder="Address 1" value="" name="address_1">
-							</div>
-							<div class="form-group">
-							<label for="input-payment-address-2" class="control-label">Address 2</label>
-							<input type="text" class="form-control" id="input-payment-address-2" placeholder="Address 2" value="" name="address_2">
+							<label for="new_billing_address" class="control-label">Address </label>
+							<input type="text" class="form-control" id="new_billing_address" value="" name="new_billing_address">
 							</div>
 							<div class="form-group required">
-							<label for="input-payment-city" class="control-label">City</label>
-							<input type="text" class="form-control" id="input-payment-city" placeholder="City" value="" name="city">
+							<label for="new_billing_city" class="control-label">City</label>
+							<input type="text" class="form-control" id="new_billing_city" value="" name="new_billing_city">
 							</div>
 							<div class="form-group required">
-							<label for="input-payment-postcode" class="control-label">Post Code</label>
-							<input type="text" class="form-control" id="input-payment-postcode" placeholder="Post Code" value="" name="postcode">
+							<label for="new_billing_zip" class="control-label">Zip Code</label>
+							<input type="text" class="form-control" id="new_billing_zip" value="" name="new_billing_zip">
 							</div>
 							<div class="form-group required">
-                            <label for="input-payment-country" class="control-label">Country</label>
-                            <select class="form-control" id="input-payment-country" name="country_id">
+                            <label for="new_billing_country_id" class="control-label">Country</label>
+                            <select class="form-control" id="new_billing_country_id" name="new_billing_country_id">
 							</select>
 							</div>
 							<div class="form-group required">
-                            <label for="input-payment-zone" class="control-label">Region / State</label>
-                            <select class="form-control" id="input-payment-zone" name="zone_id">
+                            <label for="new_billing_zone_id" class="control-label">Region / State</label>
+                            <select class="form-control" id="new_billing_zone_id" name="new_billing_zone_id">
 							</select>
 							</div>
-							
+							<!--
 							<div class="checkbox">
 								<label>
 								<input type="checkbox" checked="checked" value="1" name="shipping_address">
 								My delivery and billing addresses are the same.</label>
 							</div>
+							-->
 						</fieldset>
 					</div>
 				</div>
@@ -117,6 +123,10 @@
 									shopper_shipping_country = rsShopper("shipping_Country")
 									shopper_shipping_phone = rsShopper("shipping_Phone")
 									shopper_shipping_company = rsShopper("shipping_company")
+									
+									z_shipping_country = shopper_shipping_country
+									z_shipping_state = shopper_shipping_state
+									z_shipping_postcode = shopper_shipping_zip 
 		
 							%>
 							<option value="0"><%=shopper_shipping_firstname%>&nbsp;<%=shopper_shipping_lastname%>&nbsp;<%=shopper_shipping_address%>&nbsp;<%=shopper_shipping_city%>,&nbsp;<%=shopper_shippingstate%>&nbsp;<%=shopper_shipping_zip%>&nbsp;<%=shopper_shipping_country%></option>
@@ -141,6 +151,12 @@
 									alt_set_default = rs("set_default")
 									alt_company = rs("company")
 									alt_address_type = rs("address_type")
+									
+									if alt_set_default = 1 then
+										z_shipping_country = alt_country
+										z_shipping_state = alt_state
+										z_shipping_postcode = alt_zip 
+									end if
 				
 							%>
 							<option value="<%=alt_address_id%>" <% if alt_set_default = 1 then %>selected<%end if%>><%=alt_firstname%>&nbsp;<%=alt_lastname%>&nbsp;<%=alt_lastname%>&nbsp;<%=alt_address%>&nbsp;<%=alt_city%>,&nbsp;<%=alt_state%>&nbsp;<%=alt_zip%>&nbsp;<%=alt_country%></option>
@@ -153,35 +169,42 @@
 							<option value="new">New Address</option>
 							</select>
 						</div>
+						<input type="hidden" id="z_country_id" value="<%=z_shipping_country%>">
+						<input type="hidden" id="z_zone_id" value="<%=z_shipping_state%>">
+						<input type="hidden" id="z_postcode" value="<%=z_shipping_postcode%>">
 						<fieldset id="shipping_address" class="required display-hide">
+							<div class="form-group required">
+							<label for="new_shipping_firstname" class="control-label">First Name</label>
+							<input type="text" class="form-control" id="new_shipping_firstname" value="" name="new_shipping_firstname">
+							</div>
+							<div class="form-group required">
+							<label for="new_shipping_lastname" class="control-label">Last Name</label>
+							<input type="text" class="form-control" id="new_shipping_lastname" value="" name="new_shipping_lastname">
+							</div>
 							<div class="form-group">
-							<label for="input-payment-company" class="control-label">Company</label>
-							<input type="text" class="form-control" id="input-payment-company" placeholder="Company" value="" name="company">
+							<label for="new_shipping_company" class="control-label">Company</label>
+							<input type="text" class="form-control" id="new_shipping_company" value="" name="new_shipping_company">
 							</div>
 							<div class="form-group required">
-							<label for="input-payment-address-1" class="control-label">Address 1</label>
-							<input type="text" class="form-control" id="input-payment-address-1" placeholder="Address 1" value="" name="address_1">
-							</div>
-							<div class="form-group">
-							<label for="input-payment-address-2" class="control-label">Address 2</label>
-							<input type="text" class="form-control" id="input-payment-address-2" placeholder="Address 2" value="" name="address_2">
+							<label for="new_shipping_address" class="control-label">Address</label>
+							<input type="text" class="form-control" id="new_shipping_address" value="" name="new_shipping_address">
 							</div>
 							<div class="form-group required">
-							<label for="input-payment-city" class="control-label">City</label>
-							<input type="text" class="form-control" id="input-payment-city" placeholder="City" value="" name="city">
+							<label for="new_shipping_city" class="control-label">City</label>
+							<input type="text" class="form-control" id="inew_shipping_city" value="" name="new_shipping_city">
 							</div>
 							<div class="form-group required">
-							<label for="input-payment-postcode" class="control-label">Post Code</label>
-							<input type="text" class="form-control" id="input-payment-postcode" placeholder="Post Code" value="" name="postcode">
+							<label for="new_shipping_zip" class="control-label">Zip Code</label>
+							<input type="text" class="form-control" id="new_shipping_zip" value="" name="new_shipping_zip">
 							</div>
 							<div class="form-group required">
-                            <label for="input-payment-country" class="control-label">Country</label>
-                            <select class="form-control" id="input-payment-country" name="country_id">
+                            <label for="new_shipping_country_id" class="control-label">Country</label>
+                            <select class="form-control" id="new_shipping_country_id" name="new_shipping_country_id">
 							</select>
 							</div>
 							<div class="form-group required">
-                            <label for="input-payment-zone" class="control-label">Region / State</label>
-                            <select class="form-control" id="input-payment-zone" name="zone_id">
+                            <label for="new_shipping_zone_id" class="control-label">Region / State</label>
+                            <select class="form-control" id="new_shipping_zone_id" name="v">
 							</select>
 							</div>
 							
@@ -200,20 +223,8 @@
 								<p>
 									Please select the preferred shipping method to use on this order.
 								</p>
-								<div class="radio">
-									<label>
-									<input type="radio" checked="checked" name="Free Shipping">
-									Free Shipping - $0.00</label>
-								</div>
-								<div class="radio">
-									<label>
-									<input type="radio" name="Flat Shipping Rate">
-									Flat Shipping Rate - $8.00</label>
-								</div>
-								<div class="radio">
-									<label>
-									<input type="radio" name="Per Item Shipping Rate">
-									Per Item Shipping Rate - $150.00</label>
+								<label for="SH" class="error" style="display:none"></label>
+								<div id = "sp_method">
 								</div>
 							</div>
 						</div>
@@ -227,19 +238,95 @@
 								<p>
 									Please select the preferred payment method to use on this order.
 								</p>
+								<label for="payment_method" class="error" style="display:none"></label>
+								<% if Len(store_payment_cc_type) > 0 then %>
 								<div class="radio">
 									<label>
-									<input type="radio" checked="checked" name="Cash On Delivery">
-									Cash On Delivery</label>
+									<input type="radio" name="payment_method" value="creditcard" id="payment_method_creditcard">
+									Credit Card</label>
 								</div>
-								<div class="radio">
-									<label>
-									<input type="radio" name="Bank Transfer">
-									Bank Transfer</label>
+								<div class="row" id="payment_method_credicard_container" style="display:none;">
+									<div class="col-md-12">
+										<div class="form-group required">
+										<label for="payement_method_cc_type" class="control-label">Credit Card</label>
+										<select id="payement_method_cc_type" name="payement_method_cc_type" class="form-control" autocomplete="off">
+										<option value="">--Please Select--</option>
+										<option value="VI">Visa</option>
+										<option value="MC">MasterCard</option>
+										<option value="DI">Discover</option>
+										<option value="OT">JCB Card</option>
+										 </select>
+										</div>
+										<div class="form-group required">
+										<label for="payement_method_cc_number" class="control-label">Credit Card Number</label>
+										<input type="text" id="payement_method_cc_number" name="payement_method_cc_number" title="Credit Card Number" class="form-control" value="" autocomplete="off">
+										</div>
+										<div class="form-group required">
+										<label for="input-payment-company" class="control-label">Exp. Date</label>
+										<div style="display:block;margin-bottom: 45px;">
+											<select id="payment_cc_exp_month" style="width: 140px;float:left;margin-right:4%" name="payment_cc_exp_month" class="form-control">
+												<option value="" selected="selected">Month</option>
+												<option value="1">01 - January</option>
+												<option value="2">02 - February</option>
+												<option value="3">03 - March</option>
+												<option value="4">04 - April</option>
+												<option value="5">05 - May</option>
+												<option value="6">06 - June</option>
+												<option value="7">07 - July</option>
+												<option value="8">08 - August</option>
+												<option value="9">09 - September</option>
+												<option value="10">10 - October</option>
+												<option value="11">11 - November</option>
+												<option value="12">12 - December</option>
+											</select>
+											<select id="payment_cc_exp_year" style="width: 103px;float:left;margin-right:4%" name="payment_cc_exp_year" class="form-control">
+												<option value="" selected="selected">Year</option>
+												<option value="2011">2011</option>
+												<option value="2012">2012</option>
+												<option value="2013">2013</option>
+												<option value="2014">2014</option>
+												<option value="2015">2015</option>
+												<option value="2016">2016</option>
+												<option value="2017">2017</option>
+												<option value="2018">2018</option>
+												<option value="2019">2019</option>
+												<option value="2020">2020</option>
+												<option value="2021">2021</option>
+											</select>
+										</div>
+										</div>
+										<div class="form-group required">
+										<label for="input-payment-company" class="control-label">Card ID</label>
+										<input type="text" id="payment_method_cc_cid" name="payment_method_cc_cid" title="Credit Card Number" class="form-control" value="" autocomplete="off">
+										</div>
+									</div>
 								</div>
+								<% end if %>
+								<% if store_payment_check_enabled = "1" then %>
 								<div class="radio">
 									<label>
-									<input type="radio" name="Paypal">
+									<input type="radio" name="payment_method" value="check" id="payment_method_check">
+									<%=store_payment_check_title%></label>
+								</div>
+								<% end if %>
+								<% if store_payment_purchase_order_enabled = "1" then %>
+								<div class="radio">
+									<label>
+									<input type="radio" name="payment_method" value="purchaseorder" id="payment_method_purchaseorder">
+									<%=store_payment_purchase_order_title%></label>
+								</div>
+								<div class="row" id="payment_method_purchaseorder_container" style="display:none;">
+									<div class="col-md-12">
+										<div class="form-group required">
+										<label for="input-payment-company" class="control-label">P.O. Number</label>
+										<input type="text" id="payment_method_purchaseorder_number" name="payment_method_purchaseorder_number" title="Purchase Order Number" class="form-control" value="" autocomplete="off">
+										</div>
+									</div>
+								</div>
+								<% end if %>
+								<div class="radio">
+									<label>
+									<input type="radio" name="payment_method" value="paypal" id="payment_method_paypal">
 									Paypal</label>
 								</div>
 							</div>
@@ -298,40 +385,32 @@
 										<td class="text-right" colspan="4">
 											<strong>Sub-Total:</strong>
 										</td>
-										<td class="text-right">
-											$750.00
+										<td class="text-right" id="cart_total_sub_total_amount">
+											$<%=FormatNumber(GetTotalAmountInCart,2)%>
 										</td>
 									</tr>
 									<tr>
 										<td class="text-right" colspan="4">
-											<strong>Flat Shipping Rate:</strong>
+											<strong>Shipping & Handling:</strong>
 										</td>
-										<td class="text-right">
-											$5.00
-										</td>
-									</tr>
-									<tr>
-										<td class="text-right" colspan="4">
-											<strong>Eco Tax (-2.00):</strong>
-										</td>
-										<td class="text-right">
-											$4.00
+										<td class="text-right" id="cart_total_sh_total_amount">
+											$0.00
 										</td>
 									</tr>
 									<tr>
 										<td class="text-right" colspan="4">
-											<strong>VAT (20%):</strong>
+											<strong>Tax:</strong>
 										</td>
-										<td class="text-right">
-											$151.00
+										<td class="text-right" id="cart_total_tax_total_amount">
+											$<%=FormatNumber(GetTaxInCart(),2) %>
 										</td>
 									</tr>
 									<tr>
 										<td class="text-right" colspan="4">
 											<strong>Total:</strong>
 										</td>
-										<td class="text-right">
-											$910.00
+										<td class="text-right" id="cart_total_grand_total_amount">
+											$<%=FormatNumber(GetGrandTotalInCart(),2) %>
 										</td>
 									</tr>
 									</tfoot>
@@ -355,7 +434,7 @@
 								-->
 								<div class="buttons">
 									<div class="pull-right">
-										<input type="button" class="btn btn-primary" id="button-confirm" value="Place Order">
+										<input type="submit" class="btn btn-primary" data-loading-text="Processing Order..." id="button-confirm" value="Place Order">
 									</div>
 								</div>
 							</div>
@@ -364,6 +443,7 @@
 				</div>
 			</div>
 		</div>
+		</form>
 	</div>
 	<!--Middle Part End -->
 </div>

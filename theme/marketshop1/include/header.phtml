@@ -147,6 +147,7 @@
 					<button type="button" data-toggle="dropdown" data-loading-text="Loading..." class="heading dropdown-toggle">
 					<span class="cart-icon pull-left flip"></span>
 					<span id="cart-total"><%=GetTotalItemsInCart()%>&nbsp;<%=a("item(s)")%> - $<%=FormatNumber(GetTotalAmountInCart(),2)%></span></button>
+					<% if GetTotalItemsInCart() > 0 then %>
 					<ul class="dropdown-menu">
 						<li>
 						<table class="table">
@@ -181,6 +182,7 @@
 						</div>
 						</li>
 					</ul>
+					<% end if %>
 				</div>
 			</div>
 			<!-- Mini Cart End-->
@@ -197,6 +199,61 @@
 	</header>
 	<!-- Header End-->
 	<!-- Main Menu Start-->
+	<%
+		mm = ""
+		'sql = "SELECT dept_id, LEN(dept_id) as a, dept_name, parent_dept, dept_row, url_key FROM hubutu_dept WHERE include_topnav = 1 AND is_hidden = 0 ORDER BY a, dept_row"
+		sql = "SELECT dept_id, LEN(dept_id) as a, dept_name, parent_dept, dept_row, url_Key, ISNULL(CONVERT(nvarchar(100),b.field_value),'') as dept_name_2"
+		sql = sql & " FROM " & g_storeid & "_dept as a "
+		sql = sql & " LEFT OUTER JOIN " & g_storeid & "_store_type_data_varchar b"
+		sql = sql & " ON a.dept_id = b.entity_id"
+		sql = sql & " AND b.type_id =1 AND b.field_id = 1 AND view_id = " &  Session("CURRENT_VIEW_ID")
+		sql = sql & " WHERE a.include_topnav = 1 AND a.is_hidden = 0 "
+		sql = sql & " ORDER BY a, dept_row"
+		
+		Set rsM = dbconn.Execute(sql)
+		do while not rsM.EOF
+			m_dept_id = rsM("dept_id")
+			m_dept_name  = rsM("dept_name")
+			dept_name_2  = rsM("dept_name_2")
+			m_url_key  = rsM("url_key")
+			if Len(m_url_key) > 0 then
+				m_dept_link = g_store_url & m_url_key & ".html"
+			else
+				m_dept_link = g_store_url & "dept.phtml?dept_id=" & m_dept_id
+			end if
+			
+			if Len(dept_name_2)> 0 then
+				'm_dept_name = TranslateX(m_dept_name, 1, m_dept_id, 1)
+				m_dept_name = dept_name_2
+			end if
+			
+			SELECT CASE rsM("a") 
+			CASE 2
+			m = "<li class=""dropdown information-link""><a href=""" & m_dept_link & """>" & m_dept_name & "</a><div class=""dropdown-menu""><ul><!--" & rsM("dept_id") & "--></ul></div></li>"
+			mm = mm & m
+			CASE 6
+			m = "<li><a href=""" & m_dept_link & """>" &  m_dept_name & "</a><div class=""dropdown-menu""><ul><!--" & rsM("dept_id") & "--></ul></div></li>"
+			mm = Replace(mm, "<!--" & rsM("parent_dept") & "-->", m & "<!--" & rsM("parent_dept") & "-->")
+			CASE 10
+			m = "<li><a href=""" & m_dept_link & """>" & m_dept_name & "</a></li>"
+			mm = Replace(mm, "<!--" & rsM("parent_dept") & "-->", m & "<!--" & rsM("parent_dept") & "-->")
+			END SELECT
+			rsM.MoveNext
+		loop
+		rsM.Close
+		set rsM = nothing
+		
+		sql = "SELECT dept_id FROM hubutu_dept WHERE include_topnav = 1 AND is_hidden = 0 ORDER BY dept_row"
+		Set rsM = dbconn.Execute(sql)
+		do while not rsM.EOF
+			mm = Replace(mm, "<div class=""dropdown-menu""><ul><!--" & rsM("dept_id") & "--></ul></div>", "")
+			mm = Replace(mm, "<!--" & rsM("dept_id") & "-->", "")
+			rsM.MoveNext
+		loop
+		rsM.Close
+		set rsM = nothing
+	%>
+	
 	<div class="container">
 		<nav id="menu" class="navbar">
 		<div class="navbar-header">
@@ -205,103 +262,7 @@
 		<div class="collapse navbar-collapse navbar-ex1-collapse">
 			<ul class="nav navbar-nav">
 				<li><a class="home_link" title="Home" href="<%=g_store_url%>index.phtml"><span>Home</span></a></li>
-				
-				<%
-				'Product Categories..
-				sql = "SELECT * FROM " & g_storeid & "_dept WHERE parent_dept='0' AND include_topnav=1 AND is_hidden=0 ORDER BY dept_row"
-				Set rsDeptClassic = dbconn.Execute(sql)
-				do while not rsDeptClassic.EOF
-					m_dept_id = rsDeptClassic("dept_id")
-					m_dept_name = rsDeptClassic("dept_name")
-					m_has_sub = rsDeptClassic("has_sub")
-					m_use_mfg = rsDeptClassic("dept_use_mfg")
-					m_ec_flag = rsDeptClassic("ec_flag")
-					m_url_key = rsDeptClassic("url_key")
-					
-					m_dept_name = TranslateX(m_dept_name, 1, m_dept_id, 1)
-					if Len(m_url_key) > 0 then
-						m_dept_link = g_store_url & m_url_key & ".html"
-					else
-						m_dept_link = g_store_url & "dept.phtml?dept_id=" & m_dept_id
-					end if
-				%>
-				<li class="dropdown information-link"><a href="<%=m_dept_link%>"><%=m_dept_name%></a>
-				<%
-					sql = "SELECT * FROM " & g_storeid & "_dept WHERE parent_dept='" & m_dept_id & "' AND include_topnav=1 AND is_hidden=0 ORDER BY dept_row"
-					Set rsDeptClassic1 = dbconn.Execute(sql)
-					if not rsDeptClassic1.EOF then
-				%>
-				<div class="dropdown-menu">
-					<ul>
-						<%
-						do while not rsDeptClassic1.EOF
-							m_dept_id_1 = rsDeptClassic1("dept_id")
-							m_dept_name_1  = rsDeptClassic1("dept_name")
-							m_has_sub_1  = rsDeptClassic1("has_sub")
-							m_use_mfg_1  = rsDeptClassic1("dept_use_mfg")
-							m_ec_flag_1  = rsDeptClassic1("ec_flag")
-							m_url_key_1  = rsDeptClassic1("url_key")
-							
-							m_dept_name_1 = TranslateX(m_dept_name_1, 1, m_dept_id_1, 1)
-							if Len(m_url_key_1) > 0 then
-								m_dept_link = g_store_url & m_url_key_1 & ".html"
-							else
-								m_dept_link = g_store_url & "dept.phtml?dept_id=" & m_dept_id_1
-							end if
-						%>
-						<li><a href="<%=m_dept_link%>"><%=m_dept_name_1%></a>
-						<%
-							sql = "SELECT * FROM " & g_storeid & "_dept WHERE parent_dept='" & m_dept_id_1 & "' AND include_topnav=1 AND is_hidden=0 ORDER BY dept_row"
-							Set rsDeptClassic2 = dbconn.Execute(sql)
-							if not rsDeptClassic2.EOF then
-						%>
-						<div class="dropdown-menu">
-							<ul>
-								<%
-								do while not rsDeptClassic2.EOF
-									m_dept_id_2 = rsDeptClassic2("dept_id")
-									m_dept_name_2  = rsDeptClassic2("dept_name")
-									m_has_sub_2  = rsDeptClassic2("has_sub")
-									m_use_mfg_2  = rsDeptClassic2("dept_use_mfg")
-									m_ec_flag_2  = rsDeptClassic2("ec_flag")
-									m_url_key_2  = rsDeptClassic2("url_key")
-									
-									m_dept_name_2 = TranslateX(m_dept_name_2, 1, m_dept_id_2, 1)
-									if Len(m_url_key_2) > 0 then
-										m_dept_link = g_store_url & m_url_key_2 & ".html"
-									else
-										m_dept_link = g_store_url & "dept.phtml?dept_id=" & m_dept_id_2
-									end if
-								%>
-								<li><a href="<%=m_dept_link%>"><%=m_dept_name_2%></a></li>
-								<%
-									rsDeptClassic2.MoveNext
-								loop
-								%>
-							</ul>
-						</div>
-						<%
-							end if
-							rsDeptClassic2.close
-							set rsDeptClassic2 = nothing
-						
-							rsDeptClassic1.MoveNext
-						loop
-						%>
-					</ul>
-				</div>
-				<%
-					end if
-					rsDeptClassic1.close
-					set rsDeptClassic1 = nothing
-				%>
-				</li>
-				<%
-					rsDeptClassic.MoveNext
-				loop
-				rsDeptClassic.close
-				set rsDeptClassic = nothing
-				%>
+				<%=mm%>
 			</ul>
 		</div>
 		</nav>

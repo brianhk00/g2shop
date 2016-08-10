@@ -1,0 +1,469 @@
+<%
+	Response.CodePage = 65001
+	Response.CharSet = "UTF-8"
+%>
+<%response.Expires=-1%>
+<!-- #INCLUDE File="../local/local.phtml" -->
+<!-- #INCLUDE File="../core/i_adoopen.phtml" -->
+<!-- #INCLUDE File="../util/xt_func_util.phtml" -->
+<!-- #INCLUDE File="../util/xt_func_string.phtml" -->
+<!-- #INCLUDE File="../util/xt_func_shoppingcart.phtml" -->
+<%
+	'--POST DATA------------------------------------------
+	billing_address_id = Trim(Request("billing_address_id"))
+	new_billing_firstname = Trim(Request("new_billing_firstname"))
+	new_billing_lastname = Trim(Request("new_billing_lastname"))
+	new_billing_company = Trim(Request("new_billing_company"))
+	new_billing_address = Trim(Request("new_billing_address"))
+	new_billing_city = Trim(Request("new_billing_city"))
+	new_billing_zip = Trim(Request("new_billing_zip"))
+	new_billing_country_id = Trim(Request("new_billing_country_id"))
+	new_billing_zone_id = Trim(Request("new_billing_zone_id"))
+	
+	
+	shipping_address_id = Trim(Request("shipping_address_id"))
+	new_shipping_firstname = Trim(Request("new_shipping_firstname"))
+	new_shipping_lastname = Trim(Request("new_shipping_lastname"))
+	new_shipping_company = Trim(Request("new_shipping_company"))
+	new_shipping_address = Trim(Request("new_shipping_address"))
+	new_shipping_city = Trim(Request("new_shipping_city"))
+	new_shipping_zip = Trim(Request("new_shipping_zip"))
+	new_shipping_country_id = Trim(Request("new_shipping_country_id"))
+	new_shipping_zone_id = Trim(Request("new_shipping_zone_id"))
+	
+	SH = Trim(Request("SH"))
+	
+	payment_method = Trim(Request("payment_method"))
+	payement_method_cc_type = Trim(Request("payement_method_cc_type"))
+	payement_method_cc_number = Trim(Request("payement_method_cc_number"))
+	payment_cc_exp_month = Trim(Request("payment_cc_exp_month"))
+	payment_cc_exp_year = Trim(Request("payment_cc_exp_year"))
+	payment_method_cc_cid = Trim(Request("payment_method_cc_cid"))
+	payment_method_purchaseorder_number = Trim(Request("payment_method_purchaseorder_number"))
+	
+	comments = Trim(Request("comments"))
+	
+	'=============GENERAL================================================================================
+	sql = "SELECT * FROM " & g_storeid & "_shopper WHERE shopper_id='" & Session("shopper_id") & "'"
+	Set rsShopper = dbconn.Execute(sql)
+	if not rsShopper.EOF then
+		shopper_email = rsShopper("Email")
+		shopper_firstname = rsShopper("FirstName")
+		shopper_lastname = rsShopper("LastName")
+	end if
+		
+	rsShopper.Close
+	set rsShopper = nothing	
+	'=============BILLING================================================================================
+	if billing_address_id = "0" then
+		
+		sql = "SELECT * FROM " & g_storeid & "_shopper WHERE shopper_id='" & Session("shopper_id") & "'"
+		Set rsShopper = dbconn.Execute(sql)
+		if not rsShopper.EOF then
+			
+			shopper_billing_firstname = rsShopper("FirstName")
+			shopper_billing_lastname = rsShopper("LastName")
+			shopper_billing_company = rsShopper("Company")
+			shopper_billing_firstname = rsShopper("billing_firstname")
+			shopper_billing_lastname = rsShopper("billing_lastname")
+			shopper_billing_address = rsShopper("Address")
+			shopper_billing_city = rsShopper("City")
+			shopper_billing_state = rsShopper("State")
+			shopper_billing_zip = rsShopper("ZipCode")
+			shopper_billing_country = rsShopper("Country")
+			shopper_billing_phone = rsShopper("Phone")
+		end if
+		
+		rsShopper.Close
+		set rsShopper = nothing
+			
+	else
+		
+		if billing_address_id = "new" then
+			
+			shopper_billing_company = ""
+			shopper_billing_firstname = new_billing_firstname
+			shopper_billing_lastname = new_billing_lastname
+			shopper_billing_address = new_billing_address
+			shopper_billing_city = new_billing_city
+			shopper_billing_state = new_billing_zone_id
+			shopper_billing_zip = new_billing_zip
+			shopper_billing_country = new_billing_country_id
+			shopper_billing_phone = ""
+			
+		else
+			
+			sql = "SELECT * FROM " & g_storeid & "_shopper_billing_address WHERE billing_shopper_id = '" & Session("shopper_id") & "' AND billing_address_id = '" & billing_address_id & "'"
+			set rs = dbconn.Execute(sql)
+			if not rs.EOF then
+				alt_address_id = rs("billing_address_id")
+				alt_shopper_id = rs("billing_shopper_id")
+				alt_address_name = rs("billing_address_name")
+				alt_firstname = rs("billing_firstname")
+				alt_lastname = rs("billing_lastname")
+				alt_address = rs("billing_address")
+				alt_city = rs("billing_city")
+				alt_state = rs("billing_state")
+				alt_zip = rs("billing_zip")
+				alt_country= rs("billing_country")
+				alt_phone = rs("billing_phone")
+				alt_set_default = rs("billing_set_default")
+				alt_company = rs("bill_company")
+				
+				shopper_billing_company = alt_company
+				shopper_billing_firstname = alt_firstname
+				shopper_billing_lastname = alt_lastname
+				shopper_billing_address = alt_address
+				shopper_billing_city = alt_city
+				shopper_billing_state = alt_state
+				shopper_billing_zip = alt_zip
+				shopper_billing_country = alt_country
+				shopper_billing_phone = alt_phone
+			end if
+			
+			rs.Close
+			set rs = nothing
+			
+		end if
+			
+	end if
+		
+	'=============SHIPPING================================================================================
+	if shipping_address_id = "0" then
+		sql = "SELECT * FROM " & g_storeid & "_shopper WHERE shopper_id = '" & Session("shopper_id") & "'"
+		set rsShopper = dbconn.Execute(sql)
+		if not rsShopper.EOF then
+			shopper_shipping_firstname = rsShopper("shipping_FirstName")
+			shopper_shipping_lastname = rsShopper("shipping_LastName")
+			shopper_shipping_address = rsShopper("shipping_Address")
+			shopper_shipping_city = rsShopper("shipping_City")
+			shopper_shipping_state = rsShopper("shipping_State")
+			shopper_shipping_zip = rsShopper("shipping_ZipCode")
+			shopper_shipping_country = rsShopper("shipping_Country")
+			shopper_shipping_phone = rsShopper("shipping_Phone")
+			shopper_shipping_company = rsShopper("shipping_company")
+		end if
+		rsShopper.Close
+		set rsShopper = nothing
+	else
+		if shipping_address_id = "new" then
+	
+			shopper_shipping_firstname = new_shipping_firstname
+			shopper_shipping_lastname = new_shipping_lastname
+			shopper_shipping_address = new_shipping_address
+			shopper_shipping_city = new_shipping_city
+			shopper_shipping_state = new_shipping_zone_id
+			shopper_shipping_zip = new_shipping_zip
+			shopper_shipping_country = new_shipping_country_id
+			shopper_shipping_phone = ""
+			shopper_shipping_company = new_shipping_company
+			
+		else
+			
+			sql = "SELECT * FROM " & g_storeid & "_shopper_shipping_address WHERE shopper_id = '" & Session("shopper_id") & "' AND address_id = '" & shipping_address_id & "'"
+			set rs = dbconn.Execute(sql)
+			if not rs.EOF then
+				alt_address_id = rs("address_id")
+				alt_shopper_id = rs("shopper_id")
+				alt_address_name = rs("address_name")
+				alt_firstname = rs("firstname")
+				alt_lastname = rs("lastname")
+				alt_address = rs("address")
+				alt_city = rs("city")
+				alt_state = rs("state")
+				alt_zip = rs("zip")
+				alt_country= rs("country")
+				alt_phone = rs("phone")
+				alt_set_default = rs("set_default")
+				alt_company = rs("company")
+				alt_address_type = rs("address_type")
+				
+				shopper_shipping_firstname = alt_firstname
+				shopper_shipping_lastname = alt_lastname
+				shopper_shipping_address = alt_address
+				shopper_shipping_city = alt_city
+				shopper_shipping_state = alt_state
+				shopper_shipping_zip = alt_zip
+				shopper_shipping_country = alt_country
+				shopper_shipping_phone = alt_phone
+				shopper_shipping_company = alt_company
+			end if
+			rs.Close
+			set rs = nothing
+		end if
+		
+	end if
+	
+	'=============SH================================================================================
+	if Len(SH) > 0 then
+		ar_SH = Split(SH, "|")
+		SH_method = ar_SH(0)
+		SH_price = ar_SH(1)
+	end if
+	
+	'=============PAYMENT================================================================================
+	store_payment_gateway_enabled = GetSettingValue("store_payment_gateway_enabled", "0")
+	store_payment_cc_type = GetSettingValue("store_payment_cc_type", "")
+	store_payment_cc_use_card_id = GetSettingValue("store_payment_cc_use_card_id", "0")
+	
+	store_payment_authorizenet_api_login_id = GetSettingValue("store_payment_authorizenet_api_login_id", "")
+	store_payment_authorizenet_payment_action = GetSettingValue("store_payment_authorizenet_payment_action", "authorize")
+	store_payment_authorizenet_transaction_key = GetSettingValue("store_payment_authorizenet_transaction_key", "")
+	
+	store_payment_paypal_payflowpro_payment_action = GetSettingValue("store_payment_paypal_payflowpro_payment_action", "Authorization")
+	store_payment_paypal_payflowpro_partner = GetSettingValue("store_payment_paypal_payflowpro_partner", "")
+	store_payment_paypal_payflowpro_user = GetSettingValue("store_payment_paypal_payflowpro_user", "")
+	store_payment_paypal_payflowpro_vendor = GetSettingValue("store_payment_paypal_payflowpro_vendor", "")
+	store_payment_paypal_payflowpro_password = GetSettingValue("store_payment_paypal_payflowpro_password", "")
+	
+	store_payment_paypal_payflowlink_partner = GetSettingValue("store_payment_paypal_payflowlink_partner", "")
+	store_payment_paypal_payflowlink_user = GetSettingValue("store_payment_paypal_payflowlink_user", "")
+	store_payment_paypal_payflowlink_vendor = GetSettingValue("store_payment_paypal_payflowlink_vendor", "")
+	store_payment_paypal_payflowlink_password = GetSettingValue("store_payment_paypal_payflowlink_password", "")
+	
+	store_payment_paypal_paymentpro_payment_action = GetSettingValue("store_payment_paypal_paymentpro_payment_action", "Authorization")
+	store_payment_paypal_paymentpro_paypal_email_address = GetSettingValue("store_payment_paypal_paymentpro_paypal_email_address", "")
+	store_payment_paypal_paymentpro_api_username = GetSettingValue("store_payment_paypal_paymentpro_api_username", "")
+	store_payment_paypal_paymentpro_api_password = GetSettingValue("store_payment_paypal_paymentpro_api_password", "")
+	store_payment_paypal_paymentpro_api_signature = GetSettingValue("store_payment_paypal_paymentpro_api_signature", "")
+	store_payment_paypal_paymentpro_sandbox_mode = GetSettingValue("store_payment_paypal_paymentpro_sandbox_mode", "0")
+	
+	store_payment_paypal_expresscheckout_payment_action = GetSettingValue("store_payment_paypal_expresscheckout_payment_action", "0")
+	store_payment_paypal_expresscheckout_paypal_email_address = GetSettingValue("store_payment_paypal_expresscheckout_paypal_email_address", "")
+	store_payment_paypal_expresscheckout_api_username = GetSettingValue("store_payment_paypal_expresscheckout_api_username", "")
+	store_payment_paypal_expresscheckout_api_password = GetSettingValue("store_payment_paypal_expresscheckout_api_password", "")
+	store_payment_paypal_expresscheckout_api_signature = GetSettingValue("store_payment_paypal_expresscheckout_api_signature", "")
+	store_payment_paypal_expresscheckout_sandbox_mode = GetSettingValue("store_payment_paypal_expresscheckout_sandbox_mode", "0")
+	
+	store_payment_check_enabled = GetSettingValue("store_payment_check_enabled", "0")
+	store_payment_check_title = GetSettingValue("store_payment_check_title", "Check/Money Order")
+	
+	store_payment_purchase_order_enabled = GetSettingValue("store_payment_purchase_order_enabled", "0")
+	store_payment_purchase_order_title = GetSettingValue("store_payment_purchase_order_title", "Purchase Order")
+	
+	order_ref_number = ""
+	order_trans_number = ""
+	
+	'=============PROCESS PAYMENT ================================================================================
+	
+	if Len(store_payment_cc_type) > 0 then
+		'Process CC
+		SELECT CASE store_payment_gateway_enabled
+		CASE "0"
+		
+		CASE "2"
+		
+		CASE "5"
+		
+		CASE "6"
+		
+		CASE "91"
+		
+		CASE ELSE
+			
+		END SELECT 
+	
+	end if
+	'=============ORDER================================================================================
+	new_order_id = GetUniqueLongIntegerID()
+	str_purchasedate = Now()
+	
+	Set rsUpdate = Server.CreateObject("ADODB.Recordset")
+	with rsUpdate
+		.ActiveConnection = dbconn
+		.CursorLocation = 3
+		.CursorType = 1
+		.LockType = 3
+		.Source = g_storeid & "_sales_order WHERE order_id='0'"
+		.Open
+		.AddNew
+	end with
+	
+	rsUpdate("order_id") = new_order_id
+	rsUpdate("shopper_id") = Session("shopper_id")
+	rsUpdate("shopper_email") = shopper_email
+	rsUpdate("shopper_firstname") = shopper_firstname
+	rsUpdate("shopper_lastname") = shopper_lastname
+	
+	rsUpdate("po_number") = payment_method_purchaseorder_number
+	
+	rsUpdate("date_entered") = str_purchasedate
+	rsUpdate("date_changed") = str_purchasedate
+	
+	rsUpdate("status") = "Pending"
+	rsUpdate("status_comments") = ""
+	
+	rsUpdate("billing_address_id") = billing_address_id
+	rsUpdate("BillCompany") = shopper_billing_company
+	rsUpdate("BillFirstName") = shopper_billing_firstname
+	rsUpdate("BillLastName") = shopper_billing_lastname
+	rsUpdate("BillAddress") = shopper_billing_lastname
+	rsUpdate("BillCity") = shopper_billing_lastname
+	rsUpdate("BillState") = shopper_billing_lastname
+	rsUpdate("BillZip") = shopper_billing_lastname
+	rsUpdate("BillCountry") = shopper_billing_lastname
+	rsUpdate("BillPhone") = shopper_billing_phone
+	
+	rsUpdate("shipping_address_id") = shipping_address_id
+	rsUpdate("ShipCompany") = shopper_shipping_company
+	rsUpdate("ShipLastName") = shopper_shipping_lastname
+	rsUpdate("ShipFirstName") = shopper_shipping_firstname
+	rsUpdate("ShipAddress") = shopper_shipping_address
+	rsUpdate("ShipCity") = shopper_shipping_city
+	rsUpdate("ShipState") = shopper_shipping_state
+	rsUpdate("ShipPhone") = shopper_shipping_phone
+	rsUpdate("ShipZIP") = shopper_shipping_zip
+	rsUpdate("ShipCountry") = shopper_shipping_country
+	
+	rsUpdate("PaymentMethod") = payment_method
+	rsUpdate("CardType") = payement_method_cc_type
+	if Len(str_ccname) > 1 then
+	  rsUpdate("CardName") = str_ccname
+	else
+	  rsUpdate("CardName") = shopper_billing_firstname & " " & shopper_billing_lastname
+	end if
+	
+	rsUpdate("CardNumber") = "" '<------ TODO
+	rsUpdate("CardExpirationMonth") = payment_cc_exp_month
+	rsUpdate("CardExpirationYear") = payment_cc_exp_year
+	rsUpdate("cvv_info") = "" '<------ TODO
+	rsUpdate("AuthNumber") = order_trans_number
+	rsUpdate("RefNumber") = order_ref_number
+	rsUpdate("CVV2_flag") = 0 '<------ TODO
+	rsUpdate("AVS_flag") = 0 '<------ TODO
+	rsUpdate("CybercashResponse") = "" '<------ TODO
+	
+	rsUpdate("order_price_group") = "D" '<------ TODO
+	
+	rsUpdate("order_taxable") = 0 '<------ TODO
+	rsUpdate("order_tax_rate") = 0 '<------ TODO
+	rsUpdate("Tax") = GetTaxInCart()
+	
+	rsUpdate("SH") = SH_price
+	rsUpdate("SH_Method") = SH_method
+	rsUpdate("tax_on_sh") = 0   '<------ TODO
+	rsUpdate("cc_enable_tracking") = 0  '<------ TODO
+	rsUpdate("UPS_Tracking") = "" '<------ TODO
+	rsUpdate("carrier_code") = ""  '<------ TODO
+	rsUpdate("tracking_carrier") = ""
+	rsUpdate("carrier_description") = "" '<------ TODO
+	
+	rsUpdate("Total") = GetTotalAmountInCart() + GetTaxInCart() +  SH_price
+	
+	rsUpdate("Order_Comments") = comments
+	rsUpdate("notes") = ""
+	rsUpdate("salesrep_id") = shopper_salesrep_id '<------ TODO
+	rsUpdate("coupon_id") = "" '<------ TODO
+	rsUpdate("discount_amount") = 0 '<------ TODO
+
+	rsUpdate("order_ip_addr") = Request.ServerVariables("REMOTE_ADDR")
+	rsUpdate("referer_url") = "" '<------ TODO
+	rsUpdate("order_version") = 1
+	
+	rsUpdate("email_show_option1") = 0
+	rsUpdate("email_to") = ""
+	rsUpdate("email_cc") = ""
+	rsUpdate("email_cc") = ""
+	rsUpdate("email_subject") = ""
+	rsUpdate("email_msg") = ""
+	
+	rsUpdate("UDF01") = ""
+	rsUpdate("UDF02") = ""
+	rsUpdate("UDF03") = ""
+	rsUpdate("UDF04") = ""
+	rsUpdate("UDF05") = ""
+	
+	rsUpdate("export_flag") = 0 
+	rsUpdate("order_name") = ""
+	rsUpdate("Tax2") = 0  '<------ TODO
+	rsUpdate("order_tax_rate2") = 0  '<------ TODO
+	rsUpdate("usps_label_image") = ""
+	rsUpdate("fedex_label_image") = ""
+	
+	If dbconn.Errors.Count > 0 Then
+		dbconn.Errors.Clear
+		rsUpdate.CancelUpdate
+	else
+		rsUpdate.Update
+	End If
+	
+	rsUpdate.Close
+	set rsUpdate = nothing
+	
+	'=============ITEM================================================================================
+	iii = 1
+	sql = "SELECT * FROM A_ShoppingCart WHERE StoreID='" & g_storeid & "' AND CartID='" & Session("ShoppingCartID") & "' ORDER BY RecordID"
+	set rsCart = dbconn.Execute(sql)
+	do while not rsCart.EOF
+	
+		g_cartRecordID = rsCart("RecordID")
+		g_cartProductName = rsCart("cartProductName")
+		g_cartProductSKU = rsCart("cartProductSKU")
+		g_cartOrderQuantity = rsCart("cartOrderQuantity")
+		g_cartProductMode = rsCart("cartProductMode")
+		g_cartTaxable = rsCart("cartTaxable")
+		g_cartProductUnitPrice = rsCart("cartProductUnitPrice")
+		g_cartProductUnitCost = rsCart("cartProductUnitCost")
+		g_cartProductUnitWeight = rsCart("cartProductUnitWeight")
+		g_cartProductUnitPrice = FormatNumber(g_cartProductUnitPrice,2)
+		g_cartProductUnitTotal = g_cartOrderQuantity * g_cartProductUnitPrice
+		g_cartProductUnitTotal = FormatNumber(g_cartProductUnitTotal,2)
+		
+		Set rsNewOrderItem = Server.CreateObject("ADODB.Recordset")
+		with rsNewOrderItem
+			.ActiveConnection = dbconn
+			.CursorLocation = 3 'adUseClient
+			.CursorType = 1 'adOpenKeyset
+			.LockType = 3 'adLockOptimistic
+			.Source = g_storeid & "_order_item WHERE order_id='0'"
+			.Open
+			.AddNew
+		end with
+
+		rsNewOrderItem("order_id") = new_order_id
+		rsNewOrderItem("row_id") = iii
+		rsNewOrderItem("sku") = g_cartProductSKU
+
+		if Len(g_cartProductName) > 100 then
+			g_cartProductName = Left(g_cartProductName, 96) & "..."
+		end if
+
+		rsNewOrderItem("item_description") = g_cartProductName
+		rsNewOrderItem("quantity") = g_cartOrderQuantity
+		rsNewOrderItem("adjusted_price") = g_cartProductUnitPrice
+		rsNewOrderItem("options") = "" '<------ TODO
+		rsNewOrderItem("row_mode") = g_cartProductMode
+		rsNewOrderItem("item_taxable") = g_cartTaxable
+		rsNewOrderItem("item_cost") = g_cartProductUnitCost
+		rsNewOrderItem("item_sku2") = "" '<------ TODO
+		rsNewOrderItem("item_weight") = g_cartProductUnitWeight
+		rsNewOrderItem("item_mfg") = "" '<------ TODO
+		rsNewOrderItem("item_IM_part_number") = "" '<------ TODO
+		rsNewOrderItem("item_TD_part_number") = "" '<------ TODO
+		rsNewOrderItem("item_eConnect_part_number") = "" '<------ TODO
+		rsNewOrderItem("item_SN_part_number") = "" '<------ TODO
+		rsNewOrderItem("item_DH_part_number") = "" '<------ TODO
+		rsNewOrderItem("item_SUN_part_number") = "" '<------ TODO
+		rsNewOrderItem("item_memo") = ""
+		
+		rsNewOrderItem.Update
+		rsNewOrderItem.close
+		
+		set rsNewOrderItem = nothing
+		
+		iii = iii + 1
+		
+		rsCart.MoveNext
+	
+	loop
+	rsCart.Close
+	set rsCart = nothing
+	
+	'=============CLEAR SHOPPING CART================================================================================
+	sql = "DELETE FROM A_ShoppingCart WHERE StoreID='" & g_storeid & "' AND CartID='" & Session("ShoppingCartID") & "'"
+	dbconn.Execute sql
+	'=============REDIRECT TO RECEIPT PAGE================================================================================
+	Session("OrderID") = new_order_id
+	
+%>
+<!-- #INCLUDE File="../core/i_adoclosed.phtml" -->
