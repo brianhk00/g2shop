@@ -5,8 +5,8 @@
 <%
 	'-----------------------------
 	Session("CatalogConnectionString") = g_connection_string
-    Session("CatalogGlobalConnectionString") = Session("SSCatalogConnectionString")
-    Session("CatalogPriceConnectionString") = Session("SSPriceConnectionString")
+    Session("CatalogGlobalConnectionString") = g_connection_icecat_main
+    Session("CatalogPriceConnectionString") = g_connection_icecat_catalog
     catalogstore = g_storeid
 	'-----------------------------
 	
@@ -167,17 +167,14 @@
 	'NEW FEATUREID
 
 	s_selectedFeatureIds = ""
-
+	s_filter_data = ""
 
 	for each item in Request.QueryString
-
-		'Response.Write(item)
 		If InStr(item, "ga_") Then
 			If Len(Trim(Request(item))) > 0 then
 				s_selectedFeatureIds = s_selectedFeatureIds & Replace(item, "ga_" , "") & ","
 			End if
 		End if
-
 	Next
 
 	'======================================================================================
@@ -192,6 +189,7 @@
 		for i=0 to UBound(ga)
 				zsql = zsql & " icecat_id IN (SELECT productid FROM [192.168.5.134].[icecat].[dbo].[icecat_productattributes] WHERE featureid=" & ga(i) & " AND displayvalue='" & Trim(request("ga_" & ga(i))) & "' ) AND"
 				s_filter_url = s_filter_url & "&ga_" & ga(i) & "=" & Trim(request("ga_" & ga(i)))
+				s_filter_data = s_filter_data & ga(i) & "::" & Trim(request("ga_" & ga(i))) & "||"
 		Next
 	End If
 
@@ -204,6 +202,9 @@
 		filter_zsql = zsql
 	end If
 	
+	if Len(s_filter_data) > 0 then
+		s_filter_data = Left(s_filter_data, Len(s_filter_data)-2)
+	end if
 
 	Set dbconn1 = Server.CreateObject("ADODB.Connection")
 	dbconn1.open Session("CatalogGlobalConnectionString")
@@ -229,9 +230,52 @@
 <head>
 <!--#INCLUDE FILE="include/head.phtml"-->
 <!-- BEGIN PAGE LEVEL PLUGINS -->
+<link href="../assets/global/plugins/datatables/datatables.min.css" rel="stylesheet" type="text/css" />
+<link href="../assets/global/plugins/datatables/plugins/bootstrap/datatables.bootstrap.css" rel="stylesheet" type="text/css" />
+<link href="../assets/global/plugins/bootstrap-datepicker/css/bootstrap-datepicker3.min.css" rel="stylesheet" type="text/css" />
 <!-- END PAGE LEVEL PLUGINS -->
+<style>
+td.details-control {
+     position: relative;
+    background-image: none !important;
+}
+td.details-control:after {
+    content: "\f0fe";
+    color: #000;
+    font-size: 1.2em;
+    padding-top: 0.12em;
+	font-family: FontAwesome;
+}
+tr.shown td.details-control {
+     position: relative;
+    background-image: none !important;
+}
+tr.shown td.details-control:after{
+    content: "\f146";
+    color: #000;
+    font-size: 1.2em;
+    padding-top: 0.12em;
+	font-family: FontAwesome;
+}
+</style>
 </head>
+<%
+	sql = "SELECT * FROM [SPEC_PRICE].dbo." & catalogstore & "_ssprice AS  e WHERE e.COST > 0 "
 
+
+				  
+				  if Len(categoryid) > 0 then
+					'sql = sql & " AND categoryid IN (SELECT categoryid FROM category_FE WHERE level" & CStr(catlevel) & " = " & categoryid & ")"
+					'sql = sql & " AND CATEGORY IN (SELECT categoryid FROM category_FE WHERE level" & CStr(catlevel) & " = " & categoryid & ")"
+				  end if
+				  if Len(categoryid) > 0 then
+					'sql = sql & " AND categoryid IN (SELECT categoryid FROM category_FE WHERE level" & CStr(catlevel) & " = " & categoryid & ")"
+					sql = sql & " AND catid IN (" & categoryid & ")"
+				  end if
+				  
+	'Response.Write(sql)
+
+%>
 <body class="page-container-bg-solid">
 <div class="page-wrapper">
 	<div class="page-wrapper-row">
@@ -247,17 +291,7 @@
 				<div class="page-content-wrapper">
 					<!-- BEGIN CONTENT BODY -->
 					<!-- BEGIN PAGE HEAD-->
-					<div class="page-head">
-						<div class="container-fluid">
-							<!-- BEGIN PAGE TITLE -->
-							<div class="page-title">
-								<h1>Dashboard
-									<small>dashboard & statistics</small>
-								</h1>
-							</div>
-							<!-- END PAGE TITLE -->
-						</div>
-					</div>
+					
 					<!-- END PAGE HEAD-->
 					<!-- BEGIN PAGE CONTENT BODY -->
 					<div class="page-content">
@@ -265,8 +299,462 @@
 							<!-- BEGIN PAGE CONTENT INNER -->
 							<div class="row">
 								<div class="col-md-3">
+								
+								
+<div>
+	<% if filterflag = "0" then %>
+	<form name="filterform" method="post">
+	<input type="hidden" name="categoryid" value="<%=categoryid %>" />
+	<input type=hidden name="himg" value="<%=himg%>">
+	<input type="hidden" name="page" value="<%=page%>" />
+	<input type=hidden name="compareids" value="<%=compareedcs%>">
+	<input type=hidden name="sp" value="<%=sp%>">
+	<input type=hidden name="sp1" value="<%=sp1%>">
+	<input type=hidden name="sp2" value="<%=sp2%>">
+	<input type=hidden name="sp3" value="<%=sp3%>">
+	<input type=hidden name="sp4" value="<%=sp4%>">
+	<input type=hidden name="sp5" value="<%=sp5%>">
+	<input type=hidden name="sp6" value="<%=sp6%>">
+	<input type=hidden name="sp7" value="<%=sp7%>">
+	<input type=hidden name="sp8" value="<%=sp8%>">
+	<input type=hidden name="sp9" value="<%=sp9%>">
+	<% else %>
+		<% if iCatCount = 0 then %>
+			<%
+				sql = "SELECT * FROM A_ICECAT_Category as a, A_ICECAT_Category_Name as b WHERE a.Id = b.EntityId AND a.ParentId = " & categoryid
+				set rs1 = dbconn_icecat.Execute(sql)
+				if not rs1.EOF then
+			%>
+			<div class="panel panel-grey">
+				<div class="panel-heading">
+					<h4 class="panel-title">Category</h4>
+					<div class="panel-tools"></div>
+				</div>
+				<div class="panel-body">
+					<%
+						do while not rs1.EOF
+					%>
+							<span class="links cl-effect-1"><a href="catalog_icecat_browser_list.phtml?categoryid=<%=rs1(0)%>" class="text-large"><%=rs1("value")%></a></span><br>
+							
+					<%
+							rs1.MoveNext
+						loop
+					%>
+				</div>
+			</div>
+			<%
+				end if
+				rs1.Close
+				set rs1 = nothing
+			%>
+			<% if Len(categoryid) > 0 Then %>
+			<form name="filter" method="get" onsubmit="this.page.value='1';">
+			<div>
+				<%
+					If Len(s_selectedFeatureIds) > 0 OR Len(manufacturer) > 0 Then 
+				%>
+				
+				<div class="panel panel-light-primary">
+					<div class="panel-heading">
+						<h4 class="panel-title">Currently Filtered By </h4>
+						<div class="panel-tools"></div>
+					</div>
+					<div class="panel-body">
+						<%
+							If Len(manufacturer) > 0 Then
+								s_manufacturename = "N/A"
+								sql = "SELECT VEND_NAME FROM " & catalogstore & "_ssprice WHERE VEND_ID='" & manufacturer & "'"
+								Set rsSelected = dbconn2.Execute(sql)
+								If Not rsSelected.EOF Then
+									s_manufacturename = rsSelected(0)
+								End If
+								rsSelected.Close
+								Set rsSelected = Nothing
+
+						%>
+						<li style="padding-bottom:5px; margin-left:0px;">
+							<span>Manufacturer:</span> <span class="value"><%=s_manufacturename%></span>&nbsp;
+							<input type="hidden" name="manufacturer" value="<%=manufacturer%>" />
+							<a class="btn-remove" href="#" onclick="forms.filter.manufacturer.value='';forms.filter.page.value=1;forms.filter.submit();" title="Remove This Item"><i class="fa fa-close" style="color:red;text-size:15px"></i></a>
+						</li>
+						<%
+							End if
+						%>
+						<%
+							If Len(s_selectedFeatureIds) > 0 then
+							sql = "SELECT DISTINCT featureid FROM [192.168.5.134].[icecat].[dbo].[icecat_productattributes] WHERE featureid IN (" & s_selectedFeatureIds & ")"
+							Set rsSelected = dbconn2.Execute(sql)
+							Do While Not rsSelected.EOF
+								tt_featureid = rsSelected("featureid")
+								sql3 = "SELECT featurename, unitvalue FROM [192.168.5.134].[icecat].[dbo].[icecat_productattributes] WHERE featureid = " & tt_featureid
+								Set rsSelected3 = dbconn2.Execute(sql3)
+								If Not rsSelected3.EOF then
+						%>
+						<li style="padding-bottom:5px; margin-left:0px;">
+							<span><%=rsSelected3("featurename")%>:</span> <span class="value"><%=Trim(Request("ga_"& rsSelected("featureid")))%> <%=rsSelected3("unitvalue")%></span>&nbsp;
+							<input type="hidden" name="ga_<%=rsSelected("featureid")%>" value="<%=Trim(Request("ga_"& rsSelected("featureid")))%>" />
+							<a class="btn-remove" href="#" onclick="forms.filter.ga_<%=rsSelected("featureid")%>.value='';forms.filter.page.value=1;forms.filter.submit();" title="Remove This Item"><i class="fa fa-close" style="color:red;text-size:15px"></i></a>
+						</li>
+						<%
+								End if
+								rsSelected.MoveNext
+							Loop
+							rsSelected.Close
+							Set rsSelected = Nothing
+							End if
+						%>
+					</div>
+				</div>
+						
+				<%
+					end if
+				%>
+				<div class="panel panel-green">
+					<div class="panel-heading">
+						<h4 class="panel-title">Product Filter</h4>
+						<div class="panel-tools"></div>
+					</div>
+					<div class="panel-body">
+						<% If Len(manufacturer) > 0 Then %>
+						<% Else %>
+						<dt>Manufacturers</dt>
+						<dd>
+							<SELECT NAME="manufacturer" style="<%if Len(manufacturer)>3 then%>background-color: #99CCFF<%end if%>" onChange="forms.filter.page.value=1;forms.filter.submit();" class="form-control input-sm">
+								<OPTION value="--">ANY</OPTION>
+								<%
+									If dept_specsource_categoryid = "" Then
+										dept_specsource_categoryid = "NULL"
+									End If
+									
+									If Len(filter_zsql) > 0 Then
+										sql = "SELECT DISTINCT VEND_ID, VEND_NAME FROM " & catalogstore & "_ssprice WHERE hide_flag=0 "
+										if Len(categoryid) > 0 then
+											sql = sql & " AND catid IN (" & categoryid & ") "
+										end If
+										sql = sql & " AND " & filter_zsql & " AND DESCR <> '' AND hide_flag=0"
+									else		
+										sql = "SELECT DISTINCT VEND_ID, VEND_NAME FROM " & catalogstore & "_ssprice WHERE hide_flag=0 "
+										if Len(categoryid) > 0 then
+											sql = sql & " AND catid IN (" & categoryid & ") "
+										end If
+										sql = sql & " AND DESCR <> '' AND hide_flag=0"
+									End If
+
+
+									if Len(sp)> 0 then
+										sql = sql & " AND (DESCR like '%" & sp & "%' OR DESCR2 like '%" & sp & "%' OR VEND_PART like '%" & sp & "%' OR VEND_NAME like '%" & sp & "%')"
+									end if
+									if Len(sp1)> 0 then
+										sql = sql & " AND (DESCR like '%" & sp1 & "%' OR DESCR2 like '%" & sp1 & "%' OR VEND_PART like '%" & sp1 & "%' OR VEND_NAME like '%" & sp1 & "%')"
+									end if
+									if Len(sp2)> 0 then
+										sql = sql & " AND (DESCR like '%" & sp2 & "%' OR DESCR2 like '%" & sp2 & "%' OR VEND_PART like '%" & sp2 & "%' OR VEND_NAME like '%" & sp2 & "%')"
+									end if
+									if Len(sp3)> 0 then
+										sql = sql & " AND (DESCR like '%" & sp3 & "%' OR DESCR2 like '%" & sp3 & "%' OR VEND_PART like '%" & sp3 & "%' OR VEND_NAME like '%" & sp3 & "%')"
+									end if
+									if Len(sp4)> 0 then
+										sql = sql & " AND (DESCR like '%" & sp4 & "%' OR DESCR2 like '%" & sp4 & "%' OR VEND_PART like '%" & sp4 & "%' OR VEND_NAME like '%" & sp4 & "%')"
+									end if
+									if Len(sp5)> 0 then
+										sql = sql & " AND (DESCR like '%" & sp5 & "%' OR DESCR2 like '%" & sp5 & "%' OR VEND_PART like '%" & sp5 & "%' OR VEND_NAME like '%" & sp5 & "%')"
+									end if
+									if Len(sp6)> 0 then
+										sql = sql & " AND (DESCR like '%" & sp6 & "%' OR DESCR2 like '%" & sp6 & "%' OR VEND_PART like '%" & sp6 & "%' OR VEND_NAME like ''%" & sp6 & "%')"
+									end if
+									if Len(sp7)> 0 then
+										sql = sql & " AND (DESCR like '%" & sp7 & "%' OR DESCR2 like '%" & sp7 & "%' OR VEND_PART like '%" & sp7 & "%' OR VEND_NAME like '%" & sp7 & "%')"
+									end if
+									if Len(sp8)> 0 then
+										sql = sql & " AND (DESCR like '%" & sp8 & "%' OR DESCR2 like '%" & sp8 & "%' OR VEND_PART like '%" & sp8 & "%' OR VEND_NAME like '%" & sp8 & "%')"
+									end if
+									if Len(sp9)> 0 then
+										sql = sql & " AND (DESCR like '%" & sp9 & "%' OR DESCR2 like '%" & sp9 & "%' OR VEND_PART like '%" & sp9 & "%' OR VEND_NAME like '%" & sp9 & "%')"
+									end if
+
+
+									sql = sql & " ORDER BY VEND_NAME" 
+
+									set rsManuf = dbconn2.Execute(sql)
+											
+										ii = 0
+										do while not rsManuf.EOF
+								%>
+									<OPTION value="<%=Trim(rsManuf("VEND_ID"))%>" <%if manufacturer=Trim(rsManuf("VEND_ID")) then%> selected<%end if%>><%=Trim(rsManuf("VEND_NAME"))%></OPTION>
+								<%
+											ii = ii + 1
+											rsManuf.MoveNext
+										loop
+
+									rsManuf.close
+								%>
+								<% if ii = 0 then %>
+								<OPTION value="--">SHOW ALL</OPTION>
+								<% end if %>
+							</SELECT><br /><br />
+						</dd>
+						<% End If %>
+						<% if Len(categoryid) > 0 Then %>
+						<%
+							i_row_index = 0
+				
+							If Len(filter_zsql) > 0 Then
+								if Len(manufacturer) > 0 then
+									filter_zsql = "VEND_ID=" & manufacturer & " AND " & filter_zsql
+								end if
+							else			
+								if Len(manufacturer) > 0 then
+									filter_zsql = "VEND_ID=" & manufacturer
+								end if				
+							end If
+							
+							If Len(filter_zsql) > 0 Then
+								sql = "SELECT featureid, featurename, isabsolute, displayvalue, unitvalue FROM [192.168.5.134].[icecat].[dbo].icecat_productattributes WHERE productid IN (SELECT icecat_id FROM " & catalogstore & "_ssprice WHERE catid IN (" & categoryid & ") AND " & filter_zsql & " AND DESCR <> '' AND hide_flag=0"
+							else
+								sql = "SELECT featureid, featurename, isabsolute, displayvalue, unitvalue FROM [192.168.5.134].[icecat].[dbo].icecat_productattributes WHERE productid IN (SELECT icecat_id FROM " & catalogstore & "_ssprice WHERE catid IN (" & categoryid & ") AND DESCR <> '' AND hide_flag=0"
+							End If
+							
+							if Len(sp)> 0 then
+								sql = sql & " AND (DESCR like '%" & sp & "%' OR DESCR2 like '%" & sp & "%' OR VEND_PART like '%" & sp & "%' OR VEND_NAME like '%" & sp & "%')"
+							end if
+							if Len(sp1)> 0 then
+								sql = sql & " AND (DESCR like '%" & sp1 & "%' OR DESCR2 like '%" & sp1 & "%' OR VEND_PART like '%" & sp1 & "%' OR VEND_NAME like '%" & sp1 & "%')"
+							end if
+							if Len(sp2)> 0 then
+								sql = sql & " AND (DESCR like '%" & sp2 & "%' OR DESCR2 like '%" & sp2 & "%' OR VEND_PART like '%" & sp2 & "%' OR VEND_NAME like '%" & sp2 & "%')"
+							end if
+							if Len(sp3)> 0 then
+								sql = sql & " AND (DESCR like '%" & sp3 & "%' OR DESCR2 like '%" & sp3 & "%' OR VEND_PART like '%" & sp3 & "%' OR VEND_NAME like '%" & sp3 & "%')"
+							end if
+							if Len(sp4)> 0 then
+								sql = sql & " AND (DESCR like '%" & sp4 & "%' OR DESCR2 like '%" & sp4 & "%' OR VEND_PART like '%" & sp4 & "%' OR VEND_NAME like '%" & sp4 & "%')"
+							end if
+							if Len(sp5)> 0 then
+								sql = sql & " AND (DESCR like '%" & sp5 & "%' OR DESCR2 like '%" & sp5 & "%' OR VEND_PART like '%" & sp5 & "%' OR VEND_NAME like '%" & sp5 & "%')"
+							end if
+							if Len(sp6)> 0 then
+								sql = sql & " AND (DESCR like '%" & sp6 & "%' OR DESCR2 like '%" & sp6 & "%' OR VEND_PART like '%" & sp6 & "%' OR VEND_NAME like ''%" & sp6 & "%')"
+							end if
+							if Len(sp7)> 0 then
+								sql = sql & " AND (DESCR like '%" & sp7 & "%' OR DESCR2 like '%" & sp7 & "%' OR VEND_PART like '%" & sp7 & "%' OR VEND_NAME like '%" & sp7 & "%')"
+							end if
+							if Len(sp8)> 0 then
+								sql = sql & " AND (DESCR like '%" & sp8 & "%' OR DESCR2 like '%" & sp8 & "%' OR VEND_PART like '%" & sp8 & "%' OR VEND_NAME like '%" & sp8 & "%')"
+							end if
+							if Len(sp9)> 0 then
+								sql = sql & " AND (DESCR like '%" & sp9 & "%' OR DESCR2 like '%" & sp9 & "%' OR VEND_PART like '%" & sp9 & "%' OR VEND_NAME like '%" & sp9 & "%')"
+							end If
+							
+							sql = sql & ") ORDER BY featureid, featurename, displayvalue"
+
+
+							SET rsATTR = dbconn2.Execute(sql)
+
+						%>
+						<%
+							If Not rsATTR.EOF then
+
+								t_feauterid = rsATTR("featureid")
+								t_featurename = rsATTR("featurename")
+								
+								sOptions = ""
+								sOptions = sOptions & "<dt>" & rsATTR("featurename") & "</dt>"
+								sOptions = sOptions & "<dd>"
+								sOptions = sOptions & "<select name=""ga_" & t_feauterid & """  onChange=""forms.filter.page.value=1;forms.filter.submit();"" class=""form-control input-sm"""
+								sOptions = sOptions & ">"
+								sOptions = sOptions & "<option value="""">ANY</option>"
+								sOptions = sOptions & "@@@@@"
+							
+							
+								bShowOptions = true
+								If (InStr(t_selectedFeatureIds, t_feauterid & ",")) Then
+									bShowOptions = false
+								End if
+
+								
+								t_displayvalue = rsATTR("displayvalue")
+								sValues = ""
+								sValues = "<option>" & rsATTR("displayvalue") & "(#####)</option>"
+								sValues = "<option value=""" & rsATTR("displayvalue") & """>" & rsATTR("displayvalue") & " " & rsATTR("unitvalue") & "(#####)</option>"
+							
+								iv = 0
+							
+							End if
+
+							iii = 1
+							Do While Not rsATTR.EOF
+								
+								featureid = rsATTR("featureid")
+								featurename = rsATTR("featurename")
+								displayvalue = rsATTR("displayvalue")
+
+								If t_feauterid <> featureid Then 
+									
+									sOptions = sOptions & "</select><br><br></dd>"
+									sValues = Replace(sValues, "#####", iv)
+									sOptions = Replace(sOptions, "@@@@@", sValues)
+									If bShowOptions then
+									Response.Write(sOptions)
+									End if
+
+
+									sOptions = ""
+									sOptions = sOptions & "<dt>" & rsATTR("featurename") & "</dt>"
+									sOptions = sOptions & "<dd>"
+									sOptions = sOptions & "<select name=""ga_" & featureid & """  onChange=""forms.filter.page.value=1;forms.filter.submit();"" class=""form-control input-sm"""
+									sOptions = sOptions & ">"
+									sOptions = sOptions & "<OPTION value="""">ANY</OPTION>"
+									sOptions = sOptions & "@@@@@"
+
+									bShowOptions = true
+									If (InStr(t_selectedFeatureIds, featureid & ",")) Then
+										bShowOptions = false
+									End if
+
+									sValues = ""
+
+									i_row_index = i_row_index + 1
+
+									t_feauterid = featureid
+									t_featurename = featurename
+								
+								End If
+								
+								If t_displayvalue <> displayvalue Then 
+
+									'sValues = ""
+									sValues = Replace(sValues, "#####", iv)
+									sValues = sValues & "<option value=""" & rsATTR("displayvalue") & """>" & rsATTR("displayvalue") & " " & rsATTR("unitvalue") & "(#####)</option>"
+									t_displayvalue = rsATTR("displayvalue")
+									iv = 0
+
+								End if
+								
+								iv = iv + 1
+								iii = iii + 1
+
+								rsATTR.MoveNext
+							Loop
+							rsATTR.Close
+							sOptions = sOptions & "</dl>"
+						%>
+						<% End If %>
+					</div>
+				</div>
+			</div>
+			<input type="hidden" name="categoryid" value="<%=categoryid %>" />
+			<input type="hidden" name="page" value="<%=page%>" />
+			<input type=hidden name="himg" value="<%=himg%>">
+			<input type=hidden name="compareids" value="<%=compareedcs%>">
+			<input type=hidden name="sp" value="<%=sp%>">
+			<input type=hidden name="sp1" value="<%=sp1%>">
+			<input type=hidden name="sp2" value="<%=sp2%>">
+			<input type=hidden name="sp3" value="<%=sp3%>">
+			<input type=hidden name="sp4" value="<%=sp4%>">
+			<input type=hidden name="sp5" value="<%=sp5%>">
+			<input type=hidden name="sp6" value="<%=sp6%>">
+			<input type=hidden name="sp7" value="<%=sp7%>">
+			<input type=hidden name="sp8" value="<%=sp8%>">
+			<input type=hidden name="sp9" value="<%=sp9%>">
+			</form>
+			<% else %>
+			<form name="filterform" method="post">
+			<input type="hidden" name="categoryid" value="<%=categoryid %>" />
+			<input type=hidden name="himg" value="<%=himg%>">
+			<input type="hidden" name="page" value="<%=page%>" />
+			<input type=hidden name="compareids" value="<%=compareedcs%>">
+			<input type=hidden name="sp" value="<%=sp%>">
+			<input type=hidden name="sp1" value="<%=sp1%>">
+			<input type=hidden name="sp2" value="<%=sp2%>">
+			<input type=hidden name="sp3" value="<%=sp3%>">
+			<input type=hidden name="sp4" value="<%=sp4%>">
+			<input type=hidden name="sp5" value="<%=sp5%>">
+			<input type=hidden name="sp6" value="<%=sp6%>">
+			<input type=hidden name="sp7" value="<%=sp7%>">
+			<input type=hidden name="sp8" value="<%=sp8%>">
+			<input type=hidden name="sp9" value="<%=sp9%>">
+			</form>
+			<% end if %>
+		<% end if %>
+	<% end if %>
+	
+</div> <!--- -->
+								
+								
+								
 								</div>
 								<div class="col-md-9">
+
+<div class="portlet light portlet-fit portlet-datatable">
+	<div class="portlet-title">
+		<div class="caption">
+			<i class="fa fa-shopping-cart"></i>Product Listing 
+		</div>
+		<div class="actions">
+			&nbsp;
+		</div>
+	</div>
+	<div class="portlet-body">
+		<div class="table-container">
+			<!--
+			<div class="table-actions-wrapper">
+				<span> </span>
+				<select class="table-group-action-input form-control input-inline input-small input-sm">
+					<option value="">Select...</option>
+					<option value="publish">Publish</option>
+					<option value="unpublished">Un-publish</option>
+					<option value="delete">Delete</option>
+				</select>
+				<button class="btn btn-sm btn-success table-group-action-submit">
+					<i class="fa fa-check"></i> Submit</button>
+			</div>
+			-->
+			<table class="table table-striped table-bordered table-hover table-checkable" id="datatable_products">
+				<thead>
+					<tr role="row" class="heading">
+						<th></th>
+						<th></th>
+						<th>Name</th>
+						<th>Manufacturer</th>
+						<th>Mfg. Part #</th>
+						<th>Prices</th>
+						<th></th>
+					</tr>
+					<tr role="row" class="filter">
+						<td> </td>
+						<td> </td>
+						<td>
+							<input type="text" class="form-control form-filter input-sm" name="product_name"> 
+						</td>
+						<td>
+							
+						</td>
+						<td>
+							<input type="text" class="form-control form-filter input-sm" name="product_vend_part"> 
+						</td>
+						<td>
+							<div class="margin-bottom-5">
+								<input type="text" class="form-control form-filter input-sm" name="product_price_from" placeholder="From" /> 
+							</div>
+							<input type="text" class="form-control form-filter input-sm" name="product_price_to" placeholder="To" /> 
+						</td>
+						<td>
+							<div class="margin-bottom-5">
+								<button class="btn btn-sm btn-success filter-submit margin-bottom">
+									<i class="fa fa-search"></i> Search</button>
+							</div>
+							<button class="btn btn-sm btn-default filter-cancel">
+								<i class="fa fa-times"></i> Reset</button>
+						</td>
+					</tr>
+				</thead>
+				<tbody> </tbody>
+			</table>
+		</div>
+	</div>
+</div>
+
+								
 								</div>
 							</div>
 							<!-- END PAGE CONTENT INNER -->
@@ -288,11 +776,187 @@
 </div>
 <!--#INCLUDE FILE="include/js.phtml"-->
 <!-- BEGIN PAGE LEVEL PLUGINS -->
-
+<script src="../assets/global/scripts/datatable.js" type="text/javascript"></script>
+<script src="../assets/global/plugins/datatables/datatables.min.js" type="text/javascript"></script>
+<script src="../assets/global/plugins/datatables/plugins/bootstrap/datatables.bootstrap.js" type="text/javascript"></script>
+<script src="../assets/global/plugins/bootstrap-datepicker/js/bootstrap-datepicker.min.js" type="text/javascript"></script>
+<script src="../assets/global/plugins/bootstrap-maxlength/bootstrap-maxlength.min.js" type="text/javascript"></script>
 <!-- END PAGE LEVEL PLUGINS -->
 
 <!-- BEGIN PAGE LEVEL SCRIPTS -->
+<script type="text/javascript">
+var EcommerceProducts = function () {
 
+    var handleProducts = function() {
+        var grid = new Datatable();
+
+        grid.init({
+            src: $("#datatable_products"),
+            onSuccess: function (grid) {
+                // execute some code after table records loaded
+            },
+            onError: function (grid) {
+                // execute some code on network or other general error  
+            },
+            loadingMessage: 'Loading...',
+            dataTable: { // here you can define a typical datatable settings from http://datatables.net/usage/options 
+
+                // Uncomment below line("dom" parameter) to fix the dropdown overflow issue in the datatable cells. The default datatable layout
+                // setup uses scrollable div(table-scrollable) with overflow:auto to enable vertical scroll(see: assets/global/scripts/datatable.js). 
+                // So when dropdowns used the scrollable div should be removed. 
+                //"dom": "<'row'<'col-md-8 col-sm-12'pli><'col-md-4 col-sm-12'<'table-group-actions pull-right'>>r>t<'row'<'col-md-8 col-sm-12'pli><'col-md-4 col-sm-12'>>",
+				 "columns": [
+					{
+						"className":      'details-control',
+						"orderable":      false,
+						"data":           null,
+						"defaultContent": ''
+					},
+					{ "data": "image" },
+					{ "data": "name" },
+					{ "data": "vendor_name" },
+					{ "data": "vend_part" },
+					{ "data": "prices" },
+					{
+						"orderable":      false,
+						"data": "extop"
+					}
+				],
+				columnDefs: [ 
+					{ orderable: false, targets: [0] }
+				],
+				"bStateSave": true,
+                "lengthMenu": [
+                    [10, 20, 50, 100, 150],
+                    [10, 20, 50, 100, 150] // change per page values here 
+                ],
+                "pageLength": 20, // default record count per page
+                "ajax": {
+                    "url": "api/sp_catalog_icecat_browser_list.phtml?categoryid=<%=categoryid%>&manufacturer=<%=manufacturer%>&filterdata=<%=s_filter_data%>", // ajax source
+                },
+                "order": [
+                    [1, "asc"]
+                ] // set first column as a default sort by asc
+            }
+        });
+
+         // handle group actionsubmit button click
+        grid.getTableWrapper().on('click', '.table-group-action-submit', function (e) {
+            e.preventDefault();
+            var action = $(".table-group-action-input", grid.getTableWrapper());
+            if (action.val() != "" && grid.getSelectedRowsCount() > 0) {
+                grid.setAjaxParam("customActionType", "group_action");
+                grid.setAjaxParam("customActionName", action.val());
+                grid.setAjaxParam("id", grid.getSelectedRows());
+                grid.getDataTable().ajax.reload();
+                grid.clearAjaxParams();
+            } else if (action.val() == "") {
+                App.alert({
+                    type: 'danger',
+                    icon: 'warning',
+                    message: 'Please select an action',
+                    container: grid.getTableWrapper(),
+                    place: 'prepend'
+                });
+            } else if (grid.getSelectedRowsCount() === 0) {
+                App.alert({
+                    type: 'danger',
+                    icon: 'warning',
+                    message: 'No record selected',
+                    container: grid.getTableWrapper(),
+                    place: 'prepend'
+                });
+            }
+        });
+		
+		 // Add event listener for opening and closing details
+		$('#datatable_products tbody').on('click', 'td.details-control', function () {
+			var tr = $(this).closest('tr');
+			var row = grid.getDataTable().row( tr );
+			if ( row.child.isShown() ) {
+				// This row is already open - close it
+				row.child.hide();
+				tr.removeClass('shown');
+			}
+			else {
+				// Open this row
+				row.child( format(row.data()) ).show();
+				tr.addClass('shown');
+			}
+		});
+    }
+
+    return {
+
+        //main function to initiate the module
+        init: function () {
+
+            handleProducts();
+            
+        }
+
+    };
+
+}();
+
+function format ( d ) {
+    // `d` is the original data object for the row
+    return '<table class="table table-bordered table-hover" width="100%">'+
+        '<thead>'+
+			'<tr>'+
+				'<th> Distributor </th>'+
+				'<th> 	Part # </th>'+
+				'<th> 	Cost </th>'+
+				'<th>	Availability </th>'+
+			'</tr>'+
+		'</thead>'+
+		'<tr>'+
+            '<td>Ingram Micro</td>'+
+            '<td>'+d.IM_ID+'</td>'+
+			'<td>'+d.IM_COST+'</td>'+
+			'<td>'+d.IM_AVAIL+'</td>'+
+        '</tr>'+
+        '<tr>'+
+            '<td>Tech Data</td>'+
+            '<td>'+d.TD_ID+'</td>'+
+			'<td>'+d.TD_COST+'</td>'+
+			'<td>'+d.TD_AVAIL+'</td>'+
+        '</tr>'+
+        '<tr>'+
+            '<td>Synnex</td>'+
+            '<td>'+d.SN_ID+'</td>'+
+			'<td>'+d.SN_COST+'</td>'+
+			'<td>'+d.SN_AVAIL+'</td>'+
+        '</tr>'+
+    '</table>'+
+	'<table class="table table-bordered table-hover" width="100%">'+
+		'<thead>'+
+			'<tr>'+
+				'<th> Cost </th>'+
+				'<th> Price A </th>'+
+				'<th> Price B </th>'+
+				'<th> Price C </th>'+
+				'<th> Price D </th>'+
+			'</tr>'+
+		'</thead>'+
+		'<tr>'+
+            '<td>'+d.COST+'</td>'+
+			'<td>'+d.price_A+'</td>'+
+			'<td>'+d.price_B+'</td>'+
+			'<td>'+d.price_C+'</td>'+
+			'<td>'+d.price_D+'</td>'+
+        '</tr>'+
+	'</table>';
+}
+
+
+
+jQuery(document).ready(function() {    
+   EcommerceProducts.init();
+   
+  
+});	
+</script>
 <!-- END PAGE LEVEL SCRIPTS -->
 </body>
 </html>

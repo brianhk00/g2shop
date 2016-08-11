@@ -1,0 +1,292 @@
+<%@ Language=VBScript %>
+<%
+	Response.CodePage = 65001
+	Response.CharSet = "UTF-8"
+%>
+<%
+  Response.Expires = -1
+%>
+<!-- #INCLUDE File="../local/local.phtml" -->
+<!-- #INCLUDE File="../util/xt_func_util.phtml" -->
+<!-- #INCLUDE File="../util/xt_func_string.phtml" -->
+<%
+	sEcho = Trim(Request("draw"))
+	iDisplayLength = Trim(Request("length"))
+	iDisplayStart = Trim(Request("start"))
+
+	sEcho = FilterStringEx(sEcho, "[^0-9]")
+	iDisplayLength = FilterStringEx(iDisplayLength, "[^0-9]")
+	iDisplayStart = FilterStringEx(iDisplayStart, "[^0-9]")
+
+	sEcho = Cint(sEcho)
+	iDisplayLength = Cint(iDisplayLength)
+	iDisplayStart = Cint(iDisplayStart)
+	
+	categoryid = Trim(Request("categoryid"))
+	featureid = Trim(Request("categoryid"))
+	manufacturer = Trim(Request("manufacturer"))
+	filterdata = Trim(Request("filterdata"))
+	
+	Set dbconn=server.CreateObject("ADODB.Connection")
+	dbconn.Open g_connection_icecat_catalog
+	
+	'======================================================================================
+	's_selectedFeatureIds = featureid
+	'If s_selectedFeatureIds <> "" Then 
+		'ga = Split(s_selectedFeatureIds, ",")
+		'for i=0 to UBound(ga)
+				'zsql = zsql & " icecat_id IN (SELECT productid FROM [192.168.5.134].[icecat].[dbo].[icecat_productattributes] WHERE featureid=" & ga(i) & " AND displayvalue='" & Trim(request("ga_" & ga(i))) & "' ) AND"
+				's_filter_url = s_filter_url & "&ga_" & ga(i) & "=" & Trim(request("ga_" & ga(i)))
+		'Next
+	'End If
+	
+	'If Len(manufacturer) > 0 then
+		's_filter_url = s_filter_url & "&manufacturer=" & manufacturer
+	'End if
+	
+	zsql = ""
+	
+	if Len(filterdata) > 1 then
+		ar_filterdata = Split(filterdata, "||")
+		for i = 0 to UBound(ar_filterdata)
+			filterinfo = ar_filterdata(i)
+			ar_filterinfo = Split(filterinfo, "::")
+			if UBound(ar_filterinfo) > 0 then
+				zsql = zsql & " icecat_id IN (SELECT productid FROM [192.168.5.134].[icecat].[dbo].[icecat_productattributes] WHERE featureid=" & ar_filterinfo(0) & " AND displayvalue='" & Trim(ar_filterinfo(1)) & "' ) AND"
+			end if
+		next
+	end if
+	
+	if Len(manufacturer) > 0 then
+		zsql = zsql & " VEND_ID=" & manufacturer & " AND"
+	end If
+	
+	if Len(zsql) > 0 then
+		zsql = Left(zsql, Len(zsql)-4)
+		filter_zsql = zsql
+	end If
+	
+	
+	
+	'=======================================================================================
+	strWhere = ""
+	'---------------------------------------------------------------------------------------
+	product_name = Trim(Request("product_name"))
+	if Len(product_name) > 1 then
+		strWhere = strWhere &  " (DESCR like '%" & product_name & "%') AND"
+	end if
+	'---------------------------------------------------------------------------------------
+	product_vend_part = Trim(Request("product_vend_part"))
+	if Len(product_vend_part) > 1 then
+		strWhere = strWhere &  " (VEND_PART like '%" & product_vend_part & "%') AND"
+	end if
+	'---------------------------------------------------------------------------------------
+	sMin = Trim(Request("product_price_from"))
+	sMax = Trim(Request("product_price_to"))
+	sTotalRange = ""
+	if IsNumeric(sMin) then
+		if IsNumeric(sMax) then
+			sTotalRange = "(price_D between " & sMin & " AND " & sMax & ")"
+		else
+			sMax = "1000000"
+			sTotalRange = "(price_D between " & sMin & " AND " & sMax & ")"
+		end if
+	else
+		if IsNumeric(sMax) then
+			sTotalRange = "(price_D between 0 AND " & sMax & ")"
+		end if
+	end if
+	
+	if Len(sTotalRange) > 0 then
+		strWhere = strWhere &  " " & sTotalRange & " AND"
+	end if
+	'---------------------------------------------------------------------------------------
+	if categoryid <> "" then
+		sql = "SELECT subs FROM A_ICECAT_Category WHERE Id=" & categoryid
+		set rs2 = dbconn_icecat.Execute(sql)
+		if not rs2.EOF then
+			if rs2(0) <> "" then
+				strWhere = strWhere & " catid IN (" & categoryid & "," & rs2(0) & ") AND"
+			else
+				strWhere = strWhere & " catid IN (" & categoryid & ") AND"
+			end if
+		else
+			strWhere = strWhere & " catid IN (" & categoryid & ") AND"
+		end if
+		rs2.Close
+		set rs2 = nothing
+	end if
+	
+	'---------------------------------------------------------------------------------------
+	if Len(strWhere) > 0 then
+		strWhere = Left(strWhere, Len(strWhere) - 4)
+	else
+		strWhere = " sku LIKE '%%'"
+	end if
+	
+	if Len(zsql) > 1 then
+		strWhere = strWhere & " AND " & zsql
+	end If 
+	
+	'=======================================================================================
+	'ORDERING
+	SELECT CASE Trim(Request("order[0][column]"))
+	CASE "0"
+		sOrder = "pf_id DESC"
+	CASE "1"
+		sOrder = "pf_id " & Trim(Request("order[0][dir]"))
+	CASE "2"
+		sOrder = "pf_id " & Trim(Request("order[0][dir]"))
+	CASE "3"
+		sOrder = "name " & Trim(Request("order[0][dir]"))
+	CASE "4"
+		sOrder = "sku " & Trim(Request("order[0][dir]"))
+	CASE "5"
+		sOrder = "list_price " & Trim(Request("order[0][dir]"))
+	CASE "6"
+		sOrder = "price_D " & Trim(Request("order[0][dir]"))
+	CASE "7"
+		sOrder = "stock " & Trim(Request("order[0][dir]"))
+	CASE "8"
+		sOrder = "item_status " & Trim(Request("order[0][dir]"))
+	CASE "9"
+		sOrder = "pf_id DESC"
+	CASE ELSE
+		sOrder = "pf_id DESC"
+	END SELECT 
+	
+	'here we create the variable "strOrderBy" that will be used in the SQL querry
+	strOrderBy = "ORDER BY " & sOrder
+	strOrderBy = "ORDER BY sku"
+	
+	
+	
+	'sql = "SELECT * FROM " & g_storeid & "_product WHERE " & strWhere & " " & strOrderBy
+	'sqlx = "SELECT COUNT(pf_id) FROM " & g_storeid & "_product WHERE " & strWhere 
+	
+	sql = "SELECT * FROM " & g_storeid & "_ssprice WHERE " & strWhere & " " & strOrderBy
+	sqlx = "SELECT COUNT(sku) FROM " & g_storeid & "_ssprice WHERE " & strWhere 
+	
+	'Response.Write(sql)
+	
+	'sql = "SELECT * FROM [SPEC_PRICE].dbo.nlesystem_ssprice AS e WHERE e.COST > 0 AND catid IN (151)"
+	'sqlx = "SELECT COUNT(sku) FROM [SPEC_PRICE].dbo.nlesystem_ssprice AS e WHERE e.COST > 0 AND catid IN (151)"
+	
+	set rs = dbconn.Execute(sql)
+	
+	iTotalDisplayRecords = 0
+	iTotalRecords = 50
+	set rs1 = dbconn.Execute(sqlx)
+	if not rs1.EOF then
+		iTotalDisplayRecords = rs1(0)
+		iTotalRecords = rs1(0)
+	else
+	end if
+	rs1.Close
+  
+%>
+{"draw": <%=sEcho%>, "recordsTotal": <%=iTotalRecords%>, "recordsFiltered": <%=iTotalDisplayRecords%>, "data": [ 
+
+<%
+	i = 0
+	if rs.eof = false then
+		rs.move(iDisplayStart)
+		do while i < iDisplayLength and not rs.eof
+			
+			s_sku = rs("sku")
+			s_DESCR = Trim(rs("DESCR"))
+			s_VEND_NAME = Trim(rs("VEND_NAME"))
+			s_VEND_PART = Trim(rs("VEND_PART"))
+			image_published = rs("image_published")
+			icecat_id = Trim(rs("icecat_id"))
+			
+			s_price = FormatNumber(rs("cost"),2)
+			s_price_A = FormatNumber(rs("price_A"),2)
+			s_price_B = FormatNumber(rs("price_B"),2)
+			s_price_C = FormatNumber(rs("price_C"),2)
+			s_price_D = FormatNumber(rs("price_D"),2)
+			
+			s_IM_ID = Trim(rs("IM_ID"))
+			s_IM_AVAIL = rs("IM_AVAIL")
+			s_IM_COST = FormatNumber(rs("IM_COST"),2,,,0)
+
+			s_TD_ID = Trim(rs("TD_ID"))
+			s_TD_AVAIL = rs("TD_AVAIL")
+			s_TD_COST = FormatNumber(rs("TD_COST"),2,,,0)
+
+			s_SN_ID = Trim(rs("SN_ID"))
+			s_SN_AVAIL = rs("SN_AVAIL")
+			s_SN_COST = FormatNumber(rs("SN_COST"),2,,,0)
+
+			s_DBL_ID = Trim(rs("DBL_ID"))
+			s_DBL_AVAIL = rs("DBL_AVAIL")
+			s_DBL_COST = FormatNumber(rs("DBL_COST"),2,,,0)
+
+			s_DH_ID = Trim(rs("DH_ID"))
+			s_DH_AVAIL = rs("DH_AVAIL")
+			s_DH_COST = FormatNumber(rs("DH_COST"),2,,,0)
+			
+			s_SUN_ID = Trim(rs("SUN_ID"))
+			s_SUN_AVAIL = rs("SUN_AVAIL")
+			s_SUN_COST = FormatNumber(rs("SUN_COST"),2,,,0)
+			
+			If Len(s_DESCR) > 0 Then
+				s_DESCR = Replace(s_DESCR, "'", "&#39")
+				s_DESCR = Replace(s_DESCR, """", "&#34;")
+			End if
+			
+			if image_published = 1 Then	
+				sql = "SELECT cloudinary_url FROM [192.168.5.134].[icecat].dbo.cloudinary_images WHERE product_id = " & icecat_id
+				Set rsCloudImage = dbconn_icecat.Execute(sql)
+				If Not rsCloudImage.EOF Then
+					cloudImg = Trim(rsCloudImage("cloudinary_url"))
+				End If
+				rsCloudImage.Close
+				Set rsCloudImage = Nothing
+			Else
+				cloudImg = "http://res.cloudinary.com/dd3llssvr/image/upload/v1423588444/noimage_t0tp8k.png"
+			end If
+			ssImgSize = "upload/w_" & "50" & ",h_" & "50" & ",c_pad/"
+			If Len(cloudImg) > 0 then
+				g_grid_image_url = Replace(cloudImg, "upload/", ssImgSize)
+			Else
+				g_grid_image_url = "site_img/snopicsm_" & Session("TEMPLATEID") & ".gif"
+			End If
+			
+			s_prices = s_price & "<br>" & s_price_D
+
+			aaData = aaData & "{"
+			aaData = aaData & "'image': '<img src=\'" &  g_grid_image_url  & "\' border=\'0\'>',"
+			aaData = aaData & "'name': '" & s_DESCR & "',"
+			aaData = aaData & "'vendor_name': '" & s_VEND_NAME & "',"
+			aaData = aaData & "'vend_part': '" & s_VEND_PART & "',"
+			aaData = aaData & "'prices': '" & s_prices & "',"
+			aaData = aaData & "'IM_ID': '" & s_IM_ID & "',"
+			aaData = aaData & "'IM_AVAIL': '" & s_IM_AVAIL & "',"
+			aaData = aaData & "'IM_COST': '" & s_IM_COST & "',"
+			aaData = aaData & "'TD_ID': '" & s_TD_ID & "',"
+			aaData = aaData & "'TD_AVAIL': '" & s_TD_AVAIL & "',"
+			aaData = aaData & "'TD_COST': '" & s_TD_COST & "',"
+			aaData = aaData & "'SN_ID': '" & s_SN_ID & "',"
+			aaData = aaData & "'SN_AVAIL': '" & s_SN_AVAIL & "',"
+			aaData = aaData & "'SN_COST': '" & s_SN_COST & "',"
+			aaData = aaData & "'COST': '" & s_price & "',"
+			aaData = aaData & "'price_A': '" & s_price_A & "',"
+			aaData = aaData & "'price_B': '" & s_price_B & "',"
+			aaData = aaData & "'price_C': '" & s_price_C & "',"
+			aaData = aaData & "'price_D': '" & s_price_D & "',"
+			aaData = aaData & "'extop': '<a href=\'catalog_icecat_browser_detail.phtml?pf_id=" & s_sku & "\' class=\'btn btn-sm btn-default btn-circle btn-editable\'><i class=\'fa fa-pencil\'></i> View</a>'"
+			aaData = aaData & "},"
+		  
+		  aaData = Replace(aaData,"'",chr(34))
+		  rs.MoveNext
+		  i=i+1
+		loop
+		rs.Close
+		aaData = Left(aaData, Len(aaData)-1)
+	else
+		aaData = ""
+	end if
+	response.write aaData
+%>
+] }
