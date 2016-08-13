@@ -1,0 +1,410 @@
+<div class="container">
+	<!-- Breadcrumb Start-->
+	<ul class="breadcrumb">
+		<li itemscope itemtype="http://data-vocabulary.org/Breadcrumb"><a href="index.html" itemprop="url"><span itemprop="title"><i class="fa fa-home"></i></span></a></li>
+		<li itemscope itemtype="http://data-vocabulary.org/Breadcrumb"><a href="category.html" itemprop="url"><span itemprop="title">Electronics</span></a></li>
+		<li itemscope itemtype="http://data-vocabulary.org/Breadcrumb"><a href="product.html" itemprop="url"><span itemprop="title">Laptop Silver black</span></a></li>
+	</ul>
+	<!-- Breadcrumb End-->
+	<div class="row">
+		<!--Middle Part Start-->
+		<div id="content" class="col-sm-9">
+			<div itemscope itemtype="http://schema.org/Product">
+				<h1 class="title" itemprop="name"><%=x_prod_name%></h1>
+				<div class="row product-info">
+					<div class="col-sm-6">
+						<div class="image">
+							<img class="img-responsive" itemprop="image" id="zoom_01" src="<%=x_prod_image%>" title="<%=x_prod_name%>" alt="<%=x_prod_name%>" data-zoom-image="<%=x_prod_zoom_image%>"/>
+						</div>
+					</div>
+					<div class="col-sm-6">
+
+						<ul class="list-unstyled description">
+							<% if Len(x_vendor_name) > 0 then %>
+							<li><b><%=a("Brand")%>:</b><a href="#"><span itemprop="brand"><%=x_vendor_name%></span></a></li>
+							<% end if %>
+							<% if Len(x_prod_manu_part_num) > 0 then %>
+							<li><b><%=a("Mfg. Part #")%>:</b><a href="#"><span itemprop="brand"><%=x_prod_manu_part_num%></span></a></li>
+							<% end if %>
+							<li><b><%=a("SKU")%>:</b><span itemprop="mpn"><%=x_prod_sku%></span></li>
+							<li><b><%=a("Availability")%>:</b> <span class="instock"><%=x_prod_stock_status_display%></span></li>
+						</ul>
+						<div><%=x_prod_desc%></div>
+						<ul class="price-box">
+							<li class="price" itemprop="offers" itemscope itemtype="http://schema.org/Offer">
+								<% if x_prod_on_sale = 1 then %>
+								<span class="price-old">$<%=FormatNumber(x_prod_group_price,2)%></span>
+								<span itemprop="price">$<%=FormatNumber(x_prod_sale_price,2)%><span itemprop="availability" content="<%=x_prod_stock_status_display%>"></span></span>
+								<% else %>
+								<span itemprop="price">$<%=FormatNumber(x_prod_group_price,2)%><span itemprop="availability" content="<%=x_prod_stock_status_display%>"></span></span>
+								<% end if %>
+							</li>
+							<li></li>
+						</ul>
+						<form name = "BuyForm" action="<%=Session("g_secure_url")%>tp_cart.phtml" method="post">
+						<input type="hidden" name="basket_action" value="A">
+						<input type="hidden" name="pf_id" value="<%=pf_id%>">
+						<input type="hidden" name="product_mode" value="<%=product_mode%>">
+						<input type="hidden" name="adjusted_price" value="<%=adjusted_price%>">
+						<input type="hidden" name="sessionID" value="<%=Session("SESSIONKEY")%>">
+						<input type="hidden" name="pf_ids" value="">
+						<input type="hidden" name="pf_qtys" value="">
+						<div id="product">
+							<!--
+							<h3 class="subtitle">Available Options</h3>
+							<div class="form-group required">
+								<label class="control-label">Color</label>
+								<select class="form-control" id="input-option200" name="option[200]">
+									<option value=""> --- Please Select --- </option>
+									<option value="4">Black </option>
+									<option value="3">Silver </option>
+									<option value="1">Green </option>
+									<option value="2">Blue </option>
+								</select>
+							</div>
+							-->
+							<div class="cart">
+								<div>
+									<div class="qty">
+										<label class="control-label" for="input-quantity">Qty</label>
+										<input type="text" name="qty" value="1" size="2" id="input-quantity" class="form-control"/>
+										<a class="qtyBtn plus" href="javascript:void(0);">+</a><br/>
+										<a class="qtyBtn mines" href="javascript:void(0);">-</a>
+										<div class="clear">
+										</div>
+									</div>
+									<button type="button" id="button-cart" class="btn btn-primary btn-lg" onclick="BuyForm.submit(this);">Add to Cart</button>
+								</div>
+								<div>
+									<% if Session("shopper_id") = "" OR Session("shopper_id") = "GUEST" then %>
+									<p>&nbsp;</p>
+									<p>Please <a href="<%=g_secure_url%>login.phtml">log in</a> to add to your wish list.</p>
+									<% else %>
+									<button type="button" class="wishlist" onclick="setLocation('<%=g_secure_url%>tp_wishlist.phtml?sku=<%=pf_id%>')"><i class="fa fa-heart"></i> Add to Wish List</button>
+									<% end if %>
+								</div>
+							</div>
+						</div>
+						</form>
+						<div class="rating" itemprop="aggregateRating" itemscope itemtype="http://schema.org/AggregateRating">
+							<meta itemprop="ratingValue" content="0"/>
+							<p>
+								<%
+									for ii =1 to 5
+									
+										if x_review_avg >= ii then
+											Response.Write("<span class=""fa fa-stack""><i class=""fa fa-star fa-stack-2x""></i><i class=""fa fa-star-o fa-stack-2x""></i></span>")
+										else
+											Response.Write("<span class=""fa fa-stack""><i class=""fa fa-star-o fa-stack-2x""></i></span>")
+										end if
+								
+									next
+								%>
+								<a onclick="$('a[href=\'#tab-review\']').trigger('click'); return false;" href=""><span itemprop="reviewCount"><%=x_review_count%> reviews</span></a> 
+								<% if x_bWriteReview then %>
+								/ <a onclick="$('a[href=\'#tab-review\']').trigger('click'); return false;" href="">Write a review</a>
+								<% end if %>
+							</p>
+						</div>
+						<hr>
+						<!-- AddThis Button BEGIN -->
+						<!-- AddThis Button BLOCK -->
+						<!-- AddThis Button END -->
+					</div>
+				</div>
+				<ul class="nav nav-tabs">
+					<li class="active"><a href="#tab-techspec" data-toggle="tab">Technical Specs</a></li>
+					<li><a href="#tab-description" data-toggle="tab">Details</a></li>
+					<li><a href="#tab-review" data-toggle="tab">Reviews</a></li>
+				</ul>
+				<div class="tab-content">
+					<div itemprop="specdata" id="tab-techspec" class="tab-pane active">
+						<div>
+							<!--#INCLUDE FILE="include_icecat_specs.phtml"-->
+						</div>
+					</div>
+					<div itemprop="description" id="tab-description" class="tab-pane">
+						<div>
+							<% 
+								If Len(pf_ManualPdfURL) > 0 Then 
+							%>
+							<p>
+							<img src="/assets/template/default/images/pdf.png" border="0">
+							<a href="getpdf.phtml?url=<%=Server.URLEncode(pf_ManualPdfURL)%>">Manual PDF</a>
+							</p>
+							<% 
+								End If 
+							%>
+							<% 
+								If Len(pf_PdfURL) > 0 Then 
+							%>
+							<p>
+							<img src="/assets/template/default/images/pdf.png" border="0">
+							<a href="<%=g_store_url%>getpdf.phtml?url=<%=Server.URLEncode(pf_PdfURL)%>">Product PDF</a><br>
+							</p>
+							<% 
+								End If 
+							%>
+							<% 
+								if Len(str_marketing_info) > 0 then 
+							%>
+							<%=Replace(str_marketing_info, chr(13), "<br>")%>
+							<%
+								else
+							%>
+							<p> No detail information is available </p>
+							<% 
+								end if 
+							%>
+						</div>
+					</div>
+					<div id="tab-review" class="tab-pane">
+						<%
+							xmlRecv.open "GET", "http://partner.testseek.com/export/search.php?ts_key=AB433E29&ts_ver=3.9&ts_type=2&ts_sort=1&ts_start=0&ts_limit=10&ts_lang=en&ts_mpn=" & mfgpartno, false
+							xmlRecv.setRequestHeader "Content-Type", "application/x-www-form-urlencoded"
+							xmlRecv.setTimeouts 5000, 5000, 15000, 15000
+							xmlRecv.send
+							
+							xmlHeaders = xmlRecv.getAllResponseHeaders()
+							xmlStatus = xmlRecv.statusText
+							'xmlResult = xmlRecv.responseText
+							xmlResult = xmlRecv.responseXML.xml
+
+							xmlDoc2.LoadXML (xmlResult)
+						%>
+						<%
+						  iReviewCount = 0
+							set objNodeList = xmlDoc2.getElementsByTagName("review")
+							For i = 0 To (objNodeList.length - 1)
+								set InfoNode = objNodeList.Item(i)
+								er_published = InfoNode.SelectSingleNode("er_published").Text
+								er_testsite = InfoNode.SelectSingleNode("er_testsite").Text
+								er_comment_good = InfoNode.SelectSingleNode("er_comment_good").Text
+								er_comment_bad = InfoNode.SelectSingleNode("er_comment_bad").Text
+								er_comment = InfoNode.SelectSingleNode("er_comment").Text
+								er_score = InfoNode.SelectSingleNode("er_score").Text
+								er_url =  InfoNode.SelectSingleNode("er_url").Text
+								er_award_image =  InfoNode.SelectSingleNode("er_award_image").Text
+
+
+						%>
+						<style>
+
+						UL.gbb {
+							list-style: none;
+							margin-top: 0px;
+							margin-bottom: 0px;
+							line-height: 13px;
+							margin-left: 0px;
+							padding: 0px;
+							}
+
+						LI.good {
+							background-image: url("/assets/template/default/images/gbb_good.gif");
+							background-repeat: no-repeat;
+							padding: 2px 0 2px 20px;
+							margin: -0px;
+							}
+
+							LI.bad {
+							background-image: url("/assets/template/default/images/gbb_bad.gif");
+							background-repeat: no-repeat;
+							padding: 2px 0 2px 20px;
+							}
+
+							LI.bottom {
+							background-image: url("/assets/template/default/images/gbb_bottom.gif");
+							background-repeat: no-repeat;
+							padding: 2px 0 2px 20px;
+							}
+
+						</style>
+							
+						<table class="table">
+						<tbody>
+						<tr>
+							<td width="10">
+								&nbsp;
+							</td>
+							<td width="*" class="TextMedium">
+								<div class="reviewSource">
+									<div class="flag_us">
+									</div>
+									&nbsp; Published: <%=er_published%>, review by: <%=er_testsite%> 
+									<div class="rating-box">
+										<div class="rating" style="width: <%=er_score%>%;"></div>
+									</div>
+								</div>
+								<br>
+								<div align="left" style="width:100%; float:left;">
+									<ul class="gbb">
+										<%If Len(er_comment_good) Then %>
+										<li class="good"><span class="bgw"><%=er_comment_good%></span></li>
+										<% End If %>
+										<%If Len(er_comment_bad) Then %>
+										<li class="bad"><span class="bgw"><%=er_comment_bad%></span></li>
+										<% End If %>
+										<%If Len(er_comment) Then %>
+										<li class="bottom"><span class="bgw"><%=er_comment%></span></li>
+										<% End If %>
+									</ul>
+									<br>
+									<a href="<%=er_url%>" class="Large" target="_blank">Read the full review >></a>
+								</div>
+								<div style="clear:both">
+									&nbsp;
+								</div>
+								
+							</td>
+							<td width="95" align="center">
+								<% If Len(er_award_image) > 0 Then %>
+										<img src="<%=er_award_image%>" border="0">
+								<% End If %>	
+							</td>
+						</tr>
+						</tbody>
+						</table>
+						<%
+								If i > 8 Then
+									Exit For
+								End If
+								iReviewCount = iReviewCount + 1
+							Next
+						%>
+						<% If iReviewCount = 0 Then %>
+							No Review is available.
+						<% End If %>
+					</div>
+				</div>
+				<h3 class="subtitle">Related Products</h3>
+				<div class="owl-carousel related_pro">
+					<div class="product-thumb">
+						<div class="image">
+							<a href="product.html"><img src="image/product/samsung_tab_1-200x200.jpg" alt="Aspire Ultrabook Laptop" title="Aspire Ultrabook Laptop" class="img-responsive"/></a>
+						</div>
+						<div class="caption">
+							<h4><a href="product.html">Aspire Ultrabook Laptop</a></h4>
+							<p class="price">
+								<span class="price-new">$230.00</span><span class="price-old">$241.99</span><span class="saving">-5%</span>
+							</p>
+							<div class="rating">
+								<span class="fa fa-stack"><i class="fa fa-star fa-stack-2x"></i><i class="fa fa-star-o fa-stack-2x"></i></span><span class="fa fa-stack"><i class="fa fa-star fa-stack-2x"></i><i class="fa fa-star-o fa-stack-2x"></i></span><span class="fa fa-stack"><i class="fa fa-star fa-stack-2x"></i><i class="fa fa-star-o fa-stack-2x"></i></span><span class="fa fa-stack"><i class="fa fa-star fa-stack-2x"></i><i class="fa fa-star-o fa-stack-2x"></i></span><span class="fa fa-stack"><i class="fa fa-star-o fa-stack-2x"></i></span>
+							</div>
+						</div>
+						<div class="button-group">
+							<button class="btn-primary" type="button" onclick=""><span>Add to Cart</span></button>
+							<div class="add-to-links">
+								<button type="button" data-toggle="tooltip" title="Add to wishlist" onclick=""><i class="fa fa-heart"></i></button>
+								<button type="button" data-toggle="tooltip" title="Add to compare" onclick=""><i class="fa fa-exchange"></i></button>
+							</div>
+						</div>
+					</div>
+					<div class="product-thumb">
+						<div class="image">
+							<a href="product.html"><img src="image/product/macbook_pro_1-200x200.jpg" alt=" Strategies for Acquiring Your Own Laptop " title=" Strategies for Acquiring Your Own Laptop " class="img-responsive"/></a>
+						</div>
+						<div class="caption">
+							<h4><a href="product.html"> Strategies for Acquiring Your Own Laptop </a></h4>
+							<p class="price">
+								<span class="price-new">$1,400.00</span><span class="price-old">$1,900.00</span><span class="saving">-26%</span>
+							</p>
+						</div>
+						<div class="button-group">
+							<button class="btn-primary" type="button" onclick=""><span>Add to Cart</span></button>
+							<div class="add-to-links">
+								<button type="button" data-toggle="tooltip" title="Add to wishlist" onclick=""><i class="fa fa-heart"></i></button>
+								<button type="button" data-toggle="tooltip" title="Add to compare" onclick=""><i class="fa fa-exchange"></i></button>
+							</div>
+						</div>
+					</div>
+					<div class="product-thumb">
+						<div class="image">
+							<a href="product.html"><img src="image/product/macbook_1-200x200.jpg" alt="Ideapad Yoga 13-59341124 Laptop" title="Ideapad Yoga 13-59341124 Laptop" class="img-responsive"/></a>
+						</div>
+						<div class="caption">
+							<h4><a href="product.html">Ideapad Yoga 13-59341124 Laptop</a></h4>
+							<p class="price">
+								 $2.00
+							</p>
+							<div class="rating">
+								<span class="fa fa-stack"><i class="fa fa-star fa-stack-2x"></i><i class="fa fa-star-o fa-stack-2x"></i></span><span class="fa fa-stack"><i class="fa fa-star fa-stack-2x"></i><i class="fa fa-star-o fa-stack-2x"></i></span><span class="fa fa-stack"><i class="fa fa-star fa-stack-2x"></i><i class="fa fa-star-o fa-stack-2x"></i></span><span class="fa fa-stack"><i class="fa fa-star fa-stack-2x"></i><i class="fa fa-star-o fa-stack-2x"></i></span><span class="fa fa-stack"><i class="fa fa-star-o fa-stack-2x"></i></span>
+							</div>
+						</div>
+						<div class="button-group">
+							<button class="btn-primary" type="button" onclick=""><span>Add to Cart</span></button>
+							<div class="add-to-links">
+								<button type="button" data-toggle="tooltip" title="Add to wishlist" onclick=""><i class="fa fa-heart"></i></button>
+								<button type="button" data-toggle="tooltip" title="Add to compare" onclick=""><i class="fa fa-exchange"></i></button>
+							</div>
+						</div>
+					</div>
+					<div class="product-thumb">
+						<div class="image">
+							<a href="product.html"><img src="image/product/ipod_shuffle_1-200x200.jpg" alt="Hp Pavilion G6 2314ax Notebok Laptop" title="Hp Pavilion G6 2314ax Notebok Laptop" class="img-responsive"/></a>
+						</div>
+						<div class="caption">
+							<h4><a href="product.html">Hp Pavilion G6 2314ax Notebok Laptop</a></h4>
+							<p class="price">
+								 $122.00
+							</p>
+						</div>
+						<div class="button-group">
+							<button class="btn-primary" type="button" onclick=""><span>Add to Cart</span></button>
+							<div class="add-to-links">
+								<button type="button" data-toggle="tooltip" title="Add to wishlist" onclick=""><i class="fa fa-heart"></i></button>
+								<button type="button" data-toggle="tooltip" title="Add to compare" onclick=""><i class="fa fa-exchange"></i></button>
+							</div>
+						</div>
+					</div>
+					<div class="product-thumb">
+						<div class="image">
+							<a href="product.html"><img src="image/product/ipod_touch_1-200x200.jpg" alt="Samsung Galaxy S4" title="Samsung Galaxy S4" class="img-responsive"/></a>
+						</div>
+						<div class="caption">
+							<h4><a href="product.html">Samsung Galaxy S4</a></h4>
+							<p class="price">
+								<span class="price-new">$62.00</span><span class="price-old">$122.00</span><span class="saving">-50%</span>
+							</p>
+						</div>
+						<div class="button-group">
+							<button class="btn-primary" type="button" onclick=""><span>Add to Cart</span></button>
+							<div class="add-to-links">
+								<button type="button" data-toggle="tooltip" title="Add to wishlist" onclick=""><i class="fa fa-heart"></i></button>
+								<button type="button" data-toggle="tooltip" title="Add to compare" onclick=""><i class="fa fa-exchange"></i></button>
+							</div>
+						</div>
+					</div>
+					<div class="product-thumb">
+						<div class="image">
+							<a href="product.html"><img src="image/product/ipod_shuffle_1-200x200.jpg" alt="Hp Pavilion G6 2314ax Notebok Laptop" title="Hp Pavilion G6 2314ax Notebok Laptop" class="img-responsive"/></a>
+						</div>
+						<div class="caption">
+							<h4><a href="product.html">Hp Pavilion G6 2314ax Notebok Laptop</a></h4>
+							<p class="price">
+								 $122.00
+							</p>
+						</div>
+						<div class="button-group">
+							<button class="btn-primary" type="button" onclick=""><span>Add to Cart</span></button>
+							<div class="add-to-links">
+								<button type="button" data-toggle="tooltip" title="Add to wishlist" onclick=""><i class="fa fa-heart"></i></button>
+								<button type="button" data-toggle="tooltip" title="Add to compare" onclick=""><i class="fa fa-exchange"></i></button>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+		<!--Middle Part End -->
+		<!--Right Part Start -->
+		<aside id="column-right" class="col-sm-3 hidden-xs">
+		<!--#INCLUDE FILE="../custom/include_best_sellers.phtml"-->
+		<%
+			g_static_block_code = "TPL_MARKETSHOP1_PRODUCT_RIGHT"
+		%>
+		<!--#INCLUDE FILE="../../../core/cms/include_show_static_block.phtml"-->
+		<!--#INCLUDE FILE="../custom/include_specials.phtml"-->
+		</aside>
+		<!--Right Part End -->
+	</div>
+</div>

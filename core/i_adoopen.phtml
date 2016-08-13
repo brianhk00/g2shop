@@ -3,7 +3,11 @@
 	dbconn.Open g_connection_string
 	
 	if g_store_use_icecat_catalog = "1" then
-		Set conn_ss1=server.CreateObject("ADODB.Connection")
-		conn_ss1.Open g_connection_icecat_catalog
+		Set conn_icecat_catalog=server.CreateObject("ADODB.Connection")
+		conn_icecat_catalog.Open g_connection_icecat_catalog
+		
+		Set conn_icecat_main=server.CreateObject("ADODB.Connection")
+		conn_icecat_main.Open g_connection_icecat_main
+		
 	end if
 %>

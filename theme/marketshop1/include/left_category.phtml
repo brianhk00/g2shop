@@ -1,0 +1,265 @@
+<%
+	'FOR FILTERS
+	categoryid = icecat_category
+
+%>
+<form name="filter" method="get" action="<%=g_store_url%>dept.phtml" style="margin-top: 0px;margin-bottom: 0px;">
+<input type="hidden" name="page" value="<%=page%>">
+<input type="hidden" name="dept_id" value="<%=dept_id%>">
+<input type="hidden" name="mode" value="<%=mode%>">
+<input type="hidden" name="show" value="<%=show%>">
+<input type="hidden" name="so" value="<%=so%>">
+<input type="hidden" name="page" value="<%=page%>" />
+<%
+	If Len(s_selectedFeatureIds) > 0 OR Len(manufacturer) > 0 Then 
+%>
+<h3 class="subtitle">Currently Filtered By</h3>
+<ol style="padding-left: 0px;">
+<%
+	If Len(manufacturer) > 0 Then
+		s_manufacturename = "N/A"
+		sql = "SELECT VEND_NAME FROM " & catalogstore & "_ssprice WHERE VEND_ID='" & manufacturer & "'"
+		Set rsSelected = conn_icecat_catalog.Execute(sql)
+		If Not rsSelected.EOF Then
+			s_manufacturename = rsSelected(0)
+		End If
+		rsSelected.Close
+		Set rsSelected = Nothing
+
+%>
+<li style="padding-bottom:5px; margin-left:0px;display:inline-block;">
+	<span>Manufacturer:</span> <span class="value"><%=s_manufacturename%></span>&nbsp;
+	<input type="hidden" name="manufacturer" value="<%=manufacturer%>" />
+	<a class="btn-remove" href="#" onclick="forms.filter.manufacturer.value='';forms.filter.page.value=1;forms.filter.submit();" title="Remove This Item"><i class="fa fa-close" style="color:red;text-size:15px"></i></a>
+</li>
+<%
+	End if
+%>
+<%
+	If Len(s_selectedFeatureIds) > 0 then
+	sql = "SELECT DISTINCT featureid FROM [192.168.5.134].[icecat].[dbo].[icecat_productattributes] WHERE featureid IN (" & s_selectedFeatureIds & ")"
+	Set rsSelected = conn_icecat_catalog.Execute(sql)
+	Do While Not rsSelected.EOF
+		tt_featureid = rsSelected("featureid")
+		sql3 = "SELECT featurename, unitvalue FROM [192.168.5.134].[icecat].[dbo].[icecat_productattributes] WHERE featureid = " & tt_featureid
+		Set rsSelected3 = conn_icecat_catalog.Execute(sql3)
+		If Not rsSelected3.EOF then
+%>
+<li style="padding-bottom:5px; margin-left:0px;display:inline-block;">
+	<span><%=rsSelected3("featurename")%>:</span> <span class="value"><%=Trim(Request("ga_"& rsSelected("featureid")))%> <%=rsSelected3("unitvalue")%></span>&nbsp;
+	<input type="hidden" name="ga_<%=rsSelected("featureid")%>" value="<%=Trim(Request("ga_"& rsSelected("featureid")))%>" />
+	<a class="btn-remove" href="#" onclick="forms.filter.ga_<%=rsSelected("featureid")%>.value='';forms.filter.page.value=1;forms.filter.submit();" title="Remove This Item"><i class="fa fa-close" style="color:red;text-size:15px"></i></a>
+</li>
+<%
+		End if
+		rsSelected.MoveNext
+	Loop
+	rsSelected.Close
+	Set rsSelected = Nothing
+	End if
+%>
+</ol>		
+<%
+	end if
+%>
+<h3 class="subtitle">Shop By</h3>
+<% If Len(manufacturer) > 0 Then %>
+	<% Else %>
+	<dt>Manufacturers</dt>
+	<dd>
+		<SELECT NAME="manufacturer" style="<%if Len(manufacturer)>3 then%>background-color: #99CCFF<%end if%>" onChange="forms.filter.page.value=1;forms.filter.submit();" class="form-control input-sm">
+			<OPTION value="--">ANY</OPTION>
+			<%
+				If dept_specsource_categoryid = "" Then
+					dept_specsource_categoryid = "NULL"
+				End If
+				
+				If Len(filter_zsql) > 0 Then
+					sql = "SELECT DISTINCT VEND_ID, VEND_NAME FROM " & g_storeid & "_ssprice WHERE hide_flag=0 "
+					if Len(categoryid) > 0 then
+						sql = sql & " AND catid IN (" & categoryid & ") "
+					end If
+					sql = sql & " AND " & filter_zsql & " AND DESCR <> '' AND hide_flag=0"
+				else		
+					sql = "SELECT DISTINCT VEND_ID, VEND_NAME FROM " & g_storeid & "_ssprice WHERE hide_flag=0 "
+					if Len(categoryid) > 0 then
+						sql = sql & " AND catid IN (" & categoryid & ") "
+					end If
+					sql = sql & " AND DESCR <> '' AND hide_flag=0"
+				End If
+
+
+				if Len(sp)> 0 then
+					sql = sql & " AND (DESCR like '%" & sp & "%' OR DESCR2 like '%" & sp & "%' OR VEND_PART like '%" & sp & "%' OR VEND_NAME like '%" & sp & "%')"
+				end if
+				if Len(sp1)> 0 then
+					sql = sql & " AND (DESCR like '%" & sp1 & "%' OR DESCR2 like '%" & sp1 & "%' OR VEND_PART like '%" & sp1 & "%' OR VEND_NAME like '%" & sp1 & "%')"
+				end if
+				if Len(sp2)> 0 then
+					sql = sql & " AND (DESCR like '%" & sp2 & "%' OR DESCR2 like '%" & sp2 & "%' OR VEND_PART like '%" & sp2 & "%' OR VEND_NAME like '%" & sp2 & "%')"
+				end if
+				if Len(sp3)> 0 then
+					sql = sql & " AND (DESCR like '%" & sp3 & "%' OR DESCR2 like '%" & sp3 & "%' OR VEND_PART like '%" & sp3 & "%' OR VEND_NAME like '%" & sp3 & "%')"
+				end if
+				if Len(sp4)> 0 then
+					sql = sql & " AND (DESCR like '%" & sp4 & "%' OR DESCR2 like '%" & sp4 & "%' OR VEND_PART like '%" & sp4 & "%' OR VEND_NAME like '%" & sp4 & "%')"
+				end if
+				if Len(sp5)> 0 then
+					sql = sql & " AND (DESCR like '%" & sp5 & "%' OR DESCR2 like '%" & sp5 & "%' OR VEND_PART like '%" & sp5 & "%' OR VEND_NAME like '%" & sp5 & "%')"
+				end if
+				if Len(sp6)> 0 then
+					sql = sql & " AND (DESCR like '%" & sp6 & "%' OR DESCR2 like '%" & sp6 & "%' OR VEND_PART like '%" & sp6 & "%' OR VEND_NAME like ''%" & sp6 & "%')"
+				end if
+				if Len(sp7)> 0 then
+					sql = sql & " AND (DESCR like '%" & sp7 & "%' OR DESCR2 like '%" & sp7 & "%' OR VEND_PART like '%" & sp7 & "%' OR VEND_NAME like '%" & sp7 & "%')"
+				end if
+				if Len(sp8)> 0 then
+					sql = sql & " AND (DESCR like '%" & sp8 & "%' OR DESCR2 like '%" & sp8 & "%' OR VEND_PART like '%" & sp8 & "%' OR VEND_NAME like '%" & sp8 & "%')"
+				end if
+				if Len(sp9)> 0 then
+					sql = sql & " AND (DESCR like '%" & sp9 & "%' OR DESCR2 like '%" & sp9 & "%' OR VEND_PART like '%" & sp9 & "%' OR VEND_NAME like '%" & sp9 & "%')"
+				end if
+
+
+				sql = sql & " ORDER BY VEND_NAME" 
+
+				set rsManuf = conn_icecat_catalog.Execute(sql)
+						
+					ii = 0
+					do while not rsManuf.EOF
+			%>
+				<OPTION value="<%=Trim(rsManuf("VEND_ID"))%>" <%if manufacturer=Trim(rsManuf("VEND_ID")) then%> selected<%end if%>><%=Trim(rsManuf("VEND_NAME"))%></OPTION>
+			<%
+						ii = ii + 1
+						rsManuf.MoveNext
+					loop
+
+				rsManuf.close
+			%>
+			<% if ii = 0 then %>
+			<OPTION value="--">SHOW ALL</OPTION>
+			<% end if %>
+		</SELECT><br /><br />
+	</dd>
+</dt>
+<%
+	end if 
+%>
+
+<% if Len(categoryid) > 0 Then %>
+<%
+	i_row_index = 0
+
+	If Len(filter_zsql) > 0 Then
+		if Len(manufacturer) > 0 then
+			filter_zsql = "VEND_ID=" & manufacturer & " AND " & filter_zsql
+		end if
+	else			
+		if Len(manufacturer) > 0 then
+			filter_zsql = "VEND_ID=" & manufacturer
+		end if				
+	end If
+	
+	If Len(filter_zsql) > 0 Then
+		sql = "SELECT featureid, featurename, isabsolute, displayvalue, unitvalue FROM [192.168.5.134].[icecat].[dbo].icecat_productattributes WHERE productid IN (SELECT icecat_id FROM " & g_storeid & "_ssprice WHERE catid IN (" & categoryid & ") AND " & filter_zsql & " AND DESCR <> '' AND hide_flag=0"
+	else
+		sql = "SELECT featureid, featurename, isabsolute, displayvalue, unitvalue FROM [192.168.5.134].[icecat].[dbo].icecat_productattributes WHERE productid IN (SELECT icecat_id FROM " & g_storeid & "_ssprice WHERE catid IN (" & categoryid & ") AND DESCR <> '' AND hide_flag=0"
+	End If
+	
+	sql = sql & ") ORDER BY featureid, featurename, displayvalue"
+
+
+	SET rsATTR = conn_icecat_catalog.Execute(sql)
+
+%>
+<%
+	If Not rsATTR.EOF then
+
+		t_feauterid = rsATTR("featureid")
+		t_featurename = rsATTR("featurename")
+		
+		sOptions = ""
+		sOptions = sOptions & "<dt>" & rsATTR("featurename") & "</dt>"
+		sOptions = sOptions & "<dd>"
+		sOptions = sOptions & "<select name=""ga_" & t_feauterid & """  onChange=""forms.filter.page.value=1;forms.filter.submit();"" class=""form-control input-sm"""
+		sOptions = sOptions & ">"
+		sOptions = sOptions & "<option value="""">ANY</option>"
+		sOptions = sOptions & "@@@@@"
+	
+	
+		bShowOptions = true
+		If (InStr(t_selectedFeatureIds, t_feauterid & ",")) Then
+			bShowOptions = false
+		End if
+
+		
+		t_displayvalue = rsATTR("displayvalue")
+		sValues = ""
+		sValues = "<option>" & rsATTR("displayvalue") & "(#####)</option>"
+		sValues = "<option value=""" & rsATTR("displayvalue") & """>" & rsATTR("displayvalue") & " " & rsATTR("unitvalue") & "(#####)</option>"
+	
+		iv = 0
+	
+	End if
+
+	iii = 1
+	Do While Not rsATTR.EOF
+		
+		featureid = rsATTR("featureid")
+		featurename = rsATTR("featurename")
+		displayvalue = rsATTR("displayvalue")
+
+		If t_feauterid <> featureid Then 
+			
+			sOptions = sOptions & "</select><br><br></dd>"
+			sValues = Replace(sValues, "#####", iv)
+			sOptions = Replace(sOptions, "@@@@@", sValues)
+			If bShowOptions then
+			Response.Write(sOptions)
+			End if
+
+
+			sOptions = ""
+			sOptions = sOptions & "<dt>" & rsATTR("featurename") & "</dt>"
+			sOptions = sOptions & "<dd>"
+			sOptions = sOptions & "<select name=""ga_" & featureid & """  onChange=""forms.filter.page.value=1;forms.filter.submit();"" class=""form-control input-sm"""
+			sOptions = sOptions & ">"
+			sOptions = sOptions & "<OPTION value="""">ANY</OPTION>"
+			sOptions = sOptions & "@@@@@"
+
+			bShowOptions = true
+			If (InStr(t_selectedFeatureIds, featureid & ",")) Then
+				bShowOptions = false
+			End if
+
+			sValues = ""
+
+			i_row_index = i_row_index + 1
+
+			t_feauterid = featureid
+			t_featurename = featurename
+		
+		End If
+		
+		If t_displayvalue <> displayvalue Then 
+
+			'sValues = ""
+			sValues = Replace(sValues, "#####", iv)
+			sValues = sValues & "<option value=""" & rsATTR("displayvalue") & """>" & rsATTR("displayvalue") & " " & rsATTR("unitvalue") & "(#####)</option>"
+			t_displayvalue = rsATTR("displayvalue")
+			iv = 0
+
+		End if
+		
+		iv = iv + 1
+		iii = iii + 1
+
+		rsATTR.MoveNext
+	Loop
+	rsATTR.Close
+	sOptions = sOptions & "</dl>"
+%>
+<% End If %>
+<input type="hidden" name="categoryid" value="<%=categoryid %>" />
+<input type="hidden" name="page" value="<%=page%>" />
+</form>

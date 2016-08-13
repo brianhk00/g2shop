@@ -47,7 +47,7 @@
 							sql = "SELECT * FROM A_ssprice_main WHERE sku='" & custom_prod_espec_sku & "'"
 						end If
 
-						set rsPA = conn_ss1.Execute(sql)
+						set rsPA = conn_icecat_catalog.Execute(sql)
 						if not rsPA.EOF then
 							image_published = rsPA("image_published")
 							categoryid = Trim(rsPA("CATEGORY"))
@@ -56,7 +56,7 @@
 						rsPA.Close
 
 						sql = "SELECT cloudinary_url FROM [192.168.5.134].[icecat].dbo.cloudinary_images WHERE product_id = " & icecat_id
-						Set rsCloudImage = conn_ss1.Execute(sql)
+						Set rsCloudImage = conn_icecat_catalog.Execute(sql)
 						If Not rsCloudImage.EOF Then
 							cloudImg = Trim(rsCloudImage("cloudinary_url"))
 						Else

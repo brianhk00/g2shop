@@ -1,21 +1,17 @@
 <!--#INCLUDE FILE="../../local/local.phtml"-->
+<!--#INCLUDE FILE="../i_adoopen.phtml"-->
 <!--#INCLUDE FILE="../../language_pack.phtml"-->
 <!--#INCLUDE FILE="../../util/xt_func_session.phtml"-->
-<!--#INCLUDE FILE="../../i_initsession.phtml"-->
-<!--#INCLUDE FILE="../../i_login.phtml"-->
-<!--#INCLUDE FILE="../../i_adodb.phtml"-->
-<!--#INCLUDE FILE="../../util/xt_func_util.phtml" -->
+<!--#INCLUDE File="../../util/xt_func_util.phtml" -->
 <!--#INCLUDE FILE="../../util/xt_func_string.phtml"-->
 <!--#INCLUDE FILE="../../util/xt_func_seo.phtml"-->
+<!--#INCLUDE FILE="../../util/xt_func_shoppingcart.phtml"-->
+<!--#INCLUDE FILE="../../i_initsession.phtml"-->
+<!--#INCLUDE FILE="../i_login.phtml"-->
 <script language="VBScript" runat="Server">
 function GetSettingValue(strKey, strDefault)
   
-  sReturnValue = ""
-  
-  set dbconn=server.CreateObject("ADODB.Connection")
-	dbconn.Open Session("ConnectionString")
-	
-	sql = "SELECT setting_values FROM " & Session("StoreID") & "_setting WHERE setting_type='"& strKey & "'"
+	sql = "SELECT setting_values FROM " & g_storeid & "_setting WHERE setting_type='"& strKey & "'"
 	set rsSetting1 = dbconn.Execute(sql)
 	if not rsSetting1.EOF then
 	  sReturnValue = rsSetting1(0)
@@ -23,21 +19,15 @@ function GetSettingValue(strKey, strDefault)
 	  sReturnValue = strDefault
 	end if
 	rsSetting1.Close
-	dbconn.Close
 	GetSettingValue = sReturnValue
 	
 end function
 </script>
 
 <%
-	if Session("ENABLESSCATALOG") = 1 OR Session("ENABLESSCATALOG") = 2 then
-	else
-		Response.Redirect("index.phtml")
-	end if
-
 	pf_id = Request("pf_id")
 	pf_id = FilterSKUString(pf_id)
-	
+
 	'=================================================================================================
 	'overwrite pf_id if urlkey present
 	'=================================================================================================
@@ -70,117 +60,100 @@ end function
 		
 		pf_id = rewrite_system_id
 	end if
-	'=================================================================================================
-	
-
-	if Session("DEMOVERSION") = "1" then
-		g_storeid = "bk01"
-	else
-		g_storeid = Session("StoreID")
-	end if
-
-	if Len(Session("IMFILEID")) > 3 then
-	  g_storeid = Session("IMFILEID")
-	else
-	end if
-
-	Set conn_ss = Server.CreateObject("ADODB.Connection")
-	conn_ss.open Session("SSCatalogConnectionString")
-
-	Set conn_ss2 = Server.CreateObject("ADODB.Connection")
-	conn_ss2.open Session("SSPriceConnectionString")
-
-	if InStr(Session("SSCatalogConnectionString"), "SPECSOURCE2") > 0 then
-		specsource_db = "SPECSOURCE2"
-	else
-		specsource_db = "SPECSOURCE"
-	end if
 
 	'==========================================================================================
 	'TODO : if the referral is from inside link.. skip this.
 	bSearchReferral = false
 	search_referral_URL = LCase(Request.ServerVariables("HTTP_REFERER"))
 
-	if InStr(search_referral_URL, Session("StoreURL")) > 0 then
+	if InStr(search_referral_URL, g_store_url) > 0 then
 		bSearchReferral = true
 	end if
 
-	if InStr(search_referral_URL, Session("SecureURL")) > 0 then
+	if InStr(search_referral_URL, g_secure_url) > 0 then
 		bSearchReferral = true
 	end if
 
-  if bSearchReferral then
-  else
-	
-	  'Manufacturer part number link...
-	  sql = "SELECT sku FROM " &  g_storeid & "_ssprice WHERE VEND_PART='" & pf_id & "' AND sku NOT IN (SELECT sku FROM A_accessory)"
-	  set rs0 = conn_ss2.Execute(sql)
-	  if not rs0.EOF then
-		  pf_id = Trim(rs0(0))
-	  else
-		  'pf_id = ""
-	  end if
-	  rs0.Close
-  	
-	  if IsNumeric(pf_id) then
-	  else
-		  pf_id = ""
-	  end If
-	
+	if bSearchReferral then
+	else
+		
+	'Manufacturer part number link...
+		sql = "SELECT sku FROM " &  g_storeid & "_ssprice WHERE VEND_PART='" & pf_id & "' AND sku NOT IN (SELECT sku FROM A_accessory)"
+		set rs0 = conn_icecat_catalog.Execute(sql)
+		if not rs0.EOF then
+			pf_id = Trim(rs0(0))
+		else
+	'pf_id = ""
+		end if
+		rs0.Close
+		
+		if IsNumeric(pf_id) then
+		else
+			pf_id = ""
+		end If
+		
 	end if
 	'============================================================================================
-	
+
 	if Len(pf_id) > 10 then
-	  pf_id = Left(pf_id, 10)
+		pf_id = Left(pf_id, 10)
 	end if
 
 	if Len(pf_id) > 0 then
-		'GET PRICE AND INVENTORY..
+	'GET PRICE AND INVENTORY..
 		sql = "SELECT * FROM " & g_storeid & "_ssprice WHERE sku='" & pf_id & "' AND hide_flag=0 AND sku NOT IN (SELECT sku FROM A_accessory)"
 		if Len(Session("CUSTOM_CATALOG_ID_FLAG")) > 0 then
 			sql = sql & " AND MD" & Session("CUSTOM_CATALOG_ID_FLAG") & "_ID='1'"
 		end if
-	  
-		set rsPA = conn_ss2.Execute(sql)
-		if not rsPA.EOF then
 		
+		set rsPA = conn_icecat_catalog.Execute(sql)
+		if not rsPA.EOF then
+			
 			productid = pf_id
 			g_description = Trim(rsPA("DESCR"))
 			adjusted_price = rsPA("price_" & Session("LOGINGROUP"))
 			adjusted_price1 = rsPA("price_" & Session("LOGINGROUP") & "1")
 			
+			prod_group_price = adjusted_price
+			
+			'====================================
+			' ON SALE ?? --> TODO
+			prod_on_sale = 0
+			prod_sale_price = 0
+			'=====================================
+			
 			IM_ID = rsPA("IM_ID")
 			TD_ID = rsPA("TD_ID")
-			 
+			
 			IM_AVAIL = rsPA("IM_AVAIL")
 			TD_AVAIL = rsPA("TD_AVAIL")
 			AVAIL = rsPA("AVAIL")
-
+			
 			if AVAIL > 0 then
-			  AVAIL = "In-Stock"
+				AVAIL = "In-Stock"
+				prod_stock_status = 1
 			else
-			  AVAIL = "Out of Stock"
+				AVAIL = "Out of Stock"
+				prod_stock_status = 0
 			end if
 			
 			categoryid = Trim(rsPA("CATEGORY"))
 			manufacturerid = Trim(rsPA("VEND_ID"))
 			manu_name = Trim(rsPA("VEND_NAME"))
-
-			If productid > 1200000000 then
-				mfgpartno = Trim(rsPA("VEND_PART2"))
-			Else
-				mfgpartno = Trim(rsPA("VEND_PART"))
-			End if
+			
+			mfgpartno = Trim(rsPA("VEND_PART"))
+			
 			img = ""
 			P_AVAIL = rsPA("AVAIL")
 			g_description2 = Trim(rsPA("DESCR2"))
 			image_published = rsPA("image_published")
 			s_category = Trim(rsPA("S_CATEGORY"))
 			retail_price = rsPA("retail_price")
+			prod_retail_price = retail_price
 			is_na_catalog = rsPA("catalog_na_flag")
 			is_spr = rsPA("catalog_spr_flag")
 			if is_na_catalog = 1 then
-			  is_spr = 0
+				is_spr = 0
 			end if
 			SN_ID = rsPA("SN_ID")
 			DH_ID = rsPA("DH_ID")
@@ -194,88 +167,36 @@ end function
 					adjusted_price = md_adjusted_price
 				end if
 			end if
-	  
+			
 			pok = true
-
+			
 			'================================================================
 			if Session("PROD_AVAIL") = "4" then
-			  if AVAIL = "No" then
-	        pok = false
-			  end if
+				if AVAIL = "No" then
+					pok = false
+				end if
 			end if
 			'================================================================
-
+			
 			icecat_id = rsPA("icecat_id")
-
+			
 			if adjusted_price > 0 then
-			  'pok = true
+				'pok = true
 			else
-			  pok = false
+				pok = false
 			end if
 			
 		else
 			pok = false
 		end if
 		rsPA.Close
-
+		
 		prod_is_noship = 0
 		
 		if pok then
-		  if productid > 2000000000 AND productid < 2010000000 then
-		  
-		    'addtional information if the item is from private catalog.
-		    strSQL = "SELECT * FROM " & Session("StoreID") & "_product WHERE productid = '" & productid & "'"
-	      Set rsProd = Conn.Execute(strSQL)
-	      if not rsProd.EOF then
-	        prod_detail = rsProd("details")
-	        prod_is_noship = rsProd("is_noship")
-	        if Len(rsProd("espec_sku")) > 0 then
-	          'Overwrite productid with real espec value.
-	          productid = Trim(rsProd("espec_sku"))
-	          if Len(rsProd("espec_sku")) > 0 then
-						  productid = Trim(rsProd("espec_sku"))
-					  end if
-	        end if
-	      end if
-	      rsProd.Close
-	    end if
-		
-		end if
-
-		if pok then
-
-			'============================================================================================================
-			sql = "SELECT COUNT(sku) FROM " & g_storeid & "_ssprice WHERE sku IN (SELECT accessoryproductid FROM [" & specsource_db & "].dbo.productaccessories WHERE productid = " & productid & ") AND hide_flag=0"
 			
-			set rs = conn_ss2.Execute(sql)
-			if not rs.EOF then
-				if rs(0) > 0 then
-					bAccessories = true
-				else
-					bAccessories = false
-				end if
-			else
-				bAccessories = false
-			end if
-			rs.close
-			'============================================================================================================
-
-			sql = "SELECT * FROM productattribute WHERE productid=" & productid & " AND (attributeid=321452 OR attributeid=341452)" & " AND localeid=" & Session("ESLOCALE")
-			set rsProdAttributes = conn_ss.Execute(sql)
-			if not rsProdAttributes.EOF then
-				str_marketing_info = Trim(rsProdAttributes("displayvalue"))
-				str_marketing_info = Replace(str_marketing_info, "\n", "")
-			end if
-			rsProdAttributes.close
-			
-			if Len(str_marketing_info) > 0 then
-			  meta_marketing_info = stripHTML(str_marketing_info)
-			  meta_marketing_info = Replace(meta_marketing_info, """", "")
-			end if
-			'============================================================================================================
-
 			prod_stock = 0
-
+			
 			if P_AVAIL = 1 then
 				b_enable_buy = true
 				prod_stock = 1
@@ -289,81 +210,70 @@ end function
 				end if
 			end if
 			
+			'====================================================================================================
+			'Images
+			'====================================================================================================
+			ssThumbSize = "upload/w_" & EC_thumbWidth & ",h_" & EC_thumbHeight & ",c_pad/"
+			ssImgSize = "upload/w_" & EC_imageWidth & ",h_" & EC_imageHeight & ",c_pad/"
+			ssZoomSize = "upload/w_" & EC_zoomWidth & ",h_" & EC_zoomHeight & ",c_pad/"
+			
 			'ICECAT/CLOUDINARY
-			If pf_id > 2000000000 AND pf_id < 2010000000 Then
-
-				sqlp = "SELECT thumb_image FROM " & Session("StoreID") & "_product where productid=" & pf_id
-				Set rsp = Conn.Execute(sqlp)
-				If Not rsp.EOF Then
-					If Len(rsp(0)) > 2 Then
-						ssImg = Session("StoreURL") & "/thumb_img/" & rsp(0)
-					Else
-						ssImg = "site_img/snopicsm_" & Session("TEMPLATEID") & ".gif"
-					End if
+			if image_published = 1 Then	
+				
+				sql = "SELECT cloudinary_url FROM [192.168.5.134].[icecat].dbo.cloudinary_images WHERE product_id = " & icecat_id
+				Set rsCloudImage = conn_icecat_catalog.Execute(sql)
+				If Not rsCloudImage.EOF Then
+					cloudImg = Trim(rsCloudImage("cloudinary_url"))
 				End If
-				rsp.Close
-				Set rsp = Nothing
+				rsCloudImage.Close
+				Set rsCloudImage = Nothing
+				
+				ssImg = Replace(cloudImg, "upload/", ssImgSize)
+				ssImg1 = Replace(cloudImg, "upload/", ssThumbSize)
+				ssImg2 = Replace(cloudImg, "upload/", ssZoomSize)
 				
 			Else
+				cloudImg = g_noimage_url
+				ssImg = "site_img/snopicsm_" & Session("TEMPLATEID") & ".gif"
+			end If
 			
-				'ICECAT/CLOUDINARY
-				if image_published = 1 Then	
-					sql = "SELECT cloudinary_url FROM [192.168.5.134].[icecat].dbo.cloudinary_images WHERE product_id = " & icecat_id
-					Set rsCloudImage = conn_ss2.Execute(sql)
-					If Not rsCloudImage.EOF Then
-						cloudImg = Trim(rsCloudImage("cloudinary_url"))
-					End If
-					rsCloudImage.Close
-					Set rsCloudImage = Nothing
-				Else
-					cloudImg = "http://res.cloudinary.com/dd3llssvr/image/upload/v1423588444/noimage_t0tp8k.png"
-					ssImg = "site_img/snopicsm_" & Session("TEMPLATEID") & ".gif"
-				end If
-				
-				ssImgSize = "upload/w_" & EC_imageWidth & ",h_" & EC_imageHeight & ",c_pad/"
-				ssThumbSize = "upload/w_" & EC_thumbWidth & ",h_" & EC_thumbHeight & ",c_pad/"
-				ssZoomSize = "upload/w_" & EC_zoomWidth & ",h_" & EC_zoomHeight & ",c_pad/"
-
-				If Len(cloudImg) > 0 then
-					'ssImg = Replace(cloudImg, "upload/", "upload/w_500,h_500,c_pad/")
-					'ssImg1 = Replace(cloudImg, "upload/", "upload/w_300,h_300,c_pad/")
-					'ssImg2 = Replace(cloudImg, "upload/", "upload/w_96,h_196,c_pad/")
-					ssImg = Replace(cloudImg, "upload/", ssImgSize)
-					ssThumb = Replace(cloudImg, "upload/", ssThumbSize)
-					ssZoom = Replace(cloudImg, "upload/", ssZoomSize)
-				Else
-					ssImg = "site_img/snopicsm_" & Session("TEMPLATEID") & ".gif"
-				End If
-				
-				ssImgLarge = true
-				
+			If Len(cloudImg) > 0 then
+				ssImg = Replace(cloudImg, "upload/", ssImgSize)
+				ssImg1 = Replace(cloudImg, "upload/", ssThumbSize)
+				ssImg2 = Replace(cloudImg, "upload/", ssZoomSize)
+			Else
+				ssImg = "site_img/snopicsm_" & Session("TEMPLATEID") & ".gif"
+			End If
 			
-			End if
-
+			ssImgLarge = true
+			image_display_src = ssImg
+			image_display_src_zoom = ssImg2
+			image_display_src_thumb = ssImg1
+			
 		end if
-
-		sql = "SELECT * FROM " & Session("StoreID") & "_profile2"
-		set rs = conn.Execute(sql)
+		
+		sql = "SELECT * FROM " & g_storeid & "_profile2"
+		set rs = dbconn.Execute(sql)
 		if not rs.EOF then
 			ec_rt_im_flag = rs("ss_rt_im_flag")
 			ec_rt_td_flag = rs("ss_rt_td_flag")
 		end if
 		rs.Close
 		
-		sql = "SELECT * FROM " & Session("StoreID") & "_profile"
-		Set rsProfile = Conn.Execute(sql)
+		sql = "SELECT * FROM " & g_storeid & "_profile"
+		Set rsProfile = dbconn.Execute(sql)
 		if (not rsProfile.EOF) then
 			show_prod_availability = rsProfile("show_prod_availability")
 			espec_part_number_mode = rsProfile("espec_part_number_mode")
 			espec_retail_price_mode = rsProfile("espec_retail_price_mode")
 		end if
 		rsProfile.Close
-
+		
 		'FROM SETTINGS.....
 		SYNNEX_PANDA = GetSettingValue("SYNNEX_PANDA", "0")
-	  DANDH_PANDA = GetSettingValue("DANDH_PANDA", "0")
+		DANDH_PANDA = GetSettingValue("DANDH_PANDA", "0")
 		DEFAULT_ESPEC_PRODUCT_TAB = GetSettingValue("DEFAULT_ESPEC_PRODUCT_TAB", "0")
-
+		
 		SELECT CASE DEFAULT_ESPEC_PRODUCT_TAB
 		CASE "0"
 		CASE "1"
@@ -375,54 +285,55 @@ end function
 		CASE ELSE
 			DEFAULT_ESPEC_PRODUCT_TAB = "0"
 		END SELECT
-	  
-	  b_show_rt = false
-	  
-	  if Len(IM_ID) > 0 AND ec_rt_im_flag= 1 then
-	    b_show_rt = true
-	  end if
-	  if Len(TD_ID) > 0 AND ec_rt_td_flag= 1 then
-	    b_show_rt = true
-	  end if
-	  if Len(SN_ID) > 0 AND SYNNEX_PANDA= "1" then
-	    b_show_rt = true
-	  end if
-	  if Len(DH_ID) > 0 AND DANDH_PANDA= "1" then
-	    b_show_rt = true
-	  end if
-
-		if Len(s_category) > 0 then
 		
-		  sqlc = "SELECT warranty_id, map_price_flag, map_price_dept_id  FROM " & Session("StoreID") & "_ss_dept WHERE dept_id='" & s_category & "'"
-		  set rsc = conn.Execute(sqlc)
-		  if not rsc.EOF then
-		    prod_warranty = Trim(rsc(0))
-				map_price_flag = rsc(1)
-				map_price_dept_id = Trim(rsc(2))
-		  else
-		    prod_warranty = ""
-				map_price_flag = 0
-				map_price_dept_id = Trim(rsc(2)) = ""
-		  end if
-		  rsc.Close
-		  
+		b_show_rt = false
+		
+		if Len(IM_ID) > 0 AND ec_rt_im_flag= 1 then
+			b_show_rt = true
+		end if
+		if Len(TD_ID) > 0 AND ec_rt_td_flag= 1 then
+			b_show_rt = true
+		end if
+		if Len(SN_ID) > 0 AND SYNNEX_PANDA= "1" then
+			b_show_rt = true
+		end if
+		if Len(DH_ID) > 0 AND DANDH_PANDA= "1" then
+			b_show_rt = true
 		end if
 		
-		'============================================================
-		'MAP PRICING..
+		
+		if Len(s_category) > 0 then
+			
+			sqlc = "SELECT warranty_id, map_price_flag, map_price_dept_id  FROM " & g_storeid & "_ss_dept WHERE dept_id='" & s_category & "'"
+			set rsc = dbconn.Execute(sqlc)
+			if not rsc.EOF then
+				prod_warranty = Trim(rsc(0))
+				map_price_flag = rsc(1)
+				map_price_dept_id = Trim(rsc(2))
+			else
+				prod_warranty = ""
+				map_price_flag = 0
+				map_price_dept_id = Trim(rsc(2)) = ""
+			end if
+			rsc.Close
+			
+		end if
+		
+	'============================================================
+	'MAP PRICING..
 		x1_manuf_filter = ""
-
+		
 		if map_price_flag = 2 then
 			
-			sql = "SELECT manuf_filter FROM " & Session("StoreID") & "_map_manuf WHERE dept_id='" & map_price_dept_id & "'"
-			set rs1 = Conn.Execute(sql)
+			sql = "SELECT manuf_filter FROM " & g_storeid & "_map_manuf WHERE dept_id='" & map_price_dept_id & "'"
+			set rs1 = dbconn.Execute(sql)
 			do while not rs1.EOF
 				x1_manuf_filter = x1_manuf_filter & Trim(rs1(0)) & ","
 				rs1.MoveNext
 			loop
 			rs1.Close
 		end if
-
+		
 		SELECT CASE map_price_flag
 		CASE 0
 			prod_map_flag = 0
@@ -437,15 +348,42 @@ end function
 		CASE ELSE
 			prod_map_flag = 0
 		END SELECT
-
+		
 	end If
-	
-	'========PAGE VARIABLES==================
+
+	'====================================================================================
+	'PAGE VARIABLES
+	'====================================================================================
 	g_store_title = g_description
-
-
-
-
-	'========================================
-
+	'====================================================================================
+	'THEME VALUES
+	'====================================================================================
+	x_prod_name = g_description
+	x_page_title = g_page_title
+	x_prod_sku = mfgpartno
+	x_prod_desc = g_description2
+	x_prod_detail = prod_detail
+	x_prod_manu_part_num = prod_manu_part_num
+	x_vendor_name = vendor_name
+	x_prod_stock_status = prod_stock_status
+	if (x_prod_stock_status) = 1 then
+		x_prod_stock_status_display = " In Stock"
+	else
+		x_prod_stock_status_display = " Out of Stock"
+	end if
+	
+	x_prod_on_sale = prod_on_sale
+	x_prod_sale_price = prod_sale_price
+	x_prod_group_price = prod_group_price
+	x_prod_retail_price = prod_retail_price
+	
+	x_prod_image = image_display_src
+	x_prod_zoom_image = image_display_src_zoom
+	x_prod_thumb_image = image_display_src_thumb
+	x_prod_mm_type = prod_mm_type
+	x_prod_espec_sku = prod_use_icecat_images
+	x_prod_use_icecat_images = prod_use_icecat_images
+	x_prod_image_file = prod_image_file
+	
+	
 %>

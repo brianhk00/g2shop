@@ -1,3 +1,12 @@
 <%
 	dbconn.Close
+	set dbconn = nothing
+	
+	if g_store_use_icecat_catalog = "1" then
+		conn_icecat_catalog.Close
+		conn_icecat_main.Close
+		
+		set conn_icecat_catalog= nothing
+		set conn_icecat_main = nothing
+	end if
 %>

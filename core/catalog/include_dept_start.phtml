@@ -585,7 +585,7 @@ end function
 			
 			Set rsDept = Server.CreateObject("ADODB.RecordSet")
 			rsDept.CursorLocation = 3
-			rsDept.Open sql,Session("SSPriceConnectionString"),3,3
+			rsDept.Open sql, g_connection_icecat_catalog ,3,3
 					
 			if not rsDept.EOF then
 				rsDept.Sort = Replace(str_sort, " ORDER BY ", "")

@@ -1,0 +1,14 @@
+<%
+	url = Trim(Request("url"))
+	'Change HTML header to specify Excel's MIME content type
+	Response.Buffer = true
+	Response.ContentType = "application/pdf"
+
+	Set objXMLHTTP = CreateObject("MSXML2.ServerXMLHTTP.3.0")
+	objXMLHTTP.open "GET", url, false
+	objXMLHTTP.send()
+	If objXMLHTTP.Status = 200 Then 
+		response.BinaryWrite(objXMLHTTP.ResponseBody)
+	End if
+
+%>

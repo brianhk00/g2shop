@@ -49,7 +49,7 @@
 				ssImg = "site_img/snopicsm_" & Session("TEMPLATEID") & ".gif"
 			end If
 
-			ssImgSize = "upload/w_" & EC_imageListWidth & ",h_" & EC_imageListWidth & ",c_pad,bo_35px_solid_white/"
+			ssImgSize = "upload/w_" & EC_imageListWidth & ",h_" & EC_imageListWidth & ",c_pad/"
 
 			If Len(cloudImg) > 0 then
 				ssImg = Replace(cloudImg, "upload/", ssImgSize)

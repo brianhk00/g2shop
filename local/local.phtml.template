@@ -10,9 +10,11 @@
 	g_skin_base_secure_url = "http://hubutu.olivecommerce.com/"
 	g_cloudinary_url = "http://a4.res.cloudinary.com/dd3llssvr/image/fetch/"
 	g_noimage_url = "http://res.cloudinary.com/dd3llssvr/image/upload/v1423588444/noimage_t0tp8k.png"
+	g_specdata_url = "http://192.168.5.134/icecat/"
 	g_crypt_key ="80yb@Q900435"
 
 	'OPTIONAL SETTINGS
+	g_use_icecat_catalog = "1"
 	g_store_use_icecat_catalog = "1"
-	g_store_use_system = "0"
+	g_store_use_system = "1"
 %>
