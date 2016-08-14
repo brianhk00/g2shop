@@ -1,0 +1,16 @@
+<%response.Expires=-1%>
+<%
+	Response.CodePage = 65001
+	Response.CharSet = "UTF-8"
+%>
+<!-- #INCLUDE File="../local/local.phtml" -->
+<!-- #INCLUDE File="../util/xt_func_util.phtml" -->
+<!-- #INCLUDE File="../util/xt_func_string.phtml" -->
+
+<%
+	'--POST DATA------------------------------------------
+	template_id = Trim(Request("template_id"))
+	if SetSettingValue("THEME_TEMPLATE", template_id) then
+    
+    end if
+%>

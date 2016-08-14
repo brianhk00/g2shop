@@ -1,0 +1,104 @@
+<!-- #INCLUDE File="../../local/local.phtml" -->
+<!-- #INCLUDE File="../../util/xt_func_util.phtml" -->
+<!-- #INCLUDE File="../../util/xt_func_string.phtml" -->
+<!-- #INCLUDE File="../../include/i_login.phtml" -->
+<%
+	TPL_MARKETSHOP1_MENUTYPE = GetSettingValue("TPL_MARKETSHOP1_MENUTYPE", "default")
+%>
+<!--#INCLUDE FILE="../../include/doctype.phtml"-->
+<head>
+<!--#INCLUDE FILE="../../include/head2.phtml"-->
+<!-- BEGIN PAGE LEVEL PLUGINS -->
+<!-- END PAGE LEVEL PLUGINS -->
+</head>
+
+<body class="page-container-bg-solid">
+<div class="page-wrapper">
+	<div class="page-wrapper-row full-height">
+		<div class="page-wrapper-middle">
+			<!-- BEGIN CONTAINER -->
+			<div class="page-container">
+				<!-- BEGIN CONTENT -->
+				<div class="page-content-wrapper">
+					<!-- BEGIN CONTENT BODY -->
+					<!-- BEGIN PAGE CONTENT BODY -->
+					<div class="page-content">
+						<div class="container-fluid">
+							<!-- BEGIN PAGE CONTENT INNER -->
+							<div class="row">
+								<div class="col-md-12">
+									<form id="form_edit_1" class="form-horizontal form-row-seperated" action="#">
+										<div class="portlet">
+											<div class="portlet-title">
+												<div class="caption">
+												<i class="icon-share"></i>
+												Marketshop 1 Settings
+												</div>
+												<div class="actions btn-set">
+													<button class="btn btn-success" onclick="savebutton='1';">
+														<i class="fa fa-check"></i> Save
+													</button>
+												</div>
+											</div>
+											<div class="alert alert-danger display-hide">
+											<button class="close" data-close="alert"></button> You have some form errors. Please check below. 
+											</div>
+											<div class="alert alert-success display-hide">
+											<button class="close" data-close="alert"></button> The information has been saved.
+											</div>
+											<div class="alert alert-warning display-hide">
+											<button class="close" data-close="alert"></button> The information has not been saved properly. Please contact system administrator.
+											</div>
+											<div class="portlet-body">
+<!--START OF CONFIGS-->
+<div class="tabbable-bordered">
+	<ul class="nav nav-tabs">
+		<li class="active">
+			<a href="#tab_general" data-toggle="tab"> General </a>
+		</li>
+	</ul>
+	<div class="tab-content">
+		<div class="tab-pane active" id="tab_general">
+			<div class="form-group">
+				<label class="col-sm-2 control-label" for="TPL_MARKETSHOP1_MENUTYPE">
+					Menu Type
+				</label>
+				<div class="col-sm-8">
+					<select class="form-control input-sm" name="TPL_MARKETSHOP1_MENUTYPE" id="TPL_MARKETSHOP1_MENUTYPE">
+						<option value="default" <%if TPL_MARKETSHOP1_MENUTYPE = "default" then%>selected<%end if%>>Default</option>
+						<option value="megamenu" <%if TPL_MARKETSHOP1_MENUTYPE = "megamenu" then%>selected<%end if%>>Mega Menu</option
+					</select>
+				</div>
+			</div>
+		</div>
+	</div>
+</div>
+<!--END OF CONFIGS-->					
+											
+											</div>
+										</div>
+									</form>
+								</div>
+							</div>
+							
+							<!-- END PAGE CONTENT INNER -->
+						</div>
+					</div>
+					<!-- END PAGE CONTENT BODY -->
+					<!-- END CONTENT BODY -->
+				</div>
+				<!-- END CONTENT -->
+			</div>
+			<!-- END CONTAINER -->
+		</div>
+	</div>
+</div>
+<!--#INCLUDE FILE="../../include/js2.phtml"-->
+<!-- BEGIN PAGE LEVEL PLUGINS -->
+<script src="../../../assets/global/plugins/jquery-validation/js/jquery.validate.min.js" type="text/javascript"></script>
+<script src="../../../assets/global/plugins/jquery-validation/js/additional-methods.min.js" type="text/javascript"></script>
+<!-- END PAGE LEVEL PLUGINS -->
+<!-- BEGIN PAGE LEVEL SCRIPTS -->
+<!-- END PAGE LEVEL SCRIPTS -->
+</body>
+</html>

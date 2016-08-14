@@ -1,0 +1,12 @@
+<%response.Expires=-1%>
+<!-- #INCLUDE File="../local/local.phtml" -->
+<!-- #INCLUDE File="../util/xt_func_util.phtml" -->
+<!-- #INCLUDE File="../util/xt_func_string.phtml" -->
+<%
+	'--POST DATA------------------------------------------
+	page_content = Trim(Request("page_content"))
+	
+	if SetSettingText("PAGE_CONTENT_404", page_content) then
+    
+    end if
+%>

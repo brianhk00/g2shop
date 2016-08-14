@@ -2,6 +2,16 @@
 <!-- #INCLUDE File="util/xt_func_util.phtml" -->
 <!-- #INCLUDE File="util/xt_func_string.phtml" -->
 <!-- #INCLUDE File="include/i_login.phtml" -->
+<%
+	sql = "SELECT setting_values FROM " &  g_storeid & "_setting WHERE setting_type='THEME_TEMPLATE'"
+	Set rsSetting = dbconn.Execute(sql)
+	if not rsSetting.EOF then
+		THEME_TEMPLATE = Trim(rsSetting(0))
+	else
+		THEME_TEMPLATE = "porto"
+	end if
+	rsSetting.Close
+%>
 <!--#INCLUDE FILE="include/doctype.phtml"-->
 <head>
 <!--#INCLUDE FILE="include/head.phtml"-->
@@ -28,8 +38,8 @@
 						<div class="container-fluid">
 							<!-- BEGIN PAGE TITLE -->
 							<div class="page-title">
-								<h1>Dashboard
-									<small>dashboard & statistics</small>
+								<h1>Template Design & Settings
+									<small>overview & settings</small>
 								</h1>
 							</div>
 							<!-- END PAGE TITLE -->
@@ -41,7 +51,7 @@
 						<div class="container-fluid">
 							<!-- BEGIN PAGE CONTENT INNER -->
 							<div class="page-content-inner">
-								
+								<iframe src="theme/<%=THEME_TEMPLATE%>/config.phtml" width="100%" height="400" frameborder="0" style="border:1px solid #333333"></iframe>
 							</div>
 							<!-- END PAGE CONTENT INNER -->
 						</div>
