@@ -1,0 +1,26 @@
+<div id="carousel" class="owl-carousel nxt">
+	<div class="item text-center">
+		<a href="#"><img src="image/product/apple_logo-100x100.jpg" alt="Palm" class="img-responsive"/></a>
+	</div>
+	<div class="item text-center">
+		<a href="#"><img src="image/product/canon_logo-100x100.jpg" alt="Sony" class="img-responsive"/></a>
+	</div>
+	<div class="item text-center">
+		<a href="#"><img src="image/product/apple_logo-100x100.jpg" alt="Canon" class="img-responsive"/></a>
+	</div>
+	<div class="item text-center">
+		<a href="#"><img src="image/product/canon_logo-100x100.jpg" alt="Apple" class="img-responsive"/></a>
+	</div>
+	<div class="item text-center">
+		<a href="#"><img src="image/product/apple_logo-100x100.jpg" alt="HTC" class="img-responsive"/></a>
+	</div>
+	<div class="item text-center">
+		<a href="#"><img src="image/product/canon_logo-100x100.jpg" alt="Hewlett-Packard" class="img-responsive"/></a>
+	</div>
+	<div class="item text-center">
+		<a href="#"><img src="image/product/apple_logo-100x100.jpg" alt="brand" class="img-responsive"/></a>
+	</div>
+	<div class="item text-center">
+		<a href="#"><img src="image/product/canon_logo-100x100.jpg" alt="brand1" class="img-responsive"/></a>
+	</div>
+</div>
