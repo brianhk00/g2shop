@@ -243,7 +243,7 @@
 		rsM.Close
 		set rsM = nothing
 		
-		sql = "SELECT dept_id FROM hubutu_dept WHERE include_topnav = 1 AND is_hidden = 0 ORDER BY dept_row"
+		sql = "SELECT dept_id FROM " & g_storeid & "_dept WHERE include_topnav = 1 AND is_hidden = 0 ORDER BY dept_row"
 		Set rsM = dbconn.Execute(sql)
 		do while not rsM.EOF
 			mm = Replace(mm, "<div class=""dropdown-menu""><ul><!--" & rsM("dept_id") & "--></ul></div>", "")

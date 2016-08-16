@@ -1,0 +1,1513 @@
+<%
+	Response.CodePage = 65001
+	Response.CharSet = "UTF-8"
+	
+	storeviewid = Trim(Request("storeviewid"))
+	if Len(storeviewid) > 0 then
+		Session("CURRENT_ADMIN_VIEW_ID")  = storeviewid
+	end if
+%>
+<!-- #INCLUDE File="local/local.phtml" -->
+<!-- #INCLUDE File="util/xt_func_util.phtml" -->
+<!-- #INCLUDE File="util/xt_func_string.phtml" -->
+<!-- #INCLUDE File="include/i_login.phtml" -->
+<%
+	system_id = Trim(Request("system_id"))
+	system_name = Trim(Request("system_name"))
+	show_cat = Trim(Request("show_cat"))
+	
+	'Get system name if blank...
+	sql = "SELECT * FROM " & g_storeid & "_system_product WHERE pf_id='" & system_id & "'"
+	set rsSystem = dbconn.Execute(sql)
+	if not rsSystem.EOF then
+		system_name = rsSystem("name")
+		system_desc=rsSystem("description")
+		system_desc2=rsSystem("description2")
+		system_detail=rsSystem("details")
+		
+		system_enable_upload = rsSystem("sys_enable_upload")
+		system_weight = rsSystem("weight")
+		system_is_nontaxable = rsSystem("is_nontaxable")
+		system_is_noship = rsSystem("is_noship")
+		
+		system_thumb_image = rsSystem("thumb_image")
+		system_thumb_image2 = rsSystem("thumb_image2")
+		system_thumb_image3 = rsSystem("thumb_image3")
+		system_thumb_image4 = rsSystem("thumb_image4")
+		
+		'===========================================================================================
+		
+		system_update_mode = rsSystem("update_mode")
+		system_pricing_model = rsSystem("pricing_model")
+		system_option_mode = rsSystem("option_mode")
+		system_u_markup_A = rsSystem("u_markup_A")
+		system_u_markup_B = rsSystem("u_markup_B")
+		system_u_markup_C = rsSystem("u_markup_C")
+		system_u_markup_D = rsSystem("u_markup_D")
+		
+		if not IsNumeric(system_u_markup_A) then
+			system_u_markup_A = 0
+		end if
+		if not IsNumeric(system_u_markup_B) then
+			system_u_markup_B = 0
+		end if
+		if not IsNumeric(system_u_markup_C) then
+			system_u_markup_C = 0
+		end if
+		if not IsNumeric(system_u_markup_D) then
+			system_u_markup_D = 0
+		end if
+		
+		'Translation...
+		select case pricing_model
+		case 0
+			str_pricing_model = "Base Price Model"
+		case 1
+			str_pricing_model = "Flat Price Model"
+		case 2
+			str_pricing_model = "Base Markup Model"
+		case else
+			str_pricing_model = "Base Price Model"
+		end select
+		
+		select case update_mode
+		case 0
+			str_update_mode = "Disabled"
+		case 1
+			str_update_mode = "Price Only"
+		case 2
+			str_update_mode = "Full Sync"
+		case else
+			str_update_mode = "Disabled"
+		end select
+		
+		select case option_mode
+		case 0
+			str_option_mode = "Manual"
+		case 1
+			str_option_mode = "Apply Markup"
+		case 2
+			str_option_mode = "Use Catalog Price"
+		case else
+			str_option_mode = "Manual"
+		end select
+		
+		price_a = FormatNumber(rsSystem("price_A"),2,0,0,0)
+		price_b = FormatNumber(rsSystem("price_B"),2,0,0,0)
+		price_c = FormatNumber(rsSystem("price_C"),2,0,0,0)
+		price_d = FormatNumber(rsSystem("price_D"),2,0,0,0)
+		
+	end if
+	rsSystem.Close
+	set rsSystem = nothing
+
+
+
+%>
+
+<!--#INCLUDE FILE="include/doctype.phtml"-->
+<head>
+<!--#INCLUDE FILE="include/head.phtml"-->
+<!-- BEGIN PAGE LEVEL PLUGINS -->
+<link rel="stylesheet" href="assets/plugins/jquery-ui/jquery-ui-1.10.4.custom.min.css" />
+<link rel="stylesheet" href="assets/plugins/dynatree/src/skin-vista/ui.dynatree.css">
+<link rel="stylesheet" href="assets/plugins/dynatree/src/skin-vista/custom.css">
+<link href="../assets/global/plugins/bootstrap-modal/css/bootstrap-modal-bs3patch.css" rel="stylesheet" type="text/css" />
+<link href="../assets/global/plugins/bootstrap-modal/css/bootstrap-modal.css" rel="stylesheet" type="text/css" />
+<link href="../assets/global/plugins/bootstrap-editable/bootstrap-editable/css/bootstrap-editable.css" rel="stylesheet" type="text/css" />
+<link href="../assets/global/plugins/datatables/datatables.min.css" rel="stylesheet" type="text/css" />
+<link href="../assets/global/plugins/datatables/plugins/bootstrap/datatables.bootstrap.css" rel="stylesheet" type="text/css" />
+<link href="../assets/global/plugins/bootstrap-datepicker/css/bootstrap-datepicker3.min.css" rel="stylesheet" type="text/css" />
+<style>
+.form-inline .form-group {
+    margin-left: 0px;
+    margin-right: 0px;
+}
+</style>
+<!-- END PAGE LEVEL PLUGINS -->
+</head>
+
+<body class="page-container-bg-solid">
+<div class="page-wrapper">
+	<div class="page-wrapper-row">
+		<div class="page-wrapper-top">
+			<!--#INCLUDE FILE="include/header.phtml"-->
+		</div>
+	</div>
+	<div class="page-wrapper-row full-height">
+		<div class="page-wrapper-middle">
+			<!-- BEGIN CONTAINER -->
+			<div class="page-container">
+				<!-- BEGIN CONTENT -->
+				<div class="page-content-wrapper">
+					<!-- BEGIN CONTENT BODY -->
+					<!-- BEGIN PAGE HEAD-->
+					<!-- END PAGE HEAD-->
+					<!-- BEGIN PAGE CONTENT BODY -->
+					<div class="page-content">
+						<div class="container-fluid">
+							<!-- BEGIN PAGE CONTENT INNER -->
+							<div class="page-content-inner">
+								<div class="row">
+									<div class="col-md-12">
+										<form id="form_edit_1" class="form-horizontal form-row-seperated" action="#">
+										<input type="hidden" id="formop" name="formop" value="">
+										<input type="hidden" id="system_id" name="system_id" value="<%=system_id%>">
+											<div class="portlet">
+												<div class="portlet-title">
+													<div class="caption">
+													<i class="icon-cloud-upload"></i>
+													<%
+													if Len(system_name) > 0 then
+														Response.Write(Left(system_name, 50))
+													else
+														Response.Write("New System")
+													end if
+													%>
+													<% if Len(did) > 0 then %>
+													[Duplicate]
+													<% end if %>
+													</div>
+													<div class="actions btn-set">
+														<button type="button" onclick="location.href='catalog_product.phtml';" name="back" class="btn btn-default">
+															<i class="fa fa-angle-left"></i> Back
+														</button>
+														<button class="btn btn-success" onclick="savebutton='1';">
+															<i class="fa fa-check"></i> Save
+														</button>
+														<button class="btn btn-success" onclick="savebutton='0';">
+															<i class="fa fa-check-circle"></i> Save & Continue Edit
+														</button>
+														<div class="btn-group">
+															<a class="btn btn-success dropdown-toggle" href="javascript:;" data-toggle="dropdown">
+																<i class="fa fa-share"></i> More
+																<i class="fa fa-angle-down"></i>
+															</a>
+															<div class="dropdown-menu pull-right">
+																<li>
+																	<a href="javascript:;" id="DuplicateEntry"> Duplicate </a>
+																</li>
+																<li>
+																	<a href="#" id="DeleteEntry"> Delete </a>
+																</li>
+															</div>
+														</div>
+													</div>
+												</div>
+												<div class="alert alert-danger display-hide">
+												<button class="close" data-close="alert"></button> You have some form errors. Please check below. 
+												</div>
+												<div class="alert alert-success display-hide">
+												<button class="close" data-close="alert"></button> The information has been saved.
+												</div>
+												<div class="alert alert-warning display-hide">
+												<button class="close" data-close="alert"></button> The information has not been saved properly. Please contact system administrator.
+												</div>
+												<div class="portlet-body">
+													<div class="tabbable-bordered">
+														<ul class="nav nav-tabs">
+															<li class="active">
+																<a href="#tab_system_detail_general" data-toggle="tab">
+																	<i class="pink fa fa-info"></i> General
+																</a>
+															</li>
+															<li>
+																<a href="#tab_system_detail_settings" data-toggle="tab">
+																	<i class="pink fa fa-sliders"></i> Settings
+																</a>
+															</li>
+															<li>
+																<a href="#tab_system_detail_configurator" data-toggle="tab">
+																	<i class="pink fa fa-desktop"></i> Configurator
+																</a>
+															</li>
+															<li>
+																<a href="#tab_system_detail_configuration_rule" data-toggle="tab">
+																	<i class="pink fa fa-cogs"></i> Configuration Rule
+																</a>
+															</li>
+															<li>
+																<a href="#tab_system_detail_images" data-toggle="tab">
+																	<i class="pink fa fa-file-image-o"></i> System Images
+																</a>
+															</li>
+														</ul>
+														<div class="tab-content">
+															<div class="tab-pane active" id="tab_system_detail_general">
+															
+<div class="form-group">
+	<label class="col-sm-2 control-label" for="system_name">
+	Name <span class="symbol required"></span>
+	</label>
+	<div class="col-sm-8">
+	<input type="text" placeholder="" id="system_name" name="system_name" class="form-control" value="<%=HTMLEncodeString(system_name)%>">
+	</div>
+</div>
+<div class="form-group">
+	<label class="col-sm-2 control-label" for="system_desc">
+	Description
+	</label>
+	<div class="col-sm-8">
+	<input type="text" placeholder="" id="system_desc" name="system_desc" class="form-control" value="<%=HTMLEncodeString(system_desc)%>">
+	</div>
+</div>
+<div class="form-group">
+	<label class="col-sm-2 control-label" for="system_desc2">
+	Secondary Description
+	</label>
+	<div class="col-sm-8">
+	<input type="text" placeholder="" id="system_desc2" name="system_desc2" class="form-control" value="<%=HTMLEncodeString(system_desc2)%>">
+	</div>
+</div>
+<div class="form-group">
+	<label class="col-sm-2 control-label" for="system_detail">
+		Detail Description 
+	</label>
+	<div class="col-sm-8">
+		<textarea rows="3" maxlength="2024" id="system_detail" name="system_detail" class="form-control input-sm limited"><%=system_detail%></textarea>
+	</div>
+</div>
+<div class="form-group">
+	<label class="col-sm-2 control-label" for="system_weight">
+	Weight <span class="symbol required"></span>
+	</label>
+	<div class="col-sm-4">
+	<input type="text" placeholder="" id="system_weight" name="system_weight" class="form-control" value="<%=system_weight%>">
+	</div>
+</div>
+<div class="form-group">
+	<label class="col-sm-2 control-label" for="system_is_noship">
+		Visibility <span class="symbol required"></span>
+	</label>
+	<div class="col-sm-4"> 
+		<select id="system_is_noship" name="system_is_noship" class="js-example-basic-hide-search js-states form-control">
+		<option value="0" <%if system_is_noship = 0 then%>selected<%end if%>>Show</option>
+		<option value="1" <%if system_is_noship = 1 then%>selected<%end if%>>Hide</option>
+		</select>
+	</div>
+</div>
+<div class="form-group">
+	<label class="col-sm-2 control-label" for="system_is_nontaxable">
+		Taxable <span class="symbol required"></span>
+	</label>
+	<div class="col-sm-4"> 
+		<select id="system_is_nontaxable" name="system_is_nontaxable" class="js-example-basic-hide-search js-states form-control">
+		<option value="0" <%if system_is_nontaxable = 0 then%>selected<%end if%>>Yes</option>
+		<option value="1" <%if system_is_nontaxable = 1 then%>selected<%end if%>>No</option>
+		</select>
+	</div>
+</div>
+<div class="form-group">
+	<label class="col-sm-2 control-label" for="system_is_noship">
+		Include in Shipping Charge <span class="symbol required"></span>
+	</label>
+	<div class="col-sm-4"> 
+		<select id="system_is_noship" name="system_is_noship" class="js-example-basic-hide-search js-states form-control">
+		<option value="0" <%if system_is_noship = 0 then%>selected<%end if%>>Yes</option>
+		<option value="1" <%if system_is_noship = 1 then%>selected<%end if%>>No</option>
+		</select>
+	</div>
+</div>
+<div class="form-group">
+	<label class="col-sm-2 control-label" for="system_enable_upload">
+		Enable File Upload <span class="symbol required"></span>
+	</label>
+	<div class="col-sm-4"> 
+		<select id="system_enable_upload" name="system_enable_upload" class="js-example-basic-hide-search js-states form-control">
+		<option value="0" <%if system_enable_upload = "0" then%>selected<%end if%>>No</option>
+		<option value="1" <%if system_enable_upload = "1" then%>selected<%end if%>>Yes</option>
+		</select>
+	</div>
+</div>
+																							
+															</div>
+															<div class="tab-pane" id="tab_system_detail_settings">
+															
+<div class="form-group">
+	<label class="col-sm-2 control-label" for="system_pricing_model">
+		Pricing Model <span class="symbol required"></span>
+	</label>
+	<div class="col-sm-4"> 
+		<select id="system_pricing_model" name="system_pricing_model" class="js-example-basic-hide-search js-states form-control">
+		<option value="1" <%if system_pricing_model = 0 then%>selected<%end if%>>Base Price Model</option>
+		<option value="0" <%if system_pricing_model = 1 then%>selected<%end if%>>Flat Price Model</option>
+		<option value="1" <%if system_pricing_model = 2 then%>selected<%end if%>>Base Markup Model</option>
+		</select>
+		
+	</div>
+	<div class="col-sm-1"> 
+		<a class="btn btn-sm btn-primary" href="#" id="opener1"><i class="fa fa-question-circle"></i></a>
+	</div>
+</div>
+<div class="form-group">
+	<label class="col-sm-2 control-label" for="system_update_mode">
+		Catalog Sync. <span class="symbol required"></span>
+	</label>
+	<div class="col-sm-4"> 
+		<select id="system_update_mode" name="system_update_mode" class="js-example-basic-hide-search js-states form-control">
+		<option value="0" <%if system_update_mode = 0 then%>selected<%end if%>>Diabled</option>
+		<option value="1" <%if system_update_mode = 1 then%>selected<%end if%>>Price Only</option>
+		<option value="1" <%if system_update_mode = 2 then%>selected<%end if%>>Full Sync</option>
+		</select>
+	</div>
+	<div class="col-sm-1"> 
+		<a class="btn btn-sm btn-primary" href="#" id="opener2"><i class="fa fa-question-circle"></i></a>
+	</div>
+</div>
+<div class="form-group">
+	<label class="col-sm-2 control-label" for="system_option_mode">
+		Optional Item Price <span class="symbol required"></span>
+	</label>
+	<div class="col-sm-4"> 
+		<select id="system_option_mode" name="system_option_mode" class="js-example-basic-hide-search js-states form-control">
+		<option value="0" <%if system_option_mode = 0 then%>selected<%end if%>>Manual</option>
+		<option value="1" <%if system_option_mode = 1 then%>selected<%end if%>>Apply System Markup</option>
+		<option value="1" <%if system_option_mode = 2 then%>selected<%end if%>>Use Catalog Price</option>
+		</select>
+	</div>
+	<div class="col-sm-1"> 
+		<a class="btn btn-sm btn-primary" href="#" id="opener3"><i class="fa fa-question-circle"></i></a>
+	</div>
+</div>
+<div class="form-group">
+	<label class="col-sm-2 control-label" for="system_u_markup_A">
+	GROUP A (%)<span class="symbol required"></span>
+	</label>
+	<div class="col-sm-2">
+	<input type="text" placeholder="" id="system_u_markup_A" name="system_u_markup_A" class="form-control" value="<%=FormatNumber(system_u_markup_A,1)%>">
+	</div>
+</div>
+<div class="form-group">
+	<label class="col-sm-2 control-label" for="system_u_markup_B">
+	GROUP B (%)<span class="symbol required"></span>
+	</label>
+	<div class="col-sm-2">
+	<input type="text" placeholder="" id="system_u_markup_B" name="system_u_markup_B" class="form-control" value="<%=FormatNumber(system_u_markup_B,1)%>">
+	</div>
+</div>
+<div class="form-group">
+	<label class="col-sm-2 control-label" for="system_u_markup_C">
+	GROUP C (%) <span class="symbol required"></span>
+	</label>
+	<div class="col-sm-2">
+	<input type="text" placeholder="" id="system_u_markup_C" name="system_u_markup_C" class="form-control" value="<%=FormatNumber(system_u_markup_C,1)%>">
+	</div>
+</div>
+<div class="form-group">
+	<label class="col-sm-2 control-label" for="system_u_markup_D">
+	GROUP D (%) <span class="symbol required"></span>
+	</label>
+	<div class="col-sm-2">
+	<input type="text" placeholder="" id="system_u_markup_D" name="system_u_markup_D" class="form-control" value="<%=FormatNumber(system_u_markup_D,1)%>">
+	</div>
+</div>
+															
+															</div>
+															<div class="tab-pane" id="tab_system_detail_configurator">
+
+															
+<div class="row">
+	<div class="col-md-3">
+		<div class="portlet blue-steel box">
+			<div class="portlet-title">
+				<div class="caption">
+					<i class="fa fa-cogs"></i> Options & Groups
+				</div>
+				<div class="actions">
+					<a data-toggle="modal" class="btn btn-default btn-sm" role="button" href="#myModal1">
+					<i class="clip-plus-circle"></i> Add Option Group</a>
+					<a data-toggle="modal" class="btn btn-default btn-sm" role="button" href="#myModal2">
+					<i class="clip-plus-circle"></i> Add Option</a>
+					
+				</div>
+			</div>
+			<div class="portlet-body">
+				<div id="tree3"></div>
+			</div>
+		</div>
+	</div>
+	<div class="col-md-9 no-padding">
+		<div class="portlet blue-steel box">
+			<div class="portlet-title">
+				<div class="caption">
+					<i class="fa fa-cogs"></i> Detail
+				</div>
+				<div class="actions">
+					<button class="btn btn-success" onclick="savebutton='1';">
+						<i class="fa fa-check"></i> Save
+					</button>
+					<button class="btn btn-danger btn-sm" type="button" id="DeleteCategory">
+					<i class="fa fa-remove"></i>
+					Delete Category
+					</button>
+				</div>
+			</div>
+			<div class="portlet-body">
+				<span id="dept_detail">
+				<p>Select existing options on the left or click on the "add" button to add new option.
+				</span>
+			</div>
+		</div>
+	</div>
+</div>
+															
+															
+															
+															</div>
+															<div class="tab-pane" id="tab_system_detail_configuration_rule">
+															
+<div class="row">
+	<div class="col-sm-12">
+		<table id="user" class="table table-bordered table-striped" style="clear: both">
+			<tbody>
+				<% for i = 1 to 10 %>
+				<tr>
+					<td class="column-left" width="100">Condition <%=i%></td>
+					<td class="column-right">
+					
+					<p>If <a href="#" class="editable editable-click group_rule" name="x_group_rule" id="group_rule<%=i%>" data-type="select" data-pk="<%=system_id%>" data-value="all" data-original-title="Select Rule">ALL</a> of these conditions are 
+					<a href="#" class="group_rule_condition" id="group_rule_condition<%=i%>" data-type="select" data-pk="<%=i%>" data-value="true" data-original-title="Select Condition">TRUE</a> :</p>
+					<% for j = 1 to 5 %>
+					<i class='fa fa-angle-double-right'></i> <a href="#" class="group_selected" id="group_selected<%=i%><%=j%>" data-type="select" data-pk="<%=i%><%=j%>" data-value="" data-original-title="Select Item"></a>
+					is Selected AND In 
+					<a href="#" class="group_name" id="group<%=i%><%=j%>" data-type="select" data-pk="<%=i%><%=j%>" data-value="" data-original-title="Select Option Group"></a>
+					, Selected Item's SKU 
+					<a href="#" class="group_compare" id="group_compare<%=i%><%=j%>" data-type="select" data-pk="<%=i%><%=j%>" data-value="" data-original-title="Select Condition"></a>
+					&nbsp;
+					<a href="#" class="group_value" id="group_value<%=i%><%=j%>" data-type="text" data-pk="<%=i%><%=j%>" data-value="" data-original-title="Enter SKUs (separated by comma(,))"></a>
+					<br><br>
+					<% next %>
+					
+					</td>
+				</tr>
+				
+				<tr>
+					<td class="column-left">Condition <%=i%> Message</td>
+					<td class="column-right">
+					<a href="#" class="group_message" id="group_message<%=i%>" data-type="textarea" data-pk="<%=i%>" data-placeholder="Warning Message here..." data-original-title="Enter Message"></a>
+					</td>
+				</tr>
+				
+				<% next %>
+				
+			</tbody>
+		</table>
+	</div>
+</div>
+															</div>
+															<div class="tab-pane" id="tab_system_detail_images">
+															</div>
+														</div>
+													</div>
+												</div>
+											</div>
+										</form>
+									</div>
+								</div>
+							</div>
+							<!-- END PAGE CONTENT INNER -->
+						</div>
+					</div>
+					<!-- END PAGE CONTENT BODY -->
+					<!-- END CONTENT BODY -->
+				</div>
+				<!-- END CONTENT -->
+			</div>
+			<!-- END CONTAINER -->
+		</div>
+	</div>
+	<div class="page-wrapper-row">
+		<div class="page-wrapper-bottom">
+			<!--#INCLUDE FILE="include/footer.phtml"-->
+		</div>
+	</div>
+</div>
+<!--MODAL START--->
+<div id="loading-mask" style="display:none">
+	<p class="loader" id="loading_mask_loader"><img src="assets/images/ajax-loader.gif" alt="Loading..."/><br/>Please wait...</p>
+</div>
+<div id="ajax-modal" class="modal fade" tabindex="-1" style="display: none;"></div>
+<div id="ajax-modal2" class="modal fade" tabindex="-1" style="display: none;"></div>
+<div id="ajax-modal3" class="modal fade" tabindex="-1" style="display: none;"></div>
+<div id="ajax-modal4" class="modal fade" tabindex="-1" style="display: none;"></div>
+<div class="modal fade" id="stack2" tabindex="-1" data-width="960" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+	<div class="modal-content">
+		<div class="modal-header">
+			<button type="button" class="close" data-dismiss="modal" aria-hidden="true">
+				&times;
+			</button>
+			<h4 class="modal-title">Product Search</h4>
+		</div>
+		<div class="modal-body">
+			<input id="s_sku" name="s_sku" class="form-control" data-tabindex="1" type="hidden">
+			<div class="row">
+				<div class="col-sm-12">
+					<div class="tabbable">
+						<ul id="myTab3" class="nav nav-tabs tab-green">
+							<li class="active">
+								<a href="#panel_tab4_example11" data-toggle="tab">
+									<i class="pink fa fa-cube"></i> Your Catalog
+								</a>
+							</li>
+							<li class="">
+								<a href="#panel_tab4_example12" data-toggle="tab">
+									<i class="blue fa fa-cubes"></i> ICECAT Catalog
+								</a>
+							</li>
+						</ul>
+						
+						<div class="tab-content">
+							<div class="tab-pane active" id="panel_tab4_example11">
+								<div class="row">
+									<div class="col-sm-3">
+										<div class="form-group">
+											<select class="form-control input-sm" id="catalog_category1">
+											</select>
+										</div>
+									</div>
+									<div class="col-sm-3">
+										<div class="form-group">
+											<select class="form-control input-sm" id="catalog_category2">
+											</select>
+										</div>
+									</div>
+									<div class="col-sm-3">
+										<div class="form-group">
+											<select class="form-control input-sm" id="catalog_category3">
+											</select>
+										</div>
+									</div>
+									<div class="col-sm-3">
+										<div class="form-group">
+											<select class="form-control input-sm" id="catalog_category4">
+											</select>
+										</div>
+									</div>
+								</div>
+								<div class="row"><div class="col-md-12">
+								<table class="table table-striped table-bordered table-hover table-full-width table-condensed" id="sample_1">
+									<thead>
+									<tr>
+										<th>Product ID</th>
+										<th>Thumbnail</th>
+										<th>Name</th>
+										<th>SKU</th>
+										<th>Price</th>
+										<th>Stock Qty.</th>
+										<th>Status</th>
+										<th>Action</th>
+									</tr>
+									</thead>
+									<tbody>
+										<tr>
+											<td colspan="9" class="dataTables_empty">Loading data from server</td>
+										</tr>
+									</tbody>
+								</table>
+								</div></div>
+							</div>
+							<div class="tab-pane" id="panel_tab4_example12">
+								<div class="row">
+									<div class="col-sm-3">
+										<div class="form-group">
+											<select class="form-control input-sm" id="icecat_category1">
+											</select>
+										</div>
+									</div>
+									<div class="col-sm-3">
+										<div class="form-group">
+											<select class="form-control input-sm" id="icecat_category2">
+											</select>
+										</div>
+									</div>
+									<div class="col-sm-3">
+										<div class="form-group">
+											<select class="form-control input-sm" id="icecat_category3">
+											</select>
+										</div>
+									</div>
+									<div class="col-sm-3">
+										<div class="form-group">
+											<select class="form-control input-sm" id="icecat_category4">
+											</select>
+										</div>
+									</div>
+								</div>
+								<div class="row"><div class="col-md-12">
+								<table class="table table-striped table-bordered table-hover table-full-width table-condensed" id="sample_2">
+									<thead>
+									<tr>
+										<th>SKU</th>
+										<th>Thumbnail</th>
+										<th>Name</th>
+										<th>Manufacturer</th>
+										<th>Mfg.Part #</th>
+										<th>Cost</th>
+										<th width="80">Qty.<br>(IM/TD/SY/DH)</th>
+										<th>Status</th>
+										<th>Action</th>
+									</tr>
+									</thead>
+									<tbody>
+										<tr>
+											<td colspan="9" class="dataTables_empty">Loading data from server</td>
+										</tr>
+									</tbody>
+								</table>
+								</div></div>
+							</div>
+							<div class="tab-pane" id="panel_tab4_example13">
+								.....
+							</div>
+							<div class="tab-pane" id="panel_tab4_example14">
+								.....
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+			
+		</div>
+	</div>
+</div>
+<div class="modal fade" id="myModal1" tabindex="-1" data-width="600" role="dialog" aria-hidden="true">
+	<div class="modal-dialog">
+		<div class="modal-content">
+			<div class="modal-header">
+				<button type="button" class="close" data-dismiss="modal" aria-hidden="true">
+					&times;
+				</button>
+				<h4 class="modal-title">Add New Group</h4>
+			</div>
+			<div class="modal-body">
+				<p>
+					Would you like to add new Group?
+				</p>
+			</div>
+			<div class="modal-footer">
+				<button aria-hidden="true" data-dismiss="modal" class="btn btn-default">
+					Close
+				</button>
+				<button class="btn btn-primary" data-dismiss="modal" id="btn-add-root-category-confirm">
+					Confirm
+				</button>
+			</div>
+		</div>
+	</div>
+</div>
+<div class="modal fade" id="myModal2" tabindex="-1" data-width="600" role="dialog" aria-hidden="true">
+	<div class="modal-dialog">
+		<div class="modal-content">
+			<div class="modal-header">
+				<button type="button" class="close" data-dismiss="modal" aria-hidden="true">
+					&times;
+				</button>
+				<h4 class="modal-title">Add System Option</h4>
+			</div>
+			<div class="modal-body">
+				<p>
+					Would you like to add new system option?
+				</p>
+			</div>
+			<div class="modal-footer">
+				<button aria-hidden="true" data-dismiss="modal" class="btn btn-default">
+					Close
+				</button>
+				<button class="btn btn-primary" data-dismiss="modal" id="btn-add-sub-category-confirm">
+					Confirm
+				</button>
+			</div>
+		</div>
+	</div>
+</div>
+<div id="dialog-confirm" title="Confirmation Required">
+  Are you sure you want to do this?
+</div>
+<div id="dialog-pricing-model" title="Pricing Model">
+  <p>
+	
+	<font color="#000066"><b><u>Flat Price Model</u></b></font><br>
+	In the Flat Price Model, the end-user system price for each price group will be calculated by adding the price of all items
+	 (cost x system markup) selected in the system configuration. The preset price for each price group
+	will be ignored.
+	<br><br>
+	<font color="#000066"><b><u>Base Price Model</u></b></font><br>
+	In the Base Price Model, the system price will be calculated by adding all the upgrade cost to preset
+	system price for price group.
+	<br><br>
+	<font color="#000066"><b><u>Base Markup Model</u></b></font><br>
+	Same as Base Price Model, but system markup will be applied to the upgrade cost.
+	<br><br>
+	<!--
+	A1: Cost of default item in A <br>
+	A2: Cost of second item in A<br>
+	B1: Cost of default item in B<br>
+	B2: Cost of second item in B<br>
+	C1: Price of Optional Item<br>
+	H1: Hidden Cost<br>
+	M(A): System Markup for Group A (e.g. 20%)<br>
+	S(A): Preset system price for Group A<br>
+	<a name="ex1"></a>
+	<font color="#000066"><u>Flat Price Model Example</u>(new)</font><br>
+	  Customer upgrades a system from B1 to B2 and select C1.<br><br>
+	  &nbsp;&nbsp;System Price(for Group A)<br>
+	  &nbsp;&nbsp; &nbsp;&nbsp;= (A1+B2+..) + (A1+B2+..) + H1 x M(A) + C1<br><br>
+
+	<a name="ex2"></a>
+	<font color="#000066"><u>Base Price Model Example</u></font><br>
+	  Customer upgrades a system from B1 to B2 and select C1.<br><br>
+	  &nbsp;&nbsp;System Price(for Group A)<br>
+	  &nbsp;&nbsp; &nbsp;&nbsp;= S(A) + (B2-B1) + C1<br><br>
+	  
+	<a name="ex3"></a>
+	<font color="#000066"><u>Base Markup Model Example</u></font><br>
+	  Customer upgrades a system from B1 to B2 and select C1.<br><br>
+	  &nbsp;&nbsp;System Price(for Group A)<br>
+	  &nbsp;&nbsp; &nbsp;&nbsp;= S(A) + (B2-B1) + (B2-B1) x M(A) + C1<br><br>
+	  -->
+	  
+  </p>
+</div>
+<div id="dialog-catalog-sync" title="Catalog Sync">
+  <p>
+		<font color="#000066"><b><u>Disabled</u></b></font><br>
+
+		Private catalog sync is disabled.
+		<br><br>
+		<font color="#000066"><b><u>Cost Only</u></b></font><br>
+		System item cost will be updated automatically whenever the cost of item is updated in the private catalog.
+
+		<br><br>
+		<font color="#000066"><b><u>Full Sync</u></b></font><br>
+		In addition to cost sync, the item will be removed automatically when the corresponding item is removed
+		from the private catalog.
+		<br><br>
+  </p>
+</div>
+<div id="dialog-optional-item-price" title="Optional Item(s) Price Rule">
+  <p>
+	<font color="#000066"><b><u>Manual</u></b></font><br>
+	The cost specified in the configuration will be used as the price of optional item(s).
+	<br><br>
+	<font color="#000066"><b><u>Apply System Markup</u></b></font><br>
+	Same as Manual, but the system markup will be applied.
+	<br><br>
+	<font color="#000066"><b><u>Use Catalog Price</u></b></font><br>
+	The price of optional item(s) will be retrieved from the Private Catalog.
+	<br><br>
+  </p>
+</div>
+<!--MODAL END--->
+<!--#INCLUDE FILE="include/js.phtml"-->
+<!-- BEGIN PAGE LEVEL PLUGINS -->
+<script src="assets/plugins/jquery-ui/jquery-ui-1.10.1.custom.min.js" type="text/javascript"></script>
+<script src="../assets/global/plugins/jquery-validation/js/jquery.validate.min.js" type="text/javascript"></script>
+<script src="../assets/global/plugins/jquery-validation/js/additional-methods.min.js" type="text/javascript"></script>
+<script src="assets/plugins/dynatree/src/jquery.dynatree.js"></script>
+<script src="../assets/global/plugins/bootstrap-editable/bootstrap-editable/js/bootstrap-editable.js" type="text/javascript"></script>
+<script src="../assets/global/plugins/bootstrap-editable/inputs-ext/address/address.js" type="text/javascript"></script>
+<script src="../assets/global/plugins/bootstrap-editable/inputs-ext/wysihtml5/wysihtml5.js" type="text/javascript"></script>
+<script src="../assets/global/scripts/datatable.js" type="text/javascript"></script>
+<script src="../assets/global/plugins/datatables/datatables.min.js" type="text/javascript"></script>
+<script src="../assets/global/plugins/datatables/plugins/bootstrap/datatables.bootstrap.js" type="text/javascript"></script>
+<script src="https://cdn.datatables.net/rowreorder/1.1.1/js/dataTables.rowReorder.min.js"></script>
+<script src="../assets/global/plugins/bootstrap-datepicker/js/bootstrap-datepicker.min.js" type="text/javascript"></script>
+<script src="../assets/global/plugins/bootstrap-maxlength/bootstrap-maxlength.min.js" type="text/javascript"></script>
+<script src="../assets/global/plugins/bootstrap-modal/js/bootstrap-modalmanager.js" type="text/javascript"></script>
+<script src="../assets/global/plugins/bootstrap-modal/js/bootstrap-modal.js" type="text/javascript"></script>
+<!-- END PAGE LEVEL PLUGINS -->
+<!-- BEGIN PAGE LEVEL SCRIPTS -->
+<script>
+//MODAL
+	var UIModals = function () {
+		//function to initiate bootstrap extended modals
+		var initModals = function () {
+			$.fn.modalmanager.defaults.resize = true;
+			$.fn.modal.defaults.spinner = $.fn.modalmanager.defaults.spinner =
+				'<div class="loading-spinner" style="width: 200px; margin-left: -100px;">' +
+				'<div class="progress progress-striped active">' +
+				'<div class="progress-bar" style="width: 100%;"></div>' +
+				'</div>' +
+				'</div>';
+			
+		};
+		return {
+			init: function () {
+				initModals();
+			}
+		};
+	}();
+</script>
+<script language="javascript">
+var theActivatedCategory = "0";
+
+var UITreeview = function () {
+	//function to initiate jquery.dynatree
+	var runTreeView = function () {
+		//External data 
+		$("#tree3").dynatree({
+			initAjax: {
+				url: "api/sp_catalog_system_get_tree_options.phtml?system_id=<%=system_id%>",
+				data: { mode: "funnyMode" }
+			},
+			
+			onActivate: function (node) {
+				theActivatedCategory = node.data.key;
+				$('#loading-mask').show();
+				
+				jQuery.ajax({
+					type:"get",
+					url: "api/sp_catalog_system_get_option_detail_html.phtml",
+					data: {'sysdept_id' : node.data.key, 'isGroup': node.data.isFolder, 'isAjax':true},
+					dataType: 'html',
+					success: function(data) {
+						jQuery("#dept_detail").html(data);
+					},
+					complete: function(){
+						$('#loading-mask').hide();
+						$('#mainTitle1').html(node.data.title + "(ID:" + node.data.key + ")");
+						$('#mainTitle2').html(node.data.title + "(ID:" + node.data.key + ")");
+						window.scrollTo(0,0);
+						$('a[data-toggle="tab"]').on('shown.bs.tab', function (e) {
+							var target = $(e.target).attr("href") // activated tab
+							//alert(target);
+							jQuery.ajax({
+								type:"get",
+								url: "api/save_tab_session.phtml",
+								data: {'tabtarget' : target, 'tabpage' : 'TABTARGET_catalog_system_deail', 'isAjax':true},
+								dataType: 'html',
+								success: function(data) {
+									//
+								}
+							});
+						  
+						  //
+						});
+					}
+				});
+			},
+			onDeactivate: function (node) {
+				//$("#echoActive").text("-");
+			},
+			
+			dnd: {
+				preventVoidMoves: true, // Prevent dropping nodes 'before self', etc.
+				onDragStart: function (node) {
+					/** This function MUST be defined to enable dragging for the tree.
+					 *  Return false to cancel dragging of node.
+					 */
+					return true;
+				},
+				onDragEnter: function (node, sourceNode) {
+					/** sourceNode may be null for non-dynatree droppables.
+					 *  Return false to disallow dropping on node. In this case
+					 *  onDragOver and onDragLeave are not called.
+					 *  Return 'over', 'before, or 'after' to force a hitMode.
+					 *  Return ['before', 'after'] to restrict available hitModes.
+					 *  Any other return value will calc the hitMode from the cursor position.
+					 */
+					// Prevent dropping a parent below another parent (only sort
+					// nodes under the same parent)
+					if (node.parent !== sourceNode.parent) {
+						if (sourceNode.data.isFolder)
+						{
+							//Prevent move folder to folder ???? - need to check
+							//return false;
+						}
+	
+					}
+					// Don't allow dropping *over* a node (would create a child)
+					if (node.data.isFolder)
+					{
+						if(sourceNode.data.isFolder)
+						{
+							return ["before", "after"];
+						}
+						else
+						{
+							return true;
+						}
+						
+					}
+					else
+					{
+						return ["before", "after"];
+					}
+					//
+					//
+				},
+				onDrop: function (node, sourceNode, hitMode, ui, draggable) {
+					
+					
+					/** This function MUST be defined to enable dropping of items on
+					 *  the tree.
+					 */
+					 
+					var souce_key = "";
+					var dest_key = "";
+
+					souce_key = sourceNode.data.key;
+					dest_key = node.data.key;
+
+					//alert(souce_key);
+					//alert(dest_key);
+					
+					source_key_type = sourceNode.data.isFolder;
+					dest_key_type = node.data.isFolder;
+					
+					//alert(source_key_type);
+					//alert(dest_key_type);
+					
+					//alert(hitMode);
+					
+					sourceNode.move(node, hitMode);
+					
+					var dict = $('#tree3').dynatree("getTree").toDict();
+					//alert(dict);
+					
+					jQuery.ajax({
+						type: "post",
+						url: "api/sp_catalog_system_config_update.phtml",
+						data: { 'config_id': '<%=config_id%>', 'mode': 'gsort', 'skey': souce_key, 'dkey': dest_key, 'skey_type': source_key_type, 'dkey_type': dest_key_type, 'hitmode' : hitMode, 'dict':dict, isAjax: true },
+						dataType: 'json',
+						success: function (data) {
+							$("#tree3").dynatree("getTree").reload();
+						}
+					});
+					
+				}
+			}
+		});
+		
+	};
+	return {
+		//main function to initiate template pages
+		init: function () {
+			runTreeView();
+		}
+	};
+}();
+
+</script>
+
+<script type="text/javascript">
+		
+var oTable1;
+var oTable2;
+var v1 = "";
+var v2 = "";
+var v3 = "";
+var v4 = "";
+
+var w1 = "";
+var w2 = "";
+var w3 = "";
+var w4 = "";
+
+var TableData = function () {
+	//function to initiate DataTable
+	//DataTable is a highly flexible tool, based upon the foundations of progressive enhancement, 
+	//which will add advanced interaction controls to any HTML table
+	//For more information, please visit https://datatables.net/
+	var runDataTable = function () {
+		oTable1 = $('#sample_1').dataTable({
+			"bProcessing": true,
+			"bStateSave": false,
+			"bJQueryUI": false,
+			"iDisplayLength": 10,
+			"bServerSide": true,
+			"bAutoWidth": false,
+			"sAjaxSource": "api/sp_sales_order_product_list_v1.phtml?v1=" + v1 + "&v2=" + v2 + "&v3=" + v3 + "&z1=",
+			"aoColumns": [ 
+				/* Product ID */  { "sClass": "text-left" },
+				/* Thumbnail */  { "sClass": "center","bSortable": false },
+				/* Name */  { "sClass": "text-left" },
+				/* sku */  { "sClass": "center" },
+				/* Price */  { "sClass": "text-right"},
+				/* Qty */ { "sClass": "text-right"},
+				/* Status*/  { "sClass": "center" ,"bSortable": false},
+				/* Action*/  { "sClass": "center" ,"bSortable": false}
+			  ],
+			  
+			"aaSorting": [[0, 'desc']],
+			
+			"searchDelay": 500,
+			
+			"aLengthMenu": [
+				[5, 10, 15, 20, 30, 40],
+				[5, 10, 15, 20, 30, 40] // change per page values here
+			],
+			
+			"oLanguage": {
+				"sLengthMenu": "Show _MENU_ Rows",
+				"sSearch": "",
+				"sProcessing": '<img src="assets/images/ajax-loader-primary.gif"/>',
+				"oPaginate": {
+					"sPrevious": "",
+					"sNext": ""
+				}
+			}
+		});
+		
+
+		$('#sample_1_wrapper .dataTables_filter input').addClass("form-control input-sm").attr("placeholder", "Search");
+		// modify table search input
+		//$('#sample_1_wrapper .dataTables_length select').addClass("m-wrap small");
+		// modify table per page dropdown
+		//$('#sample_1_wrapper .dataTables_length select').select2();
+		// initialzie select2 dropdown
+	};
+	
+	var runDataTable2 = function () {
+		oTable2 = $('#sample_2').dataTable({
+			"bProcessing": true,
+			"bStateSave": false,
+			"bJQueryUI": false,
+			"iDisplayLength": 10,
+			"bServerSide": true,
+			"bAutoWidth": false,
+			"sAjaxSource": "api/sp_sales_order_icecat_list_v1.phtml?v1=" + w1 + "&v2=" + w2 + "&v3=" + w3 + "&z1=",
+			"aoColumns": [ 
+				/* Product ID */  { "sClass": "text-left" },
+				/* Thumbnail */  { "sClass": "center","bSortable": false },
+				/* Name */  { "sClass": "text-left" },
+				/* sku */  { "sClass": "center" },
+				/* Product ID */  { "sClass": "text-left" },
+				/* Price */  { "sClass": "text-right"},
+				/* Qty */ { "sClass": "text-right","bSortable": false},
+				/* Status*/  { "sClass": "center" ,"bSortable": false},
+				/* Action*/  { "sClass": "center" ,"bSortable": false}
+			  ],
+			  
+			"aaSorting": [[0, 'desc']],
+			
+			"aLengthMenu": [
+				[5, 10, 15, 20, 30, 40],
+				[5, 10, 15, 20, 30, 40] // change per page values here
+			],
+			
+			"searchDelay": 500,
+			
+			"oLanguage": {
+				"sLengthMenu": "Show _MENU_ Rows",
+				"sSearch": "",
+				"sProcessing": '<img src="assets/images/ajax-loader-primary.gif"/>',
+				"oPaginate": {
+					"sPrevious": "",
+					"sNext": ""
+				}
+			}
+		});
+		
+		$('#sample_2_wrapper .dataTables_filter input').addClass("form-control input-sm").attr("placeholder", "Search");
+		// modify table search input
+		//$('#sample_2_wrapper .dataTables_length select').addClass("m-wrap small");
+		// modify table per page dropdown
+		//$('#sample_2_wrapper .dataTables_length select').select2();
+		// initialzie select2 dropdown
+	};
+	
+	return {
+		//main function to initiate template pages
+		init: function () {
+			runDataTable();
+			runDataTable2();
+		}
+	};
+}();
+
+</script>
+
+<script>
+jQuery(document).ready(function() {
+	UITreeview.init();
+	UIModals.init();
+	//FormValidator.init();
+	TableData.init();
+	
+	jQuery("#btn-add-root-category-confirm").click(function() {
+			//alert("adding group here");
+		jQuery.ajax({
+			type:"get",
+			url: "api/sp_catalog_system_get_option_detail_html.phtml",
+			data: {'sysdept_id' : '0', 'isGroup': true, 'isAjax':true},
+			dataType: 'html',
+			success: function(data) {
+				jQuery("#dept_detail").html(data);
+				
+			},
+			complete: function(){
+				$('#loading-mask').hide();
+				window.scrollTo(0,0);
+				$('a[data-toggle="tab"]').on('shown.bs.tab', function (e) {
+					var target = $(e.target).attr("href") // activated tab
+					jQuery.ajax({
+						type:"get",
+						url: "api/save_tab_session.phtml",
+						data: {'tabtarget' : target, 'isAjax':true},
+						dataType: 'html',
+						success: function(data) {
+							
+						}
+					});
+				  
+				  //
+				});
+			}
+		});
+		
+	});
+	
+	jQuery("#btn-add-sub-category-confirm").click(function() {
+		
+		$('#loading-mask').show();
+		jQuery.ajax({
+			type:"get",
+			url: "api/sp_catalog_system_get_option_detail_html.phtml",
+			data: {'sysdept_id' : '0', 'isGroup': false, 'isAjax':true},
+			dataType: 'html',
+			success: function(data) {
+				jQuery("#dept_detail").html(data);
+			},
+			complete: function(){
+				$('#loading-mask').hide();
+				window.scrollTo(0,0);
+				$('a[data-toggle="tab"]').on('shown.bs.tab', function (e) {
+					var target = $(e.target).attr("href") // activated tab
+					jQuery.ajax({
+						type:"get",
+						url: "api/save_tab_session.phtml",
+						data: {'tabtarget' : target, 'isAjax':true},
+						dataType: 'html',
+						success: function(data) {
+							//
+						}
+					});
+				  
+				  //
+				});
+			}
+		});
+	});
+	
+	$( "#dialog-pricing-model" ).dialog({
+		autoOpen: false,
+		width: "600"
+	});
+	
+	$( "#opener1" ).click(function() {
+	  $( "#dialog-pricing-model" ).dialog( "open" );
+	});
+	
+	$( "#dialog-catalog-sync" ).dialog({
+		autoOpen: false
+	});
+	
+	$( "#opener2" ).click(function() {
+	  $( "#dialog-catalog-sync" ).dialog( "open" );
+	});
+	
+	$( "#dialog-optional-item-price" ).dialog({
+		autoOpen: false
+	});
+	
+	$( "#opener3" ).click(function() {
+	  $( "#dialog-optional-item-price" ).dialog( "open" );
+	});
+	
+	var $modal3 = $('#ajax-modal3');
+	$modal3.on('hidden', function () {
+		var s_id =  $( "#sysdept_id" ).val();
+		jQuery.ajax({
+			type:"post",
+			url: "api/sp_get_sysdept_items.phtml",
+			data: {'sysdept_id' :s_id, 'isAjax':true},
+			dataType: 'json',
+			success: function(data) {
+				var EditItems= "";
+				for (var i = 0; i < data.ORDERITEMS.length; i++){
+					EditItems = data.ORDERITEMS[i].detail;
+				}
+				
+				jQuery("#order_detail").html(EditItems);
+				
+				ProcessPostItemUpdate();
+			}
+		});
+		
+	});
+	
+	/* PRIVATE CATALOG */
+	jQuery.ajax({
+		type:"post",
+		url: "api/sp_catalog_get_subcategories.phtml",
+		data: {parent_id: '0', 'isAjax':true},
+		dataType: 'json',
+		success: function(data) {
+			var listItems= "<option value=''>All Categories</option>";
+			for (var i = 0; i < data.Subcategories.length; i++){
+				listItems+= "<option value='" + data.Subcategories[i].id + "'>" + data.Subcategories[i].name + "</option>";
+			}
+			var select = jQuery("#catalog_category1"), options = '';
+			select.empty(); 
+			select.append(listItems);
+		}
+	});
+	
+	
+	jQuery( "#catalog_category1" ).change(function() {
+	  jQuery.ajax({
+			type:"post",
+			url: "api/sp_catalog_get_subcategories.phtml",
+			data: {parent_id: jQuery('#catalog_category1').val(), 'isAjax':true},
+			dataType: 'json',
+			success: function(data) {
+				var listItems= "<option value=''>All Categories</option>";
+				for (var i = 0; i < data.Subcategories.length; i++){
+					listItems+= "<option value='" + data.Subcategories[i].id + "'>" + data.Subcategories[i].name + "</option>";
+				}
+				var select = jQuery("#catalog_category2"), options = '';
+				select.empty(); 
+				select.append(listItems);
+				
+				select = jQuery("#catalog_category3"), options = '';
+				select.empty(); 
+				
+				select = jQuery("#catalog_category4"), options = '';
+				select.empty();
+				oTable1.fnReloadAjax("api/sp_sales_order_product_list.phtml?v1=" + jQuery('#catalog_category1').val());
+			}
+		});
+	});
+	
+	jQuery( "#catalog_category2" ).change(function() {
+	  jQuery.ajax({
+			type:"post",
+			url: "api/sp_catalog_get_subcategories.phtml",
+			data: {parent_id: jQuery('#catalog_category2').val(), 'isAjax':true},
+			dataType: 'json',
+			success: function(data) {
+				var listItems= "<option value=''>All Categories</option>";
+				for (var i = 0; i < data.Subcategories.length; i++){
+					listItems+= "<option value='" + data.Subcategories[i].id + "'>" + data.Subcategories[i].name + "</option>";
+				}
+				var select = jQuery("#catalog_category3"), options = '';
+				select.empty(); 
+				select.append(listItems);
+				
+				select = jQuery("#catalog_category4"), options = '';
+				select.empty();
+				oTable1.fnReloadAjax("api/sp_sales_order_product_list.phtml?v1=" + jQuery('#catalog_category1').val() + "&v2=" + jQuery('#catalog_category2').val());
+			}
+		});
+	});
+	
+	jQuery( "#catalog_category3" ).change(function() {
+	  jQuery.ajax({
+			type:"post",
+			url: "api/sp_catalog_get_subcategories.phtml",
+			data: {parent_id: jQuery('#catalog_category3').val(), 'isAjax':true},
+			dataType: 'json',
+			success: function(data) {
+				var listItems= "<option value=''>All Categories</option>";
+				for (var i = 0; i < data.Subcategories.length; i++){
+					listItems+= "<option value='" + data.Subcategories[i].id + "'>" + data.Subcategories[i].name + "</option>";
+				}
+				var select = jQuery("#catalog_category4"), options = '';
+				select.empty(); 
+				select.append(listItems);
+				
+				oTable1.fnReloadAjax("api/sp_sales_order_product_list.phtml?v1=" + jQuery('#catalog_category1').val() + "&v2=" + jQuery('#catalog_category2').val() + "&v3=" + jQuery('#catalog_category3').val());
+			}
+		});
+	});
+	
+	/* ICECAT CATALOG */
+	jQuery.ajax({
+		type:"post",
+		url: "api/sp_catalog_get_icecat_subcategories.phtml",
+		data: {parent_id: '2833', 'isAjax':true},
+		dataType: 'json',
+		success: function(data) {
+			var listItems= "<option value=''>All Categories</option>";
+			for (var i = 0; i < data.Subcategories.length; i++){
+				listItems+= "<option value='" + data.Subcategories[i].id + "'>" + data.Subcategories[i].name + "</option>";
+			}
+			var select = jQuery("#icecat_category1"), options = '';
+			select.empty(); 
+			select.append(listItems);
+		}
+	});
+	
+	jQuery( "#icecat_category1" ).change(function() {
+	  jQuery.ajax({
+			type:"post",
+			url: "api/sp_catalog_get_icecat_subcategories.phtml",
+			data: {parent_id: jQuery('#icecat_category1').val(), 'isAjax':true},
+			dataType: 'json',
+			success: function(data) {
+				var listItems= "<option value=''>All Categories</option>";
+				for (var i = 0; i < data.Subcategories.length; i++){
+					listItems+= "<option value='" + data.Subcategories[i].id + "'>" + data.Subcategories[i].name + "</option>";
+				}
+				var select = jQuery("#icecat_category2"), options = '';
+				select.empty(); 
+				select.append(listItems);
+				
+				select = jQuery("#icecat_category3"), options = '';
+				select.empty(); 
+				
+				select = jQuery("#icecat_category4"), options = '';
+				select.empty();
+				oTable2.fnReloadAjax("api/sp_sales_order_icecat_list.phtml?v1=" + jQuery('#icecat_category1').val());
+			}
+		});
+	});
+	
+	jQuery( "#icecat_category2" ).change(function() {
+	  jQuery.ajax({
+			type:"post",
+			url: "api/sp_catalog_get_icecat_subcategories.phtml",
+			data: {parent_id: jQuery('#icecat_category2').val(), 'isAjax':true},
+			dataType: 'json',
+			success: function(data) {
+				var listItems= "<option value=''>All Categories</option>";
+				for (var i = 0; i < data.Subcategories.length; i++){
+					listItems+= "<option value='" + data.Subcategories[i].id + "'>" + data.Subcategories[i].name + "</option>";
+				}
+				var select = jQuery("#icecat_category3"), options = '';
+				select.empty(); 
+				select.append(listItems);
+				
+				select = jQuery("#icecat_category4"), options = '';
+				select.empty();
+				oTable2.fnReloadAjax("api/sp_sales_order_icecat_list.phtml?v1=" + jQuery('#icecat_category1').val() + "&v2=" + jQuery('#icecat_category2').val());
+			}
+		});
+	});
+	
+	jQuery( "#icecat_category3" ).change(function() {
+	  jQuery.ajax({
+			type:"post",
+			url: "api/sp_catalog_get_icecat_subcategories.phtml",
+			data: {parent_id: jQuery('#icecat_category3').val(), 'isAjax':true},
+			dataType: 'json',
+			success: function(data) {
+				var listItems= "<option value=''>All Categories</option>";
+				for (var i = 0; i < data.Subcategories.length; i++){
+					listItems+= "<option value='" + data.Subcategories[i].id + "'>" + data.Subcategories[i].name + "</option>";
+				}
+				var select = jQuery("#icecat_category4"), options = '';
+				select.empty(); 
+				select.append(listItems);
+				
+				oTable2.fnReloadAjax("api/sp_sales_order_icecat_list.phtml?v1=" + jQuery('#icecat_category1').val() + "&v2=" + jQuery('#icecat_category2').val() + "&v3=" + jQuery('#icecat_category3').val());
+			}
+		});
+	});
+});
+</script>
+<script>
+$(function(){
+	
+	//set editable mode based on URL parameter
+	if (App.getURLParameter('mode') == 'inline') {
+		$.fn.editable.defaults.mode = 'inline';
+		$('#inline').attr("checked", true);
+	} else {
+		$('#inline').attr("checked", false);
+	}
+		
+	 //defaults
+	 $.fn.editable.defaults.inputclass = 'form-control';
+	 $.fn.editable.defaults.url = 'api/hello.phtml';
+	 /*
+	 var c = window.location.href.match(/c=inline/i) ? 'inline' : 'popup';
+				$.fn.editable.defaults.mode = c === 'inline' ? 'inline' : 'popup';
+				*/
+	 
+	 $('.group_rule').editable({
+		showbuttons: false ,
+		source: [
+			{value: 'all', text: 'All'},
+			{value: 'any', text: 'Any'}
+		]
+	});
+	
+	 $('.group_value').editable({
+		   url: '/',
+		   type: 'text',
+		   pk: 1,
+		   name: 'group_value',
+		   title: 'Enter value'
+	});
+	
+	$('.group_name').editable({
+	   showbuttons: false,
+	   source:'api/sp_get_configuration_sysdept.phtml?system_id=<%=system_id%>'
+	}); 
+
+	$('.group_selected').editable({
+	   showbuttons: false,
+	   source:'api/sp_get_configuration_items.phtml',
+	   sourceOptions: {
+			data: {system_id: '<%=system_id%>'},
+			type: 'post'
+		}
+	}); 
+	
+	$('.group_compare').editable({
+		showbuttons: false ,
+		source: [
+			{value: 'equal', text: 'is'},
+			{value: 'not equal', text: 'is not'},
+			{value: 'is one of', text: 'is one of'},
+			{value: 'is not one of', text: 'is not one of'}
+		] 
+	});
+	
+	
+	
+	$('.group_rule_condition').editable({
+		showbuttons: false ,
+		source: [
+			{value: 'true', text: 'True'},
+			{value: 'false', text: 'False'}
+		] 
+	});
+	
+	$('.group_message').editable({
+		showbuttons: 'bottom'
+	}); 
+		   
+});
+</script>
+<script type="text/javascript">
+function getSearchResult(sku, descr, cost) {
+	//alert("adding private catalog item");
+	$("#stack2").modal("hide");
+	var $modal3 = $('#ajax-modal3');
+	$('body').modalmanager('loading');
+	//var modal_order_id = $(this).data('id');
+	var modal_sysdept_id = $('#sysdept_id').val();
+	setTimeout(function () {
+		$modal3.load('api/modal_ajax_sysdept_line_item.phtml?sysdept_id=' + modal_sysdept_id + '&item_mode=0&system_id=<%=system_id%>&row_id=0&sku=' + sku, '', function () {
+			$modal3.modal();
+		});
+	}, 500);
+}
+function getIcecatSearchResult(sku, descr, cost) {
+	$("#stack2").modal("hide");
+	var $modal3 = $('#ajax-modal3');
+	$('body').modalmanager('loading');
+	var modal_sysdept_id = $('#sysdept_id').val();
+	setTimeout(function () {
+		$modal3.load('api/modal_ajax_sysdept_line_item.phtml?sysdept_id=' + modal_sysdept_id + '&item_mode=7&system_id=<%=system_id%>&row_id=0&sku=' + sku, '', function () {
+			$modal3.modal();
+		});
+	}, 500);
+}
+</script>
+<!-- END PAGE LEVEL SCRIPTS -->
+</body>
+</html>

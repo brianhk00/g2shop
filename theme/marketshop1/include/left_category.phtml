@@ -1,5 +1,9 @@
 <%
-	'FOR FILTERS
+	if Len(icecat_category) > 0 then
+%>
+
+<%
+	'FOR FILTERS --- ICECAT
 	categoryid = icecat_category
 
 %>
@@ -263,3 +267,74 @@
 <input type="hidden" name="categoryid" value="<%=categoryid %>" />
 <input type="hidden" name="page" value="<%=page%>" />
 </form>
+<% else %>
+
+<%
+	'private filter
+	sql = "SELECT DISTINCT TOP 10 attribute_id FROM " & g_storeid & "_product_entity_varchar WHERE entity_id IN (SELECT pf_id FROM " & g_storeid & "_dept_prod WHERE dept_id like '" & dept_id & "%')"
+	set rsFilter = dbconn.Execute(sql)
+%>
+<form name="filter" method="get" action="<%=g_store_url%>dept.phtml" style="margin-top: 0px;margin-bottom: 0px;">
+<input type="hidden" name="page" value="<%=page%>">
+<input type="hidden" name="dept_id" value="<%=dept_id%>">
+<input type="hidden" name="mode" value="<%=mode%>">
+<input type="hidden" name="show" value="<%=show%>">
+<input type="hidden" name="so" value="<%=so%>">
+<input type="hidden" name="page" value="<%=page%>" />
+<h3 class="subtitle">Shop By</h3>
+<%
+	do while not rsFilter.EOF
+		f_attribute_id = rsFilter(0)
+		sql = "SELECT attribute_id, frontend_label FROM " & g_storeid & "_eav_attribute WHERE attribute_id = " & f_attribute_id
+		set rsAttrName = dbconn.Execute(sql)
+		if not rsAttrName.EOF then
+			f_attribute_name = rsAttrName(1)
+		end if
+		rsAttrName.Close
+		set rsAttrName = nothing
+		
+		
+		sOptions = ""
+		sql = "SELECT DISTINCT value FROM " & g_storeid & "_product_entity_varchar WHERE attribute_id = " & f_attribute_id & " AND entity_id IN (SELECT pf_id FROM " & g_storeid & "_dept_prod WHERE dept_id like '" & dept_id & "%')"
+		set rsAttrOption = dbconn.Execute(sql)
+		do while not rsAttrOption.EOF
+			sOptions = sOptions & rsAttrOption(0) & ","
+			rsAttrOption.MoveNext
+		loop
+		rsAttrOption.Close
+		set rsAttrOption = nothing
+		
+		if Len(sOptions) > 0 then
+			sOptions = Left(sOptions, Len(sOptions)-1)
+		end if
+%>
+<dt><%=f_attribute_name%></dt>
+<dd>
+	<select class="form-control input-sm">
+	<option value="">Select</option>
+	<%
+		sql = "SELECT option_id, option_name FROM " & g_storeid & "_eav_attribute_option WHERE "
+		sql = sql & " attribute_id=" & f_attribute_id 
+		sql = sql & " AND option_id IN (" & sOptions & ") "
+		sql = sql & " ORDER BY option_name"
+		set rsOptions = dbconn.Execute(sql)
+		do while not rsOptions.EOF
+			'if InStr(sOptions, "," & rsOptions(0) & ",") then
+	%>
+	<option value="<%=rsOptions(0)%>"><%=rsOptions(1)%></option>
+	<%
+			'end if
+			rsOptions.MoveNext
+		loop
+		rsOptions.Close
+		set rsOptions = nothing
+	%>
+	</select><br><br>
+</dd>
+<%
+		rsFilter.MoveNext
+	loop
+	rsFilter.Close
+%>
+</form>
+<% end if %>

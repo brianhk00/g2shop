@@ -48,6 +48,9 @@
 	<!--#INCLUDE FILE="../../../core/catalog/include_dept_productlist_loop_start.phtml"-->
 	<%
 		'TEMPLATE FIX
+		if Len(g_prod_name) > 80 then
+			g_prod_name = Left(g_prod_name, 80) & "..."
+		end if
 		g_prod_description = Replace(g_prod_description, "<ul>", "<ul class='description description1'>")
 	%>
 	<div class="product-layout product-list col-xs-12">
