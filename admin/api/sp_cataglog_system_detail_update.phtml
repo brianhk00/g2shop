@@ -6,6 +6,33 @@
 	'--POST DATA------------------------------------------
 	mode = Trim(Request("mode"))
 	system_id = Trim(Request("system_id"))
+	system_op = Trim(Request("system_op"))
+	
+	system_sku = Trim(Request("system_sku"))
+	system_name = Trim(Request("system_name"))
+	system_desc = Trim(Request("system_desc"))
+	system_desc2 = Trim(Request("system_desc2"))
+	system_detail = Trim(Request("system_detail"))
+	system_weight = Trim(Request("system_weight"))
+	system_is_nontaxable = Trim(Request("system_is_nontaxable"))
+	system_is_noship = Trim(Request("system_is_noship"))
+	system_enable_upload = Trim(Request("system_enable_upload"))
+	
+	system_pricing_model = Trim(Request("system_pricing_model"))
+	system_update_mode = Trim(Request("system_update_mode"))
+	system_option_mode = Trim(Request("system_option_mode"))
+	
+	system_u_markup_A = Trim(Request("system_u_markup_A"))
+	system_u_markup_B = Trim(Request("system_u_markup_B"))
+	system_u_markup_C = Trim(Request("system_u_markup_C"))
+	system_u_markup_D = Trim(Request("system_u_markup_D"))
+	
+	pf_productimage = Trim(Request("productimage"))
+	if Len(pf_productimage) > 3 then
+	else
+		pf_productimage = "--"
+	end if
+	
 	
 	formop = Trim(Request("formop"))
 	group_id = Trim(Request("group_id"))
@@ -122,6 +149,74 @@
 		rsUpdate.Close
 		set rsUpdate = nothing
 		
+	end if
+	
+	if formop = "main" then
+	
+		if system_op = "new" then
+			Set rsUpdate = Server.CreateObject("ADODB.Recordset")
+			with rsUpdate
+				.ActiveConnection = dbconn
+				.CursorLocation = 3
+				.CursorType = 1
+				.LockType = 3
+				.Source = g_storeid & "_system_product WHERE pf_id='0'"
+				.Open
+				.AddNew
+			end with
+			
+			rsUpdate("pf_id") = system_id
+			
+			'-------------------------------------------------------------------------------------
+			'GET NEW PRODUCT ID
+			'-------------------------------------------------------------------------------------	
+		else
+			Set rsUpdate = Server.CreateObject("ADODB.Recordset")
+			with rsUpdate
+				.ActiveConnection = dbconn
+				.CursorLocation = 3
+				.CursorType = 1
+				.LockType = 3
+				.Source = g_storeid & "_system_product WHERE pf_id='" & system_id & "'"
+				.Open
+			end with
+		end if
+		
+		rsUpdate("sku") = system_sku
+		rsUpdate("name") = system_name
+		rsUpdate("description") = system_desc
+		rsUpdate("description2") = system_desc2
+		rsUpdate("details") = system_detail
+		rsUpdate("weight") = system_weight
+		rsUpdate("is_nontaxable") = system_is_nontaxable
+		rsUpdate("is_noship") = system_is_noship
+		rsUpdate("sys_enable_upload") = system_enable_upload
+		rsUpdate("pricing_model") = system_pricing_model
+		rsUpdate("update_mode") = system_update_mode
+		rsUpdate("option_mode") = system_option_mode
+		rsUpdate("u_markup_A") = system_u_markup_A
+		rsUpdate("u_markup_B") = system_u_markup_B
+		rsUpdate("u_markup_C") = system_u_markup_C
+		rsUpdate("u_markup_D") = system_u_markup_D
+		
+		rsUpdate("thumb_image") = "--"
+		rsUpdate("thumb_image2") = "--"
+		rsUpdate("thumb_image3") = "--"
+		rsUpdate("thumb_image4") = "--"
+		
+		rsUpdate("mm_type") = 1
+		rsUpdate("image_file") = pf_productimage
+		
+		If dbconn.Errors.Count > 0 Then
+			dbconn.Errors.Clear
+			rsUpdate.CancelUpdate
+		else
+			rsUpdate.Update
+		End If
+		
+		rsUpdate.Close
+		set rsUpdate = nothing
+	
 	end if
 	
 	

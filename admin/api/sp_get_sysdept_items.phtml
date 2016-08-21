@@ -1,0 +1,106 @@
+<%response.Expires=-1%>
+<!-- #INCLUDE File="../local/local.phtml" -->
+<%
+	sysdept_id = Trim(Request("sysdept_id"))
+	s_edit = ""
+	
+	i_subtotal = 0
+	
+	prev_row = 1
+	
+	iii = 1
+	
+	sql = "SELECT * FROM " & g_storeid & "_system_config WHERE dept_id='" & sysdept_id & "' ORDER BY row_id"
+	set rs = dbconn.Execute(sql)
+	do while not rs.EOF
+		
+		pf_id = Trim(rs("pf_id"))
+		config_description = Trim(rs("config_description"))
+		item_price = rs("markup_price")
+		row_id = rs("row_id")
+		if item_price > 0 then
+			item_price = FormatNumber(item_price, 2,,,0)
+		else
+			item_price = "0.00"
+		end if
+
+		item_price_A = rs("item_price_A")
+		if item_price_A > 0 then
+			item_price_A = FormatNumber(item_price_A, 2,,,0)
+		else
+			item_price_A = "0.00"
+		end if
+		
+		item_price_B = rs("item_price_B")
+		if item_price_B > 0 then
+			item_price_B = FormatNumber(item_price_B, 2,,,0)
+		else
+			item_price_B = "0.00"
+		end if	
+		
+		item_price_C = rs("item_price_C")
+		if item_price_C > 0 then
+			item_price_C = FormatNumber(item_price_C, 2,,,0)
+		else
+			item_price_C = "0.00"
+		end if	
+		
+		item_price_D = rs("item_price_D")
+		if item_price_D > 0 then
+			item_price_D = FormatNumber(item_price_D, 2,,,0)
+		else
+			item_price_D = "0.00"
+		end if	
+		
+		item_mode = rs("item_mode")
+		
+		row_id = rs("row_id")
+		
+		s_edit = s_edit & "<tr>"
+		's_edit = s_edit & "<tr data-position=\""" & iii & "\"" id=\""" & iii & "\"">"
+		s_edit = s_edit & "<td class=\""left\"">"
+		s_edit = s_edit & iii 
+		s_edit = s_edit & "</td>"
+		s_edit = s_edit & "<td class=\""left\"">"
+		s_edit = s_edit & pf_id
+		s_edit = s_edit & "</td>"
+		s_edit = s_edit & "<td class=\""left\""  width=\""300\"">"
+		s_edit = s_edit & "<b>" & config_description & "</b>"
+		s_edit = s_edit & "</td>"
+		s_edit = s_edit & "<td class=\""text-right\"">" & item_price & "</td>"
+		s_edit = s_edit & "<td class=\""text-right\"">" & item_price_A & "</td>"
+		s_edit = s_edit & "<td class=\""text-right\"">" & item_price_B & "</td>"
+		s_edit = s_edit & "<td class=\""text-right\"">" & item_price_C & "</td>"
+		s_edit = s_edit & "<td class=\""text-right\"">" & item_price_D & "</td>"
+		s_edit = s_edit & "<td class=\""center\"">"
+		if item_mode = 0 then
+			s_edit = s_edit & "<i class=\""fa fa-cube\""></i>"
+		else
+			s_edit = s_edit & "<i class=\""fa fa-cubes\""></i>"
+		end if
+		s_edit = s_edit & "</td>"
+		s_edit = s_edit & "<td class=\""center\""  width=\""70\"" nowrap>"
+		's_edit = s_edit & "<div>"
+		s_edit = s_edit & "<a href=\""#\"" class=\""btn btn-xs btn-teal tooltips modal-edit-line\""  data-toggle=\""modal\"" data-id=\""" & Trim(pf_id) & "\"" data-placement=\""top\"" data-original-title=\""Edit\""><i class=\""fa fa-edit\""></i></a> &nbsp;"
+		s_edit = s_edit & "<a href=\""#\"" class=\""btn btn-xs btn-bricky tooltips modal-delete-line\"" data-toggle=\""modal\"" data-id=\""" & Trim(pf_id) & "\"" data-placement=\""top\"" data-original-title=\""Remove\""><i class=\""fa fa-times fa fa-white\""></i></a>"
+		's_edit = s_edit & "</div>"
+		s_edit = s_edit & "</td>"
+		's_edit = s_edit & "<td class=\""center\"">"
+		's_edit = s_edit & "<div>"
+		's_edit = s_edit & "<a href=\""#\"" class=\""btn btn-xs btn-teal tooltips\""  data-id=\""" & Trim(pf_id) & "\"" data-placement=\""top\"" data-original-title=\""UP\""><i class=\""fa fa-arrow-up\""></i></a> &nbsp;"
+		's_edit = s_edit & "<a href=\""#\"" class=\""btn btn-xs btn-bricky tooltips\"" data-id=\""" & Trim(pf_id) & "\"" data-placement=\""top\"" data-original-title=\""DOWN\""><i class=\""fa fa-arrow-down\""></i></a>"
+		's_edit = s_edit & "</div>"
+		's_edit = s_edit & "</td>"
+		s_edit = s_edit & "</tr>"
+		
+		iii = iii + 1
+		rs.MoveNext
+	loop
+	rs.Close
+	set rs = nothing
+%>
+{
+"ORDERITEMS" : [
+{"id" : "<%=order_id%>","detail" : "<%=s_edit%>"}
+]
+}

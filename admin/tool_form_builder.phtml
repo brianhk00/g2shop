@@ -1,3 +1,7 @@
+<%
+	Response.CodePage = 65001
+	Response.CharSet = "UTF-8"
+%>
 <!-- #INCLUDE File="local/local.phtml" -->
 <!-- #INCLUDE File="util/xt_func_util.phtml" -->
 <!-- #INCLUDE File="util/xt_func_string.phtml" -->
@@ -6,6 +10,10 @@
 <head>
 <!--#INCLUDE FILE="include/head.phtml"-->
 <!-- BEGIN PAGE LEVEL PLUGINS -->
+<link href="../assets/global/plugins/datatables/datatables.min.css" rel="stylesheet" type="text/css" />
+<link href="../assets/global/plugins/datatables/plugins/bootstrap/datatables.bootstrap.css" rel="stylesheet" type="text/css" />
+<link href="../assets/global/plugins/bootstrap-datepicker/css/bootstrap-datepicker3.min.css" rel="stylesheet" type="text/css" />
+<link href="../assets/global/plugins/fancybox/source/jquery.fancybox.css" rel="stylesheet" type="text/css" />
 <!-- END PAGE LEVEL PLUGINS -->
 </head>
 
@@ -23,25 +31,55 @@
 				<!-- BEGIN CONTENT -->
 				<div class="page-content-wrapper">
 					<!-- BEGIN CONTENT BODY -->
-					<!-- BEGIN PAGE HEAD-->
-					<div class="page-head">
-						<div class="container-fluid">
-							<!-- BEGIN PAGE TITLE -->
-							<div class="page-title">
-								<h1>Dashboard
-									<small>dashboard & statistics</small>
-								</h1>
-							</div>
-							<!-- END PAGE TITLE -->
-						</div>
-					</div>
-					<!-- END PAGE HEAD-->
 					<!-- BEGIN PAGE CONTENT BODY -->
 					<div class="page-content">
 						<div class="container-fluid">
 							<!-- BEGIN PAGE CONTENT INNER -->
 							<div class="page-content-inner">
-								
+								<div class="row">
+									<div class="col-md-12">
+										<!-- Begin: life time stats -->
+										<div class="portlet light portlet-fit portlet-datatable">
+											<div class="portlet-title">
+												<div class="caption">
+													<i class="fa fa-shopping-cart"></i>Forms
+												</div>
+												<div class="actions">
+													<% if Session("CURRENT_ADMIN_VIEW_ID") = "1" then %>
+													<a href="tool_form_builer_detail.phtml?form_id=0" class="btn btn-circle btn-info">
+													<i class="fa fa-plus"></i> Add New Form
+													</a>
+													<% end if %>
+													<div class="btn-group">
+														
+													</div>
+												</div>
+											</div>
+											<div class="portlet-body">
+												<div class="table-container">
+													<table class="table table-striped table-bordered table-hover table-full-width" id="sample_1">
+														<thead>
+														<tr>
+															<th>Form ID</th>
+															<th>Form Name</th>
+															<th>Form Title</th>
+															<th>Created</th>
+															<th>Modified</th>
+															<th>Total Responses</th>
+															<!--<th>Action</th>-->
+														</tr>
+														</thead>
+														<tbody>
+															<tr>
+																<td colspan="9" class="dataTables_empty">Loading data from server</td>
+															</tr>
+														</tbody>
+													</table>
+												</div>
+											</div>
+										</div>
+									</div>
+								</div>
 							</div>
 							<!-- END PAGE CONTENT INNER -->
 						</div>
@@ -62,12 +100,102 @@
 </div>
 <!--#INCLUDE FILE="include/js.phtml"-->
 <!-- BEGIN PAGE LEVEL PLUGINS -->
-
+<script src="../assets/global/plugins/jquery-validation/js/jquery.validate.min.js" type="text/javascript"></script>
+<script src="../assets/global/plugins/jquery-validation/js/additional-methods.min.js" type="text/javascript"></script>
+<script src="../assets/global/scripts/datatable.js" type="text/javascript"></script>
+<script src="../assets/global/plugins/datatables/datatables.min.js" type="text/javascript"></script>
+<script src="../assets/global/plugins/datatables/plugins/bootstrap/datatables.bootstrap.js" type="text/javascript"></script>
+<script src="../assets/global/plugins/bootstrap-datepicker/js/bootstrap-datepicker.min.js" type="text/javascript"></script>
+<script src="../assets/global/plugins/bootstrap-maxlength/bootstrap-maxlength.min.js" type="text/javascript"></script>
+<script src="../assets/global/plugins/fancybox/source/jquery.fancybox.pack.js" type="text/javascript"></script>
 <!-- END PAGE LEVEL PLUGINS -->
 
 <!-- BEGIN PAGE LEVEL SCRIPTS -->
+<%
+	order_display = "3"
+	order_filter = "All"
+%>
 <script type="text/javascript">
+var oTable;
+var v1 = "All";
+var v2 = "All";
+var v3 = "All";
+
+var TableData = function () {
+	//function to initiate DataTable
+	//DataTable is a highly flexible tool, based upon the foundations of progressive enhancement, 
+	//which will add advanced interaction controls to any HTML table
+	//For more information, please visit https://datatables.net/
+	var runDataTable = function () {
+		oTable = $('#sample_1').dataTable({
+			"bProcessing": true,
+			"bStateSave": false,
+			"bJQueryUI": false,
+			"iDisplayLength": 20,
+			"bServerSide": true,
+			"bAutoWidth": false,
+			"sAjaxSource": "api/sp_form_list.phtml?v1=" + v1 + "&v2=" + v2 + "&v3=" + v3 + "&z1=",
+			"aoColumns": [ 
+				/* Form ID */  { "sClass": "left" },
+				/* Form Name */  { "sClass": "text-left"},
+				/* Title */  { "sClass": "text-left" },
+				/* Created */  { "sClass": "center" },
+				/* Modified */  { "sClass": "center"},
+				/* Total Responses */ { "sClass": "text-right","bSortable": false}
+			  ],
+			  
+			"aaSorting": [[0, 'desc']],
+			
+			"aLengthMenu": [
+				[10, 20, 30, 40, 50],
+				[10, 20, 30, 40, 50] // change per page values here
+			],
+			
+			"oLanguage": {
+				"sLengthMenu": "Show _MENU_ Rows",
+				"sSearch": "",
+				"sProcessing": '<img src="assets/images/ajax-loader-primary.gif"/>',
+				"oPaginate": {
+					"sPrevious": "",
+					"sNext": ""
+				}
+			},
+			
+			'fnServerData' : function ( sSource, aoData, fnCallback ) {
+				aoData.push( { 'name' : 'min', 'value' : $("#min").val() } );
+				aoData.push( { 'name' : 'max', 'value' : $("#max").val() } );
+				$.ajax({
+					'dataType' : 'json',
+					'data' : aoData,
+					'type' : 'GET',
+					'url' : sSource,
+					'success' : fnCallback
+				});
+			} 
+		});
+		
+		$('#sample_1_wrapper .dataTables_filter input').addClass("form-control input-sm").attr("placeholder", "Search");
+		// modify table search input
+		$('#sample_1_wrapper .dataTables_length select').addClass("m-wrap small");
+		// modify table per page dropdown
+		$('#sample_1_wrapper .dataTables_length select').select2();
+		// initialzie select2 dropdown
+	};
 	
+	return {
+		//main function to initiate template pages
+		init: function () {
+			runDataTable();
+		}
+	};
+}();
+
+
+</script>
+<script type="text/javascript">
+jQuery(document).ready(function() {
+	TableData.init();
+});	
 </script>
 <!-- END PAGE LEVEL SCRIPTS -->
 </body>

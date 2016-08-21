@@ -1,0 +1,12 @@
+<%response.Expires=-1%>
+<%
+	tabtarget = Trim(Request("tabtarget"))
+	tabpage = Trim(Request("tabpage"))
+	
+	if Len(tabpage) > 0 then
+		Session(tabpage) = tabtarget
+	else
+		Session("TABTARGET") = tabtarget
+	end if
+
+%>

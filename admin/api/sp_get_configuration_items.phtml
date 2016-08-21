@@ -1,0 +1,42 @@
+<%@ Language=VBScript %>
+<%
+	Response.CodePage = 65001
+	Response.CharSet = "UTF-8"
+%>
+<%
+  Response.Expires = -1
+%>
+<!-- #INCLUDE File="../local/local.phtml" -->
+<!-- #INCLUDE File="../util/xt_func_util.phtml" -->
+<!-- #INCLUDE File="../util/xt_func_string.phtml" -->
+[ 
+{"value" : "","text" : ""},
+<%
+	system_id = Request("system_id")
+	
+	sql = "SELECT * FROM " & g_storeid & "_system_config as a,"
+	sql = sql & g_storeid & "_sysdept  as b WHERE a.dept_id = b.sysdept_id AND a.config_id='" & system_id & "' ORDER BY sysdept_row, row_id"
+	
+	
+	s_items = "{""value"" : """ & "0" & """,""text"" : """ & "Any Item" & """},"
+	set rsItem = dbconn.Execute(sql)
+	do while not rsItem.EOF	
+		
+		sysdept_name = Trim(rsItem("sysdept_name"))
+		sysdept_name = stripHTML(sysdept_name)
+		sysdept_name = Replace(sysdept_name, """", "\""")
+		
+		config_description = Trim(rsItem("config_description"))
+		config_description = stripHTML(config_description)
+		config_description = Replace(config_description, """", "\""")
+		s_items = s_items & "{""value"" : """ & rsItem("pf_id") & """,""text"" : ""[" & sysdept_name & "]" & config_description & """},"
+		rsItem.MoveNext
+	loop
+	rsItem.Close
+	
+	if Len(s_items) > 0 then
+		s_items = Left(s_items, Len(s_items)-1)
+	end if
+	response.Write(s_items)
+%>
+]

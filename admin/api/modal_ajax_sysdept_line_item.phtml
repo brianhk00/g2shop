@@ -1,0 +1,379 @@
+<%response.Expires=-1%>
+<!-- #INCLUDE File="../local/local.phtml" -->
+<!-- #INCLUDE File="../util/xt_func_util.phtml" -->
+<!-- #INCLUDE File="../util/xt_func_string.phtml" -->
+<%
+	system_id = Trim(Request("system_id"))
+	sysdept_id=Trim(Request("sysdept_id"))
+	row_id = Trim(Request("row_id"))
+	sku = Trim(Request("sku"))
+	item_mode = Trim(Request("item_mode"))
+	
+	sql = "SELECT * FROM " & g_storeid & "_system_config WHERE dept_id='" & sysdept_id & "' AND pf_id='" & row_id & "'"
+	
+	set rs = dbconn.Execute(sql)
+	if not rs.EOF then
+		
+		pf_id = Trim(rs("pf_id"))
+		config_description = Trim(rs("config_description"))
+		item_price = rs("markup_price")
+		if item_price > 0 then
+			item_price = FormatNumber(item_price, 2,,,0)
+		else
+			item_price = "0.00"
+		end if
+
+		item_price_A = rs("item_price_A")
+		if item_price_A > 0 then
+			item_price_A = FormatNumber(item_price_A, 2,,,0)
+		else
+			item_price_A = "0.00"
+		end if
+		
+		item_price_B = rs("item_price_B")
+		if item_price_B > 0 then
+			item_price_B = FormatNumber(item_price_B, 2,,,0)
+		else
+			item_price_B = "0.00"
+		end if	
+		
+		item_price_C = rs("item_price_C")
+		if item_price_C > 0 then
+			item_price_C = FormatNumber(item_price_C, 2,,,0)
+		else
+			item_price_C = "0.00"
+		end if	
+		
+		item_price_D = rs("item_price_D")
+		if item_price_D > 0 then
+			item_price_D = FormatNumber(item_price_D, 2,,,0)
+		else
+			item_price_D = "0.00"
+		end if	
+		
+		item_mode = rs("item_mode")
+	
+	else
+		pf_id = ""
+		config_description = ""
+		item_price = "0.00"
+		item_price_A = "0.00"
+		item_price_B = "0.00"
+		item_price_C = "0.00"
+		item_price_D = "0.00"
+		
+	end if
+	
+	rs.Close
+	set rs = nothing
+	
+	t_header = ""
+	t_body = ""
+	
+	
+	bNewItemFromCatalog = false
+	if row_id = "0" AND Len(sku) > 0 then
+		bNewItemFromCatalog = true
+	end if
+	
+	if bNewItemFromCatalog then
+		if item_mode = "0" then
+			order_item_soruce = "Private Catalog"
+			sql = "SELECT * FROM " & g_storeid & "_product WHERE pf_id='" & sku & "'"
+			set rsProduct = dbconn.Execute(sql)
+			if not rsProduct.EOF then
+			
+				pf_id = sku
+				pf_sku = Trim(rsProduct("sku"))
+				config_description = Trim(rsProduct("name"))
+				item_price = rsProduct("list_price")
+				item_price_A = rsProduct("price_A")
+				item_price_B = rsProduct("price_B")
+				item_price_C = rsProduct("price_C")
+				item_price_D = rsProduct("price_D")
+				
+				item_price = FormatNumber(item_price,2)
+				item_price_A = FormatNumber(item_price_A,2)
+				item_price_B = FormatNumber(item_price_B,2)
+				item_price_C = FormatNumber(item_price_C,2)
+				item_price_D = FormatNumber(item_price_D,2)
+				
+				item_mode = 0
+				
+			end if
+			rsProduct.Close
+		end if
+		
+		if item_mode = "7" then
+			order_item_soruce = "ICECAT Catalog"
+			sql = "SELECT * FROM " & g_storeid & "_ssprice WHERE sku='" & sku & "'"
+			set rsProduct = dbconn_icecat.Execute(sql)
+			if not rsProduct.EOF then
+			
+				pf_id = sku
+				pf_sku = Trim(rsProduct("sku"))
+				config_description = Trim(rsProduct("DESCR"))
+				item_price = rsProduct("cost")
+				item_price_A = rsProduct("price_A")
+				item_price_B = rsProduct("price_B")
+				item_price_C = rsProduct("price_C")
+				item_price_D = rsProduct("price_D")
+				
+				item_price = FormatNumber(item_price,2)
+				item_price_A = FormatNumber(item_price_A,2)
+				item_price_B = FormatNumber(item_price_B,2)
+				item_price_C = FormatNumber(item_price_C,2)
+				item_price_D = FormatNumber(item_price_D,2)
+				
+				item_mode = 7
+				
+			end if
+			rsProduct.Close
+		end if
+		
+		
+	else
+		
+	end if
+	
+		
+%>
+<div class="modal-header">
+	<button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+	<h4>Option Item</h4>
+</div>
+<form role="form" id='billingform'>
+<input type="hidden" name="mode" value="lineitem" />
+<input type="hidden" name="system_id" value="<%=system_id%>" />
+<input type="hidden" name="sysdept_id" value="<%=sysdept_id%>" />
+<input type="hidden" name="row_id" value="<%=row_id%>" />
+<div class="modal-body" style="padding-left: 30px;">
+	<div class="row">
+		<div class="col-md-12">
+			<div id="errorHandler1" class="errorHandler alert alert-danger" style="display:none;">
+				<button type="button" class="close" aria-label="Close">
+					<span aria-hidden="true">&times;</span>
+				</button>
+				<i class="fa fa-times-sign"></i> You have some form errors. Please check below.
+			</div>
+			<div id="errorHandler2" class="errorHandler alert alert-danger" style="display:none;">
+				<button type="button" class="close" aria-label="Close">
+					<span aria-hidden="true">&times;</span>
+				</button>
+				<i class="fa fa-times-sign"></i> The information has not been saved properly. Please contact system administrator.
+			</div>
+			<div class="successHandler alert alert-success" style="display:none;">
+				<button type="button" class="close" aria-label="Close">
+					<span aria-hidden="true">&times;</span>
+				</button>
+				<i class="fa fa-check-square-o"></i> The product information has been saved.
+			</div>
+		</div>
+	</div>
+	<div class="row">
+		<div class="form-group">
+			<label class="col-sm-3 control-label" for="order_item_sku">
+				Source 
+			</label>
+			<div class="col-sm-9">
+			<%
+				if item_mode = 0 then
+					Response.Write("Private Catalog")
+				else
+					Response.Write("ICECAT Catalog")
+				end if
+			%>
+			<input type="hidden" id="item_mode" name="item_mode" value="<%=item_mode%>">
+			</div>
+		</div>
+		<br>
+		<div class="form-group">
+			<label class="col-sm-3 control-label" for="order_item_sku">
+				SKU <span class="symbol required"></span> 
+			</label>
+			<div class="col-sm-9">
+				<%=pf_id%>
+				<input type="hidden" id="pf_id" name="pf_id" value="<%=pf_id%>">
+			</div>
+		</div>
+		<br>
+		<div class="form-group">
+			<label class="col-sm-3 control-label" for="config_description">
+				Description <span class="symbol required"></span> 
+			</label>
+			<div class="col-sm-9">
+				<input type="text" placeholder="" id="config_description" name="config_description" class="form-control input-sm" value="<%=config_description%>">
+			</div>
+		</div>
+		<br><br>
+		<div class="form-group">
+			<label class="col-sm-3 control-label" for="item_price">
+				Unit Cost<span class="symbol required"></span> 
+			</label>
+			<div class="col-sm-9">
+				<input type="text" placeholder="" id="item_price" name="item_price" class="form-control input-sm" value="<%=item_price%>">
+			</div>
+		</div>
+		<br><br>
+		<div class="form-group">
+			<label class="col-sm-3 control-label" for="item_price_A">
+				Unit Price A<span class="symbol required"></span> 
+			</label>
+			<div class="col-sm-9">
+				<input type="text" placeholder="" id="item_price_A" name="item_price_A" class="form-control input-sm" value="<%=item_price_A%>">
+			</div>
+		</div>
+		<br><br>
+		<div class="form-group">
+			<label class="col-sm-3 control-label" for="item_price_B">
+				Unit Price B<span class="symbol required"></span> 
+			</label>
+			<div class="col-sm-9">
+				<input type="text" placeholder="" id="item_price_B" name="item_price_B" class="form-control input-sm" value="<%=item_price_B%>">
+			</div>
+		</div>
+		<br><br>
+		<div class="form-group">
+			<label class="col-sm-3 control-label" for="item_price_C">
+				Unit Price C<span class="symbol required"></span> 
+			</label>
+			<div class="col-sm-9">
+				<input type="text" placeholder="" id="item_price_C" name="item_price_C" class="form-control input-sm" value="<%=item_price_C%>">
+			</div>
+		</div>
+		<br><br>
+		<div class="form-group">
+			<label class="col-sm-3 control-label" for="item_price_D">
+				Unit Price D<span class="symbol required"></span> 
+			</label>
+			<div class="col-sm-9">
+				<input type="text" placeholder="" id="item_price_D" name="item_price_D" class="form-control input-sm" value="<%=item_price_D%>">
+			</div>
+		</div>
+		
+	</div>
+</div>
+<div class="modal-footer">
+	<button class="btn btn-primary btn-sm" id="billing_update_btn"><%if bNewItemFromCatalog then%>Add<%else%>Update<%end if%></button>
+	<button type="button" data-dismiss="modal" class="btn btn-white btn-sm">Cancel</button>
+</div>
+</form>
+<script language="javascript">
+var FormValidatorX = function () {
+// function to initiate Validation Sample 1
+	var runValidator1 = function () {
+		var form1 = $('#billingform');
+		var errorHandler1 = $('#errorHandler1', form1);
+		var errorHandler2 = $('#errorHandler2', form1);
+		var successHandler1 = $('.successHandler', form1);
+		$.validator.addMethod("FullDate", function () {
+			//if all values are selected
+			if ($("#dd").val() != "" && $("#mm").val() != "" && $("#yyyy").val() != "") {
+				return true;
+			} else {
+				return false;
+			}
+		}, 'Please select a day, month, and year');
+		$('#billingform').validate({
+			errorElement: "span", // contain the error msg in a span tag
+			errorClass: 'help-block',
+			errorPlacement: function (error, element) { // render error placement for each input type
+				if (element.attr("type") == "radio" || element.attr("type") == "checkbox") { // for chosen elements, need to insert the error after the chosen container
+					error.insertAfter($(element).closest('.form-group').children('div').children().last());
+				} else if (element.attr("name") == "dd" || element.attr("name") == "mm" || element.attr("name") == "yyyy") {
+					error.insertAfter($(element).closest('.form-group').children('div'));
+				} else {
+					error.insertAfter(element);
+					// for other inputs, just perform default behavior
+				}
+			},
+			ignore: "",
+			
+			//RULES
+			rules: {
+				pf_id: {
+					required: true
+				},
+				config_description: {
+					required: true
+				},
+				item_price: {
+					required: true,
+					number: true
+				},
+				item_price_A: {
+					required: true,
+					number: true
+				},
+				item_price_B: {
+					required: true,
+					number: true
+				},
+				item_price_C: {
+					required: true,
+					number: true
+				},
+				item_price_D: {
+					required: true,
+					number: true
+				}
+			},
+			
+			//END OF RULES
+			
+			invalidHandler: function (event, validator) { //display error alert on form submit
+				successHandler1.hide();
+				errorHandler1.show();
+			},
+			highlight: function (element) {
+				$(element).closest('.help-block').removeClass('valid');
+				$(element).closest('.form-group').removeClass('has-success').addClass('has-error').find('.symbol').removeClass('ok').addClass('required');
+			},
+			unhighlight: function (element) { 
+				$(element).closest('.form-group').removeClass('has-error');
+			},
+			success: function (label, element) {
+				label.addClass('help-block valid');
+				$(element).closest('.form-group').removeClass('has-error').addClass('has-success').find('.symbol').removeClass('required').addClass('ok');
+			},
+			submitHandler: function (form) {
+				successHandler1.hide();
+				errorHandler1.hide();
+				errorHandler2.hide();
+				$.ajax({
+					type: "POST",
+					url: "api/sp_catalog_system_config_update.phtml",
+					data: $("#billingform").serialize(),
+					success: function() {
+						successHandler1.show();
+						setTimeout(function () {
+							 $('#ajax-modal3').modal('hide');
+						}, 700);
+					},
+					error: function() {
+						errorHandler2.show();
+					}
+				});
+			}
+		});
+	};
+	return {
+		//main function to initiate template pages
+		init: function () {
+			runValidator1();
+		}
+	};
+}();
+</script>
+<script type="text/javascript">
+
+	$("#billingform").submit(function (e) {
+		e.preventDefault(); //prevent default form submit
+	});
+	FormValidatorX.init();
+	
+	$('.close').click(function() {
+	   $('.alert').hide();
+	})
+	
+</script>

@@ -1,0 +1,474 @@
+<%response.Expires=-1%>
+<!-- #INCLUDE File="../local/local.phtml" -->
+<!-- #INCLUDE File="../util/xt_func_string.phtml" -->
+<style>
+	.test1
+	{
+		max-width: 200px;
+		width: 200px;
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow:ellipsis;
+	}
+</style>
+<%
+	sysdept_id = Trim(Request("sysdept_id"))
+	is_group = Trim(Request("isGroup"))
+	
+	if is_group = "true" then
+		
+		sql = "SELECT * FROM " & g_storeid & "_system_config_group WHERE group_id='" & sysdept_id & "'"
+		set rs = dbconn.Execute(sql)
+		if not rs.EOF then
+			group_id = Trim(rs("group_id"))
+			group_name = Trim(rs("group_name"))
+		end if
+		rs.Close
+		set rs = nothing
+		
+	else
+		sql = "SELECT * FROM " & g_storeid & "_sysdept WHERE sysdept_id='" & sysdept_id & "'"
+		set rs = dbconn.Execute(sql)
+		if not rs.EOF then
+			
+			sysdept_id = Trim(rs("sysdept_id"))
+			sysdept_name = Trim(rs("sysdept_name"))
+			sysdept_description = Trim(rs("sysdept_description"))
+			sysdept_mode = Trim(rs("sysdept_mode"))
+			
+			if rs("allow_none") then
+			  allow_none = "1"
+			else
+			  allow_none = "0"
+			end if
+			
+			if rs("none_default") then
+			  none_default = "1"
+			else
+			  none_default = "0"
+			end if
+		
+		end if
+		rs.Close
+		
+		set rs = nothing
+	end if
+%>
+<% if is_group = "true" then %>
+<input type="hidden" name="group_id" id="group_id" value="<%=sysdept_id%>">
+<div class="form-group">
+	<label class="col-sm-2 control-label" for="group_name">
+	Name <span class="symbol required"></span>
+	</label>
+	<div class="col-sm-8">
+	<input type="text" placeholder="" id="group_name" name="group_name" class="form-control input-sm" value="<%=group_name%>">
+	</div>
+</div>
+<div class="row">
+	<div class="col-sm-2">
+	</div>
+	<div class="col-sm-8">
+		<button class="btn btn-success btn-sm" type="button" id="SaveGroup">
+		<i class="fa fa-check"></i>
+		Save Group
+		</button>
+		<% if sysdept_id = "0" then %>
+		<% else %>
+		<button class="btn btn-danger btn-sm" type="button" id="DeleteGroup">
+		<i class="fa fa-times-circle"></i>
+		Delete Group
+		</button>
+		<% end if %>
+	</div>
+</div>
+<script>
+	jQuery("#SaveGroup").click(function() {
+		savebutton = "0";
+		$('#formop').val("group");
+		$('#form_edit_1').submit();
+	});
+	
+	
+	jQuery("#DeleteGroup").click(function(e) {
+		e.preventDefault();
+		jQuery("#dialog-confirm").html('Are you sure you want to delete "' + jQuery("#group_name").val() + '"?');
+		jQuery("#dialog-confirm").dialog({
+		  autoOpen: false,
+		  modal: true,
+		  buttons : {
+			"Confirm" : function() {
+				$(this).dialog("close");
+				jQuery.ajax({
+					type: "post",
+					url: "api/sp_catalog_system_config_update.phtml",
+					data: { 'group_id': '<%=sysdept_id%>', 'mode': 'gdelete', isAjax: true },
+					dataType: 'json',
+					success: function (data) {
+						$("#tree3").dynatree("getTree").reload();
+						jQuery("#dept_detail").html('<p>Select existing options on the left or click on the "add" button to add new option.</p>');
+					}
+				});
+				//window.location.href = "api/tp_catalog_category_delete.phtml?category_id=" + jQuery("#dept_id").val();
+			},
+			"Cancel" : function() {
+			  $(this).dialog("close");
+			}
+		  }
+		});
+		jQuery("#dialog-confirm").dialog("open");
+
+	});
+			
+</script>
+<% else %>
+<input type="hidden" name="sysdept_id" id="sysdept_id" value="<%=sysdept_id%>" >
+<div class="tabbable-bordered">
+	<ul id="myTab" class="nav nav-tabs">
+		<li <% if Session("TABTARGET_catalog_system_deail") = "#catalog_system_deail_option_tab1" OR Session("TABTARGET_catalog_system_deail") = "" then %>class="active"<% end if %>>
+			<a href="#catalog_system_deail_option_tab1" data-toggle="tab">
+				<i class="pink fa fa-info-circle"></i> Option Info &amp; Settings
+			</a>
+		</li>
+		<% if sysdept_id = "0" then %>
+		<% else %>
+		<li <% if Session("TABTARGET_catalog_system_deail") = "#catalog_system_deail_option_tab2" then %>class="active"<% end if %>>
+			<a href="#catalog_system_deail_option_tab2" data-toggle="tab">
+				<i class="pink fa fa-cubes"></i> Option Items
+			</a>
+		</li>
+		<% end if %>
+	</ul>
+	<div class="tab-content">
+		<div class="tab-pane <% if Session("TABTARGET_catalog_system_deail") = "#catalog_system_deail_option_tab1" OR Session("TABTARGET_catalog_system_deail") = "" then %>active<% end if %>" id="catalog_system_deail_option_tab1">
+			<div class="form-group">
+				<label class="col-sm-2 control-label" for="sysdept_name">
+				Name <span class="symbol required"></span>
+				</label>
+				<div class="col-sm-8">
+				<input type="text" placeholder="" id="sysdept_name" name="sysdept_name" class="form-control input-sm" value="<%=HTMLEncodeString(sysdept_name)%>">
+				</div>
+			</div>
+			<div class="form-group">
+				<label class="col-sm-2 control-label" for="sysdept_description">
+				Description
+				</label>
+				<div class="col-sm-8">
+				<input type="text" placeholder="" id="sysdept_description" name="sysdept_description" class="form-control input-sm" value="<%=HTMLEncodeString(sysdept_description)%>">
+				</div>
+			</div>
+			<div class="form-group">
+				<label class="col-sm-2 control-label" for="sysdept_mode">
+					Mode <span class="symbol required"></span>
+				</label>
+				<div class="col-sm-8"> 
+					<% if sysdept_id = "0" then %>
+					<select id="sysdept_mode" name="sysdept_mode" class="form-control input-sm">
+					<option value="0">Standard Option</option>
+					<option value="1">Optional Item</option>
+					<option value="2">Hidden Option</option>
+					<option value="3">Desription Only</option>
+					</select>
+					<% else %>
+					<select id="sysdept_mode_display" name="sysdept_mode_display" class="form-control input-sm" disabled>
+					<option value="0" <%if sysdept_mode = "0" then%>selected<%end if%>>Standard Option</option>
+					<option value="1" <%if sysdept_mode = "1" then%>selected<%end if%>>Optional Item</option>
+					<option value="2" <%if sysdept_mode = "2" then%>selected<%end if%>>Hidden Option</option>
+					<option value="3" <%if sysdept_mode = "3" then%>selected<%end if%>>Desription Only</option>
+					</select>
+					<input type="hidden" id="sysdept_mode" name="sysdept_mode" value="<%=sysdept_mode%>">
+					<% end if %>
+				</div>
+			</div>
+
+			<div class="form-group">
+				<label class="col-sm-2 control-label" for="allow_none">
+					Allow None <span class="symbol required"></span>
+				</label>
+				<div class="col-sm-8"> 
+					<select id="allow_none" name="allow_none" class="form-control input-sm">
+					<option value="0" <%if allow_none = "0" then%>selected<%end if%>>No</option>
+					<option value="1" <%if allow_none = "1" then%>selected<%end if%>>Yes</option>
+					</select>
+				</div>
+			</div>
+			<div class="form-group">
+				<label class="col-sm-2 control-label" for="none_default">
+					None As Default <span class="symbol required"></span>
+				</label>
+				<div class="col-sm-8"> 
+					<select id="none_default" name="none_default" class="form-control input-sm">
+					<option value="0" <%if none_default = "0" then%>selected<%end if%>>No</option>
+					<option value="1" <%if none_default = "1" then%>selected<%end if%>>Yes</option>
+					</select>
+				</div>
+			</div>
+			<div class="row">
+				<div class="col-sm-2">
+				</div>
+				<div class="col-sm-8">
+					<button class="btn btn-success btn-sm" type="button" id="SaveOption">
+					<i class="fa fa-check"></i>
+					Save Option
+					</button>
+					<% if sysdept_id = "0" then %>
+					<% else %>
+					<button class="btn btn-danger btn-sm" type="button" id="DeleteOption">
+					<i class="fa fa-remove"></i>
+					Delete Option
+					</button>
+					<% end if %>
+				</div>
+			</div>
+			
+		</div>
+		<div class="tab-pane <% if Session("TABTARGET_catalog_system_deail") = "#catalog_system_deail_option_tab2" then %>active<% end if %>" id="catalog_system_deail_option_tab2">
+			<div class="row">
+				<div class="col-md-12 space20">
+					<a class="btn btn-default" data-toggle="modal" data-target="#stack2"><i class="fa fa-plus"></i> Add Item </a>
+				</div>
+			</div>
+			<table class="table table-hover" id="sample_3">
+				<thead>
+					<tr>
+						<tr>
+						<th class="center">ID</th>
+						<th class="center">SKU</th>
+						<th class="center" width="300">Name</th>
+						<th class="center">Cost</th>
+						<th class="center">A</th>
+						<th class="center">B</th>
+						<th class="center">C</th>
+						<th class="center">D</th>
+						<th class="center"></th>
+						<th class="center" width="70"></th>
+					</tr>
+				</thead>
+				<tbody id="order_detail">
+				</tbody>
+			</table>
+		</div>
+	</div>
+		
+</div>
+<script type="text/javascript">
+	var oTable;
+	
+	jQuery.ajax({
+		type:"post",
+		url: "api/sp_get_sysdept_items.phtml",
+		data: {'sysdept_id' :'<%=sysdept_id%>', 'isAjax':true},
+		dataType: 'json',
+		success: function(data) {
+			
+			var EditItems= "";
+			for (var i = 0; i < data.ORDERITEMS.length; i++){
+				EditItems = data.ORDERITEMS[i].detail;
+			}
+			
+			jQuery("#order_detail").html(EditItems);
+			ProcessPostItemUpdate();
+		}
+	});
+	
+	
+
+</script>
+<script>
+	jQuery("#SaveOption").click(function() {
+		savebutton = "0";
+		$('#formop').val("options");
+		$('#form_edit_1').submit();
+	});
+	
+	jQuery("#DeleteOption").click(function(e) {
+	e.preventDefault();
+	jQuery("#dialog-confirm").html('Are you sure you want to delete "' + jQuery("#sysdept_name").val() + '"?');
+	jQuery("#dialog-confirm").dialog({
+	  autoOpen: false,
+	  modal: true,
+	  buttons : {
+		"Confirm" : function() {
+			$(this).dialog("close");
+			jQuery.ajax({
+				type: "post",
+				url: "api/sp_catalog_system_config_update.phtml",
+				data: { 'sysdept_id': '<%=sysdept_id%>', 'mode': 'odelete', isAjax: true },
+				dataType: 'json',
+				success: function (data) {
+					$("#tree3").dynatree("getTree").reload();
+					jQuery("#dept_detail").html('<p>Select existing options on the left or click on the "add" button to add new option.</p>');
+				}
+			});
+			//window.location.href = "api/tp_catalog_category_delete.phtml?category_id=" + jQuery("#dept_id").val();
+		},
+		"Cancel" : function() {
+		  $(this).dialog("close");
+		}
+	  }
+	});
+	jQuery("#dialog-confirm").dialog("open");
+
+});
+	
+</script>
+<script>
+	jQuery("#SaveOption").click(function() {
+		$('#formop').val("options");
+		$('#form').submit();
+	});
+	
+	jQuery("#DeleteOption").click(function(e) {
+	e.preventDefault();
+	jQuery("#dialog-confirm").html('Are you sure you want to delete "' + jQuery("#sysdept_name").val() + '"?');
+	jQuery("#dialog-confirm").dialog({
+	  autoOpen: false,
+	  modal: true,
+	  buttons : {
+		"Confirm" : function() {
+			$(this).dialog("close");
+			jQuery.ajax({
+				type: "post",
+				url: "api/sp_catalog_system_config_update.phtml",
+				data: { 'sysdept_id': '<%=sysdept_id%>', 'mode': 'odelete', isAjax: true },
+				dataType: 'json',
+				success: function (data) {
+					$("#tree3").dynatree("getTree").reload();
+					jQuery("#dept_detail").html('<p>Select existing options on the left or click on the "add" button to add new option.</p>');
+				}
+			});
+			//window.location.href = "api/tp_catalog_category_delete.phtml?category_id=" + jQuery("#dept_id").val();
+		},
+		"Cancel" : function() {
+		  $(this).dialog("close");
+		}
+	  }
+	});
+	
+	jQuery("#dialog-confirm").dialog("open");
+	
+});
+	
+</script>
+<script>
+
+function ProcessPostItemUpdate()
+{
+	/*
+	if ( $.fn.DataTable.isDataTable( '#sample_3' ) ) {
+	  oTableX.destroy();
+	}
+	oTableX = $('#sample_3').DataTable( {
+		"bJQueryUI": false,
+		"iDisplayLength": 10,
+		"bAutoWidth": false,
+		"responsive": true,
+		"bFilter": false,
+		"bLengthChange" : false,
+		//rowReorder: true,
+		
+		rowReorder: {
+			selector: 'tr td:not(:last-child)'
+		},
+		columnDefs: [
+			{ targets: 0, visible: false }
+		],
+		
+		"bPaginate": false,
+		"aoColumns": [ 
+			{ "sClass": "center","bSortable": false},
+			{ "sClass": "center","bSortable": false},
+			{ "sClass": "test1","bSortable": false, "width":"50%"},
+			{ "sClass": "text-right" ,"bSortable": false},
+			{ "sClass": "text-right","bSortable": false },
+			{ "sClass": "text-right","bSortable": false},
+			{ "sClass": "text-right","bSortable": false},
+			{ "sClass": "text-right","bSortable": false},
+			{ "sClass": "text-right","bSortable": false},
+			{ "sClass": "text-right","bSortable": false, "width" : "70"}
+		]
+	} );
+	
+	oTableX.on( 'row-reorder', function ( e, diff, edit ) {
+		var result = '';
+		for ( var i=0, ien=diff.length ; i<ien ; i++ ) {
+			var rowData = oTableX.row( diff[i].node ).data();
+			//result += rowData[1] +' updated to be in position '+ diff[i].newData+' (was '+diff[i].oldData+')<br>';
+			result += rowData[1] + "::" + diff[i].newData + "||";
+		}
+		
+		jQuery.ajax({
+			type: "post",
+			url: "api/sp_catalog_system_config_update.phtml",
+			data: { 'sysdept_id': '<%=sysdept_id%>', 'mode': 'itemsort', 'sortdata' : result, isAjax: true },
+			dataType: 'json',
+			success: function (data) {
+				$("#tree3").dynatree("getTree").reload();
+			}
+		});
+	} );
+	
+	*/
+	
+	$('.modal-delete-line').on('click', function () {
+				
+		modal_row_id = $(this).data('id');
+		$( "#dialog-confirm" ).dialog({
+		  resizable: false,
+		  width:360,
+		  height:180,
+		  modal: true,
+		  buttons: {
+			"Delete item": function() {
+				$( this ).dialog( "close" );
+				jQuery.ajax({
+					type:"post",
+					url: "api/sp_catalog_system_config_update.phtml",
+					data: {'sysdept_id' :'<%=sysdept_id%>', 'mode' : 'itemdelete', 'row_id' : modal_row_id, 'isAjax':true},
+					dataType: 'json',
+					success: function(data) {
+						
+						jQuery.ajax({
+							type:"post",
+							url: "api/sp_get_sysdept_items.phtml",
+							data: {'sysdept_id' :'<%=sysdept_id%>', 'isAjax':true},
+							dataType: 'json',
+							success: function(data) {
+								
+								var EditItems= "";
+								for (var i = 0; i < data.ORDERITEMS.length; i++){
+									EditItems = data.ORDERITEMS[i].detail;
+								}
+								
+								jQuery("#order_detail").html(EditItems);
+								ProcessPostItemUpdate();
+								
+							}
+						});
+					}
+				});
+			},
+			Cancel: function() {
+				$( this ).dialog( "close" );
+			}
+		  }
+		});
+		
+	});
+	
+	var $modal3 = $('#ajax-modal3');
+	$('.modal-edit-line').on('click', function () {
+		$('body').modalmanager('loading');
+		var modal_pf_id = $(this).data('id');
+		setTimeout(function () {
+			$modal3.load('api/modal_ajax_sysdept_line_item.phtml?sysdept_id=<%=Server.URLEncode(sysdept_id)%>&row_id=' + modal_pf_id, '', function () {
+				$modal3.modal();
+			});
+		}, 500);
+	});
+	
+	//UpdateOrderTotals();
+	//UpdateShippingMethod();
+	
+}
+</script>
+<% end if %>

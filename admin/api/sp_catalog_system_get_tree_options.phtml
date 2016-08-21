@@ -1,0 +1,145 @@
+<%response.Expires=-1%>
+<!-- #INCLUDE File="../local/local.phtml" -->
+<!-- #INCLUDE File="../util/xt_func_string.phtml" -->
+<%
+	system_id = Trim(Request("system_id"))
+%>
+[
+	<%
+		s_tree = ""
+		sql = "SELECT * FROM " & g_storeid & "_system_config_group WHERE pf_id='" & system_id & "' ORDER BY group_row, group_id"
+		set rs = dbconn.Execute(sql)
+		do while not rs.EOF
+			group_id = rs("group_id")
+			group_name = rs("group_name")
+			
+			s_tree = s_tree & "{"
+			s_tree = s_tree & """title"": """ & group_name & """ , "
+			s_tree = s_tree & """isFolder"": true, "
+			if InStr(s_dept_id, "," & group_id & ",") then
+				s_tree = s_tree & """select"": true, "
+			else
+				s_tree = s_tree & """select"": false, "
+			end if
+			
+			if InStr(s_dept_id, "," & group_id & "-") then
+				s_tree = s_tree & """expand"": true, "
+			end if
+			
+			
+			s_tree = s_tree & """href"": ""catalog_category.phtml?dept_id=" & group_id & """, "
+			s_tree = s_tree & """key"": """ & group_id & """"
+			
+			s_tree_sub_1 = ""
+			sql = "SELECT * FROM " & g_storeid & "_sysdept WHERE config_id='" & system_id & "' AND sysdept_group = '" &  group_id & "' ORDER BY sysdept_row, sysdept_id"
+			set rs1 = dbconn.Execute(sql)
+			if not rs1.EOF then
+				s_tree = s_tree & ",""children"": ["
+				do while not rs1.EOF
+					
+					category_id = rs1("sysdept_id")
+					category_name = rs1("sysdept_name")
+					sysdept_mode =  rs1("sysdept_mode")
+					
+					If Len(category_name) > 0 Then
+						category_name = stripHTML(category_name)
+						category_name = Replace(category_name, "'", "&#39")
+						category_name = Replace(category_name, """", "&#34;")
+					End if
+					
+					
+					s_tree_sub_1 = s_tree_sub_1 & "{"
+					s_tree_sub_1 = s_tree_sub_1 & """title"": """ & category_name & """ , "
+					s_tree_sub_1 = s_tree_sub_1 & """isFolder"": false, "
+					if InStr(s_dept_id, "," & category_id & ",") then
+						s_tree_sub_1 = s_tree_sub_1 & """select"": true, "
+					else
+						s_tree_sub_1 = s_tree_sub_1 & """select"": false, "
+					end if
+					SELECT CASE sysdept_mode
+					CASE 0
+						s_tree_sub_1 = s_tree_sub_1 & """addClass"": ""custom0"", "
+					CASE 1
+						s_tree_sub_1 = s_tree_sub_1 & """addClass"": ""custom1"", "
+					CASE 2
+						s_tree_sub_1 = s_tree_sub_1 & """addClass"": ""custom2"", "
+					CASE 3
+						s_tree_sub_1 = s_tree_sub_1 & """addClass"": ""custom3"", "
+					END SELECT 
+					
+					s_tree_sub_1 = s_tree_sub_1 & """href"": ""#"", "
+					s_tree_sub_1 = s_tree_sub_1 & """key"": """ & category_id & """"
+					s_tree_sub_1 = s_tree_sub_1 & "},"
+					
+					
+					rs1.MoveNext
+				loop
+				rs1.Close
+				set rs1 = nothing
+				if Len(s_tree_sub_1) > 0 then
+					s_tree_sub_1 = Left(s_tree_sub_1, Len(s_tree_sub_1)-1)
+					s_tree = s_tree & s_tree_sub_1
+				end if
+		
+				s_tree = s_tree & "]"
+				
+			end if						
+			
+			s_tree = s_tree & "},"
+			rs.MoveNext
+			
+		loop
+		rs.Close
+		set rs = nothing
+		
+		sql = "SELECT * FROM " & g_storeid & "_sysdept WHERE config_id='" & system_id & "' AND sysdept_group = '' ORDER BY sysdept_row, sysdept_id"
+		set rs = dbconn.Execute(sql)
+		do while not rs.EOF
+			category_id = rs("sysdept_id")
+			category_name = rs("sysdept_name")
+			sysdept_mode =  rs("sysdept_mode")
+			
+			If Len(category_name) > 0 Then
+				category_name = stripHTML(category_name)
+				category_name = Replace(category_name, "'", "&#39")
+				category_name = Replace(category_name, """", "&#34;")
+			End if
+			
+			s_tree = s_tree & "{"
+			s_tree = s_tree & """title"": """ & category_name & """ , "
+			s_tree = s_tree & """isFolder"": false, "
+			if InStr(s_dept_id, "," & category_id & ",") then
+				s_tree = s_tree & """select"": true, "
+			else
+				s_tree = s_tree & """select"": false, "
+			end if
+			SELECT CASE sysdept_mode
+			CASE 0
+				s_tree = s_tree & """addClass"": ""custom0"", "
+			CASE 1
+				s_tree = s_tree & """addClass"": ""custom1"", "
+			CASE 2
+				s_tree = s_tree & """addClass"": ""custom2"", "
+			CASE 3
+				s_tree = s_tree & """addClass"": ""custom3"", "
+			END SELECT 
+			
+			s_tree = s_tree & """href"": ""#"", "
+			s_tree = s_tree & """key"": """ & category_id & """"
+			
+			s_tree_sub_1 = ""
+			
+			s_tree = s_tree & "},"
+			
+			rs.MoveNext
+		loop
+		rs.Close
+		set rs = nothing
+		
+		if Len(s_tree) > 0 then
+			s_tree = Left(s_tree, Len(s_tree)-1)
+		end if
+		
+%>
+	<%= s_tree %>
+]
