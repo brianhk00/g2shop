@@ -41,6 +41,8 @@
 	use_shopper_tax = Trim(Request("use_shopper_tax"))
 	shopper_tax = Trim(Request("shopper_tax"))
 	
+	mfg_authorization = Trim(Request("mfg_authorization"))
+	
 	if(use_shopper_tax="")then
 		use_shopper_tax = "0"
 	else
@@ -410,12 +412,39 @@
 		dbconn.Execute(sql)
 	end if
 	'==========================================================================================================================
-	
-	
-	
-	
-	
-	
+	'Authorization
+	'==========================================================================================================================
+	sql = "DELETE FROM " & g_storeid & "_shopper_mfg_authorization where shopper_id = '" & shopper_id & "'"
+	dbconn.Execute(sql)	
+	if Len(mfg_authorization) > 0 then
+		ar_mfg_authorization = Split(mfg_authorization, ", ")
+		for i = 0 to UBound(ar_mfg_authorization)
+			Set rsUpdate = Server.CreateObject("ADODB.Recordset")
+			with rsUpdate
+				.ActiveConnection = dbconn
+				.CursorLocation = 3
+				.CursorType = 1
+				.LockType = 3
+				.Source = g_storeid & "_shopper_mfg_authorization WHERE shopper_id='0'"
+				.Open
+				.AddNew
+			end with
+			
+			rsUpdate("shopper_id") = shopper_id
+			rsUpdate("mfg_id") = ar_mfg_authorization(i)
+			rsUpdate("mfg_type") = 0
+			
+			If dbconn.Errors.Count > 0 Then
+				dbconn.Errors.Clear
+				rsUpdate.CancelUpdate
+			else
+				rsUpdate.Update
+			End If
+			
+			rsUpdate.Close
+			set rsUpdate = nothing
+		next
+	end if
 	
 	if Len(shopper_password) > 0 then
 		salt ="cV"

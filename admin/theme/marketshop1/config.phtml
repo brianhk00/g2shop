@@ -4,6 +4,21 @@
 <!-- #INCLUDE File="../../include/i_login.phtml" -->
 <%
 	TPL_MARKETSHOP1_MENUTYPE = GetSettingValue("TPL_MARKETSHOP1_MENUTYPE", "default")
+	
+	TPL_MARKETSHOP1_MENU_BLOCK_1_ID = GetSettingValue("TPL_MARKETSHOP1_MENU_BLOCK_1_ID", "")
+		TPL_MARKETSHOP1_MENU_BLOCK_1_TITLE = GetSettingValue("TPL_MARKETSHOP1_MENU_BLOCK_1_TITLE", "")
+		TPL_MARKETSHOP1_MENU_BLOCK_1_PLACEMENT = GetSettingValue("TPL_MARKETSHOP1_MENU_BLOCK_1_PLACEMENT", "0")
+		TPL_MARKETSHOP1_MENU_BLOCK_1_CLASS = GetSettingValue("TPL_MARKETSHOP1_MENU_BLOCK_1_CLASS", "")
+		
+		TPL_MARKETSHOP1_MENU_BLOCK_2_ID = GetSettingValue("TPL_MARKETSHOP1_MENU_BLOCK_2_ID", "")
+		TPL_MARKETSHOP1_MENU_BLOCK_2_TITLE = GetSettingValue("TPL_MARKETSHOP1_MENU_BLOCK_2_TITLE", "")
+		TPL_MARKETSHOP1_MENU_BLOCK_2_PLACEMENT = GetSettingValue("TPL_MARKETSHOP1_MENU_BLOCK_2_PLACEMENT", "0")
+		TPL_MARKETSHOP1_MENU_BLOCK_2_CLASS = GetSettingValue("TPL_MARKETSHOP1_MENU_BLOCK_2_CLASS", "")
+		
+		TPL_MARKETSHOP1_MENU_BLOCK_3_ID = GetSettingValue("TPL_MARKETSHOP1_MENU_BLOCK_3_ID", "")
+		TPL_MARKETSHOP1_MENU_BLOCK_3_TITLE = GetSettingValue("TPL_MARKETSHOP1_MENU_BLOCK_3_TITLE", "")
+		TPL_MARKETSHOP1_MENU_BLOCK_3_PLACEMENT = GetSettingValue("TPL_MARKETSHOP1_MENU_BLOCK_3_PLACEMENT", "0")
+		TPL_MARKETSHOP1_MENU_BLOCK_3_CLASS = GetSettingValue("TPL_MARKETSHOP1_MENU_BLOCK_3_CLASS", "")
 %>
 <!--#INCLUDE FILE="../../include/doctype.phtml"-->
 <head>
@@ -54,11 +69,12 @@
 <div class="tabbable-bordered">
 	<ul class="nav nav-tabs">
 		<li class="active">
-			<a href="#tab_general" data-toggle="tab"> General </a>
+			<a href="#tab_general" data-toggle="tab"> Top Menu </a>
 		</li>
 	</ul>
 	<div class="tab-content">
 		<div class="tab-pane active" id="tab_general">
+			<!--
 			<div class="form-group">
 				<label class="col-sm-2 control-label" for="TPL_MARKETSHOP1_MENUTYPE">
 					Menu Type
@@ -66,10 +82,110 @@
 				<div class="col-sm-8">
 					<select class="form-control input-sm" name="TPL_MARKETSHOP1_MENUTYPE" id="TPL_MARKETSHOP1_MENUTYPE">
 						<option value="default" <%if TPL_MARKETSHOP1_MENUTYPE = "default" then%>selected<%end if%>>Default</option>
-						<option value="megamenu" <%if TPL_MARKETSHOP1_MENUTYPE = "megamenu" then%>selected<%end if%>>Mega Menu</option
+						<option value="megamenu" <%if TPL_MARKETSHOP1_MENUTYPE = "megamenu" then%>selected<%end if%>>Mega Menu</option>
 					</select>
 				</div>
 			</div>
+			-->
+			<div class="form-group">
+				<label class="col-sm-2 control-label" for="TPL_MARKETSHOP1_MENU_BLOCK_1_ID">
+					Custom Menu 1 ID:
+				</label>
+				<div class="col-sm-8">
+					<input class="form-control input-sm" type="text" id = "TPL_MARKETSHOP1_MENU_BLOCK_1_ID" name="TPL_MARKETSHOP1_MENU_BLOCK_1_ID" value="<%=TPL_MARKETSHOP1_MENU_BLOCK_1_ID%>"/>
+				</div>
+			</div>
+			<div class="form-group">
+				<label class="col-sm-2 control-label" for="TPL_MARKETSHOP1_MENU_BLOCK_1_TITLE">
+					Custom Menu 1 Title:
+				</label>
+				<div class="col-sm-8">
+					<input class="form-control input-sm" type="text" id = "TPL_MARKETSHOP1_MENU_BLOCK_1_TITLE" name="TPL_MARKETSHOP1_MENU_BLOCK_1_TITLE" value="<%=TPL_MARKETSHOP1_MENU_BLOCK_1_TITLE%>"/>
+				</div>
+			</div>
+			<div class="form-group">
+				<label class="col-sm-2 control-label" for="TPL_MARKETSHOP1_MENU_BLOCK_1_CLASS">
+					Custom Menu 1 Class:
+				</label>
+				<div class="col-sm-8">
+					<input class="form-control input-sm" type="text" id = "TPL_MARKETSHOP1_MENU_BLOCK_1_CLASS" name="TPL_MARKETSHOP1_MENU_BLOCK_1_CLASS" value="<%=TPL_MARKETSHOP1_MENU_BLOCK_1_CLASS%>"/>
+				</div>
+			</div>
+			<div class="form-group">
+				<label class="col-sm-2 control-label" for="TPL_MARKETSHOP1_MENU_BLOCK_1_PLACEMENT">
+					Custom Menu 1 Order:
+				</label>
+				<div class="col-sm-8">
+					<input class="form-control input-sm" type="text" id = "TPL_MARKETSHOP1_MENU_BLOCK_1_PLACEMENT" name="TPL_MARKETSHOP1_MENU_BLOCK_1_PLACEMENT" value="<%=TPL_MARKETSHOP1_MENU_BLOCK_1_PLACEMENT%>"/>
+				</div>
+			</div>
+			
+			<div class="form-group">
+				<label class="col-sm-2 control-label" for="TPL_MARKETSHOP1_MENU_BLOCK_2_ID">
+					Custom Menu 2 ID:
+				</label>
+				<div class="col-sm-8">
+					<input class="form-control input-sm" type="text" id = "TPL_MARKETSHOP1_MENU_BLOCK_2_ID" name="TPL_MARKETSHOP1_MENU_BLOCK_2_ID" value="<%=TPL_MARKETSHOP1_MENU_BLOCK_2_ID%>"/>
+				</div>
+			</div>
+			<div class="form-group">
+				<label class="col-sm-2 control-label" for="TPL_MARKETSHOP1_MENU_BLOCK_2_TITLE">
+					Custom Menu 2 Title:
+				</label>
+				<div class="col-sm-8">
+					<input class="form-control input-sm" type="text" id = "TPL_MARKETSHOP1_MENU_BLOCK_2_TITLE" name="TPL_MARKETSHOP1_MENU_BLOCK_2_TITLE" value="<%=TPL_MARKETSHOP1_MENU_BLOCK_2_TITLE%>"/>
+				</div>
+			</div>
+			<div class="form-group">
+				<label class="col-sm-2 control-label" for="TPL_MARKETSHOP1_MENU_BLOCK_2_CLASS">
+					Custom Menu 2 Class:
+				</label>
+				<div class="col-sm-8">
+					<input class="form-control input-sm" type="text" id = "TPL_MARKETSHOP1_MENU_BLOCK_2_CLASS" name="TPL_MARKETSHOP1_MENU_BLOCK_2_CLASS" value="<%=TPL_MARKETSHOP1_MENU_BLOCK_2_CLASS%>"/>
+				</div>
+			</div>
+			<div class="form-group">
+				<label class="col-sm-2 control-label" for="TPL_MARKETSHOP1_MENU_BLOCK_2_PLACEMENT">
+					Custom Menu 2 Order:
+				</label>
+				<div class="col-sm-8">
+					<input class="form-control input-sm" type="text" id = "TPL_MARKETSHOP1_MENU_BLOCK_2_PLACEMENT" name="TPL_MARKETSHOP1_MENU_BLOCK_2_PLACEMENT" value="<%=TPL_MARKETSHOP1_MENU_BLOCK_2_PLACEMENT%>"/>
+				</div>
+			</div>
+			
+			<div class="form-group">
+				<label class="col-sm-2 control-label" for="TPL_MARKETSHOP1_MENU_BLOCK_3_ID">
+					Custom Menu 3 ID:
+				</label>
+				<div class="col-sm-8">
+					<input class="form-control input-sm" type="text" id = "TPL_MARKETSHOP1_MENU_BLOCK_3_ID" name="TPL_MARKETSHOP1_MENU_BLOCK_3_ID" value="<%=TPL_MARKETSHOP1_MENU_BLOCK_3_ID%>"/>
+				</div>
+			</div>
+			<div class="form-group">
+				<label class="col-sm-2 control-label" for="TPL_MARKETSHOP1_MENU_BLOCK_3_TITLE">
+					Custom Menu 3 Title:
+				</label>
+				<div class="col-sm-8">
+					<input class="form-control input-sm" type="text" id = "TPL_MARKETSHOP1_MENU_BLOCK_3_TITLE" name="TPL_MARKETSHOP1_MENU_BLOCK_3_TITLE" value="<%=TPL_MARKETSHOP1_MENU_BLOCK_3_TITLE%>"/>
+				</div>
+			</div>
+			<div class="form-group">
+				<label class="col-sm-2 control-label" for="TPL_MARKETSHOP1_MENU_BLOCK_3_CLASS">
+					Custom Menu 3 Class:
+				</label>
+				<div class="col-sm-8">
+					<input class="form-control input-sm" type="text" id = "TPL_MARKETSHOP1_MENU_BLOCK_3_CLASS" name="TPL_MARKETSHOP1_MENU_BLOCK_3_CLASS" value="<%=TPL_MARKETSHOP1_MENU_BLOCK_3_CLASS%>"/>
+				</div>
+			</div>
+			<div class="form-group">
+				<label class="col-sm-2 control-label" for="TPL_MARKETSHOP1_MENU_BLOCK_3_PLACEMENT">
+					Custom Menu 3 Order:
+				</label>
+				<div class="col-sm-8">
+					<input class="form-control input-sm" type="text" id = "TPL_MARKETSHOP1_MENU_BLOCK_3_PLACEMENT" name="TPL_MARKETSHOP1_MENU_BLOCK_3_PLACEMENT" value="<%=TPL_MARKETSHOP1_MENU_BLOCK_3_PLACEMENT%>"/>
+				</div>
+			</div>
+			
 		</div>
 	</div>
 </div>
@@ -99,6 +215,98 @@
 <script src="../../../assets/global/plugins/jquery-validation/js/additional-methods.min.js" type="text/javascript"></script>
 <!-- END PAGE LEVEL PLUGINS -->
 <!-- BEGIN PAGE LEVEL SCRIPTS -->
+<script language="javascript">
+var FormValidation = function () {
+	// basic validation
+	var handleValidation1 = function() {
+		var form1 = $('#form_edit_1');
+		var error1 = $('.alert-danger', form1);
+		var success1 = $('.alert-success', form1);
+		var warning1 = $('.alert-warning', form1);
+
+		form1.validate({
+			errorElement: 'span', //default input error message container
+			errorClass: 'help-block help-block-error', // default input error message class
+			focusInvalid: false, // do not focus the last invalid input
+			ignore: "",  // validate all fields including form hidden input
+			//RULES
+			rules: {
+				pf_weight: {
+					required: true,
+					number: true
+				}
+				
+			},
+
+			invalidHandler: function (event, validator) { //display error alert on form submit              
+				success1.hide();
+				error1.show();
+				App.scrollTo(error1, -200);
+			},
+
+			errorPlacement: function (error, element) { // render error placement for each input type
+				var cont = $(element).parent('.input-group');
+				if (cont) {
+					cont.after(error);
+				} else {
+					element.after(error);
+				}
+			},
+
+			highlight: function (element) { // hightlight error inputs
+
+				$(element)
+					.closest('.form-group').addClass('has-error'); // set error class to the control group
+			},
+
+			unhighlight: function (element) { // revert the change done by hightlight
+				$(element)
+					.closest('.form-group').removeClass('has-error'); // set error class to the control group
+			},
+
+			success: function (label) {
+				label
+					.closest('.form-group').removeClass('has-error'); // set success class to the control group
+			},
+
+			submitHandler: function (form) {
+				success1.hide();
+				error1.hide
+				warning1.hide();
+				
+				window.scrollTo(0,0);
+				
+				$.ajax({
+					type: "POST",
+					url: "../../api/sp_template_config_update.phtml",
+					data: form1.serialize(),
+					success: function() {
+						success1.show();
+					},
+					error: function() {
+						warning1.show();
+					}
+				});
+			}
+		});
+
+
+	}
+	return {
+		//main function to initiate the module
+		init: function () {
+			handleValidation1();
+		}
+	};
+
+}();
+</script>
+
+<script type="text/javascript">
+jQuery(document).ready(function() { 
+   FormValidation.init();
+});
+</script>
 <!-- END PAGE LEVEL SCRIPTS -->
 </body>
 </html>

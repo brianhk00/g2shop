@@ -200,7 +200,7 @@
 	<!-- Header End-->
 	<!-- Main Menu Start-->
 	<%
-		mm = ""
+		mm = "<!--0-->"
 		'sql = "SELECT dept_id, LEN(dept_id) as a, dept_name, parent_dept, dept_row, url_key FROM hubutu_dept WHERE include_topnav = 1 AND is_hidden = 0 ORDER BY a, dept_row"
 		sql = "SELECT dept_id, LEN(dept_id) as a, dept_name, parent_dept, dept_row, url_Key, ISNULL(CONVERT(nvarchar(100),b.field_value),'') as dept_name_2"
 		sql = sql & " FROM " & g_storeid & "_dept as a "
@@ -210,6 +210,7 @@
 		sql = sql & " WHERE a.include_topnav = 1 AND a.is_hidden = 0 "
 		sql = sql & " ORDER BY a, dept_row"
 		
+		jjj = 1
 		Set rsM = dbconn.Execute(sql)
 		do while not rsM.EOF
 			m_dept_id = rsM("dept_id")
@@ -229,8 +230,9 @@
 			
 			SELECT CASE rsM("a") 
 			CASE 2
-			m = "<li class=""dropdown information-link""><a href=""" & m_dept_link & """>" & m_dept_name & "</a><div class=""dropdown-menu""><ul><!--" & rsM("dept_id") & "--></ul></div></li>"
+			m = "<li class=""dropdown information-link""><a href=""" & m_dept_link & """>" & m_dept_name & "</a><div class=""dropdown-menu""><ul><!--" & rsM("dept_id") & "--></ul></div></li><!--" & jjj & "-->"
 			mm = mm & m
+			jjj = jjj + 1
 			CASE 6
 			m = "<li><a href=""" & m_dept_link & """>" &  m_dept_name & "</a><div class=""dropdown-menu""><ul><!--" & rsM("dept_id") & "--></ul></div></li>"
 			mm = Replace(mm, "<!--" & rsM("parent_dept") & "-->", m & "<!--" & rsM("parent_dept") & "-->")
@@ -252,6 +254,66 @@
 		loop
 		rsM.Close
 		set rsM = nothing
+		
+		'------STATIC BLOCK -----
+		TPL_MARKETSHOP1_MENU_BLOCK_1_ID = GetSettingValue("TPL_MARKETSHOP1_MENU_BLOCK_1_ID", "")
+		TPL_MARKETSHOP1_MENU_BLOCK_1_TITLE = GetSettingValue("TPL_MARKETSHOP1_MENU_BLOCK_1_TITLE", "")
+		TPL_MARKETSHOP1_MENU_BLOCK_1_PLACEMENT = GetSettingValue("TPL_MARKETSHOP1_MENU_BLOCK_1_PLACEMENT", "0")
+		TPL_MARKETSHOP1_MENU_BLOCK_1_CLASS = GetSettingValue("TPL_MARKETSHOP1_MENU_BLOCK_1_CLASS", "")
+		
+		TPL_MARKETSHOP1_MENU_BLOCK_2_ID = GetSettingValue("TPL_MARKETSHOP1_MENU_BLOCK_2_ID", "")
+		TPL_MARKETSHOP1_MENU_BLOCK_2_TITLE = GetSettingValue("TPL_MARKETSHOP1_MENU_BLOCK_2_TITLE", "")
+		TPL_MARKETSHOP1_MENU_BLOCK_2_PLACEMENT = GetSettingValue("TPL_MARKETSHOP1_MENU_BLOCK_2_PLACEMENT", "0")
+		TPL_MARKETSHOP1_MENU_BLOCK_2_CLASS = GetSettingValue("TPL_MARKETSHOP1_MENU_BLOCK_2_CLASS", "")
+		
+		TPL_MARKETSHOP1_MENU_BLOCK_3_ID = GetSettingValue("TPL_MARKETSHOP1_MENU_BLOCK_3_ID", "")
+		TPL_MARKETSHOP1_MENU_BLOCK_3_TITLE = GetSettingValue("TPL_MARKETSHOP1_MENU_BLOCK_3_TITLE", "")
+		TPL_MARKETSHOP1_MENU_BLOCK_3_PLACEMENT = GetSettingValue("TPL_MARKETSHOP1_MENU_BLOCK_3_PLACEMENT", "0")
+		TPL_MARKETSHOP1_MENU_BLOCK_3_CLASS = GetSettingValue("TPL_MARKETSHOP1_MENU_BLOCK_3_CLASS", "")
+		
+		
+		if Len(TPL_MARKETSHOP1_MENU_BLOCK_1_ID) > 0 AND Len(TPL_MARKETSHOP1_MENU_BLOCK_1_TITLE) > 0 then
+			block1 = ""
+			sql = "SELECT block_content FROM " & g_storeid & "_static_block WHERE block_identifier='" & TPL_MARKETSHOP1_MENU_BLOCK_1_ID & "' AND block_status=1"
+			set rsStaticBlock = dbconn.Execute(sql)
+			if not rsStaticBlock.EOF then
+				block1 = "<li class=""" & TPL_MARKETSHOP1_MENU_BLOCK_1_CLASS & " dropdown"" class=""position:static;""><a href=""#"">" & TPL_MARKETSHOP1_MENU_BLOCK_1_TITLE & "</a>"
+				block1 = block1 & rsStaticBlock("block_content")
+				block1 = block1 & "</li>"
+			end if
+			rsStaticBlock.close
+			set rsStaticBlock = nothing
+			mm = Replace(mm, "<!--" & TPL_MARKETSHOP1_MENU_BLOCK_1_PLACEMENT & "-->" , block1 & "<!--" & TPL_MARKETSHOP1_MENU_BLOCK_1_PLACEMENT & "-->")
+		end if
+		
+		if Len(TPL_MARKETSHOP1_MENU_BLOCK_2_ID) > 0 AND Len(TPL_MARKETSHOP1_MENU_BLOCK_2_TITLE) > 0 then
+			block1 = ""
+			sql = "SELECT block_content FROM " & g_storeid & "_static_block WHERE block_identifier='" & TPL_MARKETSHOP1_MENU_BLOCK_2_ID & "' AND block_status=1"
+			set rsStaticBlock = dbconn.Execute(sql)
+			if not rsStaticBlock.EOF then
+				block1 = "<li class=""" & TPL_MARKETSHOP1_MENU_BLOCK_2_CLASS & " dropdown"" class=""position:static;""><a href=""#"">" & TPL_MARKETSHOP1_MENU_BLOCK_2_TITLE & "</a>"
+				block1 = block1 & rsStaticBlock("block_content")
+				block1 = block1 & "</li>"
+			end if
+			rsStaticBlock.close
+			set rsStaticBlock = nothing
+			mm = Replace(mm, "<!--" & TPL_MARKETSHOP1_MENU_BLOCK_2_PLACEMENT & "-->" , block1 & "<!--" & TPL_MARKETSHOP1_MENU_BLOCK_2_PLACEMENT & "-->")
+		end if
+		
+		if Len(TPL_MARKETSHOP1_MENU_BLOCK_3_ID) > 0 AND Len(TPL_MARKETSHOP1_MENU_BLOCK_3_TITLE) > 0 then
+			block1 = ""
+			sql = "SELECT block_content FROM " & g_storeid & "_static_block WHERE block_identifier='" & TPL_MARKETSHOP1_MENU_BLOCK_3_ID & "' AND block_status=1"
+			set rsStaticBlock = dbconn.Execute(sql)
+			if not rsStaticBlock.EOF then
+				block1 = "<li class=""" & TPL_MARKETSHOP1_MENU_BLOCK_3_CLASS & " dropdown"" class=""position:static;""><a href=""#"">" & TPL_MARKETSHOP1_MENU_BLOCK_3_TITLE & "</a>"
+				block1 = block1 & rsStaticBlock("block_content")
+				block1 = block1 & "</li>"
+			end if
+			rsStaticBlock.close
+			set rsStaticBlock = nothing
+			mm = Replace(mm, "<!--" & TPL_MARKETSHOP1_MENU_BLOCK_3_PLACEMENT & "-->" , block1 & "<!--" & TPL_MARKETSHOP1_MENU_BLOCK_3_PLACEMENT & "-->")
+		end if
+		
 	%>
 	
 	<div class="container">

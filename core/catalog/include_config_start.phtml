@@ -1,57 +1,49 @@
 <!--#INCLUDE FILE="../../local/local.phtml"-->
+<!--#INCLUDE FILE="../i_initsession.phtml"-->
+<!--#INCLUDE FILE="../i_adoopen.phtml"-->
 <!--#INCLUDE FILE="../../language_pack.phtml"-->
 <!--#INCLUDE FILE="../../util/xt_func_session.phtml"-->
-<!--#INCLUDE FILE="../../i_initsession.phtml"-->
-<%
-	Session("shopper_id") = GetSession(Session("SESSIONKEY"), "sCID")
-	Session("Shopper_Name") = GetSession(Session("SESSIONKEY"), "sCName")
-	Session("PARTNER") = GetSession(Session("SESSIONKEY"), "sAffID")
-%>
-<!--#INCLUDE FILE="../../i_adodb.phtml"-->
 <!--#INCLUDE FILE="../../util/xt_func_string.phtml"-->
-<!--#INCLUDE FILE="../../util/xt_func_seo.phtml"-->
-<!--#INCLUDE File="../../util/xt_func_util.phtml" -->
+<!--#INCLUDE FILE="../../util/xt_func_util.phtml"-->
+<!--#INCLUDE FILE="../../util/xt_func_shoppingcart.phtml"-->
 <Script language="VBScript" RUNAT=SERVER>
 function GetSystemFlatModel(ByRef str_db, ByRef str_config_id, ByRef markup, ByRef system_price)
 
-  set dbconn=server.CreateObject("ADODB.Connection")
-  dbconn.Open str_db
-  
-  sql = "SELECT markup_price, dept_id FROM :9_system_config WHERE config_id='" & str_config_id & "' AND dept_id IN ("
-  sql = sql & "SELECT sysdept_id FROM :9_sysdept WHERE config_id='" & str_config_id & "' AND sysdept_mode=0 AND NOT (allow_none=1 AND none_default=1)) "
-  sql = sql & "ORDER BY dept_id, row_id"
-  sql = Replace(sql, ":9", Session("StoreID"))
-  
-  set rs1 = dbconn.Execute(sql)
-  
-  temp_dept = ""
-  system_price = 0
-  
-  do while not rs1.EOF
-  
+	sql = "SELECT markup_price, dept_id FROM :9_system_config WHERE config_id='" & str_config_id & "' AND dept_id IN ("
+	sql = sql & "SELECT sysdept_id FROM :9_sysdept WHERE config_id='" & str_config_id & "' AND sysdept_mode=0 AND NOT (allow_none=1 AND none_default=1)) "
+	sql = sql & "ORDER BY dept_id, row_id"
+	sql = Replace(sql, ":9", g_storeid)
+
+	set rs1 = dbdbconn.Execute(sql)
+
+	temp_dept = ""
+	system_price = 0
+
+	do while not rs1.EOF
+
 	markup_price = rs1("markup_price")
 	if not rs1("dept_id") = temp_dept then
-	  system_price = system_price + markup_price
-	  temp_dept = rs1("dept_id")
+		system_price = system_price + markup_price
+		temp_dept = rs1("dept_id")
 	end if
 	rs1.MoveNext
-  loop
-  rs1.Close
-  
-  'system_price = system_price + (system_price * markup/100)
-  'Add Hidden Cost..
-  sql = "SELECT SUM(sysdept_cost) FROM :9_sysdept WHERE config_id='" & str_config_id & "' AND sysdept_mode=2"
-  sql = Replace(sql, ":9", Session("StoreID"))
-  set rsPart = Conn.Execute(sql)
-  if not rsPart.EOF then
-    if isNumeric(rsPart(0)) then
-      system_price = system_price + rsPart(0)
-    end if
-  end if
-  rsPart.close
-  system_price = system_price + (system_price * markup/100)
-  
-  GetSystemFlatModel = true
+	loop
+	rs1.Close
+
+	'system_price = system_price + (system_price * markup/100)
+	'Add Hidden Cost..
+	sql = "SELECT SUM(sysdept_cost) FROM :9_sysdept WHERE config_id='" & str_config_id & "' AND sysdept_mode=2"
+	sql = Replace(sql, ":9", g_storeid)
+	set rsPart = dbconn.Execute(sql)
+	if not rsPart.EOF then
+		if isNumeric(rsPart(0)) then
+			system_price = system_price + rsPart(0)
+		end if
+	end if
+	rsPart.close
+	system_price = system_price + (system_price * markup/100)
+
+	GetSystemFlatModel = true
   
 end function
 </Script>
@@ -66,11 +58,12 @@ end function
 		member_group = Session("LOGINGROUP")
 	end if
 	
-	sql = "SELECT * FROM " & Session("StoreID") & "_system_product WHERE pf_id='" & config_id & "'"
-	set rsSystem = Conn.Execute(sql)
+	sql = "SELECT * FROM " & g_storeid & "_system_product WHERE pf_id='" & config_id & "'"
+	set rsSystem = dbconn.Execute(sql)
 	
 	if not rsSystem.EOF then
 		system_name = rsSystem("name")
+		system_sku = rsSystem("sku") 
 		sys_desc = rsSystem("description")
 		sys_desc2 = rsSystem("description2")
 		sys_details = rsSystem("details")
@@ -91,7 +84,7 @@ end function
     
 		if pricing_model = 1 then
 			if GetSystemFlatModel(Session("ConnectionString"), config_id, u_markup_value, system_price) then
-			base_price = system_price
+				base_price = system_price
 			end if
 		end if
 	  
@@ -128,7 +121,7 @@ end function
 	
 	if Len(sys_image) > 2 then
 		ssImg = g_cloudinary_url & ssImgSize & g_store_url & "media/catalog/system/" & sys_image
-		ssImg2 = g_cloudinary_url & ssImgSize & g_store_url & "media/catalog/system/" & sys_image
+		ssImg2 = g_cloudinary_url & ssZoomSize & g_store_url & "media/catalog/system/" & sys_image
 		ssImg1 = g_cloudinary_url & ssThumbSize & g_store_url & "media/catalog/system/" & sys_image
 		
 	end if
@@ -146,5 +139,30 @@ end function
 	image_display_src = ssImg
 	image_display_src_zoom = ssImg2
 	image_display_src_thumb = ssImg1
+	
+	'==================================================================
+	'TEMPLATE
+	'==================================================================
+	
+	x_prod_name = system_name
+	x_page_title = g_page_title
+	x_prod_sku = system_sku
+	x_prod_desc = sys_desc
+	x_prod_detail = sys_details
+	x_prod_manu_part_num = ""
+	x_vendor_name = ""
+	
+	x_prod_on_sale = 0
+	x_prod_sale_price = 0
+	x_prod_group_price = base_price
+	x_prod_retail_price = 0
+	
+	x_prod_image = ssImg
+	x_prod_zoom_image = ssImg2
+	x_prod_thumb_image= ssImg1
+	x_prod_mm_type = prod_mm_type
+	x_prod_espec_sku = ""
+	x_prod_use_icecat_images = 0
+	x_prod_image_file = ssImg
 	
 %>

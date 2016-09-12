@@ -439,18 +439,53 @@
 		sAvail = "Out of Stock"
 	end If
 	
-	If Len(Session("shopper_id")) > 0 Then
-		sql = "SELECT apple_authorized FROM " & g_storeid & "_shopper WHERE shopper_id='" & Session("shopper_id") & "'"
-		Set rsAuthorized = dbconn.Execute(sql)
-		If Not rsAuthorized.EOF Then
-			apple_authorized = rsAuthorized(0)
-		Else
-			apple_authorized = 0
-		End If
-		rsAuthorized.Close
-	Else
-		apple_authorized = 0
-	End If
+	'====================================================================================================
+	'Product Authorization
+	'====================================================================================================
+	bNeedAuthorization = false
+	
+	if Len(vendor_number) > 0 then
+		sql = "SELECT * FROM " & g_storeid & "_mfg WHERE mfg_id = '" & vendor_number & "'"
+		set rs = dbconn.Execute(sql)
+		if not rs.EOF then
+			mfg_map_enabled = rs("mfg_map_enabled") 'restriction
+		end if
+		rs.Close
+		set rs = nothing
+		
+		if mfg_map_enabled = 1 then
+			bNeedAuthorization = true
+		end if
+		
+	end if
+	
+	
+	if bNeedAuthorization then
+		if Session("shopper_id") <> "" then
+			sql = "SELECT * FROM " & g_storeid & "_shopper_mfg_authorization WHERE shopper_id = '" & Session("shopper_id") & "' AND mfg_id='" & vendor_number & "'"
+			set rs = dbconn.Execute(sql)
+			if not rs.EOF then
+				bNeedAuthorization = false
+			end if
+			rs.Close
+			set rs = nothing
+		end if
+	end if
+	
+	
+	'If Len(Session("shopper_id")) > 0 Then
+		'sql = "SELECT apple_authorized FROM " & g_storeid & "_shopper WHERE shopper_id='" & Session("shopper_id") & "'"
+		'Set rsAuthorized = dbconn.Execute(sql)
+		'If Not rsAuthorized.EOF Then
+			'apple_authorized = rsAuthorized(0)
+		'Else
+			'apple_authorized = 0
+		'End If
+		'rsAuthorized.Close
+	'Else
+		'apple_authorized = 0
+	'End If
+	'====================================================================================================
 	
 	If Len(page_title) > 0 Then
 		g_page_title = page_title
@@ -463,7 +498,6 @@
 	Else
 		g_meta_text = ""
 	End if
-	
 	
 	'====================================================================================
 	'THEME VALUES

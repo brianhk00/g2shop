@@ -1,0 +1,374 @@
+<div class="container">
+	<!-- Breadcrumb Start-->
+	<ul class="breadcrumb">
+		<li itemscope itemtype="http://data-vocabulary.org/Breadcrumb"><a href="index.html" itemprop="url"><span itemprop="title"><i class="fa fa-home"></i></span></a></li>
+		<li itemscope itemtype="http://data-vocabulary.org/Breadcrumb"><a href="category.html" itemprop="url"><span itemprop="title">Electronics</span></a></li>
+		<li itemscope itemtype="http://data-vocabulary.org/Breadcrumb"><a href="product.html" itemprop="url"><span itemprop="title">Laptop Silver black</span></a></li>
+	</ul>
+	<!-- Breadcrumb End-->
+	<div class="row">
+		<!--Middle Part Start-->
+		<div id="content" class="col-sm-12">
+			<div itemscope itemtype="http://schema.org/Product">
+				<h1 class="title" itemprop="name"><%=x_prod_name%></h1>
+				<div class="row product-info">
+					<div class="col-sm-6">
+						<div class="image">
+							<img class="img-responsive" itemprop="image" id="zoom_01" src="<%=x_prod_image%>"  data-zoom-image="<%=x_prod_zoom_image%>"/>
+						</div>
+						<div class="center-block text-center">
+							<span class="zoom-gallery"><i class="fa fa-search"></i> Click image for Gallery</span>
+						</div>
+						<div class="image-additional" id="gallery_01">
+							<a class="thumbnail" href="#" data-zoom-image="<%=x_prod_zoom_image%>" data-image="<%=x_prod_image%>"><img src="<%=x_prod_thumb_image%>"/></a>
+							<%
+								sql = "SELECT * FROM " & g_storeid & "_product_image WHERE pf_id = '" & pf_id & "' AND image_name <> '" & x_prod_image_file & "'"
+								set rs = dbconn.Execute(sql)
+								do while not rs.EOF
+									cloudImg = Trim(rs("cloud_url"))
+									ssImg = Replace(cloudImg, "upload/", ssImgSize)
+									ssImg1 = Replace(cloudImg, "upload/", ssThumbSize)
+									ssImg2 = Replace(cloudImg, "upload/", ssZoomSize)
+									
+							%>
+							<a class="thumbnail" href="#" data-zoom-image="<%=ssImg2%>" data-image="<%=ssImg%>"><img src="<%=ssImg1%>"/></a>
+							<%
+									rs.MoveNext
+								loop
+								rs.Close
+								set rs = nothing
+							%></div>
+					</div>
+					<div class="col-sm-6">
+
+						<ul class="list-unstyled description">
+							<li><b><%=a("SKU")%>:</b><span itemprop="mpn"><%=x_prod_sku%></span></li>
+						</ul>
+						<div><%=x_prod_desc%></div>
+						<br>
+						<ul class="price-box">
+							<li class="price" itemprop="offers" itemscope itemtype="http://schema.org/Offer">
+								<% if x_prod_on_sale = 1 then %>
+								<span class="price-old">$<%=FormatNumber(x_prod_group_price,2)%></span>
+								<span itemprop="price">$<%=FormatNumber(x_prod_sale_price,2)%></span><span itemprop="availability" content="<%=x_prod_stock_status_display%>"></span>
+								<% else %>
+								<span itemprop="price" id="systemprice">$<%=FormatNumber(x_prod_group_price,2)%></span><span itemprop="availability" content="<%=x_prod_stock_status_display%>"></span>
+								<% end if %>
+							</li>
+							<li></li>
+						</ul>
+						<form name = "BuyForm" action="<%=Session("g_secure_url")%>tp_cart.phtml" method="post">
+						<input type="hidden" name="basket_action" value="A">
+						<input type="hidden" name="pf_id" value="<%=pf_id%>">
+						<input type="hidden" name="product_mode" value="<%=product_mode%>">
+						<input type="hidden" name="adjusted_price" value="<%=adjusted_price%>">
+						<input type="hidden" name="sessionID" value="<%=Session("SESSIONKEY")%>">
+						<input type="hidden" name="pf_ids" value="">
+						<input type="hidden" name="pf_qtys" value="">
+						<div id="product">
+							<!--
+							<h3 class="subtitle">Available Options</h3>
+							<div class="form-group required">
+								<label class="control-label">Color</label>
+								<select class="form-control" id="input-option200" name="option[200]">
+									<option value=""> --- Please Select --- </option>
+									<option value="4">Black </option>
+									<option value="3">Silver </option>
+									<option value="1">Green </option>
+									<option value="2">Blue </option>
+								</select>
+							</div>
+							-->
+							<div class="cart">
+								<div>
+									<div class="qty">
+										<label class="control-label" for="input-quantity">Qty</label>
+										<input type="text" name="qty" value="1" size="2" id="input-quantity" class="form-control"/>
+										<a class="qtyBtn plus" href="javascript:void(0);">+</a><br/>
+										<a class="qtyBtn mines" href="javascript:void(0);">-</a>
+										<div class="clear">
+										</div>
+									</div>
+									<button type="button" id="button-cart" class="btn btn-primary btn-lg" onclick="BuyForm.submit(this);">Add to Cart</button>
+								</div>
+								<br>
+								<div>
+									<% if Session("shopper_id") = "" OR Session("shopper_id") = "GUEST" then %>
+									<p>&nbsp;</p>
+									<p>Please <a href="<%=g_secure_url%>login.phtml">log in</a> to add to your wish list.</p>
+									<% else %>
+									<button type="button" class="wishlist" onclick="setLocation('<%=g_secure_url%>tp_wishlist.phtml?sku=<%=pf_id%>')"><i class="fa fa-heart"></i> Add to Wish List</button>
+									<% end if %>
+								</div>
+							</div>
+						</div>
+						</form>
+						<div class="rating" itemprop="aggregateRating" itemscope itemtype="http://schema.org/AggregateRating">
+							<meta itemprop="ratingValue" content="0"/>
+							<p>
+								<%
+									for ii =1 to 5
+									
+										if x_review_avg >= ii then
+											Response.Write("<span class=""fa fa-stack""><i class=""fa fa-star fa-stack-2x""></i><i class=""fa fa-star-o fa-stack-2x""></i></span>")
+										else
+											Response.Write("<span class=""fa fa-stack""><i class=""fa fa-star-o fa-stack-2x""></i></span>")
+										end if
+								
+									next
+								%>
+								<a onclick="$('a[href=\'#tab-review\']').trigger('click'); return false;" href=""><span itemprop="reviewCount"><%=x_review_count%> reviews</span></a> 
+								<% if x_bWriteReview then %>
+								/ <a onclick="$('a[href=\'#tab-review\']').trigger('click'); return false;" href="">Write a review</a>
+								<% end if %>
+							</p>
+						</div>
+						<hr>
+						<!-- AddThis Button BEGIN -->
+						<!-- AddThis Button BLOCK -->
+						<!-- AddThis Button END -->
+					</div>
+				</div>
+				<!-- CONFIG only BEGIN -->
+				<style>
+				.content-header-floating { display:none; position:fixed; left:0; bottom:0; width:100%; border-bottom:solid 1px #988753; z-index:100; background:#cce5ff; -ms-filter: "progid:DXImageTransform.Microsoft.Alpha(Opacity=85)"/* IE8 */; opacity:.85; }
+				.content-header-floating .content-header { padding:6px 8px 4px 8px; margin-bottom:0; border:0; }
+				.content-header-floating td     { padding-right:20px; }
+				.content-header-floating button { margin-top:3px; }
+				.content-header-floating .content-buttons { float:right; /* margin:12px 25px 0 0;*/ }
+				.content-buttons { margin-bottom:5px; float:right; display:inline; white-space:nowrap; }
+				.content-header-floating .form-buttons {padding-right:20px; }
+				.content-header-floating h3 {margin-left:80px; display:inline;text-transform: uppercase; }
+				.optionlist li {list-style:none;}
+				</style>
+				<div class="content-header-floating" style="display: block;">
+					<div class="content-header">
+						<h3 class="mainTitle">
+						<%=system_name%>
+						</h3>
+						<span class="product-info"><span class="price"  id="systemprice2">$<%=FormatNumber(x_prod_group_price,2)%></span></span>
+						<p class="content-buttons form-buttons">
+							<button type="button" id="button-cart" class="btn btn-primary btn-lg" onclick="BuyForm.submit(this);">Add to Cart</button>
+						</p>	
+					</div>
+				</div>
+				<!-- CONFIG only END -->		
+				<ul class="nav nav-tabs">
+					
+					<%	itab = 1
+						sql = "SELECT * FROM "& g_storeid & "_system_config_group WHERE pf_id='" & config_id & "' ORDER BY group_row"
+						set rsTabs = dbconn.Execute(sql)
+						do while not rsTabs.EOF
+							group_name = Trim(rsTabs("group_name"))
+					%>
+					<li <%if itab = 1 then%>class="active"<%end if%>>
+					<a href="#<%=Replace(group_name, " ", "")%>"><%=group_name%></a>
+					</li>
+					<%
+							itab = itab + 1
+							rsTabs.MoveNext
+						loop
+						rsTabs.Close
+						set rsTabs = nothing
+					%>
+					<li <%if itab = 1 then%>class="active"<%end if%>>
+					<a href="#customoptions">Custom Options</a>
+					</li>
+						
+				</ul>
+				<div class="tab-content">
+					<%	itab = 1
+						sql = "SELECT * FROM "& g_storeid & "_system_config_group WHERE pf_id='" & config_id & "' ORDER BY group_row"
+						set rsTabs = dbconn.Execute(sql)
+						do while not rsTabs.EOF
+							group_id = Trim(rsTabs("group_id"))
+							group_name = Trim(rsTabs("group_name"))
+					%>
+					<div id="<%=Replace(group_name, " ", "")%>" class="tab-pane <%if itab = 1 then%>in active<%end if%>">
+					</div>
+					<%
+							itab = itab + 1
+							rsTabs.MoveNext
+						loop
+						rsTabs.Close
+						set rsTabs = nothing
+					%>
+					<div id="customoptions" class="tab-pane <%if itab = 1 then%>in active<%end if%>">
+						<%
+							sql = "SELECT * FROM " & g_storeid & "_sysdept where config_id = '" & config_id & "' and sysdept_group= '' ORDER BY sysdept_row"
+							set rsPanel = dbconn.Execute(sql)
+							do while not rsPanel.EOF
+								sysdept_id = rsPanel("sysdept_id")
+								sysdept_name = rsPanel("sysdept_name")
+								sysdept_description = rsPanel("sysdept_description")
+								sysdept_mode = rsPanel("sysdept_mode")
+								allow_none = rsPanel("allow_none")
+								none_default = rsPanel("none_default")
+						%>
+						<%
+								SELECT CASE sysdept_mode
+								CASE 0
+									bDefaultPrice = false
+									i_default = 0
+									if  allow_none then 
+										if none_default then
+											default_price = 0
+											bDefaultPrice = true
+											i_default = 1
+										else
+											'Need to get default price here....
+											sql = "SELECT TOP 1 * FROM " & g_storeid & "_system_config WHERE dept_id='" &  sysdept_id & "' ORDER BY row_id"
+											set rsItem = dbconn.Execute(sql)
+											if not rsItem.EOF then
+												default_price = rsItem("markup_price")
+											end if
+											rsItem.Close
+											set rsItem = nothing
+											
+											Response.Write(default_price)
+										end if
+									end if
+									t_default = false
+						%>
+						<div class="panel-group">
+							<div class="panel panel-primary">
+								<div class="panel-heading">
+									<h4 class="panel-title"><%=sysdept_name%></h4>
+								</div>
+								<div class="panel-body">
+									<ul class="optionlist">
+									<% 
+										if allow_none then
+											config_description = "none"
+											pf_id = "0000000000"
+											markup_price = 0
+											price_diff = 0 - default_price
+											if price_diff >= 0 then
+												s_price_diff = "+ $" & FormatNumber(price_diff,2)
+											else
+												s_price_diff = "- $" & FormatNumber(price_diff*-1,2)
+											end if
+									%>
+									<li class="" id="<%=sysdept_id%>__<%=pf_id%>">
+										<div class="optc">
+											<input type="radio" class="configiteminput" value="<%=sysdept_id%>|<%=pf_id%>|<%=FormatNumber(price_diff,2)%>" name="<%=sysdept_id%>" 
+											id="r_<%=sysdept_id%>__<%=pf_id%>" data-id="<%=pf_id%>" data-deptid="<%=sysdept_id%>" data-price="<%=markup_price%>"data-defaultprice="<%=default_price%>" data-type="1"
+											<%if none_default then %>checked<%end if%>>
+											<label for="r_<%=sysdept_id%>__<%=pf_id%>"><%=config_description%>
+											<span mdata="p" class="item-price" id="p_<%=sysdept_id%>__<%=pf_id%>"> [<%=s_price_diff%>]</span>
+											</label>
+										</div>
+									</li>
+									<% 
+										end if 
+									%>
+									<%
+										sql = "SELECT * FROM " & g_storeid & "_system_config WHERE dept_id='" &  sysdept_id & "' ORDER BY row_id"
+										set rsItem = dbconn.Execute(sql)
+										do while not rsItem.EOF
+											pf_id = Trim(rsItem("pf_id"))
+											config_description = Trim(rsItem("config_description"))
+											if not bDefaultPrice then
+												default_price = rsItem("markup_price")
+												bDefaultPrice = true
+											end if
+											markup_price = rsItem("markup_price")
+											price_diff = markup_price - default_price
+											
+											if price_diff >= 0 then
+												s_price_diff = "+ $" & FormatNumber(price_diff,2)
+											else
+												s_price_diff = "- $" & FormatNumber(price_diff*-1,2)
+											end if
+									%>
+									<li class="" id="<%=sysdept_id%>__<%=pf_id%>">
+										<div class="optc">
+											<input type="radio" class="configiteminput" value="<%=sysdept_id%>|<%=pf_id%>|<%=FormatNumber(price_diff,2)%>" name="<%=sysdept_id%>" 
+											id="r_<%=sysdept_id%>__<%=pf_id%>" data-id="<%=pf_id%>" data-deptid="<%=sysdept_id%>" data-price="<%=markup_price%>"data-defaultprice="<%=default_price%>" data-type="1"
+											<%if i_default = 0 then %>checked<%end if%>>
+											<label for="r_<%=sysdept_id%>__<%=pf_id%>"><%=config_description%>
+											<span mdata="p" class="item-price" id="p_<%=sysdept_id%>__<%=pf_id%>"> [<%=s_price_diff%>]</span>
+											</label>
+										</div>
+									</li>
+									<%
+											i_default = i_default + 1
+											rsItem.MoveNext
+										loop
+										rsItem.Close
+										set rsItem = nothing
+									%>
+									</ul>
+								</div>
+							</div>
+						</div>
+						<%
+							CASE 1
+						%>
+						<div class="panel-group">
+							<div class="panel panel-primary">
+								<div class="panel-heading">
+									<h4 class="panel-title"><%=sysdept_name%></h4>
+								</div>
+								<div class="panel-body">
+									<ul class="optionlist">
+									<%
+										sql = "SELECT * FROM " & g_storeid & "_system_config WHERE dept_id='" &  sysdept_id & "' ORDER BY row_id"
+										set rsItem = dbconn.Execute(sql)
+										do while not rsItem.EOF
+											pf_id = Trim(rsItem("pf_id"))
+											config_description = Trim(rsItem("config_description"))
+											markup_price = rsItem("markup_price")
+											price_diff = markup_price - 0
+											s_price_diff = "+ $" & FormatNumber(price_diff,2)
+											
+											
+									%>
+									<li class="" id="">
+										<div class="optc">
+											<input type="checkbox" class="configiteminput" value="<%=sysdept_id%>|<%=pf_id%>|<%=FormatNumber(price_diff,2)%>" name="<%=sysdept_id%>" 
+											id="c_<%=sysdept_id%>__<%=pf_id%>" data-id="<%=pf_id%>" data-deptid="<%=sysdept_id%>" data-price="<%=markup_price%>"data-defaultprice="<%=default_price%>" data-type="2">
+											<label for=""><%=config_description%>
+											<span mdata="p" class="item-price" id="p_<%=sysdept_id%>__<%=pf_id%>"> [<%=s_price_diff%>]</span>
+											</label>
+										</div>
+									</li>
+									<%
+											rsItem.MoveNext
+										loop
+										rsItem.Close
+										set rsItem = nothing
+									%>
+									</ul>
+								</div>
+							</div>
+						</div>
+						<%
+								CASE 3
+						%>
+						<div class="panel-group">
+							<div class="panel panel-primary">
+								<div class="panel-heading">
+									<h4 class="panel-title"><%=sysdept_name%></h4>
+								</div>
+								<div class="panel-body">
+									<%=sysdept_description%>
+								</div>
+							</div>
+						</div>
+						<%
+								END SELECT
+						%>
+						<%
+								rsPanel.MoveNext
+							Loop
+							rsPanel.Close
+							set rsPanel = nothing
+						%>
+					</option>
+				</div>
+			</div>
+		</div>
+		<!--Middle Part End -->
+	</div>
+</div>

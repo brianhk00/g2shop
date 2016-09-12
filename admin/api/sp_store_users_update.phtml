@@ -1,0 +1,70 @@
+<!-- #INCLUDE File="../local/local.phtml" -->
+<!-- #INCLUDE File="../util/xt_func_util.phtml" -->
+<!-- #INCLUDE File="../util/xt_func_string.phtml" -->
+<%
+	'--POST DATA------------------------------------------
+	new_flag = Trim(Request("new_flag"))
+	user_id = Trim(Request("user_id"))
+	FirstName = Trim(Request("FirstName"))
+	LastName = Trim(Request("LastName"))
+	access_flag = Trim(Request("access_flag"))
+	description = Trim(Request("description"))
+	pwd = Trim(Request("pwd"))
+	user_email = Trim(Request("user_email"))
+	user_disable = Trim(Request("user_disable"))
+	
+	'--END OF POST DATA-----------------------------------
+	
+	if new_flag = "1" then
+		Set rsUpdate = Server.CreateObject("ADODB.Recordset")
+		with rsUpdate
+			.ActiveConnection = dbconn
+			.CursorLocation = 3
+			.CursorType = 1
+			.LockType = 3
+			.Source = g_storeid & "_users WHERE user_id='0'"
+			.Open
+			.AddNew
+		end with
+		
+		'GET NEW SHOPPER_ID and SAVE EMAIL Address
+		rsUpdate("user_id") = user_id
+		
+	else
+		Set rsUpdate = Server.CreateObject("ADODB.Recordset")
+		with rsUpdate
+			.ActiveConnection = dbconn
+			.CursorLocation = 3
+			.CursorType = 1
+			.LockType = 3
+			.Source = g_storeid & "_users WHERE user_id='" & user_id & "'"
+			.Open
+		end with
+	end if
+	
+	if Len(pwd) > 0 then
+		rsUpdate("pwd") = pwd
+	end if
+	
+	rsUpdate("LastName") = LastName
+	rsUpdate("FirstName") = FirstName
+	rsUpdate("description") = description
+	rsUpdate("user_flag") = user_flag
+	rsUpdate("user_disable") = user_disable
+	rsUpdate("Email") = user_email
+	rsUpdate("access_flag") = access_flag
+	rsUpdate("uflag") = uflag
+	
+	
+	If dbconn.Errors.Count > 0 Then
+		dbconn.Errors.Clear
+		rsUpdate.CancelUpdate
+	else
+		rsUpdate.Update
+	End If
+	
+	rsUpdate.Close
+	set rsUpdate = nothing
+	
+	
+%>

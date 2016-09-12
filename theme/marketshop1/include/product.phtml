@@ -85,7 +85,12 @@
 								</select>
 							</div>
 							-->
+							
 							<div class="cart">
+								<% if bNeedAuthorization then %>
+								<div class="alert alert-danger"><i class="fa fa-exclamation-circle"></i> <%=a("Please login with authorized account to buy this item.")%></div>
+								
+								<% else %>
 								<div>
 									<div class="qty">
 										<label class="control-label" for="input-quantity">Qty</label>
@@ -98,13 +103,14 @@
 									<button type="button" id="button-cart" class="btn btn-primary btn-lg" onclick="BuyForm.submit(this);">Add to Cart</button>
 								</div>
 								<div>
-									<% if Session("shopper_id") = "" OR Session("shopper_id") = "GUEST" then %>
+									<% if Session("shopper_id") = "" then %>
 									<p>&nbsp;</p>
 									<p>Please <a href="<%=g_secure_url%>login.phtml">log in</a> to add to your wish list.</p>
 									<% else %>
 									<button type="button" class="wishlist" onclick="setLocation('<%=g_secure_url%>tp_wishlist.phtml?sku=<%=pf_id%>')"><i class="fa fa-heart"></i> Add to Wish List</button>
 									<% end if %>
 								</div>
+								<% end if %>
 							</div>
 						</div>
 						</form>

@@ -1468,4 +1468,107 @@ jQuery(document).ready(function() {
 });
 </script>
 <% end if %>
+<% if g_route_page_id = "config" then %>
+
+<script>
+
+var baseprice = <%=FormatNumber(g_base_price,2,,,0)%>;
+var currentprice = <%=FormatNumber(g_base_price,2,,,0)%>;
+var dprice = {};
+
+<%
+	sql = "SELECT * FROM " & g_storeid & "_sysdept where config_id = '" & config_id & "' ORDER BY sysdept_row"
+	set rsPanel = dbconn.Execute(sql)
+	do while not rsPanel.EOF
+		sysdept_id = rsPanel("sysdept_id")
+%>
+dprice['<%=sysdept_id%>'] = 0;
+<%
+		rsPanel.MoveNext
+	loop
+	rsPanel.Close
+	set rsPanel = nothing
+%>
+
+jQuery(document).ready(function() {
+	
+	jQuery(document).scroll(function () {
+		var y = jQuery(this).scrollTop() + 100;
+		var sumc = jQuery('#yt_tab_products').offset().top;
+		if (y > sumc) {
+			jQuery('#ctmz-sumc').removeClass('nosticky');
+			jQuery('#ctmz-sumc').addClass('sticky');
+		} else {
+			jQuery('#ctmz-sumc').removeClass('sticky');
+			jQuery('#ctmz-sumc').addClass('nosticky');
+		}
+	});
+	
+	jQuery( ".configiteminput" ).change(function() {
+		
+		var pfid = jQuery(this).data("id");
+		var deptid = jQuery(this).data("deptid");
+		var p_price = jQuery(this).data("price");
+		var p_defaultprice = jQuery(this).data("defaultprice");
+		var p_type = jQuery(this).data("type");
+		
+		if (p_type == "1")
+		{
+			dprice[deptid] = parseFloat(p_price) - parseFloat(p_defaultprice);
+			s = '[id^=p_' + deptid + ']';
+			
+			//alert(p_price);
+			jQuery('[id^=r_' + deptid + ']').each(function () {
+				//prueba.push($(this).attr('id'));
+				var s_pfid = jQuery(this).data("id");
+				var s_deptid = jQuery(this).data("deptid");
+				var s_price = jQuery(this).data("price");
+				var s_defaultprice = jQuery(this).data("defaultprice");
+				var s_type = jQuery(this).data("type");
+				//alert(jQuery(this).attr('id'));
+				var pp = s_price - p_price;
+				var ss = "";
+				if (pp >= 0)
+				{
+					ss = "[+ $" + pp.toFixed(2) + "]";
+				}
+				else
+				{
+					pp = pp * -1;
+					ss = "[- $" + pp.toFixed(2) + "]";
+				}
+				jQuery("#p_" + s_deptid + "__" + s_pfid).html(ss);
+				
+			});
+		}
+		
+		if (p_type == "2")
+		{
+			if (this.checked) {
+				dprice[deptid] = dprice[deptid] + parseFloat(p_price);
+			}
+			else
+			{
+				dprice[deptid] = dprice[deptid] - parseFloat(p_price);
+			}
+		}
+		
+		currentprice = baseprice;
+		jQuery.each(dprice, function(key, value) {
+			//console.log(key);
+			//console.log(value);
+			currentprice = currentprice + value;
+		});
+		
+		//alert(currentprice);
+		jQuery("#systemprice").html("$" + currentprice.toFixed(2));
+		jQuery("#systemprice2").html("$" + currentprice.toFixed(2));
+		
+		//......
+		
+		
+	});
+});
+</script>
+<% end if %>
 <!-- JS Part End-->

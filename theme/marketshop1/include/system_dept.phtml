@@ -1,0 +1,104 @@
+<%
+	'sql = strSQL = "SELECT :9_system_product.* FROM :9_system_dept_prod INNER JOIN :9_system_product ON :9_system_dept_prod.pf_id = :9_system_product.pf_id WHERE (:9_system_dept_prod.dept_id =':1' AND (is_hide=0 OR is_hide is null)) ORDER BY system_row"
+	'strSQL = replace(strSQL, ":9", Session("StoreID"))
+	'strSQL = replace(strSQL, ":1", dept_ID)
+	
+	'sql = "SELECT * FROM " & g_storeid & "_system_product WHERE pf_id IN (SELECT pf_id FROM " & g_storeid & "_system_dept_prod WHERE dept_id='" & dept_id & "' ORDER BY system_row"
+	
+	sql = "SELECT :9_system_product.* FROM :9_system_dept_prod INNER JOIN :9_system_product ON :9_system_dept_prod.pf_id = :9_system_product.pf_id WHERE (:9_system_dept_prod.dept_id =':1' AND (is_hide=0 OR is_hide is null)) ORDER BY system_row"
+	sql = replace(sql, ":9", g_storeid)
+	sql = replace(sql, ":1", dept_ID)
+	
+	set rs = dbconn.Execute(sql)
+	
+	if not rs.EOF then
+%>
+	
+<div class="row">
+	<%
+		ii = 0
+		do while not rs.EOF
+		
+			sys_id = rs("pf_id")
+			sys_name = rs("name")
+			sys_image = rs("thumb_image")
+			sys_desc = rs("description")
+			sys_details = rs("details")
+
+			sys_price = rs("price_"& member_group)
+			sys_mm_url = rs("mm_link")
+			sys_mm_type = rs("mm_type")
+				
+			pricing_model = rs("pricing_model")
+			u_markup = rs("u_markup_" & member_group)
+
+			detail_type = rs("detail_type")
+			
+			image_file = rs("image_file")
+			thumb_image = rs("thumb_image")
+			ssImgSize = "upload/w_" & "70" & ",h_" & "70" & ",c_pad/"
+			if sys_mm_type = 1 then
+				sql = "SELECT * FROM " & g_storeid & "_product_image WHERE image_name = '" & image_file & "'"
+				Set rsCloudImage2 = dbconn.Execute(sql)
+				If Not rsCloudImage2.EOF Then
+					cloudImg = Trim(rsCloudImage2("cloud_secure_url"))
+				Else
+					cloudImg = g_noimage_url
+				End If
+				rsCloudImage2.Close
+				Set rsCloudImage2 = Nothing
+				ssImg = Replace(cloudImg, "upload/", ssImgSize)
+			else
+				if Len(thumb_image) > 3 then
+					ssImg = "../media/catalog/system/" & thumb_image
+				else
+					ssImg = g_noimage_url
+				end if
+			end if
+
+			if pricing_model = 1 then
+				'if GetSystemFlatModel(Session("ConnectionString"), sys_id, u_markup, system_price) then
+					'sys_price = system_price
+				'else
+					'sys_price = 0 
+				'end if
+			end if
+	%>
+	<div class="col-md-4">
+		<table class="table table-bordered table-hover">
+			<tr>
+				<td><a href="product.html"><strong><%=sys_name%></strong></a></td>
+			</tr>
+			<tr>
+				<td class="text-center">
+					<img class="img-thumbnail" src="<%=ssImg%>" width="70" height="70"></td>
+			</tr>
+			<tr>
+				<td>
+					<%=sys_details%>
+				</td>
+			</tr>
+			<tr>
+				<td>
+					<input type="button" onClick="" class="btn btn-primary btn-block" value="Add to Cart">
+					<a class="btn btn-success btn-block" href="config.phtml?config_id=<%=sys_id%>">Customize</a>
+				</td>
+			</tr>
+		</table>
+	</div>
+	<%
+			ii = ii + 1
+			
+			if ii = 3 then
+				Response.Write("</div><div class='row'>")
+				ii = 0
+			end if
+			rs.MoveNext
+		loop
+		rs.Close
+		set rs = nothing
+	%>
+</div>
+<%
+	end if
+%>

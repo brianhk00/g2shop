@@ -190,6 +190,21 @@
 			'cc_number = Left(cc_number,2) & "..." & Right(cc_number,4)
 		'end if
 	'end if
+	'=================================================================================
+	'=================================================================================
+	' AUTHORIZATION
+	sPrivateAuth = ""
+	sIcecatAuth = ""
+	
+	sql = "SELECT * FROM " & g_storeid & "_shopper_mfg_authorization WHERE shopper_id = '" &  shopper_id & "'"
+	set rs = dbconn.Execute(sql)
+	do while not rs.EOF
+		sPrivateAuth = sPrivateAuth & rs("mfg_id") & ","
+		rs.MoveNext
+	loop
+	rs.Close
+	set rs = nothing
+	
 	'=====================================================================
 
 	if IsNull(shopper_imftp_id) then
@@ -271,22 +286,16 @@
 													%>
 													</div>
 													<div class="actions btn-set">
+													
 														<button type="button" onclick="location.href='customer_manage_customer.phtml';" name="back" class="btn btn-default">
 															<i class="fa fa-angle-left"></i> Back
 														</button>
-														<button class="btn btn-success">
+														<button class="btn btn-success" onclick="savebutton='1';">
 															<i class="fa fa-check"></i> Save
 														</button>
-														<!--
-														<button class="btn btn-success">
+														<button class="btn btn-success" onclick="savebutton='0';">
 															<i class="fa fa-check-circle"></i> Save & Continue Edit
 														</button>
-														-->
-														<button class="btn red btn-sm" type="button" id="DeleteCust">
-														<i class="fa fa-times-circle"></i>
-														Delete
-														</button>
-														<!--
 														<div class="btn-group">
 															<a class="btn btn-success dropdown-toggle" href="javascript:;" data-toggle="dropdown">
 																<i class="fa fa-share"></i> More
@@ -294,11 +303,10 @@
 															</a>
 															<div class="dropdown-menu pull-right">
 																<li>
-																	<a href="javascript:;"> Delete </a>
+																	<a href="#" id="DeleteCust"> Delete </a>
 																</li>
 															</div>
-														</div>
-														-->
+														</div> 
 													</div>
 												</div>
 												<div class="alert alert-danger display-hide">
@@ -330,7 +338,7 @@
 															</li>
 															<li>
 																<a href="#panel_tab4_example4" data-toggle="tab">
-																	Group &amp; Tax
+																	Group, Tax, and etc. 
 																</a>
 															</li>
 															<% if shopper_id = "0" then %>
@@ -353,7 +361,7 @@
 															<div class="tab-pane active" id="panel_tab4_example1">
 																<div class="row">
 																	<div class="col-md-12 col-sm-12">
-																		<div class="portlet yellow-crusta box">
+																		<div class="portlet green-soft box">
 																			<div class="portlet-title">
 																				<div class="caption">
 																					<i class="fa fa-cogs"></i>General </div>
@@ -396,7 +404,7 @@
 																</div>
 																<div class="row">
 																	<div class="col-md-12 col-sm-12">
-																		<div class="portlet yellow-crusta box">
+																		<div class="portlet green-soft box">
 																			<div class="portlet-title">
 																				<div class="caption">
 																					<i class="fa fa-cogs"></i>Password </div>
@@ -421,7 +429,7 @@
 															<div class="tab-pane" id="panel_tab4_example2">
 																<div class="row">
 																	<div class="col-md-4 col-sm-12">
-																		<div class="portlet yellow-crusta box">
+																		<div class="portlet green-soft box">
 																			<div class="portlet-title">
 																				<div class="caption">
 																					<i class="fa fa-cogs"></i>Billing Addresses </div>
@@ -543,7 +551,7 @@
 																		
 																	</div>
 																	<div class="col-md-8 col-sm-12">
-																		<div class="portlet yellow-crusta box">
+																		<div class="portlet green-soft box">
 																			<div class="portlet-title">
 																				<div class="caption">
 																					<i class="fa fa-cogs"></i>Edit Billing Address </div>
@@ -635,7 +643,7 @@
 															<div class="tab-pane" id="panel_tab4_example3">
 																<div class="row">
 																	<div class="col-md-4 col-sm-12">
-																		<div class="portlet yellow-crusta box">
+																		<div class="portlet green-soft box">
 																			<div class="portlet-title">
 																				<div class="caption">
 																					<i class="fa fa-cogs"></i>Shipping Addresses </div>
@@ -759,7 +767,7 @@
 																		
 																	</div>
 																	<div class="col-md-8 col-sm-12">
-																		<div class="portlet yellow-crusta box">
+																		<div class="portlet green-soft box">
 																			<div class="portlet-title">
 																				<div class="caption">
 																					<i class="fa fa-cogs"></i>Edit Shipping Addresses </div>
@@ -851,7 +859,7 @@
 															<div class="tab-pane" id="panel_tab4_example4">
 																<div class="row">
 																	<div class="col-md-12 col-sm-12">
-																		<div class="portlet yellow-crusta box">
+																		<div class="portlet green-soft box">
 																			<div class="portlet-title">
 																				<div class="caption">
 																					<i class="fa fa-cogs"></i>Price Group </div>
@@ -862,7 +870,7 @@
 																			<div class="portlet-body">
 																				<div class="form-group">
 																					<label class="col-sm-2 control-label" for="form-field-1">
-																						Pricing Group <%=shopper_member_group%><span class="symbol required"></span> 
+																						Pricing Group <span class="symbol required"></span> 
 																					</label>
 																					<div class="col-sm-9">
 																						<select id="member_group" name="member_group" class="form-control input-sm">
@@ -883,7 +891,7 @@
 																</div>
 																<div class="row">
 																	<div class="col-md-12 col-sm-12">
-																		<div class="portlet yellow-crusta box">
+																		<div class="portlet green-soft box">
 																			<div class="portlet-title">
 																				<div class="caption">
 																					<i class="fa fa-cogs"></i>Tax </div>
@@ -911,6 +919,48 @@
 																					</label>
 																					<div class="col-sm-9">
 																						<input type="text" placeholder="" id="shopper_tax" name="shopper_tax" class="form-control input-sm" value="<%=shopper_tax%>">
+																					</div>
+																				</div>
+																			</div>
+																		</div>
+																	</div>
+																</div>
+																<div class="row">
+																	<div class="col-md-12 col-sm-12">
+																		<div class="portlet green-soft box">
+																			<div class="portlet-title">
+																				<div class="caption">
+																					<i class="fa fa-cogs"></i>Authorization </div>
+																				<div class="actions">
+																					
+																				</div>
+																			</div>
+																			<div class="portlet-body">
+																				<div class="form-group">
+																					<label class="col-sm-2 control-label" for="form-field-1">
+																						Allow<span class="symbol required"></span> 
+																					</label>
+																					<div class="col-sm-4">
+																						<select id="mfg_authorization" name="mfg_authorization" class="form-control input-sm" multiple>
+																						<%
+																							sql = "SELECT * FROM " & g_storeid & "_mfg WHERE mfg_map_enabled = 1"
+																							set rs = dbconn.Execute(sql)
+																							do while not rs.EOF 
+																								if InStr("," & sPrivateAuth, Trim(rs("mfg_id"))) then
+																						%>
+																						<option value="<%=rs("mfg_id")%>" selected><%=rs("mfg_name")%></option>	
+																						<%
+																								else
+																						%>
+																						<option value="<%=rs("mfg_id")%>"><%=rs("mfg_name")%></option>
+																						<%
+																								end if
+																								rs.MoveNext
+																							loop
+																							rs.Close
+																							set rs = nothing
+																						%>
+																						</select>
 																					</div>
 																				</div>
 																			</div>
