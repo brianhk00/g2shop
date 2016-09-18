@@ -1,0 +1,131 @@
+<%response.Expires=-1%>
+<%
+	Response.CodePage = 65001
+	Response.CharSet = "UTF-8"
+%>
+<!--#INCLUDE FILE="../../util/xt_func_carrier.phtml"-->
+<!--#INCLUDE FILE="../../util/xt_func_string.phtml"-->	
+<!--#INCLUDE FILE="../../util/xt_func_util.phtml"-->	
+<!-- #INCLUDE File="../local/local.phtml" -->
+<%
+	'Response.end
+		
+	mfg_id = Trim(Request("mfg_id"))
+	mfg_name = Trim(Request("mfg_name"))
+	mfg_map_enabled = Trim(Request("mfg_map_enabled")) 
+	mfg_url_key = Trim(Request("url_key")) 
+	
+	if mfg_id = "0" then
+		
+		Set rsUpdate = Server.CreateObject("ADODB.Recordset")
+		with rsUpdate
+			.ActiveConnection = dbconn
+			.CursorLocation = 3
+			.CursorType = 1
+			.LockType = 3
+			.Source = g_storeid & "_mfg"
+			.Open
+			.AddNew
+		end with
+		
+		mfg_id = GetUniqueLongIntegerID()
+		rsUpdate("mfg_id") = mfg_id
+		
+	else
+	
+		Set rsUpdate = Server.CreateObject("ADODB.Recordset")
+		with rsUpdate
+			.ActiveConnection = dbconn
+			.CursorLocation = 3
+			.CursorType = 1
+			.LockType = 3
+			.Source = g_storeid & "_mfg WHERE mfg_id='" & mfg_id & "'"
+			.Open
+		end with
+	
+	end if
+	
+	
+	rsUpdate("mfg_name") = mfg_name
+	rsUpdate("mfg_map_enabled") = mfg_map_enabled
+	rsUpdate("url_key") = mfg_url_key
+	
+	
+	If dbconn.Errors.Count > 0 Then
+		dbconn.Errors.Clear
+		rsUpdate.CancelUpdate
+	else
+		rsUpdate.Update
+	End If
+	
+	rsUpdate.Close
+	set rsUpdate = nothing
+	
+	'====================================================================================================================
+	'UPDATE _rewrite table....
+	' 1: Category
+	' 2: Product
+	' 3: CMS
+	' 4: Vendor
+	'====================================================================================================================
+	
+	if Len(mfg_url_key) then
+		sql = "SELECT rewrite_id FROM " & g_storeid & "_rewrite WHERE rewrite_system_id='" & mfg_id & "' AND rewrite_system_type = 4"
+		set rsRewrite = dbconn.Execute(sql)
+		if not rsRewrite.EOF then
+			rewrite_id = rsRewrite("rewrite_id")
+		else
+			rewrite_id = 0
+		end if
+		
+		rsRewrite.Close
+		set rsRewrite = nothing
+		
+		if rewrite_id = 0 then
+			Set rsUpdate = Server.CreateObject("ADODB.Recordset")
+			with rsUpdate
+				.ActiveConnection = dbconn
+				.CursorLocation = 3
+				.CursorType = 1
+				.LockType = 3
+				.Source = g_storeid & "_rewrite WHERE rewrite_id=0"
+				.Open
+				.AddNew
+			end with
+			
+			rsUpdate("rewrite_type") = 1
+			rsUpdate("rewrite_system_type") = 4
+			rsUpdate("rewrite_system_id") = mfg_id
+			rsUpdate("rewrite_redirect_type") = ""
+		
+		else
+			
+			Set rsUpdate = Server.CreateObject("ADODB.Recordset")
+			with rsUpdate
+				.ActiveConnection = dbconn
+				.CursorLocation = 3
+				.CursorType = 1
+				.LockType = 3
+				.Source = g_storeid & "_rewrite WHERE rewrite_id=" & rewrite_id
+				.Open
+			end with
+		end if
+		
+		rsUpdate("rewrite_request_path") = mfg_url_key & "/"
+		
+		If dbconn.Errors.Count > 0 Then
+			dbconn.Errors.Clear
+			rsUpdate.CancelUpdate
+		else
+			rsUpdate.Update
+		End If
+		
+		rsUpdate.Close
+		set rsUpdate = nothing
+	else
+		sql = "DELETE FROM " & g_storeid & "_rewrite WHERE rewrite_system_id='" & mfg_id & "' AND rewrite_system_type = 4"
+		dbconn.Execute(sql)
+	end if
+		
+	
+%>

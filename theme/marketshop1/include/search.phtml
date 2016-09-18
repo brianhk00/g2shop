@@ -48,7 +48,6 @@
 	<!--#INCLUDE FILE="../../../core/catalog/include_dept_productlist_loop_start.phtml"-->
 	<%
 		'TEMPLATE FIX
-		'TEMPLATE FIX
 		if Len(g_prod_name) > 60 then
 			g_prod_name = Left(g_prod_name, 60) & "..."
 		end if
@@ -63,11 +62,10 @@
 			<div>
 				<div class="caption">
 					<h4><a href="<%=g_product_link%>"><%=g_prod_name%></a></h4>
-					<p class="description">
-						<%=g_prod_description%>
-					</p>
-					
 				</div>
+				<p class="description">
+					<%=g_prod_description%>
+				</p>
 			</div>
 			<div class="button-group" style="vertical-align:bottom">
 				<p class="price">

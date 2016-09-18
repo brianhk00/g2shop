@@ -83,7 +83,7 @@
 							view_name = rs("view_name")
 							view_status = rs("view_status")
 					%>
-					<button class="btn-link dropdown-toggle" data-toggle="dropdown"><span><img src="image/flags/<%=view_code%>.png" alt="<%=view_name%>" title="<%=view_name%>"><%=view_name%> <i class="fa fa-caret-down"></i></span></button>
+					<button class="btn-link dropdown-toggle" data-toggle="dropdown"><span><img src="/image/flags/<%=view_code%>.png" alt="<%=view_name%>" title="<%=view_name%>"><%=view_name%> <i class="fa fa-caret-down"></i></span></button>
 					<%
 						end if
 						rs.close
@@ -137,7 +137,7 @@
 			<!-- Logo Start -->
 			<div class="col-table-cell col-lg-6 col-md-6 col-sm-12 col-xs-12 inner">
 				<div id="logo">
-					<a href="<%=g_store_url%>"><img class="img-responsive" src="media/logo/<%=header_logo_image%>" title="MarketShop" alt="MarketShop"/></a>
+					<a href="<%=g_store_url%>"><img class="img-responsive" src="/media/logo/<%=header_logo_image%>" title="MarketShop" alt="MarketShop"/></a>
 				</div>
 			</div>
 			<!-- Logo End -->
@@ -189,8 +189,10 @@
 			<!-- Search Start-->
 			<div class="col-table-cell col-lg-3 col-md-3 col-sm-6 col-xs-12 inner">
 				<div id="search" class="input-group">
-					<input id="filter_name" type="text" name="search" value="" placeholder="<%=a("Search")%>" class="form-control input-lg"/>
+					<form id="search_mini_form" action="<%=g_store_url%>search.phtml" method="get">
+					<input id="filter_name" type="text" name="sp" value="" placeholder="<%=a("Search")%>" class="form-control input-lg"/>
 					<button type="button" class="button-search"><i class="fa fa-search"></i></button>
+					</form>
 				</div>
 			</div>
 			<!-- Search End-->

@@ -1,0 +1,41 @@
+<%
+	Response.CodePage = 65001
+	Response.CharSet = "UTF-8"
+	g_route_page_id = "dept"
+%>
+<!--#INCLUDE FILE="../../core/catalog/include_search_start.phtml"-->
+<!--#INCLUDE FILE="template_setting.phtml"-->
+<!DOCTYPE html>
+<html>
+<head>
+<!--#INCLUDE FILE="include/head.phtml"-->
+</head>
+<body>
+<!--#INCLUDE FILE="include/after_body_start.phtml"-->
+<div class="wrapper-wide">
+	<!--#INCLUDE FILE="include/header.phtml"-->
+	<div id="container">
+		<div class="container">
+			<!--#INCLUDE FILE="include/breadcrumb.phtml"-->
+			<div class="row">
+				<!--Left Part Start -->
+				<aside id="column-left" class="col-sm-3 hidden-xs">
+					<!--#INCLUDE FILE="include/left_category.phtml"-->
+				</aside>
+				<!--Left Part End -->
+				<!--Middle Part Start-->
+				<div id="content" class="col-sm-9">
+					<!--#INCLUDE FILE="include/search.phtml"-->	
+				</div>
+				<!--Middle Part End -->
+			</div>
+		</div>
+	</div>
+	<!--#INCLUDE FILE="include/footer.phtml"-->
+</div>
+<!--#INCLUDE FILE="include/js.phtml"-->
+<!--#INCLUDE FILE="include/before_body_end.phtml"-->
+<!--#INCLUDE FILE="include/AbsoluteFooter.phtml"-->
+</body>
+</html>
+<!--#INCLUDE FILE="../../core/catalog/include_search_end.phtml"-->

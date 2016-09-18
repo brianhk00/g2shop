@@ -1841,7 +1841,20 @@ var FormValidation = function () {
 				}
 				
 			},
-
+			messages: {
+				pf_sku:
+				{
+					required: "Please specify product SKU.",
+					minlength: "The SKU must be greater than 3 chracter length.",
+					remote: "The specified SKU is not unique."
+				},
+				pf_name: "Please specify product name",
+				pf_url_key:
+				{
+					minlength: "The URL Key must be greater than 5 chracter length.",
+					remote: "The specified URL Key is not unique."
+				}
+			},
 			invalidHandler: function (event, validator) { //display error alert on form submit              
 				success1.hide();
 				error1.show();

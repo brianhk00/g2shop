@@ -249,15 +249,6 @@ var FormValidator = function () {
 				App.scrollTo(error1, -200);
 			},
 
-			errorPlacement: function (error, element) { // render error placement for each input type
-				var cont = $(element).parent('.input-group');
-				if (cont) {
-					cont.after(error);
-				} else {
-					element.after(error);
-				}
-			},
-
 			highlight: function (element) { // hightlight error inputs
 
 				$(element)

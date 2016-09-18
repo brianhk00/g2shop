@@ -1,11 +1,13 @@
-<!--INCLUDE FILE="../../language_pack.phtml"-->
+<!--#INCLUDE FILE="../../local/local.phtml"-->
+<!--#INCLUDE FILE="../i_adoopen.phtml"-->
+<!--#INCLUDE FILE="../../language_pack.phtml"-->
 <!--#INCLUDE FILE="../../util/xt_func_session.phtml"-->
-<!--INCLUDE FILE="../../i_initsession.phtml"-->
-<!--INCLUDE FILE="../../i_login.phtml"-->
-<!--#INCLUDE FILE="../../i_adodb.phtml"-->
+<!--#INCLUDE File="../../util/xt_func_util.phtml" -->
 <!--#INCLUDE FILE="../../util/xt_func_string.phtml"-->
-<!--#INCLUDE FILE="../../util/xt_func_util.phtml"-->
 <!--#INCLUDE FILE="../../util/xt_func_seo.phtml"-->
+<!--#INCLUDE FILE="../../util/xt_func_shoppingcart.phtml"-->
+<!--#INCLUDE FILE="../../i_initsession.phtml"-->
+<!--#INCLUDE FILE="../i_login.phtml"-->
 
 <%
 
@@ -45,11 +47,11 @@
 
 	sp1 = sp
 
-	Set Conn2 = Server.CreateObject("ADODB.Connection")
-	Conn2.open Session("SSPriceConnectionString")
+	'Set Conn2 = Server.CreateObject("ADODB.Connection")
+	'conn_icecat_catalog.open Session("SSPriceConnectionString")
 
-	Set conn_ss1 = Server.CreateObject("ADODB.Connection")
-	conn_ss1.open Session("SSPriceConnectionString")
+	'Set conn_ss1 = Server.CreateObject("ADODB.Connection")
+	'conn_icecat_main.open Session("SSPriceConnectionString")
 
 
 	'===================================================================================================================
@@ -81,9 +83,9 @@
 
 	'================pd_list - start==============================
 	sql = "SELECT dept_id FROM :9_dept WHERE is_master=0 AND is_hidden=0 AND Len(dept_id)=2 AND ec_flag=0 ORDER BY dept_id"
-	sql = Replace(sql, ":9", Session("StoreID"))
+	sql = Replace(sql, ":9", g_storeid)
 		
-	Set rs1 = Conn.Execute(sql)
+	Set rs1 = dbconn.Execute(sql)
 	
 	do while not rs1.EOF
 		pd_list = pd_list & "'" & Trim(rs1(0)) & "',"
@@ -98,11 +100,11 @@
 	if Len(pd_list) > 0 then
 		
 		sql = "SELECT dept_id FROM :9_dept WHERE is_master=0 AND is_hidden=0 AND Len(dept_id)=6 AND parent_dept IN (" & pd_list & ") AND ec_flag=0  ORDER BY dept_id"
-		sql = Replace(sql, ":9", Session("StoreID"))
+		sql = Replace(sql, ":9", g_storeid)
 
 		pd_list = pd_list &  ","
 			
-		Set rs1 = Conn.Execute(sql)
+		Set rs1 = dbconn.Execute(sql)
 		
 		do while not rs1.EOF
 			pd_list = pd_list & "'" & Trim(rs1(0)) & "',"
@@ -119,11 +121,11 @@
 	if Len(pd_list) > 0 then
 		
 		sql = "SELECT dept_id FROM :9_dept WHERE is_master=0 AND is_hidden=0 AND Len(dept_id)=10 AND parent_dept IN (" & pd_list & ") AND ec_flag=0  ORDER BY dept_id"
-		sql = Replace(sql, ":9", Session("StoreID"))
+		sql = Replace(sql, ":9", g_storeid)
 
 		pd_list = pd_list &  ","
 			
-		Set rs1 = Conn.Execute(sql)
+		Set rs1 = dbconn.Execute(sql)
 		
 		do while not rs1.EOF
 			pd_list = pd_list & "'" & Trim(rs1(0)) & "',"
@@ -142,12 +144,12 @@
 	if Len(pd_list) > 0 then
 
 		if sp_flag = "1" then
-		  sql = "SELECT TOP 50 * FROM " & Session("StoreID") & "_product WHERE ((" & s11 & ")OR(" & s13 & "))"
+		  sql = "SELECT TOP 50 * FROM " & g_storeid & "_product WHERE ((" & s11 & ")OR(" & s13 & "))"
 		else
 			if UBound(ar_sp) > 0 then
-				sql = "SELECT TOP 50 * FROM " & Session("StoreID") & "_product WHERE (" & s12 & ")"
+				sql = "SELECT TOP 50 * FROM " & g_storeid & "_product WHERE (" & s12 & ")"
 			else	
-			  sql = "SELECT TOP 50 * FROM " & Session("StoreID") & "_product WHERE ((" & s11 & ")OR(" & s12 & ")OR(" & s13 & "))"
+			  sql = "SELECT TOP 50 * FROM " & g_storeid & "_product WHERE ((" & s11 & ")OR(" & s12 & ")OR(" & s13 & "))"
 			end if
 		end if
 
@@ -203,7 +205,7 @@
 	if Session("DEMOVERSION") = "1" then
 		g_storeid = "bk01"
 	else
-		g_storeid = Session("StoreID")
+		g_storeid = g_storeid
 	end If
   
 	keyword = Trim(sp)
@@ -363,8 +365,8 @@
 	'Response.Write(sql2)
 
 	
-	set rs1 = Conn2.Execute(sql1)
-	set rs2 = Conn2.Execute(sql2)
+	set rs1 = conn_icecat_catalog.Execute(sql1)
+	set rs2 = conn_icecat_catalog.Execute(sql2)
 
 	sProductIDs = ""
 	do while not rs1.EOF
@@ -399,7 +401,7 @@
 
 	Set rsProductList = Server.CreateObject("ADODB.RecordSet")
 	rsProductList.CursorLocation = 3
-	rsProductList.Open sqlx,Session("SSPriceConnectionString"),3,3
+	rsProductList.Open sqlx, conn_icecat_catalog,3,3
 			
 	if not rsProductList.EOF then
 	  rsProductList.Sort = Replace(str_sort, " ORDER BY ", "")

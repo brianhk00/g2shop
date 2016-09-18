@@ -1,0 +1,221 @@
+<!--#INCLUDE FILE="../../local/local.phtml"-->
+<!--#INCLUDE FILE="../i_adoopen.phtml"-->
+<!--#INCLUDE FILE="../../language_pack.phtml"-->
+<!--#INCLUDE FILE="../../util/xt_func_session.phtml"-->
+<!--#INCLUDE File="../../util/xt_func_util.phtml" -->
+<!--#INCLUDE FILE="../../util/xt_func_string.phtml"-->
+<!--#INCLUDE FILE="../../util/xt_func_seo.phtml"-->
+<!--#INCLUDE FILE="../../util/xt_func_shoppingcart.phtml"-->
+<!--#INCLUDE FILE="../../i_initsession.phtml"-->
+<!--#INCLUDE FILE="../i_login.phtml"-->
+
+<%
+	m_id = Trim(Request("m_id"))
+	m_id = FilterStringEx(m_id, "[^0-9-]")
+	
+	so = Trim(Request("so"))
+	so = FilterStringEx(so, "[^0-9]")
+	show = Trim(Request("show"))
+	show = FilterStringEx(show, "[^0-9]")
+	mode = Trim(Request("mode"))
+
+	if mode = "grid" then
+	else
+		mode = ""
+	end if
+	
+	'=================================================================================================
+	'overwrite pf_id if urlkey present
+	'=================================================================================================
+	'=================================================================================================
+	'overwrite pf_id if urlkey present
+	'=================================================================================================
+	url_key = Trim(Request("urlkey"))
+	
+	if Len(url_key) > 1 then
+		url_key = Replace(url_key, "/", "")
+		
+		sql = "SELECT * FROM " & g_storeid & "_rewrite WHERE rewrite_request_path='" & url_key & "/'"
+		set rsRewrite = dbconn.Execute(sql)
+		if not rsRewrite.EOF then
+			rewrite_type = rsRewrite("rewrite_type")
+			rewrite_system_type = rsRewrite("rewrite_system_type")
+			rewrite_system_id = rsRewrite("rewrite_system_id")
+			rewrite_redirect_type = rsRewrite("rewrite_redirect_type")
+		else
+			rewrite_type = 0
+			rewrite_system_type = 0
+			rewrite_system_id = ""
+			rewrite_redirect_type = ""
+		end if
+		rsRewrite.Close
+		set rsRewrite = nothing
+		
+		if rewrite_system_type = 4 AND Len(rewrite_system_id) > 1 then
+			sType = "sbb"
+		end if
+		
+		m_id = rewrite_system_id
+	end if
+	
+	'=================================================================================================
+	' GET VENDOR INFO
+	'=================================================================================================
+	cont_ok = false
+	sql = "SELECT * FROM " & g_storeid & "_mfg WHERE mfg_id='" & m_id & "'"
+	set rs = dbconn.Execute(sql)
+	if not rs.EOF then
+		mfg_name = Trim(rs("mfg_name"))
+		cont_ok = true
+	end if
+	rs.Close
+	set rs = nothing
+	
+	'=================================================================================================
+	' GET PRODUCTS
+	'=================================================================================================
+	
+	Select case so
+				
+	case "0"
+		str_sort = " ORDER BY name"
+		sort_description = "Description <font face=webdings>6</font>"
+	case "1"
+		str_sort = " ORDER BY name DESC"
+		sort_description = "Description <font face=webdings>5</font>"
+	case "4"
+		str_sort = " ORDER BY vendor_name, name"
+		sort_description = "Manufacturer <font face=webdings>6</font>"
+	case "5"
+		str_sort = " ORDER BY vendor_name DESC, name"
+		sort_description = "Manufacturer <font face=webdings>5</font>"
+	case "6"
+		str_sort = " ORDER BY SKU"
+		sort_description = "Part Number <font face=webdings>6</font>"
+	case "7"
+		str_sort = " ORDER BY SKU DESC"
+		sort_description = "Part Number <font face=webdings>5</font>"
+	case "8"
+		str_sort = " ORDER BY price_" &  Session("LOGINGROUP")
+		sort_description = "Price <font face=webdings>6</font>"
+	case "9"
+		str_sort = " ORDER BY price_" &  Session("LOGINGROUP") & " DESC"
+		sort_description = "Price <font face=webdings>5</font>"
+	case else
+		str_sort = " ORDER BY name"
+		sort_description = "Description <font face=webdings>6</font>"
+		so = "0"
+	end Select
+	
+	Select case show
+				
+	case "10"
+		show = 10
+	case "20"
+		show = 20
+	case "40"
+		show = 40
+	case "60"
+		show = 60
+	case "80"
+		show = 80
+	case else
+		show = 20
+	end Select
+				
+	sql = "SELECT * FROM " & g_storeid & "_product WHERE vendor_number = '" & m_id & "' "
+	sql = sql & str_sort
+	if cont_ok then
+	
+		Set rsDept = Server.CreateObject("ADODB.RecordSet")
+		rsDept.Open sql, g_connection_string, 1, 1
+	
+		page = FilterStringEx(Request("page"), "[^0-9]")
+		
+		if Len(page) > 0 then
+			page = CInt(page)
+		else
+			page =1
+		end if
+	
+		page_size = 10
+		block_size = 5
+	
+		if not rsDept.EOF then
+			rsDept.PageSize = show
+			page_size = show
+			page_count = rsDept.PageCount
+			list_count = rsDept.RecordCount
+			rsDept.AbsolutePage = page
+			RowCount = 0
+			i_start = page_size * (page-1) + 1
+			i_last = page_size * page
+		
+			if i_last > list_count then
+				i_last = list_count
+			end if
+		else
+			list_count = 0
+			i_start = 0
+			i_last = 0
+		end if
+	
+	end if
+	
+	'=================================================================================================
+	' GET TOOLBAR VALUES
+	'=================================================================================================
+	strSortURL_10 = g_store_url & "sbb.phtml?m_id=" & m_id & "&mode=" & mode & "&so=" & so & "&show=10"
+	strSortURL_20 = g_store_url & "sbb.phtml?m_id=" & m_id & "&mode=" & mode & "&so=" & so & "&show=20"
+	strSortURL_40 = g_store_url & "sbb.phtml?m_id=" & m_id & "&mode=" & mode & "&so=" & so & "&show=40"
+	strSortURL_60 = g_store_url & "sbb.phtml?m_id=" & m_id & "&mode=" & mode & "&so=" & so & "&show=60"
+	strSortURL_80 = g_store_url & "sbb.phtml?m_id=" & m_id & "&mode=" & mode & "&so=" & so & "&show=80"
+
+	strSortURL_Name = g_store_url & "sbb.phtml?m_id=" & m_id & "&mode=" & mode & "&so=0&show=" & show
+	strSortURL_Name_desc = g_store_url & "sbb.phtml?m_id=" & m_id & "&mode=" & mode & "&so=1&show=" & show
+	strSortURL_PartNumber = g_store_url & "sbb.phtml?m_id=" & m_id & "&mode=" & mode & "&so=6&show=" & show
+	strSortURL_PartNumber_desc= g_store_url & "sbb.phtml?m_id=" & m_id & "&mode=" & mode & "&so=7&show=" & show
+	strSortURL_Price = g_store_url & "sbb.phtml?m_id=" & m_id & "&mode=" & mode & "&so=8&show=" & show
+	strSortURL_Price_desc = g_store_url & "sbb.phtml?m_id=" & m_id & "&mode=" & mode & "&so=9&show=" & show
+
+	Select case so
+		
+	case "0"
+		strSortURL_asc = g_store_url & "sbb.phtml?m_id=" & m_id & "&mode=" & mode & "&so=0&show=" & show
+		strSortURL_desc = g_store_url & "sbb.phtml?m_id=" & m_id & "&mode=" & mode & "&so=1&show=" & show  	
+	case "1"
+		strSortURL_asc = g_store_url & "sbb.phtml?m_id=" & m_id & "&mode=" & mode & "&so=0&show=" & show
+		strSortURL_desc = g_store_url & "sbb.phtml?m_id=" & m_id & "&mode=" & mode & "&so=1&show=" & show  	
+	case "4"
+		strSortURL_asc = g_store_url & "sbb.phtml?m_id=" & m_id & "&mode=" & mode & "&so=4&show=" & show
+		strSortURL_desc = g_store_url & "sbb.phtml?m_id=" & m_id & "&mode=" & mode & "&so=5&show=" & show  	
+	case "5"
+		strSortURL_asc = g_store_url & "sbb.phtml?m_id=" & m_id & "&mode=" & mode & "&so=4&show=" & show
+		strSortURL_desc = g_store_url & "sbb.phtml?m_id=" & m_id & "&mode=" & mode & "&so=5&show=" & show  	
+	case "6"
+		strSortURL_asc = g_store_url & "sbb.phtml?m_id=" & m_id & "&mode=" & mode & "&so=6&show=" & show
+		strSortURL_desc = g_store_url & "sbb.phtml?m_id=" & m_id & "&mode=" & mode & "&so=7&show=" & show
+	case "7"
+		strSortURL_asc = g_store_url & "sbb.phtml?m_id=" & m_id & "&mode=" & mode & "&so=6&show=" & show
+		strSortURL_desc = g_store_url & "sbb.phtml?m_id=" & m_id & "&mode=" & mode & "&so=7&show=" & show
+	case "8"
+		strSortURL_asc = g_store_url & "sbb.phtml?m_id=" & m_id & "&mode=" & mode & "&so=8&show=" & show
+		strSortURL_desc = g_store_url & "sbb.phtml?m_id=" & m_id & "&mode=" & mode & "&so=9&show=" & show
+	case "9"
+		strSortURL_asc = g_store_url & "sbb.phtml?m_id=" & m_id & "&mode=" & mode & "&so=8&show=" & show
+		strSortURL_desc = g_store_url & "sbb.phtml?m_id=" & m_id & "&mode=" & mode & "&so=9&show=" & show
+	case else
+		
+	end Select
+
+	strPageURL = g_store_url & "sbb.phtml?m_id=" & m_id & "&mode=" & mode & "&so=" & so & "&show=" & show
+
+	strModeURL = g_store_url & "sbb.phtml?m_id=" & m_id & "&so=" & so & "&show=" & show
+	
+	'=================================================================================================
+	' DISPLAY VALUES
+	'=================================================================================================
+	g_mfg_name = mfg_name
+	
+	
+%>

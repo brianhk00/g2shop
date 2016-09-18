@@ -1,0 +1,31 @@
+<%response.Expires=-1%>
+<!-- #INCLUDE File="../local/local.phtml" -->
+<!-- #INCLUDE File="../util/xt_func_util.phtml" -->
+<!-- #INCLUDE File="../util/xt_func_string.phtml" -->
+<%
+	pf_url_key = Trim(Request("pf_url_key"))
+	if Len(pf_url_key) > 0 then
+	else
+		pf_url_key = Trim(Request("url_key"))
+	end if
+	
+	pf_id = Trim(Request("pf_id"))
+	
+	url_key_type = Trim(Request("url_key_type"))
+	if url_key_type = "0" then
+		pf_url_key = pf_url_key & "/"
+	end if
+	
+	sql = "SELECT rewrite_id FROM " & g_storeid & "_rewrite WHERE rewrite_request_path='" & pf_url_key & "' AND rewrite_system_id <> '" & pf_id & "'"
+	set rs = dbconn.Execute(sql)
+	if rs.EOF then
+		response.write("true")
+	else
+		response.write("false")
+	end if
+	rs.Close
+	
+	set rs = nothing
+	
+	
+%>

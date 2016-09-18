@@ -2,9 +2,14 @@
 <!--#INCLUDE FILE="local/local.phtml"-->
 <%
 	url_key = Trim(Request("urlkey"))
+	url_type = Trim(Request("url_type"))
+	
 	if Len(url_key) > 1 then
 		
 		url_key = Replace(url_key, "/", "")
+		if url_type = "0" then
+			url_key = url_key & "/"
+		end if
 		
 		Set dbconn_rewrite =server.CreateObject("ADODB.Connection")
 		dbconn_rewrite.Open g_connection_string
@@ -33,6 +38,9 @@
 		if rewrite_system_type = 3 AND Len(rewrite_system_id) > 1 then
 			sType = "cms"
 		end if
+		if rewrite_system_type = 4 AND Len(rewrite_system_id) > 1 then
+			sType = "sbb"
+		end if
 		
 		rsRewrite.Close
 		set rsRewrite = nothing
@@ -46,6 +54,8 @@
 			server.execute("product.phtml")
 		CASE "cms"
 			server.execute("page.phtml")
+		CASE "sbb"
+			server.execute("sbb.phtml")
 		CASE ELSE
 			'Execute 404 pages
 			Server.Execute("Error404.phtml")

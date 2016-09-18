@@ -243,6 +243,8 @@ end function
 			rewrite_system_id = ""
 			rewrite_redirect_type = ""
 		end if
+		rsRewrite.Close
+		set rsRewrite = nothing
 		
 		if rewrite_system_type = 1 AND Len(rewrite_system_id) > 1 then
 			sType = "dept"

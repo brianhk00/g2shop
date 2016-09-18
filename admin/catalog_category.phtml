@@ -113,7 +113,7 @@
 																	<div class="col-md-9">
 																		<div class="panel panel-primary">
 																			<div class="panel-heading">
-																				<h4 class="panel-title">Category Detail</h4>
+																				<h4 class="panel-title" id="mainTitle1">Category Detail</h4>
 																			</div>
 																			<div class="panel-body">
 																				<div class="row">
@@ -237,7 +237,6 @@ var FormValidation = function () {
 			focusInvalid: false, // do not focus the last invalid input
 			ignore: "",  // validate all fields including form hidden input
 			//RULES
-			//RULES
 			rules: {
 				dept_name: {
 					minlength: 2,
@@ -245,33 +244,29 @@ var FormValidation = function () {
 				},
 				dept_markup_A: {
 					number: true
-				}/*,
+				},
 				url_key: {
-					minlength: 5,
+					minlength: 3,
 					"remote":
 					{
-					  url: 'api/sp_product_check_url_key.phtml?pf_id=' + $('#dept_name').val(),
+					  url: 'api/sp_product_check_url_key.phtml?pf_id=' + $('#dept_id').val(),
 					  type: "post"
 					}
-				}*/
+				}
 			},
 			messages: {
-				dept_name: "Please specify category name"
+				dept_name: "Please specify category name",
+				url_key:
+				{
+					minlength: "The URL Key must be greater than 3 chracter length.",
+					remote: "The specified URL Key is not unique."
+				}
 			},
 
 			invalidHandler: function (event, validator) { //display error alert on form submit              
 				success1.hide();
 				error1.show();
 				App.scrollTo(error1, -200);
-			},
-
-			errorPlacement: function (error, element) { // render error placement for each input type
-				var cont = $(element).parent('.input-group');
-				if (cont) {
-					cont.after(error);
-				} else {
-					element.after(error);
-				}
 			},
 
 			highlight: function (element) { // hightlight error inputs
@@ -348,8 +343,8 @@ var UITreeview = function () {
 					},
 					complete: function(){
 						$('#loading-mask').hide();
-						$('#mainTitle1').html(node.data.title + "(ID:" + node.data.key + ")");
-						$('#mainTitle2').html(node.data.title + "(ID:" + node.data.key + ")");
+						$('#mainTitle1').html(node.data.title + " (ID:" + node.data.key + ")");
+						$('#mainTitle2').html(node.data.title + " (ID:" + node.data.key + ")");
 						window.scrollTo(0,0);
 						$('a[data-toggle="tab"]').on('shown.bs.tab', function (e) {
 							var target = $(e.target).attr("href") // activated tab

@@ -99,7 +99,7 @@
 																					<tr>
 																						<th>ID</th>
 																						<th>Name</th>
-																						<th>MAP Enabled</th>
+																						<th>Restriction Enabled</th>
 																						<th>Edit</th>
 																					</tr>
 																					</thead>
@@ -194,6 +194,42 @@
 <script src="//cdn.datatables.net/plug-ins/1.10.10/api/fnReloadAjax.js"></script>
 <!-- END PAGE LEVEL PLUGINS -->
 <!-- BEGIN PAGE LEVEL SCRIPTS -->
+<script>
+//MODAL
+var UIModals = function () {
+	//function to initiate bootstrap extended modals
+	var initModals = function () {
+		$.fn.modalmanager.defaults.resize = true;
+		$.fn.modal.defaults.spinner = $.fn.modalmanager.defaults.spinner =
+			'<div class="loading-spinner" style="width: 200px; margin-left: -100px;">' +
+			'<div class="progress progress-striped active">' +
+			'<div class="progress-bar" style="width: 100%;"></div>' +
+			'</div>' +
+			'</div>';
+			
+		var $modal = $('#ajax-modal');
+		$('#wysiwyg_description').on('click', function () {
+			$('body').modalmanager('loading');
+			setTimeout(function () {
+				$modal.load('api/modal_ajax_wysiwyg_editor.phtml?id=page_text&fid=1', '', function () {
+					$modal.modal();
+				});
+			}, 100);
+		});
+		$modal.on('click', '.update_1', function () {
+			editor_1.updateElement();
+			$('#page_text').val($('#wysiwig_text_1_1').val());
+			$modal.modal('hide');
+		});
+		
+	};
+	return {
+		init: function () {
+			initModals();
+		}
+	};
+}();
+</script>
 <script type="text/javascript">
 var oTable, oTable2;
 var v1 = "All";
@@ -392,6 +428,7 @@ var TableData = function () {
 
 jQuery(document).ready(function() {    
 	TableData.init();
+	UIModals.init();
 	var $modal3 = $('#ajax-modal3');
 	$modal3.on('hidden', function () {
 		TableData.reload();
