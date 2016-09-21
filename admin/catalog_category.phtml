@@ -24,6 +24,7 @@
 <link href="../assets/global/plugins/bootstrap-modal/css/bootstrap-modal-bs3patch.css" rel="stylesheet" type="text/css" />
 <link href="../assets/global/plugins/bootstrap-modal/css/bootstrap-modal.css" rel="stylesheet" type="text/css" />
 <!-- END PAGE LEVEL PLUGINS -->
+<!--#INCLUDE FILE="include/head_bottom.phtml"-->
 </head>
 
 <body class="page-container-bg-solid">
@@ -244,7 +245,8 @@ var FormValidation = function () {
 				},
 				dept_markup_A: {
 					number: true
-				},
+				}
+				/*,
 				url_key: {
 					minlength: 3,
 					"remote":
@@ -252,7 +254,7 @@ var FormValidation = function () {
 					  url: 'api/sp_product_check_url_key.phtml?pf_id=' + $('#dept_id').val(),
 					  type: "post"
 					}
-				}
+				} */
 			},
 			messages: {
 				dept_name: "Please specify category name",

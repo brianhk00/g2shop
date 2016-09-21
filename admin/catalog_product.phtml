@@ -15,6 +15,7 @@
 <link href="../assets/global/plugins/bootstrap-datepicker/css/bootstrap-datepicker3.min.css" rel="stylesheet" type="text/css" />
 <link href="../assets/global/plugins/fancybox/source/jquery.fancybox.css" rel="stylesheet" type="text/css" />
 <!-- END PAGE LEVEL PLUGINS -->
+<!--#INCLUDE FILE="include/head_bottom.phtml"-->
 </head>
 
 <body class="page-container-bg-solid">
@@ -109,32 +110,32 @@
 															<tr role="row" class="filter">
 																<td> </td>
 																<td>
-																	<input type="text" class="form-control form-filter input-sm" name="product_id"> 
+																	<input type="text" class="form-control form-filter input-sm" name="product_id" value="<%=Session("DT_CATALOG_PRODUCT_1_ID")%>"> 
 																</td>
 																<td> </td>
 																<td>
-																	<input type="text" class="form-control form-filter input-sm" name="product_name"> 
+																	<input type="text" class="form-control form-filter input-sm" name="product_name" value="<%=Session("DT_CATALOG_PRODUCT_1_NAME")%>"> 
 																</td>
 																<td>
-																	<input type="text" class="form-control form-filter input-sm" name="product_sku"> 
-																</td>
-																<td>
-																	<div class="margin-bottom-5">
-																		<input type="text" class="form-control form-filter input-sm" name="product_cost_from" placeholder="From" /> 
-																	</div>
-																	<input type="text" class="form-control form-filter input-sm" name="product_cost_to" placeholder="To" /> 
+																	<input type="text" class="form-control form-filter input-sm" name="product_sku" value="<%=Session("DT_CATALOG_PRODUCT_1_SKU")%>"> 
 																</td>
 																<td>
 																	<div class="margin-bottom-5">
-																		<input type="text" class="form-control form-filter input-sm" name="product_price_from" placeholder="From" /> 
+																		<input type="text" class="form-control form-filter input-sm" name="product_cost_from" placeholder="From"  value="<%=Session("DT_CATALOG_PRODUCT_1_COST_FROM")%>"/> 
 																	</div>
-																	<input type="text" class="form-control form-filter input-sm" name="product_price_to" placeholder="To" /> 
+																	<input type="text" class="form-control form-filter input-sm" name="product_cost_to" placeholder="To"  value="<%=Session("DT_CATALOG_PRODUCT_1_COST_TO")%>"/> 
 																</td>
 																<td>
 																	<div class="margin-bottom-5">
-																		<input type="text" class="form-control form-filter input-sm" name="product_quantity_from" placeholder="From" /> 
+																		<input type="text" class="form-control form-filter input-sm" name="product_price_from" placeholder="From"  value="<%=Session("DT_CATALOG_PRODUCT_1_PRICE_FROM")%>"/> 
 																	</div>
-																	<input type="text" class="form-control form-filter input-sm" name="product_quantity_to" placeholder="To" /> 
+																	<input type="text" class="form-control form-filter input-sm" name="product_price_to" placeholder="To"  value="<%=Session("DT_CATALOG_PRODUCT_1_PRICE_TO")%>"/> 
+																</td>
+																<td>
+																	<div class="margin-bottom-5">
+																		<input type="text" class="form-control form-filter input-sm" name="product_quantity_from" placeholder="From"  value="<%=Session("DT_CATALOG_PRODUCT_1_QTY_FROM")%>"/> 
+																	</div>
+																	<input type="text" class="form-control form-filter input-sm" name="product_quantity_to" placeholder="To"  value="<%=Session("DT_CATALOG_PRODUCT_1_QTY_TO")%>"/> 
 																</td>
 																<td>
 																	<select name="product_status" class="form-control form-filter input-sm">
@@ -193,6 +194,15 @@
 <!-- END PAGE LEVEL PLUGINS -->
 <!-- BEGIN PAGE LEVEL SCRIPTS -->
 <script type="text/javascript">
+var iFilter = 1;
+<%
+	if Len(Session("DT_CATALOG_PRODUCT_1_ID")) > 0 OR Len(Session("DT_CATALOG_PRODUCT_1_NAME")) > 0 OR Len(Session("DT_CATALOG_PRODUCT_1_SKU")) > 0 OR Len(Session("DT_CATALOG_PRODUCT_1_COST_FROM")) > 0 OR Len(Session("DT_CATALOG_PRODUCT_1_COST_TO")) > 0 _
+	OR Len(Session("DT_CATALOG_PRODUCT_1_PRICE_FROM")) > 0 OR Len(Session("DT_CATALOG_PRODUCT_1_PRICE_TO")) > 0 OR Len(Session("DT_CATALOG_PRODUCT_1_QTY_FROM")) > 0 OR  Len(Session("DT_CATALOG_PRODUCT_1_QTY_TO")) > 0 OR Len(Session("DT_CATALOG_PRODUCT_1_STATUS")) > 0 then
+%>
+iFilter = 0;
+<%
+	end if
+%>
 var EcommerceProducts = function () {
 
     var initPickers = function () {
@@ -210,6 +220,12 @@ var EcommerceProducts = function () {
             src: $("#datatable_products"),
             onSuccess: function (grid) {
                 // execute some code after table records loaded
+				//grid.ajax.url("api/sp_product_list.phtml");
+				if (iFilter == 0)
+				{
+					grid.submitFilter();
+					iFilter = 1;
+				}
             },
             onError: function (grid) {
                 // execute some code on network or other general error  
@@ -288,6 +304,7 @@ var EcommerceProducts = function () {
 
 jQuery(document).ready(function() {    
    EcommerceProducts.init();
+   
 });	
 </script>
 <!-- END PAGE LEVEL SCRIPTS -->

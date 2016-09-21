@@ -1,0 +1,10 @@
+<%response.Expires=-1%>
+<%
+	session_target = Trim(Request("v1"))
+	session_value = Trim(Request("v2"))
+	
+	if Len(session_target) > 0 then
+		Session(session_target) = Trim(session_value)
+	end if
+
+%>

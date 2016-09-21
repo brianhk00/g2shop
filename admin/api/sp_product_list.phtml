@@ -30,22 +30,27 @@
 	strWhere = ""
 	'---------------------------------------------------------------------------------------
 	product_id = Trim(Request("product_id"))
+	Session("DT_CATALOG_PRODUCT_1_ID") = product_id
 	if Len(product_id) > 0 then
 		strWhere = strWhere &  " (pf_id like '%" & product_id & "%') AND"
 	end if
 	'----------------------------------------------------------------------------------------
 	product_name = Trim(Request("product_name"))
+	Session("DT_CATALOG_PRODUCT_1_NAME") = product_name
 	if Len(product_name) > 1 then
 		strWhere = strWhere &  " (name like '%" & product_name & "%') AND"
 	end if
 	'----------------------------------------------------------------------------------------
 	product_sku = Trim(Request("product_sku"))
+	Session("DT_CATALOG_PRODUCT_1_SKU") = product_sku
 	if Len(product_sku) > 1 then
 		strWhere = strWhere &  " (sku like '%" & product_sku & "%') AND"
 	end if
 	'----------------------------------------------------------------------------------------
 	sMin = Trim(Request("product_cost_from"))
 	sMax = Trim(Request("product_cost_to"))
+	Session("DT_CATALOG_PRODUCT_1_COST_FROM") = sMin
+	Session("DT_CATALOG_PRODUCT_1_COST_TO") = sMax
 	sTotalRange = ""
 	if IsNumeric(sMin) then
 		if IsNumeric(sMax) then
@@ -66,6 +71,8 @@
 	'----------------------------------------------------------------------------------------
 	sMin = Trim(Request("product_price_from"))
 	sMax = Trim(Request("product_price_to"))
+	Session("DT_CATALOG_PRODUCT_1_PRICE_FROM") = sMin
+	Session("DT_CATALOG_PRODUCT_1_PRICE_TO") = sMax
 	sTotalRange = ""
 	if IsNumeric(sMin) then
 		if IsNumeric(sMax) then
@@ -86,6 +93,8 @@
 	'----------------------------------------------------------------------------------------
 	sMin = Trim(Request("product_quantity_from"))
 	sMax = Trim(Request("product_quantity_to"))
+	Session("DT_CATALOG_PRODUCT_1_QTY_FROM") = sMin
+	Session("DT_CATALOG_PRODUCT_1_QTY_TO") = sMax
 	sTotalRange = ""
 	if IsNumeric(sMin) then
 		if IsNumeric(sMax) then
@@ -186,6 +195,11 @@
 			If Len(s_name) > 0 Then
 				s_name = Replace(s_name, "'", "&#39")
 				s_name = Replace(s_name, """", "&#34;")
+			End if
+			
+			If Len(sku) > 0 Then
+				sku = Replace(sku, "'", "&#39")
+				sku = Replace(sku, """", "&#34;")
 			End if
 				
 			s_price = FormatNumber(rs("list_price"),2)

@@ -1,0 +1,32 @@
+@font-face {
+    font-family: 'journal-icons';
+    src:url('icons/fonts/journal-icons.eot');
+    src:url('icons/fonts/journal-icons.eot?#iefix') format('embedded-opentype'),
+    url('icons/fonts/journal-icons.woff') format('woff'),
+    url('icons/fonts/journal-icons.ttf') format('truetype'),
+    url('icons/fonts/journal-icons.svg#journal-icons') format('svg');
+    font-weight: normal;
+    font-style: normal;
+}
+
+@media screen and (-webkit-min-device-pixel-ratio:0)
+{
+    @font-face
+    {
+        font-family: 'journal-icons';
+        src: url('icons/fonts/journal-icons.svg#journal-icons') format('svg');
+    }
+}
+
+
+[data-icon]:before {
+    font-family: 'journal-icons';
+    content: attr(data-icon);
+    speak: none;
+    font-style: normal;
+    font-weight: normal;
+    font-variant: normal;
+    text-transform: none;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}

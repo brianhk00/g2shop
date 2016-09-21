@@ -179,16 +179,20 @@
 									<i class="icon-globe-alt"></i> Manage Manufacturers
 								</a>
 							</li>
+							<% if g_store_use_system = "1" then %>
 							<li <% if InStr(current_menu,"catalog_system") then%>class="active"<% end if %>>
 								<a href="catalog_system.phtml" class="nav-link">
 									<i class="fa fa-desktop"></i> System Configurator
 								</a>
 							</li>
+							<% end if %>
+							<% if g_store_use_icecat_catalog = "1" then %>
 							<li <% if InStr(current_menu,"catalog_icecat") then%>class="active"<% end if %>>
 								<a href="catalog_icecat.phtml" class="nav-link">
 									<i class="icon-social-dropbox"></i> ICECAT Browser
 								</a>
 							</li>
+							<% end if %>
 							<li <% if InStr(current_menu,"catalog_attribute") then%>class="active"<% end if %>>
 								<a href="catalog_attribute.phtml" class="nav-link">
 									<i class="icon-star"></i> Filter Attributes

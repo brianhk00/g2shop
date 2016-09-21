@@ -499,6 +499,7 @@
 <link href="../assets/global/plugins/bootstrap-modal/css/bootstrap-modal-bs3patch.css" rel="stylesheet" type="text/css" />
 <link href="../assets/global/plugins/bootstrap-modal/css/bootstrap-modal.css" rel="stylesheet" type="text/css" />
 <!-- END PAGE LEVEL PLUGINS -->
+<!--#INCLUDE FILE="include/head_bottom.phtml"-->
 </head>
 
 <body class="page-container-bg-solid">
@@ -1573,6 +1574,7 @@
 <script src="../assets/global/scripts/datatable.js" type="text/javascript"></script>
 <script src="../assets/global/plugins/datatables/datatables.min.js" type="text/javascript"></script>
 <script src="../assets/global/plugins/datatables/plugins/bootstrap/datatables.bootstrap.js" type="text/javascript"></script>
+<script src="//cdn.datatables.net/plug-ins/1.10.10/api/fnReloadAjax.js"></script>
 <script src="../assets/global/plugins/bootstrap-datepicker/js/bootstrap-datepicker.min.js" type="text/javascript"></script>
 <script src="../assets/global/plugins/bootstrap-datetimepicker/js/bootstrap-datetimepicker.min.js" type="text/javascript"></script>
 <script src="../assets/global/plugins/bootstrap-maxlength/bootstrap-maxlength.min.js" type="text/javascript"></script>
@@ -1614,6 +1616,7 @@ var datax6, gridx6, dialogx6;
 </script>
 
 <script type="text/javascript">
+		
 var oTable;
 var oTable1;
 var oTable2;
@@ -1625,94 +1628,133 @@ var w1 = "";
 var w2 = "";
 var w3 = "";
 var w4 = "";
-	
+
 var TableData = function () {
+	//function to initiate DataTable
+	//DataTable is a highly flexible tool, based upon the foundations of progressive enhancement, 
+	//which will add advanced interaction controls to any HTML table
+	//For more information, please visit https://datatables.net/
+	var runDataTable = function () {
+		oTable1 = $('#sample_1').dataTable({
+			"bProcessing": true,
+			"bStateSave": false,
+			"bJQueryUI": false,
+			"iDisplayLength": 10,
+			"bServerSide": true,
+			"bAutoWidth": false,
+			"sAjaxSource": "api/sp_sales_order_product_list_v1.phtml?v1=" + v1 + "&v2=" + v2 + "&v3=" + v3 + "&z1=",
+			"aoColumns": [ 
+				/* Product ID */  { "sClass": "text-left" },
+				/* Thumbnail */  { "sClass": "center","bSortable": false },
+				/* Name */  { "sClass": "text-left" },
+				/* sku */  { "sClass": "center" },
+				/* Price */  { "sClass": "text-right"},
+				/* Qty */ { "sClass": "text-right"},
+				/* Status*/  { "sClass": "center" ,"bSortable": false},
+				/* Action*/  { "sClass": "center" ,"bSortable": false}
+			  ],
+			  
+			"aaSorting": [[0, 'desc']],
+			
+			"searchDelay": 500,
+			
+			"aLengthMenu": [
+				[5, 10, 15, 20, 30, 40],
+				[5, 10, 15, 20, 30, 40] // change per page values here
+			],
+			
+			"oLanguage": {
+				"sLengthMenu": "Show _MENU_ Rows",
+				"sSearch": "",
+				"sProcessing": '<img src="assets/images/ajax-loader-primary.gif"/>',
+				"oPaginate": {
+					"sPrevious": "",
+					"sNext": ""
+				}
+			}
+		});
+		
 
-    var runDataTable = function() {
-        oTable = new Datatable();
-
-        oTable.init({
-            src: $("#sample_1"),
-            onSuccess: function (oTable) {
-                // execute some code after table records loaded
-            },
-            onError: function (oTable) {
-                // execute some code on network or other general error  
-            },
-            loadingMessage: 'Loading...',
-            dataTable: { // here you can define a typical datatable settings from http://datatables.net/usage/options 
-
-                // Uncomment below line("dom" parameter) to fix the dropdown overflow issue in the datatable cells. The default datatable layout
-                // setup uses scrollable div(table-scrollable) with overflow:auto to enable vertical scroll(see: assets/global/scripts/datatable.js). 
-                // So when dropdowns used the scrollable div should be removed. 
-                //"dom": "<'row'<'col-md-8 col-sm-12'pli><'col-md-4 col-sm-12'<'table-group-actions pull-right'>>r>t<'row'<'col-md-8 col-sm-12'pli><'col-md-4 col-sm-12'>>",
-				columnDefs: [ 
-					{ orderable: false, targets: [1] }
-				],
-                "lengthMenu": [
-                    [10, 20, 50, 100, 150],
-                    [10, 20, 50, 100, 150] // change per page values here 
-                ],
-                "pageLength": 10, // default record count per page
-                "ajax": {
-                    "url": "api/sp_sales_order_product_list.phtml?v1=" + v1 + "&v2=" + v2 + "&v3=" + v3 + "&z1=", // ajax source
-                },
-                "order": [
-                    [0, "asc"]
-                ] // set first column as a default sort by asc
-            }
-        });
-    }
+		$('#sample_1_wrapper .dataTables_filter input').addClass("form-control input-sm").attr("placeholder", "Search");
+		// modify table search input
+		//$('#sample_1_wrapper .dataTables_length select').addClass("m-wrap small");
+		// modify table per page dropdown
+		//$('#sample_1_wrapper .dataTables_length select').select2();
+		// initialzie select2 dropdown
+	};
 	
-	var runDataTable1 = function() {
-        oTable1 = new Datatable();
-
-        oTable1.init({
-            src: $("#sample_2"),
-            onSuccess: function (oTable1) {
-                // execute some code after table records loaded
-            },
-            onError: function (oTable1) {
-                // execute some code on network or other general error  
-            },
-            loadingMessage: 'Loading...',
-            dataTable: { // here you can define a typical datatable settings from http://datatables.net/usage/options 
-
-                // Uncomment below line("dom" parameter) to fix the dropdown overflow issue in the datatable cells. The default datatable layout
-                // setup uses scrollable div(table-scrollable) with overflow:auto to enable vertical scroll(see: assets/global/scripts/datatable.js). 
-                // So when dropdowns used the scrollable div should be removed. 
-                //"dom": "<'row'<'col-md-8 col-sm-12'pli><'col-md-4 col-sm-12'<'table-group-actions pull-right'>>r>t<'row'<'col-md-8 col-sm-12'pli><'col-md-4 col-sm-12'>>",
-				columnDefs: [ 
-					{ orderable: false, targets: [1] }
-				],
-                "lengthMenu": [
-                    [10, 20, 50, 100, 150],
-                    [10, 20, 50, 100, 150] // change per page values here 
-                ],
-                "pageLength": 10, // default record count per page
-                "ajax": {
-                    "url": "api/sp_sales_order_icecat_list.phtml?v1=" + w1 + "&v2=" + w2 + "&v3=" + w3 + "&z1=", // ajax source
-                },
-                "order": [
-                    [0, "asc"]
-                ] // set first column as a default sort by asc
-            }
-        });
-    }
-
-    return {
-
-        //main function to initiate the module
-        init: function () {
-
-            runDataTable();
-			runDataTable1();  
-        }
-
-    };
-
+	var runDataTable2 = function () {
+		oTable2 = $('#sample_2').dataTable({
+			"bProcessing": true,
+			"bStateSave": false,
+			"bJQueryUI": false,
+			"iDisplayLength": 10,
+			"bServerSide": true,
+			"bAutoWidth": false,
+			"sAjaxSource": "api/sp_sales_order_icecat_list.phtml?v1=" + w1 + "&v2=" + w2 + "&v3=" + w3 + "&z1=",
+			"aoColumns": [ 
+				/* Product ID */  { "sClass": "text-left" },
+				/* Thumbnail */  { "sClass": "center","bSortable": false },
+				/* Name */  { "sClass": "text-left" },
+				/* sku */  { "sClass": "center" },
+				/* Product ID */  { "sClass": "text-left" },
+				/* Price */  { "sClass": "text-right"},
+				/* Qty */ { "sClass": "text-right","bSortable": false},
+				/* Status*/  { "sClass": "center" ,"bSortable": false},
+				/* Action*/  { "sClass": "center" ,"bSortable": false}
+			  ],
+			  
+			"aaSorting": [[0, 'desc']],
+			
+			"aLengthMenu": [
+				[5, 10, 15, 20, 30, 40],
+				[5, 10, 15, 20, 30, 40] // change per page values here
+			],
+			
+			"searchDelay": 500,
+			
+			"oLanguage": {
+				"sLengthMenu": "Show _MENU_ Rows",
+				"sSearch": "",
+				"sProcessing": '<img src="assets/images/ajax-loader-primary.gif"/>',
+				"oPaginate": {
+					"sPrevious": "",
+					"sNext": ""
+				}
+			}
+		});
+		
+		$('#sample_2_wrapper .dataTables_filter input').addClass("form-control input-sm").attr("placeholder", "Search");
+	};
+	
+	return {
+		//main function to initiate template pages
+		init: function () {
+			runDataTable();
+			<% if g_store_use_icecat_catalog = "1" then %>
+			runDataTable2();
+			<% end if %>
+		}
+	};
 }();
 
+function StatusFilter (theObj)
+{
+	v3 = theObj.value;
+	oTable.fnReloadAjax("sp_sales_order_product_list.phtml?v1=" + v1 + "&v2=" + v2 + "&v3=" + theObj.value + "&z1=");
+}
+
+function VisibilityFilter (theObj)
+{
+	v2 = theObj.value;
+	oTable.fnReloadAjax("sp_sales_order_product_list.phtml?v1=" + v1 + "&v2=" + theObj.value + "&v3=" + v3 + "&z1=");
+}
+
+function TypeFilter (theObj)
+{
+	v1 = theObj.value;
+	oTable.fnReloadAjax("sp_sales_order_product_list.phtml?v1=" + theObj.value + "&v2=" + v2 + "&v3=" + v3 + "&z1=");
+}
 </script>
 
 <script language="javascript">
@@ -2187,7 +2229,93 @@ jQuery(document).ready(function() {
 				}
 			}
 		});
-	});	
+	});
+	
+	
+	/* PRIVATE CATALOG */
+	jQuery.ajax({
+		type:"post",
+		url: "api/sp_catalog_get_subcategories.phtml",
+		data: {parent_id: '0', 'isAjax':true},
+		dataType: 'json',
+		success: function(data) {
+			var listItems= "<option value=''>All Categories</option>";
+			for (var i = 0; i < data.Subcategories.length; i++){
+				listItems+= "<option value='" + data.Subcategories[i].id + "'>" + data.Subcategories[i].name + "</option>";
+			}
+			var select = jQuery("#catalog_category1"), options = '';
+			select.empty(); 
+			select.append(listItems);
+		}
+	});
+	
+	jQuery( "#catalog_category1" ).change(function() {
+	  jQuery.ajax({
+			type:"post",
+			url: "api/sp_catalog_get_subcategories.phtml",
+			data: {parent_id: jQuery('#catalog_category1').val(), 'isAjax':true},
+			dataType: 'json',
+			success: function(data) {
+				var listItems= "<option value=''>All Categories</option>";
+				for (var i = 0; i < data.Subcategories.length; i++){
+					listItems+= "<option value='" + data.Subcategories[i].id + "'>" + data.Subcategories[i].name + "</option>";
+				}
+				var select = jQuery("#catalog_category2"), options = '';
+				select.empty(); 
+				select.append(listItems);
+				
+				select = jQuery("#catalog_category3"), options = '';
+				select.empty(); 
+				
+				select = jQuery("#catalog_category4"), options = '';
+				select.empty();
+				
+				oTable1.fnReloadAjax("api/sp_sales_order_product_list_v1.phtml?v1=" + jQuery('#catalog_category1').val());
+			}
+		});
+	});
+	
+	jQuery( "#catalog_category2" ).change(function() {
+	  jQuery.ajax({
+			type:"post",
+			url: "api/sp_catalog_get_subcategories.phtml",
+			data: {parent_id: jQuery('#catalog_category2').val(), 'isAjax':true},
+			dataType: 'json',
+			success: function(data) {
+				var listItems= "<option value=''>All Categories</option>";
+				for (var i = 0; i < data.Subcategories.length; i++){
+					listItems+= "<option value='" + data.Subcategories[i].id + "'>" + data.Subcategories[i].name + "</option>";
+				}
+				var select = jQuery("#catalog_category3"), options = '';
+				select.empty(); 
+				select.append(listItems);
+				
+				select = jQuery("#catalog_category4"), options = '';
+				select.empty();
+				oTable1.fnReloadAjax("api/sp_sales_order_product_list_v1.phtml?v1=" + jQuery('#catalog_category1').val() + "&v2=" + jQuery('#catalog_category2').val());
+			}
+		});
+	});
+	
+	jQuery( "#catalog_category3" ).change(function() {
+	  jQuery.ajax({
+			type:"post",
+			url: "api/sp_catalog_get_subcategories.phtml",
+			data: {parent_id: jQuery('#catalog_category3').val(), 'isAjax':true},
+			dataType: 'json',
+			success: function(data) {
+				var listItems= "<option value=''>All Categories</option>";
+				for (var i = 0; i < data.Subcategories.length; i++){
+					listItems+= "<option value='" + data.Subcategories[i].id + "'>" + data.Subcategories[i].name + "</option>";
+				}
+				var select = jQuery("#catalog_category4"), options = '';
+				select.empty(); 
+				select.append(listItems);
+				
+				oTable1.fnReloadAjax("api/sp_sales_order_product_list_v1.phtml?v1=" + jQuery('#catalog_category1').val() + "&v2=" + jQuery('#catalog_category2').val() + "&v3=" + jQuery('#catalog_category3').val());
+			}
+		});
+	});
 
    
 });
@@ -2654,15 +2782,14 @@ function getSearchResult(sku, descr, cost) {
 		dataType: 'json',
 		success: function(data) {
 			for (var i = 0; i < data.PRODUCT.length; i++){
-				//$("#pf_espec_sku").val(data.PRODUCT[i].id);
 				if (itemAddType == "R")
 				{
-					gridr.addRow({ "ID": gridr.count() + 1, "PID": data.PRODUCT[i].id, "SKU": data.PRODUCT[i].sku, "Name": data.PRODUCT[i].name });
+					gridr.addRow({ "ID": gridr.count() + 1, "PID": data.PRODUCT[i].id, "SKU": data.PRODUCT[i].sku, "NAME": data.PRODUCT[i].name });
 				}
 				
 				if (itemAddType == "U")
 				{
-					gridu.addRow({ "ID": gridr.count() + 1, "PID": data.PRODUCT[i].id, "SKU": data.PRODUCT[i].sku, "Name": data.PRODUCT[i].name });
+					gridu.addRow({ "ID": gridr.count() + 1, "PID": data.PRODUCT[i].id, "SKU": data.PRODUCT[i].sku, "NAME": data.PRODUCT[i].name });
 				}
 				
 				itemAddType == "";

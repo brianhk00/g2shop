@@ -1,0 +1,343 @@
+/*
+  Journal - Advanced Opencart Theme Framework
+  Multi-Merch compatibility CSS
+  Copyright (c) 2015 Digital Atelier
+  http://journal.digital-atelier.com/
+*/
+
+
+/******************************
+ HEADER MENU
+*******************************/
+
+.mm-header-link{
+  position:relative;
+  display: inline-block;
+}
+
+.links .mm-header-link{
+  display:table-cell;
+  vertical-align: middle;
+  padding: 0 6px;
+}
+
+.mm-header-link > div{
+  padding-top: 14px;
+  position: absolute;
+  width: 100%;
+  visibility: hidden;
+}
+
+.mm-header-link:hover div,
+.mm-header-link:hover div .dropdown-menu {
+  display:block;
+  visibility: visible;
+}
+
+.journal-secondary .dropdown-menu{
+  transition: all 0.2s;
+  top:12px;
+}
+
+.journal-secondary .dropdown-menu:before{
+  content: "\e61e";
+  position: absolute;
+  left: 50%;
+  top: -13px;
+  margin-left: -9px;
+  color: white;
+  font-size: 16px;
+}
+
+#content .buttons{
+  width: 100%;
+}
+
+.mm-well{
+  margin-top: 20px;
+}
+
+.mm-well p{
+  margin-bottom: 10px;
+}
+
+.mm-well p + p{
+  margin-bottom: 40px;
+}
+
+.ms-account-dashboard .row > div{
+  width: 25%;
+  float: left;
+}
+
+.ms-account-dashboard .row > div:first-of-type{
+  margin-right: 20px;
+}
+
+.ms-account-dashboard .row > div:nth-of-type(4){
+  float: right;
+}
+
+.ms-account-dashboard .row + .secondary-title{
+  clear: both;
+}
+
+.ms-account-dashboard h2.secondary-title,
+.ms-account-transaction h2.secondary-title{
+  margin: 0 0 20px 0;
+  padding: 9px 0;
+}
+
+.info-box{
+margin-bottom: 20px;
+}
+
+.info-box .list-unstyled li{
+  padding-bottom: 5px;
+}
+.info-box .list-unstyled li:last-of-type{
+  padding-bottom: 0;
+}
+
+.thumbnails {
+  overflow: auto;
+  clear: both;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.thumbnails {
+  margin-bottom: 20px;
+}
+
+.thumbnail>img,
+.thumbnail a>img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+}
+
+.ms-catalog-seller-profile .seller-description{
+  margin-bottom: 20px;
+}
+
+.seller-data:after{
+content: "";
+display: table;
+clear: both;
+}
+
+.seller-data .secondary-title{
+  margin-bottom: 20px;
+}
+
+.seller-data .row{
+  margin-right: -20px;
+}
+
+.seller-data .row > div{
+  width: 33.3333%;
+  float:left;
+  padding-right: 20px;
+  text-align: center;
+  margin-bottom: 20px;
+}
+.product-thumb h4{
+  font-weight: normal;
+}
+.ms-catalog-seller-profile .product-thumb{
+  background-color: white;
+  padding:15px;
+}
+
+.ms-catalog-seller-profile .product-thumb .caption{
+  padding:10px 0;
+}
+
+.ms-catalog-seller-profile #content > .row > div{
+  float:left;
+  width: 66.6666%;
+}
+.ms-catalog-seller-profile #content .row .col-sm-4{
+  width: 33.3333%;
+  padding-left: 20px;
+}
+
+.ms-sellerprofile.description h3 {
+  height: 35px;
+  line-height: 35px;
+  background-color: #f4f4f4;
+  color: #333745;
+  padding-left: 10px;
+  margin-bottom: 10px;
+}
+
+.ms-account-product-form .input-group.date button{
+  max-height: 34px;
+  line-height: 20px;
+}
+
+.note-editor .btn-default {
+  color: #777;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.5);
+  background-color: #e7e7e7;
+  background-image: linear-gradient(to bottom, #eeeeee, #dddddd);
+  background-repeat: repeat-x;
+  border-color: #dddddd #dddddd #b3b3b3 #b7b7b7;
+}
+.note-editor .btn-group{
+  float: left;
+  border-radius: 4px;
+  position: relative;
+  display: inline-block;
+  vertical-align: middle;
+}
+
+.note-editor .btn-group .btn{
+  border-radius: 0;
+}
+
+.note-toolbar .note-color .dropdown-toggle{
+  width: 20px;
+  padding-left: 5px;
+}
+
+.caret {
+  display: inline-block;
+  width: 0;
+  height: 0;
+  margin-left: 2px;
+  vertical-align: middle;
+  border-top: 4px solid;
+  border-right: 4px solid transparent;
+  border-left: 4px solid transparent;
+}
+
+.note-editor .btn-default i.fa{
+  color: inherit;
+}
+
+.note-editor .btn-group.open .dropdown-toggle {
+  -webkit-box-shadow: inset 0 3px 5px rgba(0,0,0,.125);
+  box-shadow: inset 0 3px 5px rgba(0,0,0,.125);
+}
+
+.note-editor .note-editable{
+  background-color: white;
+}
+
+.note-editor .dropdown-menu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  z-index: 1000;
+  display: none;
+  float: left;
+  min-width: 160px;
+  padding: 5px 0;
+  margin: 2px 0 0;
+  list-style: none;
+  font-size: 14px;
+  background-color: #fff;
+  border: 1px solid #ccc;
+  border: 1px solid rgba(0,0,0,.15);
+  border-radius: 4px;
+  -webkit-box-shadow: 0 6px 12px rgba(0,0,0,.175);
+  box-shadow: 0 6px 12px rgba(0,0,0,.175);
+  background-clip: padding-box;
+}
+
+.btn-default.active{
+    color: #333;
+  background-color: #ebebeb;
+  border-color: #adadad;
+    outline: 0;
+  background-image: none;
+  -webkit-box-shadow: inset 0 3px 5px rgba(0,0,0,.125);
+  box-shadow: inset 0 3px 5px rgba(0,0,0,.125);
+}
+blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 17.5px;
+  border-left: 5px solid #eee;
+}
+
+.note-editor .btn-group .dropdown-menu{
+display: none !important;
+}
+.note-editor .btn-group.open .dropdown-menu{
+display: block !important;
+}
+
+.ms-note {
+  font-size: 11px;
+  font-style: italic;
+  margin: 8px 0;
+}
+
+.ms-account-product-form .form-horizontal .form-group label{
+padding-top: 2px;
+width: auto;
+padding-right: 5px;
+}
+
+
+.catalog-seller .caption p{
+  margin-bottom: 4px;
+  margin-left: 5px;
+}
+.catalog-seller .caption .name a,
+.catalog-seller .caption p{
+text-align: left;
+}
+
+.catalog-seller .caption {
+  min-height: 100%;
+}
+
+#ms-withdrawal .form-group{
+padding:20px;
+}
+
+#ms-withdrawal .form-group + .form-group{
+  padding-top: 0;
+}
+.ms-account-transaction p{
+  margin-bottom: 8px;
+}
+
+
+@media only screen and (max-width: 760px) {
+  ul.ms-sellermenu.graphical li {
+    width: 48%;
+  }
+  .ms-account-dashboard .row > div{
+    width:100%;
+  }
+  .ms-catalog-seller-profile #content > .row > div {
+    width: 100%;
+  }
+  .ms-catalog-seller-profile #content .row .col-sm-4 {
+    padding-left: 0;
+  }
+  .ms-catalog-seller-profile .info-box>div {
+    margin-left: 0;
+  }
+  .ms-catalog-seller-profile .product-thumb {
+    padding: 10px;
+  }
+  .seller-data .row > div {
+    width: 50%;
+  }
+  .ms-catalog-seller-profile .product-thumb .caption {
+    min-height: 65px;
+  }
+}
+
+
+
+
+
+

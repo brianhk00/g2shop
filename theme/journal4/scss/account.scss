@@ -1,0 +1,513 @@
+@import 'variables.scss';
+
+/******************************
+ LOGIN
+*******************************/
+
+.login-content {
+  overflow: auto;
+  margin-bottom: 15px;
+  .content {
+    input + a{
+      display: block;
+    }
+  }
+  .login-wrap{
+    min-height: 200px;
+  }
+}
+
+.login-content {
+  h2{
+    margin-bottom: 15px;
+  }
+  > div{
+    width: 48%;
+    position: relative;
+    padding: 15px;
+    min-height: 345px;
+  }
+  .left {
+    float: left;
+    .button{
+      margin: 2px 0;
+    }
+  }
+}
+
+
+.login-content .left p:first-child {
+  font-size: 15px;
+  margin-top: 7px;
+}
+
+.login-content .left p:nth-child(2) {
+  font-size: 13px;
+  line-height: 1.3;
+  overflow: hidden;
+  margin-top: 15px;
+}
+
+
+.login-content .right {
+  float: right;
+}
+
+.login-content .right p:first-child {
+  font-size: 15px;
+  margin-top: 7px;
+}
+
+.login-content .right b {
+  display: block;
+  margin-top: 18px;
+}
+
+.login-content .right a {
+  position: relative;
+  top: 7px;
+  font-size: 13px;
+  text-decoration: underline;
+}
+
+.login-content .right input.button {
+  cursor: pointer;
+}
+
+.login-content hr {
+  height: 1px;
+  display: block;
+  width: 100%;
+  border: 0;
+  margin-bottom: 14px;
+  margin-top: 4px;
+}
+
+.address-entry {
+  .content{
+    border-bottom: 1px solid $e4;
+  }
+
+  tr:last-child td{
+    border-bottom: none;
+  }
+
+  td:first-of-type{
+    line-height: 1.5;
+    padding: 8px 0;
+  }
+  td:last-of-type{
+    text-align: right;
+  }
+}
+
+.content:last-of-type .address-entry{
+  border-bottom: none;
+}
+
+  /******************************
+   TABLES
+  *******************************/
+
+.box-heading + table.list{
+  margin-top: 20px;
+}
+
+table{
+  width: 100%;
+  border-spacing: 0;
+}
+
+table td a + a {
+  margin-left: 15px;
+}
+
+table.list {
+  margin-bottom: 20px;
+  border-bottom: 1px solid $ccc;
+  border-left: 1px solid $ccc;
+  overflow: hidden;
+  td{
+    border-right: 1px solid $ccc;
+    border-top: 1px solid $ccc;
+    padding: 8px;
+  }
+  thead td {
+    text-align: left;
+  }
+  tbody td {
+    vertical-align: middle;
+  }
+  .left{
+    max-width: 390px;
+  }
+  .t-span-1{
+    display: none;
+  }
+}
+
+table.radio {
+  td {
+    padding: 6px;
+    label {
+      display: block;
+    }
+  }
+  td:first-child {
+    width: 1px;
+  }
+  .highlight:hover td {
+    cursor: pointer;
+  }
+}
+
+
+table.form {
+  width: 100%;
+  padding-top: 15px;
+  margin-bottom: 15px;
+  td {
+    padding: 5px;
+    //background-color: $verylight;
+  }
+  td:first-child {
+    width: 150px;
+    font-weight: bold;
+    // padding-left: 10px;
+    // background-color: $e4;
+  }
+}
+
+/******************************
+ WISHLIST
+*******************************/
+
+.wishlist-info{
+  table{
+    overflow: hidden;
+  }
+}
+
+.wishlist-info thead td {
+  font-weight: bold;
+  background-color: #5f6874;
+}
+
+.wishlist-info thead .image {
+  line-height: 40px;
+}
+.wishlist-info thead {
+  td {
+    text-align: center;
+  }
+  .action {
+    padding-right: 8px;
+  }
+  .name{
+    text-align: left;
+    padding-left: 10px;
+  }
+}
+
+.wishlist-info td{
+  text-align: center;
+}
+
+.wishlist-info tbody {
+  td{
+    border-bottom-style:solid;
+    border-bottom-width:1px;
+    border-bottom-color:$e4;
+    padding: 5px 5px 5px 0;
+    text-align: center;
+  }
+  .image {
+    text-align: center;
+    img{
+      margin: 5px 0;
+      float: left;
+      margin-left: 10px;
+    }
+  }
+  .name{
+    max-width: 500px;
+    text-align: left;
+    padding-left: 10px;
+    font-size: 14px;
+  }
+  .action{
+    img{
+      display: inline-block;
+      margin: 0 2px;
+    }
+  }
+}
+.wishlist-info tbody:last-of-type tr td{
+  border-bottom: none;
+}
+.wishlist-info tbody .price {
+  font-weight: bold;
+}
+
+
+/******************************
+COMPARE
+*******************************/
+
+.compare-info {
+  border-collapse: collapse;
+  width: 100%;
+  margin-bottom: 20px;
+  overflow: hidden;
+}
+
+.compare-info thead td {
+  font-size: 14px;
+  font-weight: bold;
+  background: #5f6874;
+  text-align: center;
+}
+
+.compare-info td {
+  padding: 7px;
+  width: 20%;
+  color: #333;
+  text-align: center;
+  border-right: 1px solid #dbdbdb;
+  border-bottom: 1px solid #dbdbdb;
+  border-left-width: 1px;
+  border-left-style: solid;
+}
+
+.compare-info .name a {
+  font-weight: bold;
+}
+
+.compare-info .price-old {
+  font-weight: bold;
+  color: $red;
+  text-decoration: line-through;
+}
+
+.compare-info .price-new {
+  font-weight: bold;
+}
+
+
+
+/******************************
+ ORDER LIST
+*******************************/
+
+.order-list {
+  overflow: hidden;
+  margin-bottom: 15px;
+  .order-id {
+    width: 50%;
+    float: left;
+    font-weight: bold;
+    color: #333745;
+    padding-left: 10px;
+    line-height: 30px;
+    b {
+      font-weight: bold;
+    }
+  }
+  .order-status {
+    width: 50%;
+    float: right;
+    text-align: right;
+    font-weight: bold;
+    padding-right: 10px;
+    line-height: 30px;
+  }
+  .order-content {
+    display: inline-block;
+    width: 100%;
+    background: $f4;
+    &:after{
+      content: ".";
+      display: block;
+      clear: both;
+      visibility: hidden;
+      opacity: 0;
+    }
+
+    div {
+      float: left;
+      width: 33.3%;
+      padding-left: 10px;
+      padding-right: 15px;
+      padding: 10px 15px 0 15px;
+      b {
+        display: inline-block;
+        padding: 2px;
+      }
+    }
+  }
+  div.order-info {
+    text-align: right;
+    padding-right: 12px;
+    padding-top: 22px;
+  }
+}
+
+.buttons{
+  //clear: both;
+}
+
+.pagination + .buttons{
+  margin-top: 5px;
+}
+
+/******************************
+RETURNS
+*******************************/
+
+.return-list {
+  margin-bottom: 10px;
+}
+
+.return-list .return-id {
+  width: 49%;
+  float: left;
+  margin-bottom: 2px;
+}
+
+.return-list .return-status {
+  width: 49%;
+  float: right;
+  text-align: right;
+  margin-bottom: 2px;
+}
+
+.return-list .return-content {
+  padding: 10px 0;
+  display: inline-block;
+  width: 100%;
+  margin-bottom: 20px;
+  border-top: 1px solid $e4;
+  border-bottom: 1px solid $e4;
+}
+
+.return-list .return-content div {
+  float: left;
+  width: 33.3%;
+}
+
+.return-list .return-info {
+  text-align: right;
+}
+
+.return-product {
+  overflow: auto;
+  margin-bottom: 20px;
+}
+
+.return-product input[type='text'] {
+  min-width: 150px;
+}
+
+.return-name {
+  float: left;
+  width: 31%;
+  margin-right: 15px;
+}
+
+.return-model {
+  float: left;
+  width: 31%;
+  margin-right: 15px;
+}
+
+.return-quantity {
+  float: left;
+  width: 31%;
+}
+
+.return-detail {
+  overflow: auto;
+  margin-bottom: 20px;
+}
+
+.return-reason {
+  float: left;
+  width: 31%;
+  margin-right: 15px;
+}
+
+.return-opened {
+  float: left;
+  width: 31%;
+  margin-right: 15px;
+}
+
+.return-opened textarea {
+  min-width: 150px !important;
+}
+
+.return-opened textarea {
+  width: 98%;
+  vertical-align: top;
+}
+
+.return-captcha {
+  float: left;
+}
+
+.download-list {
+  margin-bottom: 10px;
+}
+
+.download-list .download-id {
+  width: 49%;
+  float: left;
+  margin-bottom: 2px;
+}
+
+.download-list .download-status {
+  width: 49%;
+  float: right;
+  text-align: right;
+  margin-bottom: 2px;
+}
+
+.download-list .download-content {
+  padding: 10px 0;
+  display: inline-block;
+  width: 100%;
+  margin-bottom: 20px;
+  border-top: 1px solid $e4;
+  border-bottom: 1px solid $e4;
+}
+
+.download-list .download-content div {
+  float: left;
+  width: 33.3%;
+}
+
+.download-list .download-info {
+  text-align: right;
+}
+
+.oc2{
+  .account-text{
+    margin-bottom: 15px;
+  }
+  .login-wrap{
+    .form-group{
+      margin-top: 15px;
+    }
+  }
+}
+
+.route-affiliate-register fieldset .radio{
+  display:inline;
+}
+.route-affiliate-register .form-horizontal .form-group label{
+  width:auto;
+}
+
+
+
+

@@ -1,0 +1,145 @@
+<%
+	header_logo_image = GetSettingValue("header_logo_image", "logo.png")
+	global_email_address = GetSettingValue("global_email_address", "support@mydomain.com")
+%>
+<div class="journal-top-header j-min z-1">
+</div>
+<div class="journal-menu-bg j-min z-0">
+</div>
+<div class="journal-center-bg j-100 z-0">
+</div>
+<div id="header" class="journal-header row z-2">
+	<div class="journal-links j-min xs-100 sm-100 md-50 lg-50 xl-50">
+		<div class="links j-min">
+			<a href="#" class="text-only"><span class="top-menu-link">About Us</span></a>
+			<span class="no-link">&bull;</span>
+			<a href="#" class="text-only"><span class="top-menu-link">Contact Us</span></a>
+			<span class="no-link">&bull;</span>
+			<a href="#"><span class="top-menu-link">Specials</span></a>
+			<span class="no-link">&bull;</span>
+			<a href="#"><span class="top-menu-link">Site Feedback</span></a>
+		</div>
+	</div>
+	<div class="journal-secondary j-min xs-100 sm-100 md-50 lg-50 xl-50">
+		<div class="links j-min">
+			<% if Session("shopper_id") = "" OR Session("shopper_id") = "GUEST" then %>
+			<a href="<%=g_secure_url%>login.phtml?sessionID=<%=Session("SESSIONKEY")%>"><span class="top-menu-link"><%=a("Login")%></span></a>
+			<span class="no-link">&bull;</span>
+			<a href="<%=g_secure_url%>register.phtml"><span class="top-menu-link"><%=a("Register")%></span></a>
+			<% else %>
+			<a href="<%=g_secure_url%>tp_login.phtml?sessionID=<%=Session("SESSIONKEY")%>&op=logout"><span class="top-menu-link"><%=a("Log Out")%></span></a>
+			<span class="no-link">&bull;</span>
+			<a href="#" class="wishlist-total"><span class="top-menu-link"><%=a("My Account")%></span></a>
+			<% end if %>
+			<span class="no-link">&bull;</span>
+			<a href="<%=g_secure_url%>account_profile.phtml?sessionID=<%=Session("SESSIONKEY")%>"><span class="top-menu-link">Checkout</span></a>
+		</div>
+	</div>
+	<div class="journal-search j-min xs-100 sm-50 md-30 lg-25 xl-25">
+		<div id="search" class="input-group j-min">
+			<input type="text" name="search" value="" placeholder="Search our entire store..." autocomplete="off" class="form-control input-lg"/>
+			<div class="button-search">
+				<button type="button"><i></i></button>
+			</div>
+		</div>
+	</div>
+	<div class="journal-logo j-100 xs-100 sm-100 md-40 lg-50 xl-50">
+		<div id="logo">
+			<a href="<%=g_store_url%>">
+			<img src="/media/logo/<%=header_logo_image%>" width="210" height="34" alt="Journal" title="Journal"/></a>
+		</div>
+	</div>
+	<div class="journal-cart row j-min xs-100 sm-50 md-30 lg-25 xl-25">
+		<div id="cart" class="btn-group btn-block">
+			<button type="button" data-toggle="dropdown" class="btn btn-inverse btn-block btn-lg dropdown-toggle heading"><a><span id="cart-total" data-loading-text="Loading...&nbsp;&nbsp;"> <%=GetTotalItemsInCart()%>&nbsp;<%=a("item(s)")%> - $<%=FormatNumber(GetTotalAmountInCart(),2)%></span><i></i></a></button>
+			<div class="content">
+				<ul class="cart-wrapper">
+					<% if GetTotalItemsInCart() > 0 then %>
+					<% else %>
+					<li>
+					<p class="text-center empty">
+						Your shopping cart is empty!
+					</p>
+					</li>
+					<% end if %>
+				</ul>
+			</div>
+		</div>
+	</div>
+	<!-- Main Menu Start-->
+	<%
+		mm = "<!--0-->"
+		'sql = "SELECT dept_id, LEN(dept_id) as a, dept_name, parent_dept, dept_row, url_key FROM hubutu_dept WHERE include_topnav = 1 AND is_hidden = 0 ORDER BY a, dept_row"
+		sql = "SELECT dept_id, LEN(dept_id) as a, dept_name, parent_dept, dept_row, url_Key, ISNULL(CONVERT(nvarchar(100),b.field_value),'') as dept_name_2"
+		sql = sql & " FROM " & g_storeid & "_dept as a "
+		sql = sql & " LEFT OUTER JOIN " & g_storeid & "_store_type_data_varchar b"
+		sql = sql & " ON a.dept_id = b.entity_id"
+		sql = sql & " AND b.type_id =1 AND b.field_id = 1 AND view_id = " &  Session("CURRENT_VIEW_ID")
+		sql = sql & " WHERE a.include_topnav = 1 AND a.is_hidden = 0 "
+		sql = sql & " ORDER BY a, dept_row"
+		
+		jjj = 1
+		Set rsM = dbconn.Execute(sql)
+		do while not rsM.EOF
+			m_dept_id = rsM("dept_id")
+			m_dept_name  = rsM("dept_name")
+			dept_name_2  = rsM("dept_name_2")
+			m_url_key  = rsM("url_key")
+			if Len(m_url_key) > 0 then
+				m_dept_link = g_store_url & m_url_key & ".html"
+			else
+				m_dept_link = g_store_url & "dept.phtml?dept_id=" & m_dept_id
+			end if
+			
+			if Len(dept_name_2)> 0 then
+				'm_dept_name = TranslateX(m_dept_name, 1, m_dept_id, 1)
+				m_dept_name = dept_name_2
+			end if
+			
+			SELECT CASE rsM("a") 
+			CASE 2
+			m = "<li class=""drop-down ""><a href=""" & m_dept_link & """><span class=""main-menu-text"">" & m_dept_name & "</span></a><ul><!--" & rsM("dept_id") & "--></ul></li><!--" & jjj & "-->"
+			mm = mm & m
+			jjj = jjj + 1
+			CASE 6
+			m = "<li><a href=""" & m_dept_link & """>" &  m_dept_name & "</a><ul><!--" & rsM("dept_id") & "--></ul></li>"
+			mm = Replace(mm, "<!--" & rsM("parent_dept") & "-->", m & "<!--" & rsM("parent_dept") & "-->")
+			CASE 10
+			m = "<li><a href=""" & m_dept_link & """>" & m_dept_name & "</a></li>"
+			mm = Replace(mm, "<!--" & rsM("parent_dept") & "-->", m & "<!--" & rsM("parent_dept") & "-->")
+			END SELECT
+			rsM.MoveNext
+		loop
+		rsM.Close
+		set rsM = nothing
+		
+		sql = "SELECT dept_id FROM " & g_storeid & "_dept WHERE include_topnav = 1 AND is_hidden = 0 ORDER BY dept_row"
+		Set rsM = dbconn.Execute(sql)
+		do while not rsM.EOF
+			mm = Replace(mm, "<ul><!--" & rsM("dept_id") & "--></ul>", "")
+			mm = Replace(mm, "<!--" & rsM("dept_id") & "-->", "")
+			rsM.MoveNext
+		loop
+		rsM.Close
+		set rsM = nothing
+		
+	%>
+	<div class="journal-menu j-min xs-100 sm-100 md-100 lg-100 xl-100">
+		<div class="mobile-trigger">
+			MENU
+		</div>
+		<ul class="super-menu mobile-menu menu-table" style="table-layout: fixed">
+			<li class="drop-down icon-only">
+			<a href="<%=g_store_url%>"><i style="margin-right: 5px; font-size: 20px; top: -1px" data-icon="&#xe14f;"></i></a>
+			<span class="mobile-plus">+</span>
+			</li>
+			<%=mm%>
+		</ul>
+	</div>
+	<script>
+	if($(window).width() < 760){
+	$('.journal-header-center .journal-links').before($('.journal-header-center .journal-language'));
+	$('.journal-header-center .journal-logo').after($('.journal-header-center .journal-search'));
+	}
+	</script>
+</div>

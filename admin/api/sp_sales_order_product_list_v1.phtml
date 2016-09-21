@@ -207,7 +207,11 @@
 		s_price = FormatNumber(rs("list_price"),2)
 		s_qty = rs("stock")
 		s_zoom_image = rs("zoom_image")
-		
+		s_image_file = rs("image_file")
+		prod_mm_type = rs("mm_type")
+		prod_espec_sku = Trim(rs("espec_sku"))
+		prod_use_icecat_images = rs("use_icecat_images")
+	
 		'if rs("isActive") then
 			s_active = "Enabled"
 		'else
@@ -228,11 +232,11 @@
 			's_visibility = "Catalog, Search"
 		'END SELECT
 		
-		sqlc = "SELECT d.dept_name as dept_name FROM " & g_storeid & "_dept as d INNER JOIN " & g_storeid & "_dept_prod as dp ON d.dept_id = dp.dept_id WHERE dp.pf_id='"&s_pf_id&"'"
-		set rsDN = dbconn.execute(sqlc)
-		if not rsDN.EOF then
-			dept_name = rsDN("dept_name")
-		End If
+		'sqlc = "SELECT d.dept_name as dept_name FROM " & g_storeid & "_dept as d INNER JOIN " & g_storeid & "_dept_prod as dp ON d.dept_id = dp.dept_id WHERE dp.pf_id='"&s_pf_id&"'"
+		'set rsDN = dbconn.execute(sqlc)
+		'if not rsDN.EOF then
+			'dept_name = rsDN("dept_name")
+		'End If
 		
 		's_type_id = Trim(rs("type_id"))
 		's_wholesaler_id = Trim(rs("wholesaler_id"))
@@ -247,6 +251,66 @@
 			g_grid_image_url = g_noimage_url
 		end if
 		
+		'================================================================================================
+		ssImgSize = "upload/w_" & "70" & ",h_" & "70" & ",c_pad/"
+		if s_image_file = "--" then
+			cloudImg = g_noimage_url
+			ssImg = Replace(cloudImg, "upload/", ssImgSize)
+		else
+			if prod_mm_type = 1 then
+				if Len(prod_espec_sku) > 0 AND prod_use_icecat_images = 1 then
+					'USE ICECAT IMAGE
+					icecat_id = 0
+					if Session("ENABLEINT") = "2" OR Session("ENABLEINT") = "3" then
+						sql = "SELECT * FROM A_ssprice_CA WHERE sku='" & prod_espec_sku & "'"
+					else
+						sql = "SELECT * FROM A_ssprice_main WHERE sku='" & prod_espec_sku & "'"
+					end If
+
+					set rsPA = dbconn_icecat.Execute(sql)
+					if not rsPA.EOF then
+						image_published = rsPA("image_published")
+						categoryid = Trim(rsPA("CATEGORY"))
+						icecat_id = rsPA("icecat_id")
+					end if
+					rsPA.Close
+
+					sql = "SELECT cloudinary_url FROM [192.168.5.134].[icecat].dbo.cloudinary_images WHERE product_id = " & icecat_id
+					Set rsCloudImage = dbconn_icecat.Execute(sql)
+					If Not rsCloudImage.EOF Then
+						cloudImg = Trim(rsCloudImage("cloudinary_url"))
+					Else
+						sql = "SELECT * FROM " & g_storeid & "_product_image WHERE image_name = '" & prod_thumb_image & "'"
+						Set rsCloudImage2 = conn.Execute(sql)
+						If Not rsCloudImage2.EOF Then
+							cloudImg = Trim(rsCloudImage2("cloud_url"))
+						Else
+							cloudImg = g_noimage_url
+						End If
+						rsCloudImage2.Close
+						Set rsCloudImage2 = Nothing
+					End If
+					rsCloudImage.Close
+					Set rsCloudImage = Nothing
+					ssImg = Replace(cloudImg, "upload/", ssImgSize)
+				else
+					sql = "SELECT * FROM " & g_storeid & "_product_image WHERE image_name = '" & s_image_file & "'"
+					Set rsCloudImage2 = dbconn.Execute(sql)
+					If Not rsCloudImage2.EOF Then
+						cloudImg = Trim(rsCloudImage2("cloud_url"))
+					Else
+						cloudImg = g_noimage_url
+					End If
+					rsCloudImage2.Close
+					Set rsCloudImage2 = Nothing
+					ssImg = Replace(cloudImg, "upload/", ssImgSize)
+				end if
+			else
+				ssImg = "http://a4.res.cloudinary.com/dd3llssvr/image/fetch/" & "w_" & "70" & ",h_" & "70" & ",c_pad/" & g_store_url & "assets/pmedia/prod_img/" & Server.URLEncode(s_image_file)
+			end if
+		end if
+		g_grid_image_url = ssImg
+		'================================================================================================
 		aaData = aaData & "['"
 		'aaData = aaData & "<a href=\'catalog_product_detail.phtml?pf_id=" & s_pf_id & "\'>" & sku & "</a>','" 
 		'aaData = aaData & "<img src=\'" & g_secure_url & "thumb_img/" & s_thumb_image & "\' width=70>','"

@@ -1,0 +1,24 @@
+<%
+'=====================================GLOBAL=================================================================
+If Request.ServerVariables("HTTPS") = "off" then 
+	skin_base_url = g_skin_base_url
+else
+	skin_base_url = g_skin_base_secure_url
+End If
+
+If Len(g_page_title) > 0 Then
+Else
+	g_page_title = Session("StoreTitle")
+End if
+	
+'=====================================THEME OPTIONS====================================================================
+THEME_TEMPLATE = "journal4"
+EC_imageListWidth = "200"
+EC_imageListWidth = "200"
+EC_thumbWidth = "66"
+EC_thumbHeight = "66"
+EC_imageWidth = "350"
+EC_imageHeight = "350"
+EC_zoomWidth = "500"
+EC_zoomHeight = "500"
+%>

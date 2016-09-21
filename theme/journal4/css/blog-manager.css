@@ -1,0 +1,221 @@
+/*
+  Journal - Advanced Opencart Theme Framework
+  Version 2.6.7
+  Copyright (c) 2016 Digital Atelier
+  http://journal.digital-atelier.com/
+*/
+/******************************
+BLOG MANAGER for JOURNAL
+*******************************/
+#blogCatArticles {
+  margin-bottom: 20px; }
+  #blogCatArticles h3 {
+    font-size: 15px; }
+    #blogCatArticles h3 a {
+      font-family: inherit; }
+
+#blogCategory {
+  margin-bottom: 10px; }
+
+.articleHeader {
+  margin: 0 0 10px 0; }
+
+.articleCat, .blogCol2 .articleCat {
+  margin-bottom: 10px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #ccc; }
+
+#blogArticle .articleHeader {
+  margin: 0; }
+  #blogArticle .articleHeader h1 {
+    padding-left: 10px;
+    line-height: 40px;
+    max-height: 40px;
+    font-size: 15px;
+    font-weight: normal;
+    text-transform: uppercase;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    border: none; }
+  #blogArticle .articleHeader > span {
+    display: block;
+    padding: 5px 0;
+    color: #5F6874; }
+
+.articleBottom {
+  clear: both; }
+
+.articleBottom h4,
+#blogCategory h4 {
+  margin: 0 0 5px 0; }
+.articleBottom ul,
+#blogCategory ul {
+  margin: 0 0 0 10px; }
+
+.livemarks a {
+  margin-right: 5px;
+  margin-top: -44px; }
+
+#articleComments {
+  border: 0; }
+
+.blogTags a {
+  padding: 2px 4px 3px 4px;
+  color: #222;
+  -webkit-border-radius: 7px;
+  border-radius: 7px;
+  font-size: 13px !important;
+  display: inline-block;
+  margin-bottom: 4px; }
+
+.recentArticles, .popularArticles {
+  list-style: none;
+  margin: 15px 0 0 0;
+  padding: 0; }
+  .recentArticles li, .popularArticles li {
+    float: left;
+    margin-bottom: 15px; }
+    .recentArticles li > a, .popularArticles li > a {
+      display: block;
+      float: left;
+      color: #428bca; }
+    .recentArticles li > a + a, .popularArticles li > a + a {
+      float: none; }
+    .recentArticles li > span, .popularArticles li > span {
+      display: block;
+      font-size: 85%; }
+
+.box-footer {
+  clear: both; }
+
+#column-right .recentArticles, #column-right .popularArticles, #column-left .recentArticles, #column-left .popularArticles {
+  list-style: none;
+  margin: 0;
+  padding: 0; }
+  #column-right .recentArticles li, #column-right .popularArticles li, #column-left .recentArticles li, #column-left .popularArticles li {
+    float: none;
+    background-color: #f4f4f4;
+    border-bottom: 1px solid #E4E4E4;
+    margin: 0; }
+    #column-right .recentArticles li > a, #column-right .popularArticles li > a, #column-left .recentArticles li > a, #column-left .popularArticles li > a {
+      display: inline-block;
+      float: left;
+      color: #428bca;
+      background-color: transparent;
+      border-bottom: 0;
+      padding: 10px 5px 10px 10px; }
+    #column-right .recentArticles li > a + a, #column-right .popularArticles li > a + a, #column-left .recentArticles li > a + a, #column-left .popularArticles li > a + a {
+      float: none;
+      padding: 10px 0 3px 0; }
+    #column-right .recentArticles li > span, #column-right .popularArticles li > span, #column-left .recentArticles li > span, #column-left .popularArticles li > span {
+      display: block;
+      font-size: 85%; }
+    #column-right .recentArticles li p, #column-right .popularArticles li p, #column-left .recentArticles li p, #column-left .popularArticles li p {
+      clear: both;
+      padding: 0; }
+#column-right .recentComments, #column-left .recentComments {
+  list-style: none;
+  margin: 0;
+  padding: 0; }
+  #column-right .recentComments li, #column-left .recentComments li {
+    float: none;
+    background-color: #f4f4f4;
+    border-bottom: 1px solid #E4E4E4;
+    padding-top: 10px;
+    overflow: hidden; }
+    #column-right .recentComments li > a, #column-left .recentComments li > a {
+      display: inline-block;
+      float: left;
+      background-color: transparent;
+      border-bottom: 0;
+      padding: 0 5px 10px 10px; }
+    #column-right .recentComments li > a + i + a, #column-left .recentComments li > a + i + a {
+      float: none;
+      padding: 10px 0 3px 0;
+      display: block; }
+    #column-right .recentComments li > span, #column-left .recentComments li > span {
+      display: block;
+      font-size: 85%; }
+    #column-right .recentComments li p, #column-left .recentComments li p {
+      clear: both;
+      padding: 0; }
+
+#productRelated .secondary-title {
+  margin-top: 15px; }
+
+.side-column .recentArticles li:last-of-type,
+.side-column .popularArticles li:last-of-type,
+.side-column .recentArticles li:last-of-type,
+.side-column .popularArticles li:last-of-type,
+.side-column .box-content ul > li:last-of-type:last-of-type,
+.side-column .box-content ul > li:last-of-type:last-of-type,
+.side-column .box-content ul > li:last-of-type a:last-of-type,
+.side-column .box-content ul > li:last-of-type a:last-of-type {
+  border-bottom-width: 0; }
+
+.blogTags .box-content {
+  padding: 5px; }
+
+.blogArchives ul ul {
+  margin: 0; }
+
+.blogArchives li {
+  background: none; }
+
+.box-content .recentComments li a:before {
+  display: none; }
+
+.recentArticles li > a,
+.popularArticles li > a {
+  float: none !important; }
+  .recentArticles li > a:before,
+  .popularArticles li > a:before {
+    display: none; }
+  .recentArticles li > a.image,
+  .popularArticles li > a.image {
+    float: left !important; }
+.recentArticles li > span,
+.popularArticles li > span {
+  margin: -5px 0 8px 10px; }
+
+.side-column .recentArticles li > a img,
+.side-column .popularArticles li > a img {
+  max-width: 50px; }
+.side-column .recentArticles li > p,
+.side-column .popularArticles li > p {
+  padding: 0 10px 10px 10px !important; }
+
+#content .recentArticles, #content .popularArticles {
+  margin-right: -15px; }
+  #content .recentArticles li, #content .popularArticles li {
+    padding-right: 15px; }
+    #content .recentArticles li .image, #content .popularArticles li .image {
+      margin-right: 10px; }
+    #content .recentArticles li > span, #content .popularArticles li > span {
+      margin: 0; }
+#content .box-footer {
+  clear: none; }
+
+#column-right .recentComments li > a + i + a,
+#column-left .recentComments li > a + i + a {
+  padding: 0; }
+
+#column-right .recentArticles li,
+#column-right .popularArticles li,
+#column-left .recentArticles li,
+#column-left .popularArticles li,
+#column-right .recentComments li,
+#column-left .recentComments li {
+  background-color: transparent; }
+
+.blogCategories li {
+  background-image: none; }
+
+#comments .pagination {
+  font-size: inherit;
+  padding: 10px; }
+
+#blogArticle .articleHeader h1 {
+  border: inherit;
+  padding: inherit; }
