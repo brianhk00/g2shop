@@ -43,12 +43,12 @@
 
 						<ul class="list-unstyled description">
 							<% if Len(x_vendor_name) > 0 then %>
-							<li><b><%=a("Brand")%>:</b><a href="#"><span itemprop="brand"><%=x_vendor_name%></span></a></li>
+							<li><b><%=a("Brand")%>:</b> <span itemprop="brand"><%=x_vendor_name%></span></li>
 							<% end if %>
 							<% if Len(x_prod_manu_part_num) > 0 then %>
-							<li><b><%=a("Mfg. Part #")%>:</b><a href="#"><span itemprop="brand"><%=x_prod_manu_part_num%></span></a></li>
+							<li><b><%=a("Mfg. Part #")%>:</b> <span itemprop="brand"><%=x_prod_manu_part_num%></span></li>
 							<% end if %>
-							<li><b><%=a("SKU")%>:</b><span itemprop="mpn"><%=x_prod_sku%></span></li>
+							<li><b><%=a("SKU")%>:</b> <span itemprop="mpn"><%=x_prod_sku%></span></li>
 							<li><b><%=a("Availability")%>:</b> <span class="instock"><%=x_prod_stock_status_display%></span></li>
 						</ul>
 						<div><%=x_prod_desc%></div>
@@ -269,22 +269,138 @@
 						</form>
 					</div>
 				</div>
-				<h3 class="subtitle">Related Products</h3>
+
+				<%
+				sqlri = "SELECT * FROM " & g_storeid & "_prod_cross WHERE pf_id1 = '" & pf_id & "'"
+				set rsRelated = dbconn.Execute(sqlri)
+				If Not rsRelated.EOF Then
+				%>
+				<h3 class="subtitle"><%=a("Related Products")%></h3>
 				<div class="owl-carousel related_pro">
+				
+				<%
+				Do While Not rsRelated.EOF
+
+					pf_id2 = rsRelated("pf_id2")
+					
+					sqlrp = "SELECT * FROM " & g_storeid & "_product WHERE pf_id = '" & pf_id2 & "'"
+					set rsRProduct = dbconn.Execute(sqlrp)
+
+						Rprod_name = rsRProduct("name")
+						Rprod_list_price = rsRProduct("list_price")
+						Rprod_retail_price = rsRProduct("retail_price")
+						Rprod_thumb_image = rsRProduct("thumb_image")
+						Rprod_image_file = rsRProduct("image_file")
+						if Len(prod_image_file) > 0 then
+						else
+							prod_image_file = "--"
+						end If
+						Rprod_on_sale = rsRProduct("on_sale")
+						Rprod_sale_price = rsRProduct("sale_price")
+						Rprod_dist_flag = rsRProduct("dist_flag")
+								if Session("LOGINGROUP") = "A" OR Session("LOGINGROUP") = "B" OR Session("LOGINGROUP") = "C" OR Session("LOGINGROUP") = "D" then
+							Rprod_group_price = rsRProduct("price_"& Session("LOGINGROUP"))
+								else
+							Rprod_group_price = rsRProduct("price_D")
+								end if
+						Rprod_use_price = rsRProduct("use_price")
+						Rprod_mm_type = rsRProduct("mm_type")
+						Rprod_espec_sku = Trim(rsRProduct("espec_sku"))
+						Rprod_use_icecat_images = rsRProduct("use_icecat_images")
+						Rprod_stock = rsRProduct("stock")
+						Rprod_url_key = rsRProduct("url_key")
+						if IsNumeric(Rprod_stock)then
+						else
+							Rprod_stock = 1
+						end If
+
+						'====================================================================================================
+						'USE ICECAT IMAGE
+						'====================================================================================================
+						Ricecat_id = 0
+						if Len(Rprod_espec_sku) > 0 then
+							if Session("ENABLEINT") = "2" OR Session("ENABLEINT") = "3" then
+								sql = "SELECT * FROM A_ssprice_CA WHERE sku='" & Rprod_espec_sku & "'"
+							else
+								sql = "SELECT * FROM A_ssprice_main WHERE sku='" & Rprod_espec_sku & "'"
+							end If
+
+							set rsRPA = conn_ss2.Execute(sql)
+							if not rsRPA.EOF then
+								Ricecat_image_published = rsRPA("image_published")
+								Ricecat_icategoryid = Trim(rsRPA("CATEGORY"))
+								Ricecat_id = rsRPA("icecat_id")
+							end if
+							rsRPA.Close
+						end if
+
+						if Rprod_image_file = "--" then
+							RcloudImg = g_noimage_url
+							ssRPImg = Replace(rcloudImg, "upload/", ssImgSize)
+						else
+							if Rprod_mm_type = 1 then
+								if Len(Rprod_espec_sku) > 0 AND Rprod_use_icecat_images = 1 then
+									
+									sql = "SELECT cloudinary_url FROM [192.168.5.134].[icecat].dbo.cloudinary_images WHERE product_id = " & Ricecat_id
+									Set rsRCloudImage = conn_ss2.Execute(sql)
+									If Not rsRCloudImage.EOF Then
+										RcloudImg = Trim(rsRCloudImage("cloudinary_url"))
+									Else
+										sql = "SELECT * FROM " & g_storeid & "_product_image WHERE image_name = '" & Rprod_image_file & "'"
+										Set rsRCloudImage2 = dbconn.Execute(sql)
+										If Not rsRCloudImage2.EOF Then
+											RcloudImg = Trim(rsRCloudImage2("cloud_url"))
+										Else
+											RcloudImg = g_noimage_url
+										End If
+										rsRCloudImage2.Close
+										Set rsRCloudImage2 = Nothing
+									End If
+									rsRCloudImage.Close
+									Set rsRCloudImage = Nothing
+									RssImg = Replace(RcloudImg, "upload/", ssImgSize)
+								else
+									sql = "SELECT * FROM " & g_storeid & "_product_image WHERE image_name = '" & Rprod_image_file & "'"
+									Set rsRCloudImage2 = dbconn.Execute(sql)
+									If Not rsRCloudImage2.EOF Then
+										RcloudImg = Trim(rsRCloudImage2("cloud_url"))
+									Else
+										RcloudImg = g_noimage_url
+									End If
+									rsRCloudImage2.Close
+									Set rsRCloudImage2 = Nothing
+									RssImg = Replace(RcloudImg, "upload/", ssImgSize)
+								end if
+							else
+								ssRPImg = "http://a4.res.cloudinary.com/dd3llssvr/image/fetch/" & "w_200,h_200,c_pad/" & g_store_url & "assets/pmedia/prod_img/" & Server.URLEncode(Rprod_image_file)
+							end if
+						end if
+						
+
+			%>
 					<div class="product-thumb">
 						<div class="image">
-							<a href="product.html"><img src="image/product/samsung_tab_1-200x200.jpg" alt="Aspire Ultrabook Laptop" title="Aspire Ultrabook Laptop" class="img-responsive"/></a>
+							<a href="<%=g_store_url & Rprod_url_key%>.html"><img src="<%=ssRPImg%>" alt="<%=prod_name%>" title="<%=prod_name%>" class="img-responsive"/></a>
 						</div>
-						<div class="caption">
-							<h4><a href="product.html">Aspire Ultrabook Laptop</a></h4>
-							<p class="price">
-								<span class="price-new">$230.00</span><span class="price-old">$241.99</span><span class="saving">-5%</span>
-							</p>
-							<div class="rating">
-								<span class="fa fa-stack"><i class="fa fa-star fa-stack-2x"></i><i class="fa fa-star-o fa-stack-2x"></i></span><span class="fa fa-stack"><i class="fa fa-star fa-stack-2x"></i><i class="fa fa-star-o fa-stack-2x"></i></span><span class="fa fa-stack"><i class="fa fa-star fa-stack-2x"></i><i class="fa fa-star-o fa-stack-2x"></i></span><span class="fa fa-stack"><i class="fa fa-star fa-stack-2x"></i><i class="fa fa-star-o fa-stack-2x"></i></span><span class="fa fa-stack"><i class="fa fa-star-o fa-stack-2x"></i></span>
+						<div>
+							<div class="caption">
+								<h4><a href="<%=g_store_url & Rprod_url_key%>.html"><%=Rprod_name%></a></h4>
 							</div>
 						</div>
-						<div class="button-group">
+						<div class="button-group" style="vertical-align:bottom">
+							<p class="price">
+								<% if Rprod_on_sale = 1 then %>
+									<span class="price-old">$<%=FormatNumber(Rprod_group_price,2)%></span><br>
+									<span class="price-new">$<%=FormatNumber(Rprod_sale_price,2)%></span>
+									<%
+										salerate = (1 - (Rprod_sale_price / Rprod_group_price)) * 100
+									%>
+									<span class="saving">-<%=Round(salerate, 0)%>%</span>
+								<% else %>
+									<span class="price-old">$<%=FormatNumber(Rprod_retail_price,2)%></span><br>
+									<span class="price-new">$<%=FormatNumber(Rprod_group_price,2)%></span>
+								<% end if %>
+							</p>
 							<button class="btn-primary" type="button" onclick=""><span>Add to Cart</span></button>
 							<div class="add-to-links">
 								<button type="button" data-toggle="tooltip" title="Add to wishlist" onclick=""><i class="fa fa-heart"></i></button>
@@ -292,100 +408,19 @@
 							</div>
 						</div>
 					</div>
-					<div class="product-thumb">
-						<div class="image">
-							<a href="product.html"><img src="image/product/macbook_pro_1-200x200.jpg" alt=" Strategies for Acquiring Your Own Laptop " title=" Strategies for Acquiring Your Own Laptop " class="img-responsive"/></a>
-						</div>
-						<div class="caption">
-							<h4><a href="product.html"> Strategies for Acquiring Your Own Laptop </a></h4>
-							<p class="price">
-								<span class="price-new">$1,400.00</span><span class="price-old">$1,900.00</span><span class="saving">-26%</span>
-							</p>
-						</div>
-						<div class="button-group">
-							<button class="btn-primary" type="button" onclick=""><span>Add to Cart</span></button>
-							<div class="add-to-links">
-								<button type="button" data-toggle="tooltip" title="Add to wishlist" onclick=""><i class="fa fa-heart"></i></button>
-								<button type="button" data-toggle="tooltip" title="Add to compare" onclick=""><i class="fa fa-exchange"></i></button>
-							</div>
-						</div>
-					</div>
-					<div class="product-thumb">
-						<div class="image">
-							<a href="product.html"><img src="image/product/macbook_1-200x200.jpg" alt="Ideapad Yoga 13-59341124 Laptop" title="Ideapad Yoga 13-59341124 Laptop" class="img-responsive"/></a>
-						</div>
-						<div class="caption">
-							<h4><a href="product.html">Ideapad Yoga 13-59341124 Laptop</a></h4>
-							<p class="price">
-								 $2.00
-							</p>
-							<div class="rating">
-								<span class="fa fa-stack"><i class="fa fa-star fa-stack-2x"></i><i class="fa fa-star-o fa-stack-2x"></i></span><span class="fa fa-stack"><i class="fa fa-star fa-stack-2x"></i><i class="fa fa-star-o fa-stack-2x"></i></span><span class="fa fa-stack"><i class="fa fa-star fa-stack-2x"></i><i class="fa fa-star-o fa-stack-2x"></i></span><span class="fa fa-stack"><i class="fa fa-star fa-stack-2x"></i><i class="fa fa-star-o fa-stack-2x"></i></span><span class="fa fa-stack"><i class="fa fa-star-o fa-stack-2x"></i></span>
-							</div>
-						</div>
-						<div class="button-group">
-							<button class="btn-primary" type="button" onclick=""><span>Add to Cart</span></button>
-							<div class="add-to-links">
-								<button type="button" data-toggle="tooltip" title="Add to wishlist" onclick=""><i class="fa fa-heart"></i></button>
-								<button type="button" data-toggle="tooltip" title="Add to compare" onclick=""><i class="fa fa-exchange"></i></button>
-							</div>
-						</div>
-					</div>
-					<div class="product-thumb">
-						<div class="image">
-							<a href="product.html"><img src="image/product/ipod_shuffle_1-200x200.jpg" alt="Hp Pavilion G6 2314ax Notebok Laptop" title="Hp Pavilion G6 2314ax Notebok Laptop" class="img-responsive"/></a>
-						</div>
-						<div class="caption">
-							<h4><a href="product.html">Hp Pavilion G6 2314ax Notebok Laptop</a></h4>
-							<p class="price">
-								 $122.00
-							</p>
-						</div>
-						<div class="button-group">
-							<button class="btn-primary" type="button" onclick=""><span>Add to Cart</span></button>
-							<div class="add-to-links">
-								<button type="button" data-toggle="tooltip" title="Add to wishlist" onclick=""><i class="fa fa-heart"></i></button>
-								<button type="button" data-toggle="tooltip" title="Add to compare" onclick=""><i class="fa fa-exchange"></i></button>
-							</div>
-						</div>
-					</div>
-					<div class="product-thumb">
-						<div class="image">
-							<a href="product.html"><img src="image/product/ipod_touch_1-200x200.jpg" alt="Samsung Galaxy S4" title="Samsung Galaxy S4" class="img-responsive"/></a>
-						</div>
-						<div class="caption">
-							<h4><a href="product.html">Samsung Galaxy S4</a></h4>
-							<p class="price">
-								<span class="price-new">$62.00</span><span class="price-old">$122.00</span><span class="saving">-50%</span>
-							</p>
-						</div>
-						<div class="button-group">
-							<button class="btn-primary" type="button" onclick=""><span>Add to Cart</span></button>
-							<div class="add-to-links">
-								<button type="button" data-toggle="tooltip" title="Add to wishlist" onclick=""><i class="fa fa-heart"></i></button>
-								<button type="button" data-toggle="tooltip" title="Add to compare" onclick=""><i class="fa fa-exchange"></i></button>
-							</div>
-						</div>
-					</div>
-					<div class="product-thumb">
-						<div class="image">
-							<a href="product.html"><img src="image/product/ipod_shuffle_1-200x200.jpg" alt="Hp Pavilion G6 2314ax Notebok Laptop" title="Hp Pavilion G6 2314ax Notebok Laptop" class="img-responsive"/></a>
-						</div>
-						<div class="caption">
-							<h4><a href="product.html">Hp Pavilion G6 2314ax Notebok Laptop</a></h4>
-							<p class="price">
-								 $122.00
-							</p>
-						</div>
-						<div class="button-group">
-							<button class="btn-primary" type="button" onclick=""><span>Add to Cart</span></button>
-							<div class="add-to-links">
-								<button type="button" data-toggle="tooltip" title="Add to wishlist" onclick=""><i class="fa fa-heart"></i></button>
-								<button type="button" data-toggle="tooltip" title="Add to compare" onclick=""><i class="fa fa-exchange"></i></button>
-							</div>
-						</div>
-					</div>
+
+				<%
+					rsRelated.movenext
+				Loop
+
+				%>
 				</div>
+				<%
+			
+				End If	'no related Product
+
+				%>
+
 			</div>
 		</div>
 		<!--Middle Part End -->

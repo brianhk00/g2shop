@@ -1,0 +1,236 @@
+<%response.Expires=-1%>
+<!-- #INCLUDE File="../local/local.phtml" -->
+<!-- #INCLUDE File="../util/xt_func_util.phtml" -->
+<!-- #INCLUDE File="../util/xt_func_string.phtml" -->
+<%
+	'--POST DATA------------------------------------------
+	form_id = Trim(Request("form_id"))
+	form_item_id = Trim(Request("form_item_id"))
+	mode = Trim(Request("mode"))
+	
+	'--------------------------------------------
+	form_name = Trim(Request("form_name"))
+	form_title = Trim(Request("form_title"))
+	form_description = Trim(Request("form_description"))
+	form_msg1 = Trim(Request("form_msg1"))
+	form_use_email = Request("form_use_email")
+	form_email_address = Trim(Request("form_email_address"))
+	'--------------------------------------------
+	
+	caption_value = Trim(Request("caption_value"))
+	default_value = Trim(Request("default_value"))	
+	field_name = Trim(Request("field_name"))
+	is_required	 = Trim(Request("is_required"))
+	item_instruction = Trim(Request("item_instruction"))	
+	item_line = Trim(Request("item_line"))	
+	item_option1 = Trim(Request("item_option1"))
+	item_option2 = Trim(Request("item_option2"))	
+	item_option3 = Trim(Request("item_option3"))	
+	item_option4 = Trim(Request("item_option4"))	
+	item_option5 = Trim(Request("item_option5"))	
+	item_type = Trim(Request("item_type"))
+	maximum_length = Trim(Request("maximum_length"))
+	validation_rule = Trim(Request("validation_rule"))
+	
+	skey= Trim(Request("skey"))
+    dkey= Trim(Request("dkey"))
+	
+	if mode = "gsort" then
+		
+		sql = "SELECT row_id FROM " & g_storeid & "_form_item WHERE form_item_id='" & skey & "'"
+        set rs1 = dbconn.Execute(sql)
+        if not rs1.EOF then
+            source_sort_order = rs1(0)
+        end if
+        rs1.Close
+        set rs1 = nothing
+        
+        sql = "SELECT row_id FROM " & g_storeid & "_form_item WHERE form_item_id='" & dkey & "'"
+        set rs1 = dbconn.Execute(sql)
+        if not rs1.EOF then
+            dest_sort_order = rs1(0)
+        end if
+        rs1.Close
+        set rs1 = nothing
+		
+		if source_sort_order > dest_sort_order then
+			'moving up
+			sql = "SELECT * FROM " & g_storeid & "_form_item WHERE form_id = '" & form_id & "' "
+			sql = sql & " AND row_id >= " & dest_sort_order 
+			sql = sql & " AND row_id <= " & source_sort_order 
+			sql = sql & " ORDER BY row_id"
+			
+			set rs1 = dbconn.Execute(sql)
+			do while not rs1.EOF
+				sql = "UPDATE " & g_storeid & "_form_item SET row_id = row_id + 1 WHERE form_item_id='" & rs1("form_item_id") & "'"
+				dbconn.Execute(sql)
+				rs1.MoveNext
+			loop
+			rs1.Close
+			set rs1 = nothing
+			
+			sql2 = "UPDATE " & g_storeid & "_form_item SET row_id = " & dest_sort_order & " WHERE form_item_id='" & skey & "'"
+			dbconn.Execute(sql2)
+		else
+			'moving down
+			sql = "SELECT * FROM " & g_storeid & "_form_item WHERE form_id = '" & form_id & "' "
+			sql = sql & " AND row_id >= " & source_sort_order 
+			sql = sql & " AND row_id <= " & dest_sort_order 
+			sql = sql & " ORDER BY row_id"
+			
+			set rs1 = dbconn.Execute(sql)
+			do while not rs1.EOF
+				sql = "UPDATE " & g_storeid & "_form_item SET row_id = row_id - 1 WHERE form_item_id='" & rs1("form_item_id") & "'"
+				dbconn.Execute(sql)
+				rs1.MoveNext
+			loop
+			rs1.Close
+			set rs1 = nothing
+			
+			sql2 = "UPDATE " & g_storeid & "_form_item SET row_id = " & dest_sort_order & " WHERE form_item_id='" & skey & "'"
+			dbconn.Execute(sql2)
+		end if
+		
+		Response.Write("{""Success"" : []}")
+	
+	else
+		'====================================================================================================================
+		'UPDATE _form_item table....
+		'====================================================================================================================
+		sql = "SELECT form_id FROM " & g_storeid & "_form WHERE form_id='" & form_id & "'"
+		set rs= dbconn.Execute(sql)
+		if rs.EOF then
+			bNewForm = true
+		else
+			bNewForm = false
+		end if
+		rs.Close
+		set rs = nothing
+		
+		if bNewForm then
+			Set rsUpdate = Server.CreateObject("ADODB.Recordset")
+			with rsUpdate
+				.ActiveConnection = dbconn
+				.CursorLocation = 3
+				.CursorType = 1
+				.LockType = 3
+				.Source = g_storeid & "_form WHERE form_id='0'"
+				.Open
+				.AddNew
+			end with
+			
+			rsUpdate("form_id") = form_id
+			rsUpdate("form_created") = now()
+	
+		else
+			Set rsUpdate = Server.CreateObject("ADODB.Recordset")
+			with rsUpdate
+				.ActiveConnection = dbconn
+				.CursorLocation = 3
+				.CursorType = 1
+				.LockType = 3
+				.Source = g_storeid & "_form WHERE form_id='" & form_id & "'"
+				.Open
+			end with
+		end if
+		
+		rsUpdate("form_name") = form_name
+		rsUpdate("form_title") = form_title
+		rsUpdate("form_description") = form_description
+		rsUpdate("form_use_email") = form_use_email
+		rsUpdate("form_email_address") = form_email_address
+		rsUpdate("form_msg1") = form_msg1
+		rsUpdate("form_modified") = now()
+		
+		If dbconn.Errors.Count > 0 Then
+			dbconn.Errors.Clear
+			rsUpdate.CancelUpdate
+		else
+			rsUpdate.Update
+		End If
+		
+		rsUpdate.Close
+		set rsUpdate = nothing
+		
+		if Len(form_item_id) > 0 then
+		
+			'====================================================================================================================
+			'UPDATE _form_item table....
+			'====================================================================================================================
+			if form_item_id = "0" then
+				
+				row_id = 1
+				sql = "SELECT MAX(row_id) FROM " & g_storeid & "_form_item WHERE form_id='" & form_id & "'"
+				set rs = dbconn.Execute(sql)
+				if not rs.EOF then
+					row_id = rs(0)
+					if IsNumeric(row_id) then
+						row_id = row_id + 1
+					else
+						row_id = 1
+					end if
+				end if
+				rs.Close
+				set rs = nothing
+				
+				Set rsUpdate = Server.CreateObject("ADODB.Recordset")
+				with rsUpdate
+					.ActiveConnection = dbconn
+					.CursorLocation = 3
+					.CursorType = 1
+					.LockType = 3
+					.Source = g_storeid & "_form_item WHERE form_id='" & form_id & "' AND form_item_id = '0'"
+					.Open
+					.AddNew
+				end with
+				
+				'-------------------------------------------------------------------------------------
+				'GET NEW ID
+				form_item_id = GetUniqueLongIntegerID()
+				'-------------------------------------------------------------------------------------
+				rsUpdate("form_id") = form_id
+				rsUpdate("form_item_id") = form_item_id
+				rsUpdate("item_type") = item_type
+				rsUpdate("row_id") = row_id
+				
+			else
+				Set rsUpdate = Server.CreateObject("ADODB.Recordset")
+				with rsUpdate
+					.ActiveConnection = dbconn
+					.CursorLocation = 3
+					.CursorType = 1
+					.LockType = 3
+					.Source = g_storeid & "_form_item WHERE form_id='" & form_id & "' AND form_item_id = '" & form_item_id & "'"
+					.Open
+				end with
+			end if
+			
+			rsUpdate("caption_value") = caption_value
+			rsUpdate("default_value") = default_value
+			rsUpdate("field_name") = field_name
+			rsUpdate("is_required") = is_required
+			rsUpdate("item_instruction") = item_instruction
+			rsUpdate("item_line") = item_line
+			rsUpdate("item_option1") = item_option1
+			rsUpdate("item_option2") = item_option2
+			rsUpdate("item_option3") = item_option3
+			rsUpdate("item_option4") = item_option4
+			rsUpdate("item_option5") = item_option5
+			rsUpdate("maximum_length") = maximum_length
+			rsUpdate("validation_rule") = validation_rule
+			
+			If dbconn.Errors.Count > 0 Then
+				dbconn.Errors.Clear
+				rsUpdate.CancelUpdate
+			else
+				rsUpdate.Update
+			End If
+			
+			rsUpdate.Close
+			set rsUpdate = nothing
+		
+		end if
+		
+	end if
+	
+%>

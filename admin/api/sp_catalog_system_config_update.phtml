@@ -1,0 +1,211 @@
+<%response.Expires=-1%>
+<!-- #INCLUDE File="../local/local.phtml" -->
+<!-- #INCLUDE File="../util/xt_func_util.phtml" -->
+<!-- #INCLUDE File="../util/xt_func_string.phtml" -->
+<%
+	'--POST DATA------------------------------------------
+	mode = Trim(Request("mode"))
+	config_id = Trim(Request("config_id"))
+	
+	skey= Trim(Request("skey"))
+    dkey= Trim(Request("dkey"))
+	
+	skey_type= Trim(Request("skey_type"))
+    dkey_type= Trim(Request("dkey_type"))
+	
+	hitmode = Trim(Request("hitmode"))
+	
+	
+	if mode = "gsort" then
+		
+		for ii = 0 to 100
+			key1 = Request.Form("dict[children][" & ii & "][key]")
+			folder1 = Request.Form("dict[children][" & ii & "][isFolder]")
+			
+			if Len(key1) > 0 then
+				'response.write(key1 & "<br>")
+				if folder1 = "true" then
+				
+					for jj = 0 to 100
+						key2 = Request.Form("dict[children][" & ii & "][children][" & jj & "][key]")
+						if Len(key2) > 0 then
+							'response.write("------------" & key2 & "<br>")
+							sql2 = "UPDATE " & g_storeid & "_sysdept SET sysdept_row = " & jj & ", sysdept_group='" &  key1 & "' WHERE sysdept_id='" & key2 & "'"
+							dbconn.Execute(sql2)
+						end if
+					next
+					
+					sql2 = "UPDATE " & g_storeid & "_system_config_group SET group_row = " & ii & " WHERE group_id='" & key1 & "'"
+					dbconn.Execute(sql2)
+				
+				else
+					
+					sql2 = "UPDATE " & g_storeid & "_sysdept SET sysdept_row = " & ii & ", sysdept_group = '' WHERE sysdept_id='" & key1 & "'"
+					dbconn.Execute(sql2)
+				
+				end if
+			end if
+			
+			
+		next
+		
+		Response.Write("{""Success"" : []}")
+	
+	end if
+	
+	if mode = "gdelete" then
+		group_id = Trim(Request("group_id"))
+		if Len(group_id) > 0 then
+		
+			sql2 = "DELETE FROM " & g_storeid & "_system_config_group WHERE group_id = '" &  group_id & "'"
+			dbconn.Execute(sql2)
+			
+			sql2 = "UPDATE " & g_storeid & "_sysdept SET sysdept_group = '' WHERE sysdept_group = '" &  group_id & "'"
+			dbconn.Execute(sql2)
+			
+			Response.Write("{""Success"" : []}")
+			
+		end if
+	end if
+	
+	if mode = "odelete" then
+		sysdept_id = Trim(Request("sysdept_id"))
+		if Len(sysdept_id) > 0 then
+		
+			sql2 = "DELETE FROM " & g_storeid & "_sysdept WHERE sysdept_id = '" &  sysdept_id & "'"
+			dbconn.Execute(sql2)
+			
+			sql2 = "DELETE FROM " & g_storeid & "_system_config WHERE dept_id = '" &  sysdept_id & "'"
+			dbconn.Execute(sql2)
+			
+			Response.Write("{""Success"" : []}")
+			
+		end if
+	end if
+	
+	if mode = "lineitem" then
+	
+		system_id = Trim(Request("system_id"))
+		sysdept_id = Trim(Request("sysdept_id"))
+		config_description = Trim(Request("config_description"))
+		pf_id = Trim(Request("pf_id"))
+		row_id = Trim(Request("row_id"))
+		item_mode = Trim(Request("item_mode"))
+		item_price = Trim(Request("item_price"))
+		item_price_A = Trim(Request("item_price_A"))
+		item_price_B = Trim(Request("item_price_B"))
+		item_price_C = Trim(Request("item_price_C"))
+		item_price_D = Trim(Request("item_price_D"))
+		
+		if Len(pf_id) > 0 AND Len(sysdept_id) > 0 then
+			
+			if row_id = "0" then
+			
+				new_row = 0
+				sql = "SELECT MAX(row_id) FROM " & g_storeid & "_system_config WHERE dept_id='" & sysdept_id & "'"
+				set rsMax = dbconn.Execute(sql)
+				if not rsMax.EOF then
+					new_row = rsMax(0) + 1
+				end if
+				rsMax.Close
+				set rsMax = nothing
+				
+				if IsNumeric(new_row) then
+				else
+					new_row = 0
+				end if
+				
+				Set rsUpdate = Server.CreateObject("ADODB.Recordset")
+				with rsUpdate
+					.ActiveConnection = dbconn
+					.CursorLocation = 3
+					.CursorType = 1
+					.LockType = 3
+					.Source = g_storeid & "_system_config WHERE dept_id='0'"
+					.Open
+					.AddNew
+				end with
+				
+				rsUpdate("config_id") = system_id
+				rsUpdate("pf_id") = pf_id
+				rsUpdate("row_id") = new_row
+				rsUpdate("dept_id") = sysdept_id
+				
+			else
+				Set rsUpdate = Server.CreateObject("ADODB.Recordset")
+				with rsUpdate
+					.ActiveConnection = dbconn
+					.CursorLocation = 3
+					.CursorType = 1
+					.LockType = 3
+					.Source = g_storeid & "_system_config WHERE dept_id='" & sysdept_id & "' AND pf_id='" & pf_id & "'"
+					.Open
+				end with
+				
+				
+			end if
+			
+			rsUpdate("config_description") = config_description
+			rsUpdate("markup_price") = item_price
+			rsUpdate("item_price_A") = item_price_A
+			rsUpdate("item_price_B") = item_price_B
+			rsUpdate("item_price_C") = item_price_C
+			rsUpdate("item_price_D") = item_price_D
+			rsUpdate("item_qty") = ""
+				
+		
+			If dbconn.Errors.Count > 0 Then
+				dbconn.Errors.Clear
+				rsUpdate.CancelUpdate
+			else
+				rsUpdate.Update
+			End If
+			
+			Response.Write("{""Success"" : []}")
+			
+		end if
+		
+	end if
+	
+	if mode = "itemdelete" then
+	
+		system_id = Trim(Request("system_id"))
+		sysdept_id = Trim(Request("sysdept_id"))
+		row_id = Trim(Request("row_id"))
+		
+		sql2 = "DELETE FROM " & g_storeid & "_system_config WHERE dept_id = '" &  sysdept_id & "' AND pf_id = '" & row_id & "'"
+		dbconn.Execute(sql2)
+		
+		Response.Write("{""Success"" : []}")
+	
+	end if
+	
+	if mode = "itemsort" then
+		
+		sysdept_id = Trim(Request("sysdept_id"))
+		sortdata = Trim(Request("sortdata"))
+		
+		ar_sortdata = Split(sortdata, "||")
+		
+		for kk = 0 to UBound(ar_sortdata)
+		
+			itemsort = ar_sortdata(kk)
+			if Len(itemsort) > 0 then 
+			
+				ar_itemsort = Split(itemsort, "::")
+				
+				for kkk = 0 to Ubound(ar_itemsort)
+					sql2 = "UPDATE " & g_storeid & "_system_config SET row_id = " & ar_itemsort(1) & " WHERE dept_id = '" &  sysdept_id & "' AND pf_id = '" & ar_itemsort(0) & "'"
+					dbconn.Execute(sql2)
+				next
+			
+			end if
+		
+		next
+	
+	end if
+	
+	
+	
+	
+%>

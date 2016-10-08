@@ -6,342 +6,482 @@
 <!-- #INCLUDE File="../util/xt_func_util.phtml" -->
 <!-- #INCLUDE File="../util/xt_func_string.phtml" -->
 <%
-  sEcho = Trim(Request("sEcho"))
-  iDisplayLength = Trim(Request("iDisplayLength"))
-  iDisplayStart = Trim(Request("iDisplayStart"))
-  
-  sEcho = FilterStringEx(sEcho, "[^0-9]")
-  iDisplayLength = FilterStringEx(iDisplayLength, "[^0-9]")
-  iDisplayStart = FilterStringEx(iDisplayStart, "[^0-9]")
-  
-  sEcho = Cint(sEcho)
-  iDisplayLength = Cint(iDisplayLength)
-  iDisplayStart = Cint(iDisplayStart)
-  
-  'sEcho = Cint(Request("sEcho"))
-  'iDisplayLength = Cint(Request("iDisplayLength"))
-  'iDisplayStart = Cint(Request("iDisplayStart"))
-  
-  sMin = Trim(Request("min"))
-  sMax = Trim(Request("max"))
-  
-  sDateRange = ""
-  
-  if IsDate(sMin) then
-    if IsDate(sMax) then
-      dMax = CDate(sMax)
-      dMax = DateAdd("d", 1, dMax)
-      sMax = FormatDateTime(dMax,0)
-      sDateRange = "(date_changed between '" & sMin & "' AND '" & sMax & "')"
-    else
-      'dMin = CDate(sMin)
-      dMax = Date()
-      dMax = DateAdd("d", 1, dMax)
-      sMax = FormatDateTime(dMax,0)
-      sDateRange = "(date_changed between '" & sMin & "' AND '" & sMax & "')"
-    end if
-  else
-    if IsDate(sMax) then
-      dMax = CDate(sMax)
-      dMax = DateAdd("d", 1, dMax)
-      sMax = FormatDateTime(dMax,0)
-      sDateRange = "(date_changed between '1/1/1970' AND '" & sMax & "')"
-    end if
-  end if
-  
-  sSearch = Trim(Request("sSearch"))
-  sSearch = FilterStringEx(sSearch, "[^0-9a-zA-Z _/-]")
-  
-  'iDisplayLength = 25
- ' iDisplayStart = 1
- 
-  index_date = DateAdd("d", -30, Date())
- 
-  if Len(sSearch) > 0 then
-    sSearchDate = Replace(sSearch, "*", "%")
-  end if
-  
-  'SEARCH - here we make the Where clause that will be used in the SQL querry. You only put here the fields you want to search 
-  'if IsNumeric(sSearch) then
-  'strWhere = " (order_id LIKE '%" & sSearch & "%' OR "
-  'else
-  'strWhere = " ("
-  'end if
-  strWhere = " (pf_id LIKE '%" & sSearch & "%' OR "
-  'strWhere = strWhere &  " company_name LIKE '%" & sSearch & "%' OR "
-  strWhere = strWhere &  " name LIKE '%" & sSearch & "%' OR "
-  'strWhere = strWhere &  " shopper_lastname LIKE '%" & sSearch & "%' OR "
-  'if Len(sDateRange) > 0 then
-  'else
-  'strWhere = strWhere &  " date_entered LIKE '%" & sSearchDate & "%' OR "
-  'end if
-  'strWhere = strWhere &  " order_name LIKE '%" & sSearch & "%' OR "
-  strWhere = strWhere &  " description LIKE '%" & sSearch & "%')"
-  
-  if Len(sDateRange) > 0 then
-  strWhere = strWhere &  " AND " & sDateRange
-  end if
-  
-  if Len(str_filter) > 0 then
-    strWhere  = strWhere & " AND " & str_filter
-  end if
-  
-  cat_filter = ""
-  v1 = Trim(Request("v1"))
-  v2 = Trim(Request("v2"))
-  v3 = Trim(Request("v3"))
-  v4 = Trim(Request("v4"))
-  
-  if Len(v1) > 0 then
-	cat_filter = v1
-  end if
-  if Len(v2) > 0 then
-	cat_filter = v2
-  end if
-  if Len(v3) > 0 then
-	cat_filter = v3
-  end if
-  if Len(v4) > 0 then
-	cat_filter = v4
-  end if
-  
-  if cat_filter <> "" then
-	strWhere = strWhere & " AND pf_id IN (SELECT pf_id FROM " & g_storeid & "_dept_prod WHERE dept_id like '" & cat_filter & "%')"
-  end if
-  
-  'v1 = Trim(Request("v1")) 'type
-  'v2 = Trim(Request("v2")) 'visibility
-  'v3 = Trim(Request("v3")) 'status
-  
-  'if v1 = "All" then 'type
-  'else
-    'strWhere = strWhere & " AND type_id='" & v1 & "'"
-  'end if
-  
-  'if v2 = "All" then 'visibility
-  'else
-    'strWhere = strWhere & " AND Visibility='" & v2 & "'"
-  'end if
-  
-  'if v3 = "All" then 'status
-  'else
-    'strWhere = strWhere & " AND isActive=" & v3
-  'end if
-  
-  '=======================================================================================
-  'ORDERING
-	'passes through all cols and first check if the column is sortable, if yes then construct
-	'the variable "order" that list in order the sequence of ordering
-	for k = 0 to 7
-		if Request("bSortable_" & k)="true" then
-			order = order & Request("iSortCol_" & k) & " " & Request("sSortDir_" & k)
-		end if
-	next
-	'here we replace the number corresponding the column position by the corresponding name of the column in the database
-	order =	Replace(order,"0",", pf_id")
-	order =	Replace(order,"1",", pf_id")
-	order =	Replace(order,"2",", pf_id")
-	order =	Replace(order,"3",", pf_id")
-	order =	Replace(order,"4",", pf_id")
-	order =	Replace(order,"5",", pf_id")
-	order =	Replace(order,"6",", pf_id")
-	order =	Replace(order,"7",", pf_id")
-	order =	Replace(order,"8",", pf_id")
-	order =	Replace(order,"9",", pf_id")
-	
-	'here we eliminate the first comma of the variable "order"
-	if Len(order) > 0 then
-	  order = Right(order, Len(order)-1)
-	else
-	  order = "pf_id DESC"
-	end if
+	cat_filter = ""
+	v1 = Trim(Request("v1"))
+	v2 = Trim(Request("v2"))
+	v3 = Trim(Request("v3"))
+	v4 = Trim(Request("v4"))
 
-	'here we create the variable "strOrderBy" that will be used in the SQL querry
-	strOrderBy = "ORDER BY " & order
-	
-	'======================================================================================
-	
 
-	Set dbconn=server.CreateObject("ADODB.Connection")
-	dbconn.Open g_connection_string
-	
-	sql = "SELECT * FROM " & g_storeid & "_product WHERE " & strWhere & " " & strOrderBy
-	
-	
-	sqlx = "SELECT COUNT(pf_id) FROM " & g_storeid & "_product WHERE " & strWhere 
-		
-	set rs = dbconn.Execute(sql)
-	
-	iTotalDisplayRecords = 0
-	iTotalRecords = 50
-	set rs1 = dbconn.Execute(sqlx)
-	if not rs1.EOF then
-	  iTotalDisplayRecords = rs1(0)
-	  iTotalRecords = rs1(0)
-	else
+	dept_id = ""
+	if Len(v1) > 0 then
+		cat_filter = v1
+		dept_id = v1
 	end if
-	rs1.Close
+	if Len(v2) > 0 then
+		cat_filter = v2
+		dept_id = v2
+	end if
+	if Len(v3) > 0 then
+		cat_filter = v3
+		dept_id = v3
+	end if
+	if Len(v4) > 0 then
+		cat_filter = v4
+		dept_id = v4
+	end if
 	
-	'iTotalDisplayRecords = 50
-	
-	'iTotalRecords = 50
-	
-%>
-{"sEcho": <%=sEcho%>, "iTotalRecords": <%=iTotalRecords%>, "iTotalDisplayRecords": <%=iTotalDisplayRecords%>, "aaData": [ 
-<%
-  i = 0
+	sEcho = Trim(Request("sEcho"))
+	iDisplayLength = Trim(Request("iDisplayLength"))
+	iDisplayStart = Trim(Request("iDisplayStart"))
+
+	sEcho = FilterStringEx(sEcho, "[^0-9]")
+	iDisplayLength = FilterStringEx(iDisplayLength, "[^0-9]")
+	iDisplayStart = FilterStringEx(iDisplayStart, "[^0-9]")
+
+	sEcho = Cint(sEcho)
+	iDisplayLength = Cint(iDisplayLength)
+	iDisplayStart = Cint(iDisplayStart)
+
+	sMin = Trim(Request("min"))
+	sMax = Trim(Request("max"))
+
+	sDateRange = ""
   
-  if rs.eof = false then
-    rs.move(iDisplayStart)
-    do while i < iDisplayLength and not rs.eof
-    
-		s_pf_id = rs("pf_id")
-		s_name = Trim(rs("name"))
-		sku = Trim(rs("sku"))
-		
-		If Len(s_name) > 0 Then
-			s_name = Replace(s_name, "'", "&#39")
-			s_name = Replace(s_name, """", "&#34;")
-		End if
-			
-		s_price = FormatNumber(rs("list_price"),2)
-		s_qty = rs("stock")
-		s_zoom_image = rs("zoom_image")
-		s_image_file = rs("image_file")
-		prod_mm_type = rs("mm_type")
-		prod_espec_sku = Trim(rs("espec_sku"))
-		prod_use_icecat_images = rs("use_icecat_images")
-	
-		'if rs("isActive") then
-			s_active = "Enabled"
-		'else
-			's_active = "Disabled"
-		'end if
-		
-		'i_visibility = rs("visibility")
-		'SELECT CASE i_visibility
-		'CASE 1
-			's_visibility = "Not Visible Individually"
-		'CASE 2
-			's_visibility = "Catalog"
-		'CASE 3
-			's_visibility = "Search"
-		'CASE 4
-			's_visibility = "Catalog, Search"
-		'CASE ELSE
-			's_visibility = "Catalog, Search"
-		'END SELECT
-		
-		'sqlc = "SELECT d.dept_name as dept_name FROM " & g_storeid & "_dept as d INNER JOIN " & g_storeid & "_dept_prod as dp ON d.dept_id = dp.dept_id WHERE dp.pf_id='"&s_pf_id&"'"
-		'set rsDN = dbconn.execute(sqlc)
-		'if not rsDN.EOF then
-			'dept_name = rsDN("dept_name")
-		'End If
-		
-		's_type_id = Trim(rs("type_id"))
-		's_wholesaler_id = Trim(rs("wholesaler_id"))
-		's_gsin = Trim(rs("gsin_id"))
-		
-		s_store_url = g_store_url
-		s_img_pf_id = s_pf_id
-		
-		if Len(s_zoom_image) > 3 then
-			g_grid_image_url = g_cloudinary_url & "w_" & "50" & ",h_" & "50" & ",c_pad,c_fill/" & s_store_url & "media/catalog/product/" & s_img_pf_id & "/" & s_zoom_image
+	if IsDate(sMin) then
+		if IsDate(sMax) then
+			dMax = CDate(sMax)
+			dMax = DateAdd("d", 1, dMax)
+			sMax = FormatDateTime(dMax,0)
+			sDateRange = "(date_changed between '" & sMin & "' AND '" & sMax & "')"
 		else
-			g_grid_image_url = g_noimage_url
+			'dMin = CDate(sMin)
+			dMax = Date()
+			dMax = DateAdd("d", 1, dMax)
+			sMax = FormatDateTime(dMax,0)
+			sDateRange = "(date_changed between '" & sMin & "' AND '" & sMax & "')"
+		end if
+	else
+		if IsDate(sMax) then
+			dMax = CDate(sMax)
+			dMax = DateAdd("d", 1, dMax)
+			sMax = FormatDateTime(dMax,0)
+			sDateRange = "(date_changed between '1/1/1970' AND '" & sMax & "')"
+		end if
+	end if
+  
+	sSearch = Trim(Request("sSearch"))
+	sSearch = FilterStringEx(sSearch, "[^0-9a-zA-Z _/-]")
+
+	index_date = DateAdd("d", -30, Date())
+
+	if Len(sSearch) > 0 then
+		sSearchDate = Replace(sSearch, "*", "%")
+	end if
+	
+	'================================================================================================================================
+	
+	if Len(dept_id) > 1 then
+	
+		sql = "SELECT * FROM " & g_storeid & "_dept WHERE dept_id = '" & dept_id & "'"
+		set rs = dbconn.Execute(sql)
+		if not rs.EOF then
+			icecat_category = Trim(rs("icecat_category"))
+			icecat_category1 = Trim(rs("icecat_category1"))
+			icecat_category2 = Trim(rs("icecat_category2"))
+			icecat_category3 = Trim(rs("icecat_category3"))
+			icecat_category4 = Trim(rs("icecat_category4"))
 		end if
 		
-		'================================================================================================
-		ssImgSize = "upload/w_" & "70" & ",h_" & "70" & ",c_pad/"
-		if s_image_file = "--" then
-			cloudImg = g_noimage_url
-			ssImg = Replace(cloudImg, "upload/", ssImgSize)
+	end if
+	
+	if Len(icecat_category) > 0 then
+	
+		'SEARCH - here we make the Where clause that will be used in the SQL querry. You only put here the fields you want to search 
+		strWhere = " (sku LIKE '%" & sSearch & "%' OR "
+		strWhere = strWhere &  " DESCR LIKE '%" & sSearch & "%' OR "
+		strWhere = strWhere &  " VEND_NAME LIKE '%" & sSearch & "%' OR "
+		strWhere = strWhere &  " VEND_PART LIKE '%" & sSearch & "%')"
+
+		if Len(str_filter) > 0 then
+			strWhere  = strWhere & " AND " & str_filter
+		end if
+		
+		strWhere = strWhere & " AND catid IN (" & icecat_category & ")"
+		'=======================================================================================
+		'ORDERING
+		'passes through all cols and first check if the column is sortable, if yes then construct
+		'the variable "order" that list in order the sequence of ordering
+		for k = 0 to 7
+			if Request("bSortable_" & k)="true" then
+				order = order & Request("iSortCol_" & k) & " " & Request("sSortDir_" & k)
+			end if
+		next
+		'here we replace the number corresponding the column position by the corresponding name of the column in the database
+		order =	Replace(order,"0",", sku")
+		order =	Replace(order,"1",", sku")
+		order =	Replace(order,"2",", sku")
+		order =	Replace(order,"3",", sku")
+		order =	Replace(order,"4",", sku")
+		order =	Replace(order,"5",", sku")
+		order =	Replace(order,"6",", sku")
+		order =	Replace(order,"7",", sku")
+		order =	Replace(order,"8",", sku")
+		order =	Replace(order,"9",", sku")
+
+		'here we eliminate the first comma of the variable "order"
+		if Len(order) > 0 then
+			order = Right(order, Len(order)-1)
 		else
-			if prod_mm_type = 1 then
-				if Len(prod_espec_sku) > 0 AND prod_use_icecat_images = 1 then
-					'USE ICECAT IMAGE
-					icecat_id = 0
-					if Session("ENABLEINT") = "2" OR Session("ENABLEINT") = "3" then
-						sql = "SELECT * FROM A_ssprice_CA WHERE sku='" & prod_espec_sku & "'"
-					else
-						sql = "SELECT * FROM A_ssprice_main WHERE sku='" & prod_espec_sku & "'"
-					end If
+			order = "sku DESC"
+		end if
+		'here we create the variable "strOrderBy" that will be used in the SQL querry
+		strOrderBy = "ORDER BY " & order
+		'======================================================================================
 
-					set rsPA = dbconn_icecat.Execute(sql)
-					if not rsPA.EOF then
-						image_published = rsPA("image_published")
-						categoryid = Trim(rsPA("CATEGORY"))
-						icecat_id = rsPA("icecat_id")
-					end if
-					rsPA.Close
+		sql = "SELECT * FROM " & g_storeid & "_ssprice WHERE " & strWhere & " " & strOrderBy
+		sqlx = "SELECT COUNT(sku) FROM " & g_storeid & "_ssprice WHERE " & strWhere 
+		set rs = dbconn_icecat.Execute(sql)
+		iTotalDisplayRecords = 0
+		iTotalRecords = 50
+		set rs1 = dbconn_icecat.Execute(sqlx)
+		if not rs1.EOF then
+			iTotalDisplayRecords = rs1(0)
+			iTotalRecords = rs1(0)
+		else
+		end if
+		rs1.Close
+	%>
+	{"sEcho": <%=sEcho%>, "iTotalRecords": <%=iTotalRecords%>, "iTotalDisplayRecords": <%=iTotalDisplayRecords%>, "aaData": [
+	<%
+		i = 0
 
+		if rs.eof = false then
+			rs.move(iDisplayStart)
+			do while i < iDisplayLength and not rs.eof
+
+				s_sku = rs("sku")
+				s_DESCR = Trim(rs("DESCR"))
+				s_VEND_NAME = Trim(rs("VEND_NAME"))
+				s_VEND_PART = Trim(rs("VEND_PART"))
+				image_published = rs("image_published")
+				icecat_id = Trim(rs("icecat_id"))
+				s_AVAIL = Trim(rs("AVAIL"))
+
+				If Len(s_DESCR) > 0 Then
+				s_DESCR = Replace(s_DESCR, "'", "&#39")
+				s_DESCR = Replace(s_DESCR, """", "&#34;")
+				End if
+
+				s_price = FormatNumber(rs("cost"),2)
+				s_qty = rs("IM_AVAIL") & "/" & rs("TD_AVAIL") & "/" & rs("SN_AVAIL")& "/" & rs("DH_AVAIL")
+				'Trim(rsProductList("IM_AVAIL")) & "/" & Trim(rsProductList("TD_AVAIL")) & "/" & Trim(rsProductList("SN_AVAIL")) & "/" & Trim(rsProductList("DH_AVAIL")) & "/" & Trim(rsProductList("DBL_AVAIL"))
+				s_zoom_image = ""
+
+				if s_AVAIL = 1 then
+				s_active = "In Stock"
+				else
+				s_active = "Out of Stock"
+				end if
+
+				s_store_url = g_store_url
+				s_img_pf_id = s_pf_id
+
+				'if Len(s_zoom_image) > 3 then
+				'g_grid_image_url = g_cloudinary_url & "w_" & "50" & ",h_" & "50" & ",c_pad,c_fill/" & s_store_url & "media/catalog/product/" & s_img_pf_id & "/" & s_zoom_image
+				'else
+				'g_grid_image_url = g_noimage_url
+				'end if
+				if image_published = 1 Then	
 					sql = "SELECT cloudinary_url FROM [192.168.5.134].[icecat].dbo.cloudinary_images WHERE product_id = " & icecat_id
 					Set rsCloudImage = dbconn_icecat.Execute(sql)
 					If Not rsCloudImage.EOF Then
 						cloudImg = Trim(rsCloudImage("cloudinary_url"))
-					Else
-						sql = "SELECT * FROM " & g_storeid & "_product_image WHERE image_name = '" & prod_thumb_image & "'"
-						Set rsCloudImage2 = conn.Execute(sql)
-						If Not rsCloudImage2.EOF Then
-							cloudImg = Trim(rsCloudImage2("cloud_url"))
-						Else
-							cloudImg = g_noimage_url
-						End If
-						rsCloudImage2.Close
-						Set rsCloudImage2 = Nothing
 					End If
 					rsCloudImage.Close
 					Set rsCloudImage = Nothing
+				Else
+					cloudImg = "http://res.cloudinary.com/dd3llssvr/image/upload/v1423588444/noimage_t0tp8k.png"
+				end If
+				ssImgSize = "upload/w_" & "50" & ",h_" & "50" & ",c_pad/"
+				If Len(cloudImg) > 0 then
+					g_grid_image_url = Replace(cloudImg, "upload/", ssImgSize)
+				Else
+					g_grid_image_url = "site_img/snopicsm_" & Session("TEMPLATEID") & ".gif"
+				End If
+
+				aaData = aaData & "['"
+				'aaData = aaData & "<a href=\'catalog_product_detail.phtml?pf_id=" & s_sku & "\'>" & s_sku & "</a>','" 
+				aaData = aaData & s_sku & "','" 
+				'aaData = aaData & "<img src=\'" & g_secure_url & "thumb_img/" & s_thumb_image & "\' width=70>','" 
+				aaData = aaData & "<img src=\'" & g_grid_image_url & "\' width=50>','" 
+				aaData = aaData & s_DESCR & "','"
+				'aaData = aaData & s_VEND_NAME & "','" 
+				aaData = aaData & s_VEND_PART & "','" 
+				aaData = aaData & s_price & "','"
+				aaData = aaData & s_qty & "','"
+
+				SELECT CASE s_active
+				CASE "In Stock"
+				s_label = "label label-success"
+				CASE "Out of Stock"
+				s_label = "label label-warning"
+				END SELECT
+
+				aaData = aaData & "<span class=\'" & s_label & "\'>" & s_active & "</span>','"
+				aaData = aaData & "<button type=\'button\' class=\'btn btn-xs btn-teal\' onclick=\'getIcecatSearchResult(**" & s_sku & "**);\'><i class=\'fa fa-download\'></i></button>'],"
+				'aaData = aaData & "']," 
+
+
+				aaData = Replace(aaData,"'",chr(34))
+				rs.MoveNext
+				i=i+1
+			loop
+			rs.Close
+			aaData = Replace(aaData,"**", "'")
+			aaData = Left(aaData, Len(aaData)-1)
+		else
+			aaData = ""
+		end if
+		response.write aaData & "] }"
+
+	
+	else
+
+		'SEARCH - here we make the Where clause that will be used in the SQL querry. You only put here the fields you want to search 
+		strWhere = " (pf_id LIKE '%" & sSearch & "%' OR "
+		strWhere = strWhere &  " name LIKE '%" & sSearch & "%' OR "
+		strWhere = strWhere &  " description LIKE '%" & sSearch & "%')"
+
+		if Len(sDateRange) > 0 then
+		strWhere = strWhere &  " AND " & sDateRange
+		end if
+
+		if Len(str_filter) > 0 then
+		strWhere  = strWhere & " AND " & str_filter
+		end if
+		
+		if cat_filter <> "" then
+		strWhere = strWhere & " AND pf_id IN (SELECT pf_id FROM " & g_storeid & "_dept_prod WHERE dept_id like '" & cat_filter & "%')"
+		end if
+	  
+	  
+		'=======================================================================================
+		'ORDERING
+		'passes through all cols and first check if the column is sortable, if yes then construct
+		'the variable "order" that list in order the sequence of ordering
+		for k = 0 to 7
+			if Request("bSortable_" & k)="true" then
+				order = order & Request("iSortCol_" & k) & " " & Request("sSortDir_" & k)
+			end if
+		next
+		'here we replace the number corresponding the column position by the corresponding name of the column in the database
+		order =	Replace(order,"0",", pf_id")
+		order =	Replace(order,"1",", pf_id")
+		order =	Replace(order,"2",", pf_id")
+		order =	Replace(order,"3",", pf_id")
+		order =	Replace(order,"4",", pf_id")
+		order =	Replace(order,"5",", pf_id")
+		order =	Replace(order,"6",", pf_id")
+		order =	Replace(order,"7",", pf_id")
+		order =	Replace(order,"8",", pf_id")
+		order =	Replace(order,"9",", pf_id")
+		
+		'here we eliminate the first comma of the variable "order"
+		if Len(order) > 0 then
+		  order = Right(order, Len(order)-1)
+		else
+		  order = "pf_id DESC"
+		end if
+
+		'here we create the variable "strOrderBy" that will be used in the SQL querry
+		strOrderBy = "ORDER BY " & order
+		
+		'======================================================================================
+		
+
+		Set dbconn=server.CreateObject("ADODB.Connection")
+		dbconn.Open g_connection_string
+		
+		sql = "SELECT * FROM " & g_storeid & "_product WHERE " & strWhere & " " & strOrderBy
+		
+		
+		sqlx = "SELECT COUNT(pf_id) FROM " & g_storeid & "_product WHERE " & strWhere 
+			
+		set rs = dbconn.Execute(sql)
+		
+		iTotalDisplayRecords = 0
+		iTotalRecords = 50
+		set rs1 = dbconn.Execute(sqlx)
+		if not rs1.EOF then
+		  iTotalDisplayRecords = rs1(0)
+		  iTotalRecords = rs1(0)
+		else
+		end if
+		rs1.Close
+		
+		'iTotalDisplayRecords = 50
+		
+		'iTotalRecords = 50
+		
+	%>
+	{"sEcho": <%=sEcho%>, "iTotalRecords": <%=iTotalRecords%>, "iTotalDisplayRecords": <%=iTotalDisplayRecords%>, "aaData": [ 
+	<%
+	  i = 0
+	  
+	  if rs.eof = false then
+			rs.move(iDisplayStart)
+			do while i < iDisplayLength and not rs.eof
+		
+				s_pf_id = rs("pf_id")
+				s_name = Trim(rs("name"))
+				sku = Trim(rs("sku"))
+				
+				If Len(s_name) > 0 Then
+					s_name = Replace(s_name, "'", "&#39")
+					s_name = Replace(s_name, """", "&#34;")
+				End if
+					
+				s_price = FormatNumber(rs("list_price"),2)
+				s_qty = rs("stock")
+				s_zoom_image = rs("zoom_image")
+				s_image_file = rs("image_file")
+				prod_mm_type = rs("mm_type")
+				prod_espec_sku = Trim(rs("espec_sku"))
+				prod_use_icecat_images = rs("use_icecat_images")
+			
+				'if rs("isActive") then
+					s_active = "Enabled"
+				'else
+					's_active = "Disabled"
+				'end if
+				
+				'i_visibility = rs("visibility")
+				'SELECT CASE i_visibility
+				'CASE 1
+					's_visibility = "Not Visible Individually"
+				'CASE 2
+					's_visibility = "Catalog"
+				'CASE 3
+					's_visibility = "Search"
+				'CASE 4
+					's_visibility = "Catalog, Search"
+				'CASE ELSE
+					's_visibility = "Catalog, Search"
+				'END SELECT
+				
+				'sqlc = "SELECT d.dept_name as dept_name FROM " & g_storeid & "_dept as d INNER JOIN " & g_storeid & "_dept_prod as dp ON d.dept_id = dp.dept_id WHERE dp.pf_id='"&s_pf_id&"'"
+				'set rsDN = dbconn.execute(sqlc)
+				'if not rsDN.EOF then
+					'dept_name = rsDN("dept_name")
+				'End If
+				
+				's_type_id = Trim(rs("type_id"))
+				's_wholesaler_id = Trim(rs("wholesaler_id"))
+				's_gsin = Trim(rs("gsin_id"))
+				
+				s_store_url = g_store_url
+				s_img_pf_id = s_pf_id
+				
+				if Len(s_zoom_image) > 3 then
+					g_grid_image_url = g_cloudinary_url & "w_" & "50" & ",h_" & "50" & ",c_pad,c_fill/" & s_store_url & "media/catalog/product/" & s_img_pf_id & "/" & s_zoom_image
+				else
+					g_grid_image_url = g_noimage_url
+				end if
+				
+				'================================================================================================
+				ssImgSize = "upload/w_" & "70" & ",h_" & "70" & ",c_pad/"
+				if s_image_file = "--" then
+					cloudImg = g_noimage_url
 					ssImg = Replace(cloudImg, "upload/", ssImgSize)
 				else
-					sql = "SELECT * FROM " & g_storeid & "_product_image WHERE image_name = '" & s_image_file & "'"
-					Set rsCloudImage2 = dbconn.Execute(sql)
-					If Not rsCloudImage2.EOF Then
-						cloudImg = Trim(rsCloudImage2("cloud_url"))
-					Else
-						cloudImg = g_noimage_url
-					End If
-					rsCloudImage2.Close
-					Set rsCloudImage2 = Nothing
-					ssImg = Replace(cloudImg, "upload/", ssImgSize)
-				end if
-			else
-				ssImg = "http://a4.res.cloudinary.com/dd3llssvr/image/fetch/" & "w_" & "70" & ",h_" & "70" & ",c_pad/" & g_store_url & "assets/pmedia/prod_img/" & Server.URLEncode(s_image_file)
-			end if
-		end if
-		g_grid_image_url = ssImg
-		'================================================================================================
-		aaData = aaData & "['"
-		'aaData = aaData & "<a href=\'catalog_product_detail.phtml?pf_id=" & s_pf_id & "\'>" & sku & "</a>','" 
-		'aaData = aaData & "<img src=\'" & g_secure_url & "thumb_img/" & s_thumb_image & "\' width=70>','"
-		aaData = aaData &  s_pf_id & "','"
-		aaData = aaData & "<img src=\'" & g_grid_image_url & "\' width=50>','" 
-		aaData = aaData & s_name & "','" 
-		aaData = aaData & sku & "','" 
-		aaData = aaData & s_price & "','"
-		aaData = aaData & s_qty & "','"
+					if prod_mm_type = 1 then
+						if Len(prod_espec_sku) > 0 AND prod_use_icecat_images = 1 then
+							'USE ICECAT IMAGE
+							icecat_id = 0
+							if Session("ENABLEINT") = "2" OR Session("ENABLEINT") = "3" then
+								sql = "SELECT * FROM A_ssprice_CA WHERE sku='" & prod_espec_sku & "'"
+							else
+								sql = "SELECT * FROM A_ssprice_main WHERE sku='" & prod_espec_sku & "'"
+							end If
 
-		SELECT CASE s_active
-		CASE "Enabled"
-			s_label = "label label-success"
-		CASE "Disabled"
-			s_label = "label label-warning"
-		END SELECT
-		
-		aaData = aaData & "<span class=\'" & s_label & "\'>" & s_active & "</span>','"
-		aaData = aaData & "<button type=\'button\' class=\'btn btn-xs btn-teal\' onclick=\'getSearchResult(**" & s_pf_id & "**);\'><i class=\'fa fa-download\'></i></button>'],"
-		'aaData = aaData & "']," 
-      
-          
-      aaData = Replace(aaData,"'",chr(34))
-      rs.MoveNext
-      i=i+1
-    loop
-    rs.Close
-	aaData = Replace(aaData,"**", "'")
-    aaData = Left(aaData, Len(aaData)-1)
-  else
-    aaData = ""
-  end if
-  response.write aaData & "] }"
+							set rsPA = dbconn_icecat.Execute(sql)
+							if not rsPA.EOF then
+								image_published = rsPA("image_published")
+								categoryid = Trim(rsPA("CATEGORY"))
+								icecat_id = rsPA("icecat_id")
+							end if
+							rsPA.Close
+
+							sql = "SELECT cloudinary_url FROM [192.168.5.134].[icecat].dbo.cloudinary_images WHERE product_id = " & icecat_id
+							Set rsCloudImage = dbconn_icecat.Execute(sql)
+							If Not rsCloudImage.EOF Then
+								cloudImg = Trim(rsCloudImage("cloudinary_url"))
+							Else
+								sql = "SELECT * FROM " & g_storeid & "_product_image WHERE image_name = '" & prod_thumb_image & "'"
+								Set rsCloudImage2 = conn.Execute(sql)
+								If Not rsCloudImage2.EOF Then
+									cloudImg = Trim(rsCloudImage2("cloud_url"))
+								Else
+									cloudImg = g_noimage_url
+								End If
+								rsCloudImage2.Close
+								Set rsCloudImage2 = Nothing
+							End If
+							rsCloudImage.Close
+							Set rsCloudImage = Nothing
+							ssImg = Replace(cloudImg, "upload/", ssImgSize)
+						else
+							sql = "SELECT * FROM " & g_storeid & "_product_image WHERE image_name = '" & s_image_file & "'"
+							Set rsCloudImage2 = dbconn.Execute(sql)
+							If Not rsCloudImage2.EOF Then
+								cloudImg = Trim(rsCloudImage2("cloud_url"))
+							Else
+								cloudImg = g_noimage_url
+							End If
+							rsCloudImage2.Close
+							Set rsCloudImage2 = Nothing
+							ssImg = Replace(cloudImg, "upload/", ssImgSize)
+						end if
+					else
+						ssImg = "http://a4.res.cloudinary.com/dd3llssvr/image/fetch/" & "w_" & "70" & ",h_" & "70" & ",c_pad/" & g_store_url & "assets/pmedia/prod_img/" & Server.URLEncode(s_image_file)
+					end if
+				end if
+				g_grid_image_url = ssImg
+				'================================================================================================
+				aaData = aaData & "['"
+				'aaData = aaData & "<a href=\'catalog_product_detail.phtml?pf_id=" & s_pf_id & "\'>" & sku & "</a>','" 
+				'aaData = aaData & "<img src=\'" & g_secure_url & "thumb_img/" & s_thumb_image & "\' width=70>','"
+				aaData = aaData &  s_pf_id & "','"
+				aaData = aaData & "<img src=\'" & g_grid_image_url & "\' width=50>','" 
+				aaData = aaData & s_name & "','" 
+				aaData = aaData & sku & "','" 
+				aaData = aaData & s_price & "','"
+				aaData = aaData & s_qty & "','"
+
+				SELECT CASE s_active
+				CASE "Enabled"
+					s_label = "label label-success"
+				CASE "Disabled"
+					s_label = "label label-warning"
+				END SELECT
+				
+				aaData = aaData & "<span class=\'" & s_label & "\'>" & s_active & "</span>','"
+				aaData = aaData & "<button type=\'button\' class=\'btn btn-xs btn-teal\' onclick=\'getSearchResult(**" & s_pf_id & "**);\'><i class=\'fa fa-download\'></i></button>'],"
+				'aaData = aaData & "']," 
+			  
+				  
+				aaData = Replace(aaData,"'",chr(34))
+				rs.MoveNext
+				i=i+1
+			loop
+			rs.Close
+			aaData = Replace(aaData,"**", "'")
+			aaData = Left(aaData, Len(aaData)-1)
+		else
+			aaData = ""
+		end if
+		response.write aaData & "] }"
+	
+	end if
 %>

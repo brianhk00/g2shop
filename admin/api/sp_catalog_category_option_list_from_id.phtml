@@ -9,7 +9,7 @@
 	if Len(ids) > 1 then
 		ids = "'" & Replace(ids, ",", "','") & "'"
 	else
-		ids = "0"
+		ids = "'0'"
 	end if
 	
 %>
@@ -19,7 +19,7 @@
 	s_sub = ""
 	s_sub = s_sub & "{""id"" : """ & "0" & """,""name"" : """ & "Use Global Markup" & """},"
 	if ids <> "" then
-		sql = "SELECT dept_id, dept_name FROM " & g_storeid & "_dept WHERE dept_id IN ('" & ids & "') ORDER BY dept_id"
+		sql = "SELECT dept_id, dept_name FROM " & g_storeid & "_dept WHERE dept_id IN (" & ids & ") ORDER BY dept_id"
 		set rs1 = dbconn.Execute(sql)
 		do while not rs1.EOF
 			s_name = ""

@@ -1,0 +1,399 @@
+<%response.Expires=-1%>
+<!-- #INCLUDE File="../local/local.phtml" -->
+<!-- #INCLUDE File="../util/xt_func_util.phtml" -->
+<!-- #INCLUDE File="../util/xt_func_string.phtml" -->
+<%
+	
+	form_item_id = Trim(Request("form_item_id"))
+	form_id = Trim(Request("form_id"))
+	
+	if form_item_id = "0" then
+		form_item_id = "0"
+		item_type = Cint(Trim(Request("item_type")))
+		field_name = ""
+		caption_value = ""
+		default_value = ""
+		item_alignment = ""
+		font_type = ""
+		font_size = ""
+		font_color = ""
+		font_style = ""
+		is_required = "0"
+		validation_rule = ""
+		maximum_length = "0"
+		item_option1 = ""
+		item_option2 = ""
+		item_option3 = ""
+		item_option4 = ""
+		item_option5 = ""
+		item_line = ""
+		item_instruction = ""
+	else
+		sql = "SELECT * FROM " & g_storeid & "_form_item WHERE form_id='" & form_id & "' AND form_item_id = '" & form_item_id & "'"
+		set rs = dbconn.Execute(sql)
+		if not rs.EOF then
+			form_item_id = rs("form_item_id")
+			item_type = rs("item_type")
+			field_name = rs("field_name")
+			caption_value = rs("caption_value")
+			default_value = rs("default_value")
+			item_alignment = rs("item_alignment")
+			font_type = rs("font_type")
+			font_size = rs("font_size")
+			font_color = rs("font_color")
+			font_style = rs("font_style")
+			is_required = rs("is_required")
+			validation_rule = rs("validation_rule")
+			maximum_length = rs("maximum_length")
+			item_option1 = rs("item_option1")
+			item_option2 = rs("item_option2")
+			item_option3 = rs("item_option3")
+			item_option4 = rs("item_option4")
+			item_option5 = rs("item_option5")
+			item_line = rs("item_line")
+			item_instruction = rs("item_instruction")
+		end if
+		rs.close
+		set rs = nothing
+	end if
+	
+	SELECT CASE item_type
+	CASE 1
+		s_item_type = "Checkbox"
+	CASE 2
+		s_item_type = "Dropdown"
+	CASE 3
+		s_item_type = "Radio"
+	CASE 4
+		s_item_type = "Text"
+	CASE 5
+		s_item_type = "Text"
+	CASE 6
+		s_item_type = "Text Area"
+	CASE 7
+		s_item_type = "Upload"
+	CASE 8
+		s_item_type = "Separator"
+	CASE 9
+		s_item_type = "HTML"
+	END SELECT 
+%>
+<input type="hidden" name="form_item_id" id="form_item_id" value="<%=form_item_id%>" >
+<input type="hidden" name="item_type" id="item_type" value="<%=item_type%>" >
+<div class="panel panel-blue">
+	<div class="panel-heading">
+		<h4 class="panel-title">Appearance & Common Field Properties</h4>
+		<div class="panel-tools" >
+			<a data-original-title="Collapse" data-toggle="tooltip" data-placement="top" class="btn btn-transparent btn-sm panel-collapse" href="#"><i class="ti-minus collapse-off"></i><i class="ti-plus collapse-on"></i></a>
+		</div>
+	</div>
+	<div class="panel-body partition-white">
+		<div class="form-group">
+			<label class="col-sm-2 control-label" for="field_name">
+			Type 
+			</label>
+			<div class="col-sm-8">
+			<input type="text" placeholder="" id="s_item_type" name="s_item_type" class="form-control input-sm" value="<%=s_item_type%>" disabled>
+			</div>
+		</div>
+		<div class="form-group">
+			<label class="col-sm-2 control-label" for="field_name">
+			Name <span class="symbol required">*</span>
+			</label>
+			<div class="col-sm-8">
+			<input type="text" placeholder="" id="field_name" name="field_name" class="form-control input-sm" value="<%=field_name%>">
+			</div>
+		</div>
+		<div class="form-group">
+			<label class="col-sm-2 control-label" for="caption_value">
+			Caption <span class="symbol required">*</span>
+			</label>
+			<div class="col-sm-8">
+			<input type="text" placeholder="" id="caption_value" name="caption_value" class="form-control input-sm" value="<%=caption_value%>">
+			</div>
+		</div>
+		<div class="form-group">
+			<label class="col-sm-2 control-label" for="default_value">
+			Default Value
+			</label>
+			<div class="col-sm-8">
+			<input type="text" placeholder="" id="default_value" name="default_value" class="form-control input-sm" value="<%=default_value%>">
+			</div>
+		</div>
+		
+		<div class="form-group">
+			<label class="col-sm-2 control-label" for="is_required">
+			Required <span class="symbol required">*</span>
+			</label>
+			<div class="col-sm-8">
+				<select id="is_required" name="is_required" class="form-control input-sm" >
+				<option  value="0" <% if is_required = "0" then %>SELECTED<%end if%>>No</option>
+				<option  value="1" <% if is_required = "1" then %>SELECTED<%end if%>>Yes</option>
+				</select>
+			</div>
+		</div>
+		<div class="form-group">
+			<label class="col-sm-2 control-label" for="dept_name">
+			Validation <span class="symbol required">*</span>
+			</label>
+			<div class="col-sm-8">
+				<select id="validation_rule" name="validation_rule" class="form-control input-sm" >
+				<option  value="">No Validation
+				<option  value="1" <% if validation_rule = "1" then %>SELECTED<%end if%>>Numeric</option> 
+				<option  value="2" <% if validation_rule = "2" then %>SELECTED<%end if%>>AlphaNumeric</option> 
+				<option  value="3" <% if validation_rule = "3" then %>SELECTED<%end if%>>Email Format</option>
+				<option  value="4" <% if validation_rule = "4" then %>SELECTED<%end if%>>Money Format</option>
+				<option  value="5" <% if validation_rule = "5" then %>SELECTED<%end if%>>US Zip Code Format</option>
+				<option  value="6" <% if validation_rule = "6" then %>SELECTED<%end if%>>Date Format</option>
+				</select>
+			</div>
+		</div>
+		<div class="form-group">
+			<label class="col-sm-2 control-label" for="maximum_length">
+			Max Length <span class="symbol required">*</span>
+			</label>
+			<div class="col-sm-8">
+			<input type="text" placeholder="" id="maximum_length" name="maximum_length" class="form-control input-sm" value="<%=maximum_length%>">
+			</div>
+		</div>
+		<div class="form-group">
+			<label class="col-sm-2 control-label" for="item_instruction">
+			Optional Instruction
+			</label>
+			<div class="col-sm-8">
+			<textarea  name="item_instruction" id="item_instruction" rows="5" class="form-control input-sm"><%=item_instruction%></textarea>
+			</div>
+		</div>
+	</div>
+</div>
+<div class="panel panel-blue">
+	<div class="panel-heading">
+		<h4 class="panel-title">Additional Field Specific Properties </h4>
+		<div class="panel-tools" >
+			<a data-original-title="Collapse" data-toggle="tooltip" data-placement="top" class="btn btn-transparent btn-sm panel-collapse" href="#"><i class="ti-minus collapse-off"></i><i class="ti-plus collapse-on"></i></a>
+		</div>
+	</div>
+	<div class="panel-body partition-white">
+		<% if item_type = 1 then %>
+		<div class="form-group">
+			<label class="col-sm-2 control-label" for="field_name">
+			Layout
+			</label>
+			<div class="col-sm-8">
+				<select id="item_option1" name="item_option1" class="form-control input-sm" >
+				<option value="cols" <% if item_option1 = "cols" then %>SELECTED<%end if%>>Display in a column</option>
+				<option value="rows" <% if item_option1 = "rows" then %>SELECTED<%end if%>>Display in a Row</option>
+				</select>
+			</div>
+		</div>
+		<input type="hidden" name="item_option2" value="">
+		<input type="hidden" name="item_option3" value="">
+		<input type="hidden" name="item_option4" value="">
+		<input type="hidden" name="item_option5" value="">
+		<div class="form-group">
+			<label class="col-sm-2 control-label" for="field_name">
+			Possible Options <span class="symbol required"></span>
+			</label>
+			<div class="col-sm-8">
+			<textarea  name="item_line" rows="5" class="form-control input-sm"><%=item_line%></textarea>
+			</div>
+		</div>
+		<% end if %>
+		<% if item_type = 2 then %>
+		<div class="form-group">
+			<label class="col-sm-2 control-label" for="item_option1">
+			Multiple Select Allowed
+			</label>
+			<div class="col-sm-8">
+				<select id="item_option1" name="item_option1" class="form-control input-sm" >
+				<option  value="NO" <% if item_option1 = "NO" then %>SELECTED<%end if%>>No</option>
+				<option  value="YES" <% if item_option1 = "YES" then %>SELECTED<%end if%>>Yes</option>
+				</select>
+			</div>
+		</div>
+		<div class="form-group">
+			<label class="col-sm-2 control-label" for="item_option2">
+			Multiple Select Height
+			</label>
+			<div class="col-sm-8">
+			<input type="text" placeholder="" id="item_option2" name="item_option2" class="form-control input-sm" value="<%=item_option2%>">
+			</div>
+		</div>
+		<input type="hidden" name="item_option3" value="">
+		<input type="hidden" name="item_option4" value="">
+		<input type="hidden" name="item_option5" value="">
+		<div class="form-group">
+			<label class="col-sm-2 control-label" for="field_name">
+			Possible Options <span class="symbol required"></span>
+			</label>
+			<div class="col-sm-8">
+			<textarea  name="item_line" rows="5" class="form-control input-sm"><%=item_line%></textarea>
+			</div>
+		</div>
+		<% end if %>
+		<% if item_type = 3 then %>
+		<div class="form-group">
+			<label class="col-sm-2 control-label" for="item_option1">
+			Layout
+			</label>
+			<div class="col-sm-8">
+				<select id="item_option1" name="item_option1" class="form-control input-sm" >
+				<option value="cols" <% if item_option1 = "cols" then %>SELECTED<%end if%>>Display in a column</option>
+				<option value="rows" <% if item_option1 = "rows" then %>SELECTED<%end if%>>Display in a Row</option>
+				</select>
+			</div>
+		</div>
+		<input type="hidden" name="item_option2" value="">
+		<input type="hidden" name="item_option3" value="">
+		<input type="hidden" name="item_option4" value="">
+		<input type="hidden" name="item_option5" value="">
+		<div class="form-group">
+			<label class="col-sm-2 control-label" for="item_line">
+			Possible Options <span class="symbol required"></span>
+			</label>
+			<div class="col-sm-8">
+			<textarea  name="item_line" id="item_line" rows="5" class="form-control input-sm"><%=item_line%></textarea>
+			</div>
+		</div>
+		<% end if %>
+		<% if item_type = 5 then %>
+		<div class="form-group">
+			<label class="col-sm-2 control-label" for="item_option1">
+			Field Size
+			</label>
+			<div class="col-sm-8">
+				<select id="item_option1" name="item_option1" class="form-control input-sm" >
+				<option  value="5" <% if item_option1 = "5" then %>SELECTED<%end if%>>5</option> 
+				<option  value="6" <% if item_option1 = "6" then %>SELECTED<%end if%>>6</option> 
+				<option  value="7" <% if item_option1 = "7" then %>SELECTED<%end if%>>7</option> 
+				<option  value="8" <% if item_option1 = "8" then %>SELECTED<%end if%>>8</option> 
+				<option  value="9" <% if item_option1 = "9" then %>SELECTED<%end if%>>9</option> 
+				<option  value="10" <% if item_option1 = "10" then %>SELECTED<%end if%>>10</option> 
+				<option  value="11" <% if item_option1 = "11" then %>SELECTED<%end if%>>11</option> 
+				<option  value="12" <% if item_option1 = "12" then %>SELECTED<%end if%>>12</option> 
+				<option  value="13" <% if item_option1 = "13" then %>SELECTED<%end if%>>13</option> 
+				<option  value="14" <% if item_option1 = "14" then %>SELECTED<%end if%>>14</option> 
+				<option  value="15" <% if item_option1 = "15" then %>SELECTED<%end if%>>15</option> 
+				<option  value="16" <% if item_option1 = "16" then %>SELECTED<%end if%>>16</option> 
+				<option  value="17" <% if item_option1 = "17" then %>SELECTED<%end if%>>17</option> 
+				<option  value="18" <% if item_option1 = "18" then %>SELECTED<%end if%>>18</option> 
+				<option  value="19" <% if item_option1 = "19" then %>SELECTED<%end if%>>19</option> 
+				<option  value="20" <% if item_option1 = "20" then %>SELECTED<%end if%>>20</option> 
+				<option  value="21" <% if item_option1 = "21" then %>SELECTED<%end if%>>21</option> 
+				<option  value="22" <% if item_option1 = "22" then %>SELECTED<%end if%>>22</option> 
+				<option  value="23" <% if item_option1 = "23" then %>SELECTED<%end if%>>23</option> 
+				<option  value="24" <% if item_option1 = "24" then %>SELECTED<%end if%>>24</option> 
+				<option  value="25" <% if item_option1 = "25" then %>SELECTED<%end if%>>25</option> 
+				<option  value="26" <% if item_option1 = "26" then %>SELECTED<%end if%>>26</option> 
+				<option  value="27" <% if item_option1 = "27" then %>SELECTED<%end if%>>27</option> 
+				<option  value="28" <% if item_option1 = "28" then %>SELECTED<%end if%>>28</option> 
+				<option  value="29" <% if item_option1 = "29" then %>SELECTED<%end if%>>29</option> 
+				<option  value="30" <% if item_option1 = "30" then %>SELECTED<%end if%>>30</option> 
+				<option  value="31" <% if item_option1 = "31" then %>SELECTED<%end if%>>31</option> 
+				<option  value="32" <% if item_option1 = "32" then %>SELECTED<%end if%>>32</option> 
+				<option  value="33" <% if item_option1 = "33" then %>SELECTED<%end if%>>33</option> 
+				<option  value="34" <% if item_option1 = "34" then %>SELECTED<%end if%>>34</option> 
+				<option  value="35" <% if item_option1 = "35" then %>SELECTED<%end if%>>35</option> 
+				<option  value="36" <% if item_option1 = "36" then %>SELECTED<%end if%>>36</option> 
+				<option  value="37" <% if item_option1 = "37" then %>SELECTED<%end if%>>37</option> 
+				<option  value="38" <% if item_option1 = "38" then %>SELECTED<%end if%>>38</option> 
+				<option  value="39" <% if item_option1 = "39" then %>SELECTED<%end if%>>39</option> 
+				<option  value="40" <% if item_option1 = "40" then %>SELECTED<%end if%>>40</option> 
+				<option  value="41" <% if item_option1 = "41" then %>SELECTED<%end if%>>41</option> 
+				<option  value="42" <% if item_option1 = "42" then %>SELECTED<%end if%>>42</option>
+				<option  value="43" <% if item_option1 = "43" then %>SELECTED<%end if%>>43</option>
+				<option  value="44" <% if item_option1 = "44" then %>SELECTED<%end if%>>44</option> 
+				<option  value="45" <% if item_option1 = "45" then %>SELECTED<%end if%>>45</option> 
+				<option  value="46" <% if item_option1 = "46" then %>SELECTED<%end if%>>46</option> 
+				<option  value="47" <% if item_option1 = "47" then %>SELECTED<%end if%>>47</option> 
+				<option  value="48" <% if item_option1 = "48" then %>SELECTED<%end if%>>48</option> 
+				<option  value="49" <% if item_option1 = "49" then %>SELECTED<%end if%>>49</option> 
+				<option  value="50" <% if item_option1 = "50" then %>SELECTED<%end if%>>50</option>	
+				</select>
+			</div>
+		</div>
+		<div class="form-group">
+			<label class="col-sm-2 control-label" for="item_option2">
+			Password Format
+			</label>
+			<div class="col-sm-8">
+				<select id="item_option2" name="item_option2" class="form-control input-sm" >
+				<option selected value="NO"  <% if item_option2 = "NO" then %>SELECTED<%end if%>>No</option>	
+						<option  value="YES"  <% if item_option2 = "YES" then %>SELECTED<%end if%>>yes</option>	
+				</select>
+			</div>
+		</div>
+		<input type="hidden" name="item_option3" value="">
+		<input type="hidden" name="item_option4" value="">
+		<input type="hidden" name="item_option5" value="">
+		<input type="hidden" name="item_line" value="">
+		<% end if %>
+		<% if item_type = 6 then %>
+		<%
+			if IsNumeric(item_option1) then
+			else
+				item_option1 = "30"
+			end if
+
+			if IsNumeric(item_option2) then
+			else
+				item_option2 = "10"
+			end if
+		%>
+		<div class="form-group">
+			<label class="col-sm-2 control-label" for="item_option1">
+			Colomns <span class="symbol required"></span>
+			</label>
+			<div class="col-sm-8">
+			<input type="text" placeholder="" id="item_option1" name="item_option1" class="form-control input-sm" value="<%=item_option1%>">
+			</div>
+		</div>
+		<div class="form-group">
+			<label class="col-sm-2 control-label" for="item_option2">
+			Rows <span class="symbol required"></span>
+			</label>
+			<div class="col-sm-8">
+			<input type="text" placeholder="" id="item_option2" name="item_option2" class="form-control input-sm" value="<%=item_option2%>">
+			</div>
+		</div>
+		<input type="hidden" name="item_option3" value="">
+		<input type="hidden" name="item_option4" value="">
+		<input type="hidden" name="item_option5" value="">
+		<input type="hidden" name="item_line" value="">
+		<% end if %>
+		<% if item_type = 7 then %>
+		<div class="form-group">
+			<label class="col-sm-2 control-label" for="item_option1">
+			Upload file Type
+			</label>
+			<div class="col-sm-8">
+				<select id="item_option1" name="item_option1" class="form-control input-sm" >
+				<option selected value="Web" <% if item_option1 = "Web" then %>SELECTED<%end if%>>Web Images (GIF,JPG)
+				<option  value="Other" <% if item_option1 = "Other" then %>SELECTED<%end if%>>Other
+				</select>
+			</div>
+		</div>
+		<input type="hidden" name="item_option2" value="">
+		<input type="hidden" name="item_option3" value="">
+		<input type="hidden" name="item_option4" value="">
+		<input type="hidden" name="item_option5" value="">
+		<input type="hidden" name="item_line" value="">
+		<% end if %>
+		<% if item_type = 9 then %>
+		<div class="form-group">
+			<label class="col-sm-2 control-label" for="item_line">
+			Possible Options <span class="symbol required"></span>
+			</label>
+			<div class="col-sm-8">
+			<textarea  name="item_line" id="item_line" rows="5" class="form-control input-sm"><%=item_line%></textarea>
+			</div>
+		</div>
+		<input type="hidden" name="item_option1" value="">
+		<input type="hidden" name="item_option2" value="">
+		<input type="hidden" name="item_option3" value="">
+		<input type="hidden" name="item_option4" value="">
+		<input type="hidden" name="item_option5" value="">
+		<% end if %>
+	</div>
+</div>
+

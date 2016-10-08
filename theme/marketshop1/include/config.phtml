@@ -22,7 +22,7 @@
 						<div class="image-additional" id="gallery_01">
 							<a class="thumbnail" href="#" data-zoom-image="<%=x_prod_zoom_image%>" data-image="<%=x_prod_image%>"><img src="<%=x_prod_thumb_image%>"/></a>
 							<%
-								sql = "SELECT * FROM " & g_storeid & "_product_image WHERE pf_id = '" & pf_id & "' AND image_name <> '" & x_prod_image_file & "'"
+								sql = "SELECT * FROM " & g_storeid & "_product_image WHERE pf_id = '" & config_id & "' AND image_name <> '" & x_prod_image_file & "'"
 								set rs = dbconn.Execute(sql)
 								do while not rs.EOF
 									cloudImg = Trim(rs("cloud_url"))
@@ -162,7 +162,7 @@
 							group_name = Trim(rsTabs("group_name"))
 					%>
 					<li <%if itab = 1 then%>class="active"<%end if%>>
-					<a href="#<%=Replace(group_name, " ", "")%>"><%=group_name%></a>
+					<a href="#<%=Replace(group_name, " ", "")%>"  data-toggle="tab"><%=group_name%></a>
 					</li>
 					<%
 							itab = itab + 1
@@ -172,7 +172,7 @@
 						set rsTabs = nothing
 					%>
 					<li <%if itab = 1 then%>class="active"<%end if%>>
-					<a href="#customoptions">Custom Options</a>
+					<a href="#customoptions"  data-toggle="tab">Custom Options</a>
 					</li>
 						
 				</ul>
@@ -185,6 +185,177 @@
 							group_name = Trim(rsTabs("group_name"))
 					%>
 					<div id="<%=Replace(group_name, " ", "")%>" class="tab-pane <%if itab = 1 then%>in active<%end if%>">
+						<%
+							sql = "SELECT * FROM " & g_storeid & "_sysdept where config_id = '" & config_id & "' and sysdept_group= '" & group_id & "' ORDER BY sysdept_row"
+							set rsPanel = dbconn.Execute(sql)
+							do while not rsPanel.EOF
+								sysdept_id = rsPanel("sysdept_id")
+								sysdept_name = rsPanel("sysdept_name")
+								sysdept_description = rsPanel("sysdept_description")
+								sysdept_mode = rsPanel("sysdept_mode")
+								allow_none = rsPanel("allow_none")
+								none_default = rsPanel("none_default")
+						%>
+						<%
+								SELECT CASE sysdept_mode
+								CASE 0
+									bDefaultPrice = false
+									i_default = 0
+									if  allow_none then 
+										if none_default then
+											default_price = 0
+											bDefaultPrice = true
+											i_default = 1
+										else
+											'Need to get default price here....
+											sql = "SELECT TOP 1 * FROM " & g_storeid & "_system_config WHERE dept_id='" &  sysdept_id & "' ORDER BY row_id"
+											set rsItem = dbconn.Execute(sql)
+											if not rsItem.EOF then
+												default_price = rsItem("markup_price")
+											end if
+											rsItem.Close
+											set rsItem = nothing
+											
+											Response.Write(default_price)
+										end if
+									end if
+									t_default = false
+						%>
+						<div class="panel-group">
+							<div class="panel panel-primary">
+								<div class="panel-heading">
+									<h4 class="panel-title"><%=sysdept_name%></h4>
+								</div>
+								<div class="panel-body">
+									<ul class="optionlist">
+									<% 
+										if allow_none then
+											config_description = "none"
+											pf_id = "0000000000"
+											markup_price = 0
+											price_diff = 0 - default_price
+											if price_diff >= 0 then
+												s_price_diff = "+ $" & FormatNumber(price_diff,2)
+											else
+												s_price_diff = "- $" & FormatNumber(price_diff*-1,2)
+											end if
+									%>
+									<li class="" id="<%=sysdept_id%>__<%=pf_id%>">
+										<div class="optc">
+											<input type="radio" class="configiteminput" value="<%=sysdept_id%>|<%=pf_id%>|<%=FormatNumber(price_diff,2)%>" name="<%=sysdept_id%>" 
+											id="r_<%=sysdept_id%>__<%=pf_id%>" data-id="<%=pf_id%>" data-deptid="<%=sysdept_id%>" data-price="<%=markup_price%>"data-defaultprice="<%=default_price%>" data-type="1"
+											<%if none_default then %>checked<%end if%>>
+											<label for="r_<%=sysdept_id%>__<%=pf_id%>"><%=config_description%>
+											<span mdata="p" class="item-price" id="p_<%=sysdept_id%>__<%=pf_id%>"> [<%=s_price_diff%>]</span>
+											</label>
+										</div>
+									</li>
+									<% 
+										end if 
+									%>
+									<%
+										sql = "SELECT * FROM " & g_storeid & "_system_config WHERE dept_id='" &  sysdept_id & "' ORDER BY row_id"
+										set rsItem = dbconn.Execute(sql)
+										do while not rsItem.EOF
+											pf_id = Trim(rsItem("pf_id"))
+											config_description = Trim(rsItem("config_description"))
+											if not bDefaultPrice then
+												default_price = rsItem("markup_price")
+												bDefaultPrice = true
+											end if
+											markup_price = rsItem("markup_price")
+											price_diff = markup_price - default_price
+											
+											if price_diff >= 0 then
+												s_price_diff = "+ $" & FormatNumber(price_diff,2)
+											else
+												s_price_diff = "- $" & FormatNumber(price_diff*-1,2)
+											end if
+									%>
+									<li class="" id="<%=sysdept_id%>__<%=pf_id%>">
+										<div class="optc">
+											<input type="radio" class="configiteminput" value="<%=sysdept_id%>|<%=pf_id%>|<%=FormatNumber(price_diff,2)%>" name="<%=sysdept_id%>" 
+											id="r_<%=sysdept_id%>__<%=pf_id%>" data-id="<%=pf_id%>" data-deptid="<%=sysdept_id%>" data-price="<%=markup_price%>"data-defaultprice="<%=default_price%>" data-type="1"
+											<%if i_default = 0 then %>checked<%end if%>>
+											<label for="r_<%=sysdept_id%>__<%=pf_id%>"><%=config_description%>
+											<span mdata="p" class="item-price" id="p_<%=sysdept_id%>__<%=pf_id%>"> [<%=s_price_diff%>]</span>
+											</label>
+										</div>
+									</li>
+									<%
+											i_default = i_default + 1
+											rsItem.MoveNext
+										loop
+										rsItem.Close
+										set rsItem = nothing
+									%>
+									</ul>
+								</div>
+							</div>
+						</div>
+						<%
+							CASE 1
+						%>
+						<div class="panel-group">
+							<div class="panel panel-primary">
+								<div class="panel-heading">
+									<h4 class="panel-title"><%=sysdept_name%></h4>
+								</div>
+								<div class="panel-body">
+									<ul class="optionlist">
+									<%
+										sql = "SELECT * FROM " & g_storeid & "_system_config WHERE dept_id='" &  sysdept_id & "' ORDER BY row_id"
+										set rsItem = dbconn.Execute(sql)
+										do while not rsItem.EOF
+											pf_id = Trim(rsItem("pf_id"))
+											config_description = Trim(rsItem("config_description"))
+											markup_price = rsItem("markup_price")
+											price_diff = markup_price - 0
+											s_price_diff = "+ $" & FormatNumber(price_diff,2)
+											
+											
+									%>
+									<li class="" id="">
+										<div class="optc">
+											<input type="checkbox" class="configiteminput" value="<%=sysdept_id%>|<%=pf_id%>|<%=FormatNumber(price_diff,2)%>" name="<%=sysdept_id%>" 
+											id="c_<%=sysdept_id%>__<%=pf_id%>" data-id="<%=pf_id%>" data-deptid="<%=sysdept_id%>" data-price="<%=markup_price%>"data-defaultprice="<%=default_price%>" data-type="2">
+											<label for=""><%=config_description%>
+											<span mdata="p" class="item-price" id="p_<%=sysdept_id%>__<%=pf_id%>"> [<%=s_price_diff%>]</span>
+											</label>
+										</div>
+									</li>
+									<%
+											rsItem.MoveNext
+										loop
+										rsItem.Close
+										set rsItem = nothing
+									%>
+									</ul>
+								</div>
+							</div>
+						</div>
+						<%
+								CASE 3
+						%>
+						<div class="panel-group">
+							<div class="panel panel-primary">
+								<div class="panel-heading">
+									<h4 class="panel-title"><%=sysdept_name%></h4>
+								</div>
+								<div class="panel-body">
+									<%=sysdept_description%>
+								</div>
+							</div>
+						</div>
+						<%
+								END SELECT
+						%>
+						<%
+								rsPanel.MoveNext
+							Loop
+							rsPanel.Close
+							set rsPanel = nothing
+						%>
 					</div>
 					<%
 							itab = itab + 1
@@ -193,7 +364,7 @@
 						rsTabs.Close
 						set rsTabs = nothing
 					%>
-					<div id="customoptions" class="tab-pane <%if itab = 1 then%>in active<%end if%>">
+					<div id="customoptions" class="tab-pane ">
 						<%
 							sql = "SELECT * FROM " & g_storeid & "_sysdept where config_id = '" & config_id & "' and sysdept_group= '' ORDER BY sysdept_row"
 							set rsPanel = dbconn.Execute(sql)
@@ -365,7 +536,7 @@
 							rsPanel.Close
 							set rsPanel = nothing
 						%>
-					</option>
+					</div>
 				</div>
 			</div>
 		</div>

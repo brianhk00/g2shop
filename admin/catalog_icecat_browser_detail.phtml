@@ -1,7 +1,419 @@
+<%
+	Response.CodePage = 65001
+	Response.CharSet = "UTF-8"
+%>
 <!-- #INCLUDE File="local/local.phtml" -->
 <!-- #INCLUDE File="util/xt_func_util.phtml" -->
 <!-- #INCLUDE File="util/xt_func_string.phtml" -->
 <!-- #INCLUDE File="include/i_login.phtml" -->
+
+<%
+	pf_id = Request("pf_id")
+	pf_id = FilterSKUString(pf_id)
+	'=================================================================================================
+	EC_imageListWidth = "200"
+	EC_imageListWidth = "200"
+	EC_thumbWidth = "66"
+	EC_thumbHeight = "66"
+	EC_imageWidth = "350"
+	EC_imageHeight = "350"
+	EC_zoomWidth = "500"
+	EC_zoomHeight = "500"
+	'=================================================================================================
+	'overwrite pf_id if urlkey present
+	'=================================================================================================
+	url_key = Trim(Request("urlkey"))
+	if Len(url_key) > 1 then
+		url_key = Replace(url_key, "/", "")
+		
+		Set dbconn_rewrite =server.CreateObject("ADODB.Connection")
+		dbconn_rewrite.Open g_connection_icecat_catalog
+		
+		sql = "SELECT * FROM " & g_storeid & "_ssprice WHERE url_key='" & url_key & "'"
+		set rsRewrite = dbconn_rewrite.Execute(sql)
+		if not rsRewrite.EOF then
+			rewrite_system_id = rsRewrite("sku")
+			rewrite_system_type = 2
+		else
+			rewrite_type = 0
+			rewrite_system_id = ""
+		end if
+		
+		if rewrite_system_type = 2 AND Len(rewrite_system_id) > 1 then
+			sType = "ssproduct"
+		end if
+		
+		rsRewrite.Close
+		set rsRewrite = nothing
+		
+		dbconn_rewrite.close
+		set dbconn_rewrite = nothing
+		
+		pf_id = rewrite_system_id
+	end if
+
+	'==========================================================================================
+	'TODO : if the referral is from inside link.. skip this.
+	bSearchReferral = false
+	search_referral_URL = LCase(Request.ServerVariables("HTTP_REFERER"))
+
+	if InStr(search_referral_URL, g_store_url) > 0 then
+		bSearchReferral = true
+	end if
+
+	if InStr(search_referral_URL, g_secure_url) > 0 then
+		bSearchReferral = true
+	end if
+
+	if bSearchReferral then
+	else
+		
+	'Manufacturer part number link...
+		sql = "SELECT sku FROM " &  g_storeid & "_ssprice WHERE VEND_PART='" & pf_id & "' AND sku NOT IN (SELECT sku FROM A_accessory)"
+		set rs0 = dbconn_icecat.Execute(sql)
+		if not rs0.EOF then
+			pf_id = Trim(rs0(0))
+		else
+	'pf_id = ""
+		end if
+		rs0.Close
+		
+		if IsNumeric(pf_id) then
+		else
+			pf_id = ""
+		end If
+		
+	end if
+	'============================================================================================
+
+	if Len(pf_id) > 10 then
+		pf_id = Left(pf_id, 10)
+	end if
+
+	if Len(pf_id) > 0 then
+	'GET PRICE AND INVENTORY..
+		sql = "SELECT * FROM " & g_storeid & "_ssprice WHERE sku='" & pf_id & "'"
+		'if Len(Session("CUSTOM_CATALOG_ID_FLAG")) > 0 then
+			'sql = sql & " AND MD" & Session("CUSTOM_CATALOG_ID_FLAG") & "_ID='1'"
+		'end if
+		
+		set rsPA = dbconn_icecat.Execute(sql)
+		if not rsPA.EOF then
+			
+			productid = pf_id
+			g_description = Trim(rsPA("DESCR"))
+			adjusted_price = 1'rsPA("price_" & Session("LOGINGROUP"))
+			adjusted_price1 = 1'rsPA("price_" & Session("LOGINGROUP") & "1")
+			
+			prod_group_price = adjusted_price
+			
+			'====================================
+			' ON SALE ?? --> TODO
+			prod_on_sale = 0
+			prod_sale_price = 0
+			'=====================================
+			IM_ID = Trim(rsPA("IM_ID"))
+			IM_AVAIL = rsPA("IM_AVAIL")
+			IM_COST = FormatNumber(rsPA("IM_COST"),2)
+
+			TD_ID = Trim(rsPA("TD_ID"))
+			TD_AVAIL = rsPA("TD_AVAIL")
+			TD_COST = FormatNumber(rsPA("TD_COST"),2)
+
+			SN_ID = Trim(rsPA("SN_ID"))
+			SN_AVAIL = rsPA("SN_AVAIL")
+			SN_COST = FormatNumber(rsPA("SN_COST"),2)
+
+			DBL_ID = Trim(rsPA("DBL_ID"))
+			DBL_AVAIL = rsPA("DBL_AVAIL")
+			DBL_COST = FormatNumber(rsPA("DBL_COST"),2)
+
+			DH_ID = Trim(rsPA("DH_ID"))
+			DH_AVAIL = rsPA("DH_AVAIL")
+			DH_COST = FormatNumber(rsPA("DH_COST"),2)
+
+			SPR_ID = Trim(rsPA("SPR_ID"))
+			SPR_AVAIL = rsPA("SPR_AVAIL")
+			SPR_COST = FormatNumber(rsPA("SPR_COST"),2)
+
+			SUN_ID = Trim(rsPA("SUN_ID"))
+			SUN_AVAIL = rsPA("SUN_AVAIL")
+			SUN_COST = FormatNumber(rsPA("SUN_COST"),2)
+			
+			price_A = FormatNumber(rsPA("price_A"),2)
+			price_B = FormatNumber(rsPA("price_B"),2)
+			price_C = FormatNumber(rsPA("price_C"),2)
+			price_D = FormatNumber(rsPA("price_D"),2)
+			
+			product_retail = FormatNumber(rsPA("price_D"),2)
+			product_cost = FormatNumber(rsPA("COST"),2)
+			if product_retail > 0 then
+			else
+			  product_retail = product_cost    
+			end if
+			
+			
+			'=========================================
+			
+			IM_ID = rsPA("IM_ID")
+			TD_ID = rsPA("TD_ID")
+			
+			IM_AVAIL = rsPA("IM_AVAIL")
+			TD_AVAIL = rsPA("TD_AVAIL")
+			AVAIL = rsPA("AVAIL")
+			
+			if AVAIL > 0 then
+				AVAIL = "In-Stock"
+				prod_stock_status = 1
+			else
+				AVAIL = "Out of Stock"
+				prod_stock_status = 0
+			end if
+			
+			categoryid = Trim(rsPA("CATEGORY"))
+			manufacturerid = Trim(rsPA("VEND_ID"))
+			manu_name = Trim(rsPA("VEND_NAME"))
+			
+			mfgpartno = Trim(rsPA("VEND_PART"))
+			
+			img = ""
+			P_AVAIL = rsPA("AVAIL")
+			g_description2 = Trim(rsPA("DESCR2"))
+			image_published = rsPA("image_published")
+			s_category = Trim(rsPA("S_CATEGORY"))
+			retail_price = rsPA("retail_price")
+			prod_retail_price = retail_price
+			is_na_catalog = rsPA("catalog_na_flag")
+			is_spr = rsPA("catalog_spr_flag")
+			if is_na_catalog = 1 then
+				is_spr = 0
+			end if
+			SN_ID = rsPA("SN_ID")
+			DH_ID = rsPA("DH_ID")
+			
+			PRICE_FLAG = rsPA("price_flag")
+			SALES_FLAG = rsPA("sales_flag")		
+			
+			
+			pok = true
+			
+			'================================================================
+			if Session("PROD_AVAIL") = "4" then
+				if AVAIL = "No" then
+					pok = false
+				end if
+			end if
+			'================================================================
+			
+			icecat_id = rsPA("icecat_id")
+			
+			if adjusted_price > 0 then
+				'pok = true
+			else
+				pok = false
+			end if
+			
+		else
+			pok = false
+		end if
+		rsPA.Close
+		
+		prod_is_noship = 0
+		
+		if pok then
+			
+			prod_stock = 0
+			
+			if P_AVAIL = 1 then
+				b_enable_buy = true
+				prod_stock = 1
+			else
+				if Session("PROD_AVAIL") = "1" or Session("PROD_AVAIL") = "3" then
+					'enable..
+					b_enable_buy = true
+				else
+					'disable..
+					b_enable_buy = false
+				end if
+			end if
+			
+			'====================================================================================================
+			'Images
+			'====================================================================================================
+			ssThumbSize = "upload/w_" & EC_thumbWidth & ",h_" & EC_thumbHeight & ",c_pad/"
+			ssImgSize = "upload/w_" & EC_imageWidth & ",h_" & EC_imageHeight & ",c_pad/"
+			ssZoomSize = "upload/w_" & EC_zoomWidth & ",h_" & EC_zoomHeight & ",c_pad/"
+			
+			'ICECAT/CLOUDINARY
+			if image_published = 1 Then	
+				
+				sql = "SELECT cloudinary_url FROM [192.168.5.134].[icecat].dbo.cloudinary_images WHERE product_id = " & icecat_id
+				Set rsCloudImage = dbconn_icecat.Execute(sql)
+				If Not rsCloudImage.EOF Then
+					cloudImg = Trim(rsCloudImage("cloudinary_url"))
+				End If
+				rsCloudImage.Close
+				Set rsCloudImage = Nothing
+				
+				ssImg = Replace(cloudImg, "upload/", ssImgSize)
+				ssImg1 = Replace(cloudImg, "upload/", ssThumbSize)
+				ssImg2 = Replace(cloudImg, "upload/", ssZoomSize)
+				
+			Else
+				cloudImg = g_noimage_url
+				ssImg = "site_img/snopicsm_" & Session("TEMPLATEID") & ".gif"
+			end If
+			
+			If Len(cloudImg) > 0 then
+				ssImg = Replace(cloudImg, "upload/", ssImgSize)
+				ssImg1 = Replace(cloudImg, "upload/", ssThumbSize)
+				ssImg2 = Replace(cloudImg, "upload/", ssZoomSize)
+			Else
+				ssImg = "site_img/snopicsm_" & Session("TEMPLATEID") & ".gif"
+			End If
+			
+			ssImgLarge = true
+			image_display_src = ssImg
+			image_display_src_zoom = ssImg2
+			image_display_src_thumb = ssImg1
+			
+		end if
+		
+		sql = "SELECT * FROM " & g_storeid & "_profile2"
+		set rs = dbconn.Execute(sql)
+		if not rs.EOF then
+			ec_rt_im_flag = rs("ss_rt_im_flag")
+			ec_rt_td_flag = rs("ss_rt_td_flag")
+		end if
+		rs.Close
+		
+		sql = "SELECT * FROM " & g_storeid & "_profile"
+		Set rsProfile = dbconn.Execute(sql)
+		if (not rsProfile.EOF) then
+			show_prod_availability = rsProfile("show_prod_availability")
+			espec_part_number_mode = rsProfile("espec_part_number_mode")
+			espec_retail_price_mode = rsProfile("espec_retail_price_mode")
+		end if
+		rsProfile.Close
+		
+		'FROM SETTINGS.....
+		SYNNEX_PANDA = GetSettingValue("SYNNEX_PANDA", "0")
+		DANDH_PANDA = GetSettingValue("DANDH_PANDA", "0")
+		DEFAULT_ESPEC_PRODUCT_TAB = GetSettingValue("DEFAULT_ESPEC_PRODUCT_TAB", "0")
+		
+		SELECT CASE DEFAULT_ESPEC_PRODUCT_TAB
+		CASE "0"
+		CASE "1"
+		CASE "2"
+			if bAccessories then
+			else
+				DEFAULT_ESPEC_PRODUCT_TAB = "0"
+			end if
+		CASE ELSE
+			DEFAULT_ESPEC_PRODUCT_TAB = "0"
+		END SELECT
+		
+		b_show_rt = false
+		
+		if Len(IM_ID) > 0 AND ec_rt_im_flag= 1 then
+			b_show_rt = true
+		end if
+		if Len(TD_ID) > 0 AND ec_rt_td_flag= 1 then
+			b_show_rt = true
+		end if
+		if Len(SN_ID) > 0 AND SYNNEX_PANDA= "1" then
+			b_show_rt = true
+		end if
+		if Len(DH_ID) > 0 AND DANDH_PANDA= "1" then
+			b_show_rt = true
+		end if
+		
+		
+		if Len(s_category) > 0 then
+			
+			sqlc = "SELECT warranty_id, map_price_flag, map_price_dept_id  FROM " & g_storeid & "_ss_dept WHERE dept_id='" & s_category & "'"
+			set rsc = dbconn.Execute(sqlc)
+			if not rsc.EOF then
+				prod_warranty = Trim(rsc(0))
+				map_price_flag = rsc(1)
+				map_price_dept_id = Trim(rsc(2))
+			else
+				prod_warranty = ""
+				map_price_flag = 0
+				map_price_dept_id = Trim(rsc(2)) = ""
+			end if
+			rsc.Close
+			
+		end if
+		
+	'============================================================
+	'MAP PRICING..
+		x1_manuf_filter = ""
+		
+		if map_price_flag = 2 then
+			
+			sql = "SELECT manuf_filter FROM " & g_storeid & "_map_manuf WHERE dept_id='" & map_price_dept_id & "'"
+			set rs1 = dbconn.Execute(sql)
+			do while not rs1.EOF
+				x1_manuf_filter = x1_manuf_filter & Trim(rs1(0)) & ","
+				rs1.MoveNext
+			loop
+			rs1.Close
+		end if
+		
+		SELECT CASE map_price_flag
+		CASE 0
+			prod_map_flag = 0
+		CASE 1
+			prod_map_flag = 1
+		CASE 2
+			if InStr(x1_manuf_filter, CStr(manufacturerid)) then
+				prod_map_flag = 1
+			else
+				prod_map_flag = 0
+			end if
+		CASE ELSE
+			prod_map_flag = 0
+		END SELECT
+		
+	end If
+
+	'====================================================================================
+	'PAGE VARIABLES
+	'====================================================================================
+	g_store_title = g_description
+	'====================================================================================
+	'THEME VALUES
+	'====================================================================================
+	x_prod_name = g_description
+	x_page_title = g_page_title
+	x_prod_sku = mfgpartno
+	x_prod_desc = g_description2
+	x_prod_detail = prod_detail
+	x_prod_manu_part_num = prod_manu_part_num
+	x_vendor_name = vendor_name
+	x_prod_stock_status = prod_stock_status
+	if (x_prod_stock_status) = 1 then
+		x_prod_stock_status_display = " In Stock"
+	else
+		x_prod_stock_status_display = " Out of Stock"
+	end if
+	
+	x_prod_on_sale = prod_on_sale
+	x_prod_sale_price = prod_sale_price
+	x_prod_group_price = prod_group_price
+	x_prod_retail_price = prod_retail_price
+	
+	x_prod_image = image_display_src
+	x_prod_zoom_image = image_display_src_zoom
+	x_prod_thumb_image = image_display_src_thumb
+	x_prod_mm_type = prod_mm_type
+	x_prod_espec_sku = prod_use_icecat_images
+	x_prod_use_icecat_images = prod_use_icecat_images
+	x_prod_image_file = prod_image_file
+	
+	
+%>
 <!--#INCLUDE FILE="include/doctype.phtml"-->
 <head>
 <!--#INCLUDE FILE="include/head.phtml"-->
@@ -24,23 +436,390 @@
 				<div class="page-content-wrapper">
 					<!-- BEGIN CONTENT BODY -->
 					<!-- BEGIN PAGE HEAD-->
-					<div class="page-head">
-						<div class="container-fluid">
-							<!-- BEGIN PAGE TITLE -->
-							<div class="page-title">
-								<h1>Dashboard
-									<small>dashboard & statistics</small>
-								</h1>
-							</div>
-							<!-- END PAGE TITLE -->
-						</div>
-					</div>
+					
 					<!-- END PAGE HEAD-->
 					<!-- BEGIN PAGE CONTENT BODY -->
 					<div class="page-content">
 						<div class="container-fluid">
 							<!-- BEGIN PAGE CONTENT INNER -->
 							<div class="page-content-inner">
+								
+								
+<div class="row">
+	<!--Middle Part Start-->
+	<div id="content" class="col-sm-9">
+		<div itemscope itemtype="http://schema.org/Product">
+			<h1 class="title" itemprop="name"><%=x_prod_name%></h1>
+			<div class="row product-info">
+				<div class="col-sm-6">
+					<div class="image">
+						<img class="img-responsive" itemprop="image" id="zoom_01" src="<%=x_prod_image%>" title="<%=x_prod_name%>" alt="<%=x_prod_name%>" data-zoom-image="<%=x_prod_zoom_image%>"/>
+					</div>
+				</div>
+				<div class="col-sm-6">
+
+					<ul class="list-unstyled description">
+						<% if Len(x_vendor_name) > 0 then %>
+						<li><b>Brand":</b><a href="#"><span itemprop="brand"><%=x_vendor_name%></span></a></li>
+						<% end if %>
+						<% if Len(x_prod_manu_part_num) > 0 then %>
+						<li><b>Mfg. Part #":</b><a href="#"><span itemprop="brand"><%=x_prod_manu_part_num%></span></a></li>
+						<% end if %>
+						<li><b>SKU":</b><span itemprop="mpn"><%=x_prod_sku%></span></li>
+						<li><b>Availability:</b> <span class="instock"><%=x_prod_stock_status_display%></span></li>
+					</ul>
+					<div><%=x_prod_desc%></div>
+					<hr>
+					<table width="96%" cellspacing="0" cellpadding="2" bordercolor="#555599" border="1" 
+						align="center" style="background-color:White;border-color:#555599;border-width:1px; border-style:solid;
+						font-family:verdana;font-size:8pt;border-collapse:collapse;">
+					  <tr style="color:DarkSlateBlue;background-color:#ECFFEC;">
+						<td>
+						  <b>Distributor</b>
+						</td>
+						<td>
+						  <b>Part #</b>
+						</td>
+						<td>
+						  <b>Cost</b>
+						</td>
+						<td>
+						  <b>Availability</b>
+						</td>
+					  </tr>    
+					  <% if Len(IM_ID) > 0 then %>
+					  <%
+						dist_cost = IM_COST
+						dist_avail = IM_AVAIL
+						panda_link = "javascript:PandaIM('" & IM_ID & "')" 
+					  %>
+					  <tr style="color:DarkSlateBlue;background-color:#FFFFFF;">
+						<td>
+						  Ingram Micro
+						</td>
+						<td>
+						  <%=IM_ID%>
+						</td>
+					   <td align=right>
+						  <a href="<%=panda_link %>"><%=dist_cost %></a>
+						</td>
+						<td align=right>
+						  <%=dist_avail %>
+						</td>
+					  </tr>
+					  <% end if %>
+					  
+					  <% if Len(TD_ID) > 0 then %>
+					  <%
+						dist_cost = TD_COST
+						dist_avail = TD_AVAIL
+						panda_link = "javascript:PandaTD('" & TD_ID & "')" 
+					  %>
+					  <tr style="color:DarkSlateBlue;background-color:#FFFFFF;">
+						<td>
+						  Tech Data
+						</td>
+						<td>
+						  <%=TD_ID%>
+						</td>
+					   <td align=right>
+						  <a href="<%=panda_link %>"><%=dist_cost %></a>
+						</td>
+						<td align=right>
+						  <%=dist_avail %>
+						</td>
+					  </tr>
+					  <% end if %>
+					  
+					  <% if Len(SN_ID) > 0 then %>
+					  <%
+						dist_cost = SN_COST
+						dist_avail = SN_AVAIL
+						panda_link = "javascript:PandaSYN('" & SN_ID & "')" 
+					  %>
+					  <tr style="color:DarkSlateBlue;background-color:#FFFFFF;">
+						<td>
+						  Synnex
+						</td>
+						<td>
+						  <%=SN_ID%>
+						</td>
+					   <td align=right>
+						  <a href="<%=panda_link %>"><%=dist_cost %></a>
+						</td>
+						<td align=right>
+						  <%=dist_avail %>
+						</td>
+					  </tr>
+					  <% end if %>
+					  
+					  <% if Len(DH_ID) > 0 then %>
+					  <%
+						dist_cost = DH_COST
+						dist_avail = DH_AVAIL
+						panda_link = "javascript:PandaDH('" & DH_ID & "')" 
+					  %>
+					  <tr style="color:DarkSlateBlue;background-color:#FFFFFF;">
+						<td>
+						  D&H Distributing Co., Inc
+						</td>
+						<td>
+						  <%=DH_ID%>
+						</td>
+					   <td align=right>
+						  <a href="<%=panda_link %>"><%=dist_cost %></a>
+						</td>
+						<td align=right>
+						  <%=dist_avail %>
+						</td>
+					  </tr>
+					  <% end if %>
+					  
+					  <% if Len(SPR_ID) > 0 then %>
+					  <%
+						dist_cost = SPR_COST
+						dist_avail = SPR_AVAIL
+						panda_link = "#" 
+					  %>
+					  <tr style="color:DarkSlateBlue;background-color:#FFFFFF;">
+						<td>
+						  S.P. Richards
+						</td>
+						<td>
+						  <%=SPR_ID%>
+						</td>
+					   <td align=right>
+						  <%=dist_cost %>
+						</td>
+						<td align=right>
+						  <%=dist_avail %>
+						</td>
+					  </tr>
+					  <% end if %>
+					  
+					  <% if Len(SUN_ID) > 0 then %>
+					  <%
+						dist_cost = SUN_COST
+						dist_avail = SUN_AVAIL
+						panda_link = "#" 
+					  %>
+					  <tr style="color:DarkSlateBlue;background-color:#FFFFFF;">
+						<td>
+						  Supplies Network
+						</td>
+						<td>
+						  <%=SUN_ID%>
+						</td>
+					   <td align=right>
+						  <%=dist_cost %>
+						</td>
+						<td align=right>
+						  <%=dist_avail %>
+						</td>
+					  </tr>
+					  <% end if %>
+						
+					</table>
+					<br />
+					<table width="96%" cellspacing="0" cellpadding="2" bordercolor="#555599" border="1" 
+						align="center" style="background-color:White;border-color:#555599;border-width:1px; border-style:solid;
+						font-family:verdana;font-size:8pt;border-collapse:collapse;">
+					  <tr style="color:DarkSlateBlue;background-color:#ECFFEC;">
+							<td><b>Cost</b></td>
+						<td><b>Price A</b></td>
+						<td><b>Price B</b></td>
+						<td><b>Price C</b></td>
+						<td><b>Price D</b></td>
+					  </tr>
+					  <tr style="color:DarkSlateBlue;background-color:#FFFFFF;">
+							<td align=right><%=product_cost %></td>
+						<td align=right><%=price_A %></td>
+						<td align=right><%=price_B %></td>
+						<td align=right><%=price_C %></td>
+						<td align=right><%=price_D %></td>
+					  </tr>
+					</table>
+				</div>
+			</div>
+			<ul class="nav nav-tabs">
+				<li class="active"><a href="#tab-techspec" data-toggle="tab">Technical Specs</a></li>
+				<li><a href="#tab-description" data-toggle="tab">Details</a></li>
+				<li><a href="#tab-review" data-toggle="tab">Reviews</a></li>
+			</ul>
+			<div class="tab-content">
+				<div itemprop="specdata" id="tab-techspec" class="tab-pane active">
+					<div>
+						<!--#INCLUDE FILE="include_icecat_specs.phtml"-->
+					</div>
+				</div>
+				<div itemprop="description" id="tab-description" class="tab-pane">
+					<div>
+						<% 
+							If Len(pf_ManualPdfURL) > 0 Then 
+						%>
+						<p>
+						<img src="/assets/template/default/images/pdf.png" border="0">
+						<a href="getpdf.phtml?url=<%=Server.URLEncode(pf_ManualPdfURL)%>">Manual PDF</a>
+						</p>
+						<% 
+							End If 
+						%>
+						<% 
+							If Len(pf_PdfURL) > 0 Then 
+						%>
+						<p>
+						<img src="/assets/template/default/images/pdf.png" border="0">
+						<a href="<%=g_store_url%>getpdf.phtml?url=<%=Server.URLEncode(pf_PdfURL)%>">Product PDF</a><br>
+						</p>
+						<% 
+							End If 
+						%>
+						<% 
+							if Len(str_marketing_info) > 0 then 
+						%>
+						<%=Replace(str_marketing_info, chr(13), "<br>")%>
+						<%
+							else
+						%>
+						<p> No detail information is available </p>
+						<% 
+							end if 
+						%>
+					</div>
+				</div>
+				<div id="tab-review" class="tab-pane">
+					<%
+						xmlRecv.open "GET", "http://partner.testseek.com/export/search.php?ts_key=AB433E29&ts_ver=3.9&ts_type=2&ts_sort=1&ts_start=0&ts_limit=10&ts_lang=en&ts_mpn=" & mfgpartno, false
+						xmlRecv.setRequestHeader "Content-Type", "application/x-www-form-urlencoded"
+						xmlRecv.setTimeouts 5000, 5000, 15000, 15000
+						xmlRecv.send
+						
+						xmlHeaders = xmlRecv.getAllResponseHeaders()
+						xmlStatus = xmlRecv.statusText
+						'xmlResult = xmlRecv.responseText
+						xmlResult = xmlRecv.responseXML.xml
+
+						xmlDoc2.LoadXML (xmlResult)
+					%>
+					<%
+					  iReviewCount = 0
+						set objNodeList = xmlDoc2.getElementsByTagName("review")
+						For i = 0 To (objNodeList.length - 1)
+							set InfoNode = objNodeList.Item(i)
+							er_published = InfoNode.SelectSingleNode("er_published").Text
+							er_testsite = InfoNode.SelectSingleNode("er_testsite").Text
+							er_comment_good = InfoNode.SelectSingleNode("er_comment_good").Text
+							er_comment_bad = InfoNode.SelectSingleNode("er_comment_bad").Text
+							er_comment = InfoNode.SelectSingleNode("er_comment").Text
+							er_score = InfoNode.SelectSingleNode("er_score").Text
+							er_url =  InfoNode.SelectSingleNode("er_url").Text
+							er_award_image =  InfoNode.SelectSingleNode("er_award_image").Text
+
+
+					%>
+					<style>
+
+					UL.gbb {
+						list-style: none;
+						margin-top: 0px;
+						margin-bottom: 0px;
+						line-height: 13px;
+						margin-left: 0px;
+						padding: 0px;
+						}
+
+					LI.good {
+						background-image: url("/assets/template/default/images/gbb_good.gif");
+						background-repeat: no-repeat;
+						padding: 2px 0 2px 20px;
+						margin: -0px;
+						}
+
+						LI.bad {
+						background-image: url("/assets/template/default/images/gbb_bad.gif");
+						background-repeat: no-repeat;
+						padding: 2px 0 2px 20px;
+						}
+
+						LI.bottom {
+						background-image: url("/assets/template/default/images/gbb_bottom.gif");
+						background-repeat: no-repeat;
+						padding: 2px 0 2px 20px;
+						}
+
+					</style>
+						
+					<table class="table">
+					<tbody>
+					<tr>
+						<td width="10">
+							&nbsp;
+						</td>
+						<td width="*" class="TextMedium">
+							<div class="reviewSource">
+								<div class="flag_us">
+								</div>
+								&nbsp; Published: <%=er_published%>, review by: <%=er_testsite%> 
+								<div class="rating-box">
+									<div class="rating" style="width: <%=er_score%>%;"></div>
+								</div>
+							</div>
+							<br>
+							<div align="left" style="width:100%; float:left;">
+								<ul class="gbb">
+									<%If Len(er_comment_good) Then %>
+									<li class="good"><span class="bgw"><%=er_comment_good%></span></li>
+									<% End If %>
+									<%If Len(er_comment_bad) Then %>
+									<li class="bad"><span class="bgw"><%=er_comment_bad%></span></li>
+									<% End If %>
+									<%If Len(er_comment) Then %>
+									<li class="bottom"><span class="bgw"><%=er_comment%></span></li>
+									<% End If %>
+								</ul>
+								<br>
+								<a href="<%=er_url%>" class="Large" target="_blank">Read the full review >></a>
+							</div>
+							<div style="clear:both">
+								&nbsp;
+							</div>
+							
+						</td>
+						<td width="95" align="center">
+							<% If Len(er_award_image) > 0 Then %>
+									<img src="<%=er_award_image%>" border="0">
+							<% End If %>	
+						</td>
+					</tr>
+					</tbody>
+					</table>
+					<%
+							If i > 8 Then
+								Exit For
+							End If
+							iReviewCount = iReviewCount + 1
+						Next
+					%>
+					<% If iReviewCount = 0 Then %>
+						No Review is available.
+					<% End If %>
+				</div>
+			</div>
+		</div>
+	</div>
+	<!--Middle Part End -->
+	<!--Right Part Start -->
+	<aside id="column-right" class="col-sm-3 hidden-xs">
+	
+	</aside>
+	<!--Right Part End -->
+</div>
+								
+								
+								
+								
+								
+								
 								
 							</div>
 							<!-- END PAGE CONTENT INNER -->

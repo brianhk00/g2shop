@@ -1,3 +1,41 @@
 <%
-
+	Response.CodePage = 65001
+	Response.CharSet = "UTF-8"
+	g_route_page_id = "dept"
 %>
+<!--#INCLUDE FILE="../../core/catalog/include_dept_start.phtml"-->
+<!--#INCLUDE FILE="template_setting.phtml"-->
+<!DOCTYPE html>
+<html class="webkit chrome chrome53 win journal-desktop is-guest skin-4 responsive-layout header-center header-center-sticky backface product-grid-second-image product-list-second-image category-page category-page-59_105 layout-3 route-product-category oc2 one-column">
+<head>
+<!--#INCLUDE FILE="include/head.phtml"-->
+</head>
+<body>
+<!--#INCLUDE FILE="include/after_body_start.phtml"-->
+<header class="journal-header-center nolang-nocurr">
+<!--#INCLUDE FILE="include/header.phtml"-->
+</header>
+<div class="extended-container">
+	<div id="container" class="container j-container">
+		<!--#INCLUDE FILE="include/breadcrumb.phtml"-->
+		<div class="row">
+			<div id="column-left" class="col-sm-3 hidden-xs side-column ">
+				<!--#INCLUDE FILE="include/left_category.phtml"-->
+			</div>
+			<div id="content" class="col-sm-9">
+				<!--#INCLUDE FILE="include/dept.phtml"-->
+			</div>
+		</div>
+	</div>
+</div>
+<footer class="boxed-footer">
+<!--#INCLUDE FILE="include/footer.phtml"-->
+</footer>
+<div class="scroll-top">
+</div>
+<!--#INCLUDE FILE="include/js.phtml"-->
+<!--#INCLUDE FILE="include/before_body_end.phtml"-->
+<!--#INCLUDE FILE="include/AbsoluteFooter.phtml"-->
+</body>
+</html>
+<!--#INCLUDE FILE="../../core/include_index_end.phtml"-->

@@ -16,6 +16,7 @@
 	system_id = Trim(Request("system_id"))
 	system_name = Trim(Request("system_name"))
 	show_cat = Trim(Request("show_cat"))
+	dept_id = Trim(Request("dept_id"))
 	
 	if system_id = "0" then
 		system_id = GetUniqueLongIntegerID()
@@ -164,6 +165,7 @@
 										<input type="hidden" id="formop" name="formop" value="">
 										<input type="hidden" id="system_op" name="system_op" value="<%=system_op%>">
 										<input type="hidden" id="system_id" name="system_id" value="<%=system_id%>">
+										<input type="hidden" id="dept_id" name="dept_id" value="<%=dept_id%>">
 											<div class="portlet">
 												<div class="portlet-title">
 													<div class="caption">
@@ -187,6 +189,8 @@
 														<button class="btn btn-success" onclick="savebutton='1';document.getElementById('formop').value='main';">
 															<i class="fa fa-check"></i> Save
 														</button>
+														<% if system_op = "new" then %>
+														<% else %>
 														<button class="btn btn-success" onclick="savebutton='0';document.getElementById('formop').value='main';">
 															<i class="fa fa-check-circle"></i> Save & Continue Edit
 														</button>
@@ -204,6 +208,7 @@
 																</li>
 															</div>
 														</div>
+														<% end if %>
 													</div>
 												</div>
 												<div class="alert alert-danger display-hide">
@@ -223,6 +228,8 @@
 																	<i class="pink fa fa-info"></i> General
 																</a>
 															</li>
+															<% if system_op = "new" then %>
+															<% else %>
 															<li>
 																<a href="#tab_system_detail_settings" data-toggle="tab">
 																	<i class="pink fa fa-sliders"></i> Settings
@@ -243,6 +250,7 @@
 																	<i class="pink fa fa-file-image-o"></i> System Images
 																</a>
 															</li>
+															<% end if %>
 														</ul>
 														<div class="tab-content">
 															<div class="tab-pane active" id="tab_system_detail_general">
@@ -719,56 +727,51 @@ Select multiple files (Max 5M)
 		</div>
 	</div>
 </div>
-<div class="modal fade" id="myModal1" tabindex="-1" data-width="600" role="dialog" aria-hidden="true">
-	<div class="modal-dialog">
-		<div class="modal-content">
-			<div class="modal-header">
-				<button type="button" class="close" data-dismiss="modal" aria-hidden="true">
-					&times;
-				</button>
-				<h4 class="modal-title">Add New Group</h4>
-			</div>
-			<div class="modal-body">
-				<p>
-					Would you like to add new Group?
-				</p>
-			</div>
-			<div class="modal-footer">
-				<button aria-hidden="true" data-dismiss="modal" class="btn btn-default">
-					Close
-				</button>
-				<button class="btn btn-primary" data-dismiss="modal" id="btn-add-root-category-confirm">
-					Confirm
-				</button>
-			</div>
-		</div>
+
+<div class="modal fade" id="myModal1" tabindex="-1" role="dialog" aria-hidden="true">
+	<div class="modal-header">
+		<button type="button" class="close" data-dismiss="modal" aria-hidden="true">
+			&times;
+		</button>
+		<h4 class="modal-title">Add New Group</h4>
+	</div>
+	<div class="modal-body">
+		<p>
+			Would you like to add new Group?
+		</p>
+	</div>
+	<div class="modal-footer">
+		<button aria-hidden="true" data-dismiss="modal" class="btn btn-default">
+			Close
+		</button>
+		<button class="btn btn-primary" data-dismiss="modal" id="btn-add-root-category-confirm">
+			Confirm
+		</button>
 	</div>
 </div>
-<div class="modal fade" id="myModal2" tabindex="-1" data-width="600" role="dialog" aria-hidden="true">
-	<div class="modal-dialog">
-		<div class="modal-content">
-			<div class="modal-header">
-				<button type="button" class="close" data-dismiss="modal" aria-hidden="true">
-					&times;
-				</button>
-				<h4 class="modal-title">Add System Option</h4>
-			</div>
-			<div class="modal-body">
-				<p>
-					Would you like to add new system option?
-				</p>
-			</div>
-			<div class="modal-footer">
-				<button aria-hidden="true" data-dismiss="modal" class="btn btn-default">
-					Close
-				</button>
-				<button class="btn btn-primary" data-dismiss="modal" id="btn-add-sub-category-confirm">
-					Confirm
-				</button>
-			</div>
-		</div>
+
+<div class="modal fade" id="myModal2" tabindex="-1" role="dialog" aria-hidden="true">
+	<div class="modal-header">
+		<button type="button" class="close" data-dismiss="modal" aria-hidden="true">
+			&times;
+		</button>
+		<h4 class="modal-title">Add System Option</h4>
+	</div>
+	<div class="modal-body">
+		<p>
+			Would you like to add new system option?
+		</p>
+	</div>
+	<div class="modal-footer">
+		<button aria-hidden="true" data-dismiss="modal" class="btn btn-default">
+			Close
+		</button>
+		<button class="btn btn-primary" data-dismiss="modal" id="btn-add-sub-category-confirm">
+			Confirm
+		</button>
 	</div>
 </div>
+
 <div id="dialog-confirm" title="Confirmation Required">
   Are you sure you want to do this?
 </div>
@@ -860,6 +863,7 @@ Select multiple files (Max 5M)
 <script src="../assets/global/plugins/datatables/datatables.min.js" type="text/javascript"></script>
 <script src="../assets/global/plugins/datatables/plugins/bootstrap/datatables.bootstrap.js" type="text/javascript"></script>
 <script src="https://cdn.datatables.net/rowreorder/1.1.1/js/dataTables.rowReorder.min.js"></script>
+<script src="//cdn.datatables.net/plug-ins/1.10.10/api/fnReloadAjax.js"></script>
 <script src="../assets/global/plugins/bootstrap-datepicker/js/bootstrap-datepicker.min.js" type="text/javascript"></script>
 <script src="../assets/global/plugins/bootstrap-maxlength/bootstrap-maxlength.min.js" type="text/javascript"></script>
 <script src="../assets/global/plugins/bootstrap-modal/js/bootstrap-modalmanager.js" type="text/javascript"></script>
@@ -1315,9 +1319,22 @@ var FormValidation = function () {
 			ignore: "",  // validate all fields including form hidden input
 			//RULES
 			rules: {
+				system_sku: {
+					minlength: 5,
+					required: true,
+					"remote":
+					{
+					  url: 'api/sp_system_check_sku.phtml?pf_id=<%=system_id%>',
+					  type: "post"
+					}
+				},
 				system_name: {
 					minlength: 2,
 					required: true
+				},
+				system_weight: {
+					required: true,
+					number: true
 				},
 				group_name: {
 					minlength: 2,
@@ -1325,6 +1342,12 @@ var FormValidation = function () {
 				}
 			},
 			messages: {
+				system_sku:
+				{
+					required: "Please specify system SKU.",
+					minlength: "The SKU must be greater than 5 chracter length.",
+					remote: "The specified SKU is not unique."
+				},
 				dept_name: "Please specify category name"
 			},
 			//END OF RULES
@@ -1376,12 +1399,16 @@ var FormValidation = function () {
 					data: form1.serialize(),
 					success: function() {
 						success1.show();
-						
+						<% if system_op = "new" then %>
+						setTimeout(function () {
+								window.location.replace("catalog_system_detail.phtml?system_id=<%=system_id%>");
+							}, 500); 
+						<% else %>
 						if (savebutton == "1")
 						{
-						setTimeout(function () {
+							setTimeout(function () {
 								window.location.replace("catalog_system.phtml");
-							}, 500);
+							}, 500); 
 						}
 						else
 						{
@@ -1389,6 +1416,7 @@ var FormValidation = function () {
 							jQuery("#dept_detail").html('<p>Select existing options on the left or click on the "add" button to add new option.</p>');
 							
 						}
+						<% end if %>
 					},
 					error: function() {
 						warning1.show();
@@ -1528,6 +1556,23 @@ jQuery(document).ready(function() {
 		
 	});
 	
+	$('#DeleteEntry').on('click', function () {
+		$("#dialog-confirm").dialog({
+			resizable: false,
+			height:170,
+			modal: true,
+			buttons: {
+				"Confirm Delete": function() {
+					$( this ).dialog( "close" );
+					location.replace('api/tp_catalog_system_delete.phtml?did=<%=system_id%>')
+				},
+				Cancel: function() {
+					$( this ).dialog( "close" );
+				}
+			}
+		});
+	});	
+	
 	/* PRIVATE CATALOG */
 	jQuery.ajax({
 		type:"post",
@@ -1566,7 +1611,7 @@ jQuery(document).ready(function() {
 				
 				select = jQuery("#catalog_category4"), options = '';
 				select.empty();
-				oTable1.fnReloadAjax("api/sp_sales_order_product_list.phtml?v1=" + jQuery('#catalog_category1').val());
+				oTable1.fnReloadAjax("api/sp_sales_order_product_list_v1.phtml?v1=" + jQuery('#catalog_category1').val());
 			}
 		});
 	});
@@ -1588,7 +1633,7 @@ jQuery(document).ready(function() {
 				
 				select = jQuery("#catalog_category4"), options = '';
 				select.empty();
-				oTable1.fnReloadAjax("api/sp_sales_order_product_list.phtml?v1=" + jQuery('#catalog_category1').val() + "&v2=" + jQuery('#catalog_category2').val());
+				oTable1.fnReloadAjax("api/sp_sales_order_product_list_v1.phtml?v1=" + jQuery('#catalog_category1').val() + "&v2=" + jQuery('#catalog_category2').val());
 			}
 		});
 	});
@@ -1608,7 +1653,7 @@ jQuery(document).ready(function() {
 				select.empty(); 
 				select.append(listItems);
 				
-				oTable1.fnReloadAjax("api/sp_sales_order_product_list.phtml?v1=" + jQuery('#catalog_category1').val() + "&v2=" + jQuery('#catalog_category2').val() + "&v3=" + jQuery('#catalog_category3').val());
+				oTable1.fnReloadAjax("api/sp_sales_order_product_list_v1.phtml?v1=" + jQuery('#catalog_category1').val() + "&v2=" + jQuery('#catalog_category2').val() + "&v3=" + jQuery('#catalog_category3').val());
 			}
 		});
 	});
@@ -1650,7 +1695,7 @@ jQuery(document).ready(function() {
 				
 				select = jQuery("#icecat_category4"), options = '';
 				select.empty();
-				oTable2.fnReloadAjax("api/sp_sales_order_icecat_list.phtml?v1=" + jQuery('#icecat_category1').val());
+				oTable2.fnReloadAjax("api/sp_sales_order_icecat_list_v1.phtml?v1=" + jQuery('#icecat_category1').val());
 			}
 		});
 	});
@@ -1672,7 +1717,7 @@ jQuery(document).ready(function() {
 				
 				select = jQuery("#icecat_category4"), options = '';
 				select.empty();
-				oTable2.fnReloadAjax("api/sp_sales_order_icecat_list.phtml?v1=" + jQuery('#icecat_category1').val() + "&v2=" + jQuery('#icecat_category2').val());
+				oTable2.fnReloadAjax("api/sp_sales_order_icecat_list_v1.phtml?v1=" + jQuery('#icecat_category1').val() + "&v2=" + jQuery('#icecat_category2').val());
 			}
 		});
 	});
@@ -1692,7 +1737,7 @@ jQuery(document).ready(function() {
 				select.empty(); 
 				select.append(listItems);
 				
-				oTable2.fnReloadAjax("api/sp_sales_order_icecat_list.phtml?v1=" + jQuery('#icecat_category1').val() + "&v2=" + jQuery('#icecat_category2').val() + "&v3=" + jQuery('#icecat_category3').val());
+				oTable2.fnReloadAjax("api/sp_sales_order_icecat_list_v1.phtml?v1=" + jQuery('#icecat_category1').val() + "&v2=" + jQuery('#icecat_category2').val() + "&v3=" + jQuery('#icecat_category3').val());
 			}
 		});
 	});

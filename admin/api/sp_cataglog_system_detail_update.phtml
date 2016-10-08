@@ -1,12 +1,18 @@
 <%response.Expires=-1%>
+<%
+	Response.CodePage = 65001
+	Response.CharSet = "UTF-8"
+%>
 <!-- #INCLUDE File="../local/local.phtml" -->
 <!-- #INCLUDE File="../util/xt_func_util.phtml" -->
 <!-- #INCLUDE File="../util/xt_func_string.phtml" -->
 <%
+	
 	'--POST DATA------------------------------------------
 	mode = Trim(Request("mode"))
 	system_id = Trim(Request("system_id"))
 	system_op = Trim(Request("system_op"))
+	dept_id = Trim(Request("dept_id"))
 	
 	system_sku = Trim(Request("system_sku"))
 	system_name = Trim(Request("system_name"))
@@ -14,6 +20,12 @@
 	system_desc2 = Trim(Request("system_desc2"))
 	system_detail = Trim(Request("system_detail"))
 	system_weight = Trim(Request("system_weight"))
+	
+	if IsNumeric(system_weight) then
+	else
+		system_weight = 0
+	end if 
+
 	system_is_nontaxable = Trim(Request("system_is_nontaxable"))
 	system_is_noship = Trim(Request("system_is_noship"))
 	system_enable_upload = Trim(Request("system_enable_upload"))
@@ -153,6 +165,8 @@
 	
 	if formop = "main" then
 	
+		Response.Write(pf_productimage)
+		
 		if system_op = "new" then
 			Set rsUpdate = Server.CreateObject("ADODB.Recordset")
 			with rsUpdate
@@ -180,7 +194,9 @@
 				.Source = g_storeid & "_system_product WHERE pf_id='" & system_id & "'"
 				.Open
 			end with
+			
 		end if
+		
 		
 		rsUpdate("sku") = system_sku
 		rsUpdate("name") = system_name
@@ -216,6 +232,38 @@
 		
 		rsUpdate.Close
 		set rsUpdate = nothing
+		
+		
+		if system_op = "new" then
+		
+			sql = "DELETE FROM " & g_storeid & "_system_dept_prod WHERE pf_id = '" & system_id & "'"
+			dbconn.Execute sql
+		
+			Set rsUpdate = Server.CreateObject("ADODB.Recordset")
+			with rsUpdate
+				.ActiveConnection = dbconn
+				.CursorLocation = 3
+				.CursorType = 1
+				.LockType = 3
+				.Source = g_storeid & "_system_dept_prod WHERE pf_id='0'"
+				.Open
+				.AddNew
+			end with
+			
+			rsUpdate("dept_id") = dept_id
+			rsUpdate("pf_id") = system_id
+		
+			If dbconn.Errors.Count > 0 Then
+				dbconn.Errors.Clear
+				rsUpdate.CancelUpdate
+			else
+				rsUpdate.Update
+			End If
+			
+			rsUpdate.Close
+			set rsUpdate = nothing
+		
+		end if
 	
 	end if
 	

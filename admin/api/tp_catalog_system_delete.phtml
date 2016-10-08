@@ -1,0 +1,34 @@
+<%response.Expires=-1%>
+<!-- #INCLUDE File="../local/local.phtml" -->
+<!-- #INCLUDE File="../util/xt_func_util.phtml" -->
+<!-- #INCLUDE File="../util/xt_func_string.phtml" -->
+<%
+	did = Trim(Request("did"))
+	
+	if Len(did) > 0 then
+		
+		sql = "DELETE  FROM " & g_storeid & "_system_rule WHERE system_id = '" & did & "'"
+		dbconn.Execute(sql)
+		
+		sql = "DELETE  FROM " & g_storeid & "_system_config WHERE pf_id = '" & did & "'"
+		dbconn.Execute(sql)
+		
+		sql = "DELETE  FROM " & g_storeid & "_system_config_group WHERE pf_id = '" & did & "'"
+		dbconn.Execute(sql)
+		
+		sql = "DELETE  FROM " & g_storeid & "_sysdept WHERE config_id = '" & did & "'" 
+		dbconn.Execute(sql)
+		
+		sql = "DELETE  FROM " & g_storeid & "_system_dept_prod WHERE pf_id = '" & did & "'"
+		dbconn.Execute(sql)
+		
+		'TODO : image ??
+		
+		sql = "DELETE  FROM " & g_storeid & "_system_product WHERE pf_id = '" & did & "'"
+		dbconn.Execute(sql)
+		
+	end if
+	
+	Response.Redirect("/admin/catalog_system.phtml")
+	
+%>

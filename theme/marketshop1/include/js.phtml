@@ -16,6 +16,11 @@
 <script type="text/javascript" src="<%=skin_base_url%>theme/<%=THEME_TEMPLATE%>/js/swipebox/lib/ios-orientationchange-fix.js"></script>
 <script type="text/javascript" src="<%=skin_base_url%>theme/<%=THEME_TEMPLATE%>/js/swipebox/src/js/jquery.swipebox.min.js"></script>
 <% end if %>
+<% if g_route_page_id = "config" then %>
+<script type="text/javascript" src="<%=skin_base_url%>theme/<%=THEME_TEMPLATE%>/js/jquery.elevateZoom-3.0.8.min.js"></script>
+<script type="text/javascript" src="<%=skin_base_url%>theme/<%=THEME_TEMPLATE%>/js/swipebox/lib/ios-orientationchange-fix.js"></script>
+<script type="text/javascript" src="<%=skin_base_url%>theme/<%=THEME_TEMPLATE%>/js/swipebox/src/js/jquery.swipebox.min.js"></script>
+<% end if %>
 <script type="text/javascript" src="<%=skin_base_url%>theme/<%=THEME_TEMPLATE%>/js/custom.js"></script>
 <script type="text/javascript">
 function setLocation(url){
@@ -1491,7 +1496,7 @@ dprice['<%=sysdept_id%>'] = 0;
 %>
 
 jQuery(document).ready(function() {
-	
+	/*
 	jQuery(document).scroll(function () {
 		var y = jQuery(this).scrollTop() + 100;
 		var sumc = jQuery('#yt_tab_products').offset().top;
@@ -1503,6 +1508,7 @@ jQuery(document).ready(function() {
 			jQuery('#ctmz-sumc').addClass('nosticky');
 		}
 	});
+	*/
 	
 	jQuery( ".configiteminput" ).change(function() {
 		

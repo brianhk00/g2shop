@@ -1,6 +1,8 @@
 <%
 	header_logo_image = GetSettingValue("header_logo_image", "logo.png")
 	global_email_address = GetSettingValue("global_email_address", "support@mydomain.com")
+	use_static_menu = GetSettingValue("use_static_menu", "0")
+	use_static_menu = "1"
 %>
 <div class="journal-top-header j-min z-1">
 </div>
@@ -133,7 +135,14 @@
 			<a href="<%=g_store_url%>"><i style="margin-right: 5px; font-size: 20px; top: -1px" data-icon="&#xe14f;"></i></a>
 			<span class="mobile-plus">+</span>
 			</li>
+			<% if use_static_menu = "1" then %>
+			<%
+				g_static_block_code = "TPL_JOURNAL4_TOP_MENU"
+			%>
+			<!--#INCLUDE FILE="../../../core/cms/include_show_static_block.phtml"-->
+			<% else %>
 			<%=mm%>
+			<% end if %>
 		</ul>
 	</div>
 	<script>

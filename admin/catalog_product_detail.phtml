@@ -1691,7 +1691,7 @@ var TableData = function () {
 			"iDisplayLength": 10,
 			"bServerSide": true,
 			"bAutoWidth": false,
-			"sAjaxSource": "api/sp_sales_order_icecat_list.phtml?v1=" + w1 + "&v2=" + w2 + "&v3=" + w3 + "&z1=",
+			"sAjaxSource": "api/sp_sales_order_icecat_list_v1.phtml?v1=" + w1 + "&v2=" + w2 + "&v3=" + w3 + "&z1=",
 			"aoColumns": [ 
 				/* Product ID */  { "sClass": "text-left" },
 				/* Thumbnail */  { "sClass": "center","bSortable": false },
@@ -1902,16 +1902,7 @@ var FormValidation = function () {
 				error1.show();
 				App.scrollTo(error1, -200);
 			},
-
-			errorPlacement: function (error, element) { // render error placement for each input type
-				var cont = $(element).parent('.input-group');
-				if (cont) {
-					cont.after(error);
-				} else {
-					element.after(error);
-				}
-			},
-
+			
 			highlight: function (element) { // hightlight error inputs
 
 				$(element)

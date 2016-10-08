@@ -1,0 +1,164 @@
+
+<%
+	set xmlRecv = Server.CreateObject("Msxml2.ServerXMLHTTP")
+	If icecat_id <> 0 Then
+		
+		xmlRecv.open "GET", g_specdata_url & icecat_id & ".xml", false, "", ""
+
+		xmlRecv.setRequestHeader "Content-Type", "application/x-www-form-urlencoded"
+		xmlRecv.setTimeouts 5000, 5000, 15000, 15000
+		xmlRecv.send
+		
+		xmlHeaders = xmlRecv.getAllResponseHeaders()
+		xmlStatus = xmlRecv.statusText
+		xmlResult = xmlRecv.responseXML.xml
+
+		If xmlStatus = "Not Found" Then
+			xmlRecv.open "POST", "http://data.icecat.biz/export/level4/US/" & icecat_id & ".xml", false, "ohannis", "qweiop123"
+			xmlRecv.setRequestHeader "Content-Type", "application/x-www-form-urlencoded"
+			xmlRecv.setTimeouts 5000, 5000, 15000, 15000
+			xmlRecv.send
+			
+			xmlHeaders = xmlRecv.getAllResponseHeaders()
+			xmlStatus = xmlRecv.statusText
+			xmlResult = xmlRecv.responseXML.xml
+		End if
+
+		dim xmlDoc2
+		set xmlDoc2 = Server.CreateObject("Msxml2.DOMDocument.6.0")
+		xmlDoc2.async = false
+		xmlDoc2.validateOnParse = false
+		xmlDoc2.setProperty "ProhibitDTD", False
+		xmlDoc2.LoadXML (xmlResult)
+
+		if (xmlDoc2.parseError.errorCode <> 0) Then
+			xmlRecv.open "POST", "http://data.icecat.biz/export/level4/US/" & icecat_id & ".xml", false, "ohannis", "qweiop123"
+			xmlRecv.setRequestHeader "Content-Type", "application/x-www-form-urlencoded"
+			xmlRecv.setTimeouts 5000, 5000, 15000, 15000
+			xmlRecv.send
+			
+			xmlHeaders = xmlRecv.getAllResponseHeaders()
+			xmlStatus = xmlRecv.statusText
+			xmlResult = xmlRecv.responseXML.xml
+			xmlDoc2.LoadXML (xmlResult)
+		End if
+		
+		if (xmlDoc2.parseError.errorCode <> 0) then
+			a = xmlDoc2.parseError.reason
+		Else
+
+				set objNodeList = xmlDoc2.getElementsByTagName("ProductDescription")
+				For i = 0 To (objNodeList.length - 1)
+					set InfoNode = objNodeList.Item(i)
+					pf_LongDesc = InfoNode.getAttribute("LongDesc")
+					pf_ShortDesc = InfoNode.getAttribute("ShortDesc")
+					pf_ManualPdfURL = InfoNode.getAttribute("ManualPDFURL")
+					pf_PdfURL = InfoNode.getAttribute("PDFURL")
+				Next
+				
+				If Len(pf_LongDesc) > 0 Then
+				else
+					set objNodeList = xmlDoc2.getElementsByTagName("SummaryDescription")
+					For i = 0 To (objNodeList.length - 1)
+						set InfoNode = objNodeList.Item(i)
+						Set longDescNode = InfoNode.selectNodes("LongSummaryDescription")	
+						For ii = 0 To (longDescNode.length - 1)
+							pf_LongDesc = longDescNode(ii).text
+						Next
+					Next
+				End if
+
+				str_marketing_info = pf_LongDesc
+				If Len(str_marketing_info) > 0 then
+					str_marketing_info = Replace(str_marketing_info, "\n", "<br>")
+				End If
+
+				g_product_related_id = ""
+
+				set objNodeList = xmlDoc2.getElementsByTagName("ProductRelated")
+				For i = 0 To (objNodeList.length - 1)
+					set InfoNode = objNodeList.Item(i)
+					set productInfoNode = InfoNode.selectNodes("Product")	
+					For j = 0 To (productInfoNode.length - 1)
+						g_product_related_id = g_product_related_id & productInfoNode(j).getAttribute("ID") & ","
+					Next
+				Next
+
+				If Len(g_product_related_id) > 0 Then
+					g_product_related_id = Left(g_product_related_id, Len(g_product_related_id)-1)
+				End if
+
+%>
+
+<table class="table table-bordered" id="product-attribute-specs-table">
+	<col width="25%" /><col />
+	<tbody>
+<%
+		set objNodeList = xmlDoc2.getElementsByTagName("CategoryFeatureGroup")
+		For i = 0 To (objNodeList.length - 1)
+			set InfoNode = objNodeList.Item(i)
+			pf_feature_group_id = InfoNode.getAttribute("ID")
+			set featureInfoNode = InfoNode.selectNodes("FeatureGroup")	
+			For j = 0 To (featureInfoNode.length - 1)
+				set nameInfoNode = featureInfoNode(j).selectNodes("Name")
+				For k = 0 To (nameInfoNode.length - 1)
+					pf_feature_group_name = nameInfoNode(k).getAttribute("Value")
+				Next
+			Next
+			
+			pp = 0
+			set objNodeList2 = xmlDoc2.getElementsByTagName("ProductFeature")
+			For ii = 0 To (objNodeList2.length - 1)
+				set InfoNode2 = objNodeList2.Item(ii)
+				pf_Value = InfoNode2.getAttribute("Presentation_Value")
+				pf_CategoryFeatureGroup_ID = InfoNode2.getAttribute("CategoryFeatureGroup_ID")
+				
+				
+				if pf_CategoryFeatureGroup_ID = pf_feature_group_id then
+					set featureInfoNode = InfoNode2.selectNodes("Feature")	
+					For jj = 0 To (featureInfoNode.length - 1)
+						set nameInfoNode = featureInfoNode(jj).selectNodes("Name")
+						For kk = 0 To (nameInfoNode.length - 1)
+							pf_feature_name = nameInfoNode(kk).getAttribute("Value")
+						Next
+					Next
+					
+					if pp = 0 Then
+%>
+				<tr style="border:5px solid #CCCCCC">
+					<td colspan='2' style="border:5px solid #CCCCCC"><strong><%=pf_feature_group_name%></strong></td>
+				</tr>
+				
+<%
+						pp = pp + 1
+					end If
+%>
+					<tr>
+						<th class="spectable-label"><%=pf_feature_name%></th>
+						<td class="spectable-data">
+							<% if Len(pf_value) > 0 then %>
+							<% if InStr(pf_value, chr(1)) > 0 then %>
+							<li>
+							<% end if%>
+							<%=Replace(Replace(pf_value, "\n", ""), chr(1), "<li>")%>
+							<% end if %>
+						</td>
+					</tr>
+					
+<%
+				
+				end if
+			Next
+			
+			
+			
+		Next
+%>
+	</tbody>
+</table>
+
+<%
+		end If
+
+	End if
+%>

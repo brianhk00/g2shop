@@ -1,0 +1,20 @@
+<%response.Expires=-1%>
+<!-- #INCLUDE File="../local/local.phtml" -->
+<!-- #INCLUDE File="../util/xt_func_util.phtml" -->
+<!-- #INCLUDE File="../util/xt_func_string.phtml" -->
+<%
+	pf_sku = Trim(Request("pf_sku"))
+	pf_id = Trim(Request("pf_id"))
+	sql = "SELECT pf_id FROM " & g_storeid & "_product WHERE sku='" & pf_sku & "' AND pf_id <> '" & pf_id & "'"
+	set rs = dbconn.Execute(sql)
+	if rs.EOF then
+		response.write("true")
+	else
+		response.write("false")
+	end if
+	rs.Close
+	
+	set rs = nothing
+	
+	
+%>

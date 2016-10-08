@@ -43,11 +43,11 @@
 										<div class="portlet light portlet-fit portlet-datatable">
 											<div class="portlet-title">
 												<div class="caption">
-													<i class="fa fa-shopping-cart"></i>Forms
+													<i class="icon-note"></i>Forms
 												</div>
 												<div class="actions">
 													<% if Session("CURRENT_ADMIN_VIEW_ID") = "1" then %>
-													<a href="tool_form_builer_detail.phtml?form_id=0" class="btn btn-circle btn-info">
+													<a href="tool_form_builder_detail.phtml?form_id=0" class="btn btn-circle btn-info">
 													<i class="fa fa-plus"></i> Add New Form
 													</a>
 													<% end if %>
@@ -179,7 +179,7 @@ var TableData = function () {
 		// modify table search input
 		$('#sample_1_wrapper .dataTables_length select').addClass("m-wrap small");
 		// modify table per page dropdown
-		$('#sample_1_wrapper .dataTables_length select').select2();
+		//$('#sample_1_wrapper .dataTables_length select').select2();
 		// initialzie select2 dropdown
 	};
 	

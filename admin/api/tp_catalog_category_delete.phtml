@@ -1,0 +1,18 @@
+<%response.Expires=-1%>
+<!-- #INCLUDE File="../local/local.phtml" -->
+<!-- #INCLUDE File="../util/xt_func_util.phtml" -->
+<!-- #INCLUDE File="../util/xt_func_string.phtml" -->
+<%
+	category_id = Trim(Request("category_id"))
+	
+	if Len(category_id) > 0 then
+		sql = "DELETE  FROM " & g_storeid & "_dept WHERE dept_id like '" & category_id & "%'"
+		dbconn.Execute(sql)
+		
+		sql = "DELETE  FROM " & g_storeid & "_dept_prod WHERE dept_id like '" & category_id & "%'"
+		dbconn.Execute(sql)
+	end if
+	
+	Response.Redirect("/admin/catalog_category.phtml")
+	
+%>
