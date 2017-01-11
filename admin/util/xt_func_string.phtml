@@ -291,7 +291,6 @@ End Function
 </SCRIPT>
 
 <%
-	
 'Added by Jihoon
 Function replaceCharacterEntity(strValue)
   
@@ -324,4 +323,94 @@ Function CreateURLKey(strng)
 	end if
 
 End Function
-	%>
+%>
+<%
+
+function JsonEscape(val)
+	dim strValue
+	strValue = val
+	
+	if Len(val) > 0 then
+		for ww = 0 to 31
+			strValue = Replace(strValue, Chr(ww), "")
+		next
+	else
+		strValue = ""
+	end if
+	
+	JsonEscape = strValue
+end function
+
+function escape(val)
+	dim i,l,currentDigit, ascii
+
+	l = len( val )
+	for i = 1 to l
+		currentDigit = mid(val, i, 1)
+		ascii = asc( currentDigit )
+		if &h00 <= ascii and ascii <= &h1F then
+			currentDigit = escapeSequence(ascii)
+		elseif &hC280 <= ascii and ascii <= &hC2BF then
+			currentDigit = escapeSequence(ascii - &hC200) ' "u00" + right(padLeft(hex(ascii ), 2, 0), 2)
+		elseif &hC380 <= ascii and ascii <= &hC3BF then
+			currentDigit = escapeSequence(ascii - &hC2C0 ) ' "u00" + right(padLeft(hex(ascii - &hC2C0), 2, 0), 2)
+		elseif ascii = &h22 then 'cDoubleQuote
+			currentDigit = escapeSequence(ascii)
+		elseif ascii = &h5C then 'cRevSolidus
+			currentDigit = escapeSequence(ascii)
+		elseif ascii = &h2F then 'cSoliduscSolidus
+			currentDigit = escapeSequence(ascii)
+		end if
+		escape = escape & currentDigit
+next
+end function
+
+function escapeSequence(ascii)
+	escapeSequence = "u00" & right(padLeft(hex(ascii), 2, 0), 2)
+	'escapeSequence = "&#" & hex(ascii)
+	'escapeSequence = "&#" & Cint(right(padLeft(hex(ascii), 2, 0), 2))
+end function
+
+function padLeft(value, totalLength, paddingChar)
+padLeft = right(clone(paddingChar, totalLength) & value, totalLength)
+end function
+
+function clone(byVal str, n)
+for i = 1 to n : clone = clone & str : next
+end function
+function escapeJSONx(val)
+    cDoubleQuote = &h22
+    cRevSolidus = &h5C
+    cSolidus = &h2F
+ 
+    for i = 1 to (len(val))
+        currentDigit = mid(val, i, 1)
+        if asc(currentDigit) > &h00 and asc(currentDigit) < &h1F then
+            currentDigit = escapeJSONSquence(currentDigit)
+        elseif asc(currentDigit) >= &hC280 and asc(currentDigit) <= &hC2BF then
+            currentDigit = "u00" + right(padLeft(hex(asc(currentDigit) - &hC200), 2, 0), 2)
+        elseif asc(currentDigit) >= &hC380 and asc(currentDigit) <= &hC3BF then
+            currentDigit = "u00" + right(padLeft(hex(asc(currentDigit) - &hC2C0), 2, 0), 2)
+        else
+            select case asc(currentDigit)
+                case cDoubleQuote: currentDigit = escapeJSONSquence(currentDigit)
+                case cRevSolidus: currentDigit = escapeJSONSquence(currentDigit)
+                case cSolidus: currentDigit = escapeJSONSquence(currentDigit)
+            end select
+        end if
+        escapeJSON = escapeJSON & currentDigit
+    next
+end function
+ 
+function escapeJSONSquence(digit)
+    escapeJSONSquence = "u00" + right(padLeft(hex(asc(digit)), 2, 0), 2)
+end function 
+ 
+function padLeft(value, totalLength, paddingChar)
+    padLeft = right(clone(paddingChar, totalLength) & value, totalLength)
+end function
+ 
+public function clone(byVal str, n)
+    for i = 1 to n : clone = clone & str : next
+end function
+%>

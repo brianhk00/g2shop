@@ -1,23 +1,36 @@
 <%
 	Response.CodePage = 65001
 	Response.CharSet = "UTF-8"
-	g_route_page_id = "index"
+	g_route_page_id = "formview"
 %>
 <!--#INCLUDE FILE="template_setting.phtml"-->
-<!--#INCLUDE FILE="../../core/include_index_start.phtml"-->
+<!--#INCLUDE FILE="../../core/include_x_formview.phtml"-->
 <!DOCTYPE html>
 <html dir="ltr" lang="en" class="webkit chrome chrome53 win journal-desktop is-guest skin-4 header-center header-center-sticky product-grid-second-image product-list-second-image home-page layout-1 route-common-home oc2 one-column">
 <head>
 <!--#INCLUDE FILE="include/head.phtml"-->
 </head>
+<script language="Javascript" src="mainmenu_<%=Session("TEMPLATEID")%>.js"></script>
+<script language="Javascript" src="FormLib.js"></script>
+<script language="Javascript">
+function open_win(url){
+	var newWin = window.open(url,
+	"formhelp","width=320,height=300,scrollbars=yes, status=no,toolbar=no,resizable=yes")
+
+	newWin.focus();
+}
+
+function ValidateCheckBoxes(theObj)
+{
+}
+</script>
 <body>
 <!--#INCLUDE FILE="include/after_body_start.phtml"-->
 <header class="journal-header-center nolang-nocurr">
 <!--#INCLUDE FILE="include/header.phtml"-->
 </header>
-<!--#INCLUDE FILE="custom/index_top.phtml"-->
 <div class="extended-container">
-<!--#INCLUDE FILE="include/index.phtml"-->	
+<!--#INCLUDE FILE="include/x_formview.phtml"-->	
 </div>
 <footer class="boxed-footer">
 <!--#INCLUDE FILE="include/footer.phtml"-->
@@ -29,4 +42,17 @@
 <!--#INCLUDE FILE="include/AbsoluteFooter.phtml"-->
 </body>
 </html>
-<!--#INCLUDE FILE="../../core/include_index_end.phtml"-->
+<script language="Javascript">
+function ValidateData()
+{
+	<%=sv%>
+	return true;
+}
+function SubmitForm()
+{
+	if (ValidateData())
+	{
+		document.xformsubmit.submit();
+	}
+}
+</script>

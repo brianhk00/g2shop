@@ -1,0 +1,131 @@
+<%
+	Const adTypeBinary = 1
+	Const adSaveCreateOverWrite = 2
+	Const adSaveCreateNotExist = 1 
+				
+	g_storeid = "hisandher"
+	
+	Server.ScriptTimeout=2000
+	mysqlsvr = "DRIVER={MySQL ODBC 5.2 ANSI Driver};Server=207.32.182.87;Database=hisandhe_hisandher4;Uid=hisandhe_root;Pwd=apple1132U;"
+	'mysqlsvr = "DRIVER={MySQL ODBC 5.2a Driver};Server=207.32.182.87;Database=hisandhe_hisandher4;Uid=hisandhe_root;Pwd=apple1132U;"
+	Set conn = Server.CreateObject("ADODB.connection")
+	conn.open mysqlsvr
+	
+	
+	g_connection_string = "Provider=SQLOLEDB;Data Source=localhost;Database=GSHOP;uid=dinamall_hanta_user;pwd=hanta_pw0105;"
+	Set dbconn = Server.CreateObject("ADODB.Connection")
+	dbconn.open g_connection_string
+	
+	Set objFSO = Server.CreateObject("Scripting.FileSystemObject")
+	Dim strRootFolder
+	strRootFolder = Server.MapPath("../..")
+	
+	sql = "SELECT * FROM catalog_product_flat_1 WHERE  type_id='configurable' AND entity_id > 16796   ORDER BY entity_id LIMIT 40"
+	
+	set rs = conn.Execute(sql)
+	do while not rs.EOF
+	
+		x_entity_id = rs("entity_id")
+		pf_id = CStr(1200000000 + rs("entity_id"))
+		Response.Write("========================" & pf_id & "==============================<br>")
+		
+		'sql = "SELECT * FROM catalog_product_entity_media_gallery WHERE  entity_id = " & rs("entity_id")
+		sql = "SELECT a.entity_id, a.value, b.label, b.position FROM catalog_product_entity_media_gallery AS a, catalog_product_entity_media_gallery_value AS b WHERE a.value_id = b.value_id AND b.disabled = 0 AND a.entity_id = " & rs("entity_id")
+		
+		set rs1 = conn.Execute(sql)
+		do while not rs1.EOF
+			thumbnail = Trim(rs1("value"))
+			sourcePath = "http://www.hisandher.com/media/catalog/product" & thumbnail
+			ar_thumbnail = Split(thumbnail, "/")
+			destPath = strRootFolder & "/media/catalog/product/" & pf_id & "/" & ar_thumbnail(UBound(ar_thumbnail))
+			pf_productimage = ar_thumbnail(UBound(ar_thumbnail))
+			
+			image_position = rs1("position")
+			
+			if (objFSO.FileExists(destPath)) Then
+				Response.Write(sourcePath & "<br>")
+			else
+				Response.Write(sourcePath & " --- <br>")
+				Set xml = CreateObject("Microsoft.XMLHTTP")
+				xml.Open "GET", sourcePath, False
+				xml.Send
+
+				set oStream = createobject("Adodb.Stream")
+
+				oStream.type = adTypeBinary
+				oStream.open
+				oStream.write xml.responseBody
+				oStream.savetofile destPath, adSaveCreateOverWrite
+				oStream.close
+
+				set oStream = nothing
+				Set xml = Nothing
+				
+				'------------------------------------------------------------------------------------
+				
+				dim xmlRecv2
+				set xmlRecv2 = Server.CreateObject("Msxml2.ServerXMLHTTP")
+				'xmlRecv2.open "POST", "http://app.internetreports.com/api/upload?FileURL=" & sourcePath, False
+				xmlRecv2.open "POST", "http://app.olivecommerce.com/Api/Upload?FileURL=" & sourcePath & "&CloudName=dycvxg5ot&APIKey=246285824383464&APISecret=RRej2QkPaoe_gyZPMxCvZ1ktiN4&ProductID=1&MaxSize=200", False
+				
+				
+				xmlRecv2.setRequestHeader "Content-Type", "application/x-www-form-urlencoded; charset=UTF-8"
+				xmlRecv2.setTimeouts 5000, 5000, 15000, 15000
+				xmlRecv2.send ""
+				pResult = xmlRecv2.responseText
+				
+				
+				if Len(pResult) > 0 then
+					pResult = Replace(pResult, "[""", "")
+					pResult = Replace(pResult, """]", "")
+					ar_pResult = Split(pResult, """,""")
+				end if
+				
+				cloud_public_id = ""
+				cloud_url = ""
+				cloud_secure_url = ""
+				
+				if Len(ar_pResult(0)) > 0 then
+					cloud_public_id = ar_pResult(0)
+				end if
+				
+				if Len(ar_pResult(1)) > 0 then
+					cloud_url = ar_pResult(1)
+				end if
+				
+				if Len(ar_pResult(2)) > 0 then
+					cloud_secure_url = ar_pResult(2)
+				end if
+				
+				
+				
+				sqlu = "INSERT INTO " & g_storeid & "_product_image (pf_id,image_name,cloud_public_id, cloud_url, cloud_secure_url, sort_order) VALUES ('"& pf_id &"','" & pf_productimage & "','" & cloud_public_id & "','" & cloud_url & "','" & cloud_secure_url  & "'," & image_position & ")"
+				dbconn.execute(sqlu)
+				
+			end if
+			
+			'sql = "SELECT * FROM " & g_storeid & "_product_image WHERE pf_id = '" & pf_id & "' AND image_name = '" & pf_productimage & "'"
+			'set rs2 = dbconn.Execute(sql)
+			
+			'Response.Write(sourcePath & "<br>")
+			'if rs2.EOF then
+				'Response.Write(sourcePath & " --- <br>")
+			'end if
+			'rs2.Close
+			'set rs2 = nothing
+			
+			
+			rs1.MoveNext
+		loop
+		rs1.Close
+		set rs1 = nothing
+		
+		
+		
+		rs.MoveNext
+	loop
+	rs.Close
+	
+	set rs = nothing
+%>
+<b><%=x_entity_id%></b>

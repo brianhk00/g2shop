@@ -1,0 +1,149 @@
+<!-- #INCLUDE File="config.phtml" -->
+<!-- #INCLUDE File="../util/xt_func_string.phtml" -->
+<%
+	Response.CodePage = 65001
+	Response.CharSet = "UTF-8"
+	Server.ScriptTimeout=2000
+%>
+<%
+	Const adTypeBinary = 1
+	Const adSaveCreateOverWrite = 2
+	Const adSaveCreateNotExist = 1 
+%>
+<%
+	Set source_conn = Server.CreateObject("ADODB.connection")
+	source_conn.open g_source_connection_string
+	
+	Set dest_conn = Server.CreateObject("ADODB.Connection")
+	dest_conn.open g_dest_connection_string
+	
+	Set objFSO = Server.CreateObject("Scripting.FileSystemObject")
+	Dim strRootFolder
+	strRootFolder = Server.MapPath("../..")
+	
+	sql = "SELECT entity_id FROM catalog_product_flat_1 WHERE entity_id > 2868 ORDER BY entity_id LIMIT 50"
+	
+	set rsx = source_conn.Execute(sql)
+	do while not rsx.EOF
+	
+		s_entity_id = rsx("entity_id")
+		sql = "SELECT * FROM catalog_product_entity_media_gallery WHERE entity_id = " & s_entity_id
+		
+		set rs = source_conn.Execute(sql)
+		do while not rs.EOF
+			
+			'/a/m/american_health_more_than_a_multiple_multivitamin_for_men_-_90_tablets.jpg
+			
+			pf_id = CStr(1200000000 + rs("entity_id"))
+			s_value_id = rs("value_id")
+			s_value = Trim(rs("value"))
+			ar_thumbnail = Split(s_value, "/")
+			pf_productimage = ar_thumbnail(UBound(ar_thumbnail))
+			sourcePath = g_source_url & "media/catalog/product" & s_value
+			destPath = strRootFolder & "/media/catalog/product/" & pf_id & "/" & ar_thumbnail(UBound(ar_thumbnail))
+			
+			sql = "SELECT * FROM catalog_product_entity_varchar WHERE entity_id=" & s_entity_id & " AND attribute_id=79"
+			set rs1 = source_conn.Execute(sql)
+			if not rs1.EOF then
+				s_default = Trim(rs1("value"))
+			else
+				s_default = ""
+			end if
+			rs1.Close
+			set rs1 = nothing
+			
+			if s_default = s_value then
+				'Response.Write(s_entity_id & ":" & s_value & "----" & s_default & "-------**<br>")
+			else
+				sql = "SELECT * FROM catalog_product_entity_media_gallery_value WHERE value_id=" & s_value_id
+				set rs2 = source_conn.Execute(sql)
+				if not rs2.EOF then
+					s_label = Trim(rs2("label"))
+					s_position = rs2("position")
+					s_disabled = rs2("disabled")
+				else
+					s_label = ""
+					s_position = 2
+					s_disabled = 0
+				end if
+				rs2.Close
+				set rs2 = nothing
+				
+				Set xml = CreateObject("Microsoft.XMLHTTP")
+				xml.Open "GET", sourcePath, False
+				xml.Send
+
+				set oStream = createobject("Adodb.Stream")
+
+				oStream.type = adTypeBinary
+				oStream.open
+				oStream.write xml.responseBody
+				oStream.savetofile destPath, adSaveCreateOverWrite
+				oStream.close
+
+				set oStream = nothing
+				Set xml = Nothing
+				
+				'------------------------------------------------------------------------------------
+				
+				dim xmlRecv2
+				set xmlRecv2 = Server.CreateObject("Msxml2.ServerXMLHTTP")
+				xmlRecv2.open "POST", "http://app.olivecommerce.com/Api/Upload?FileURL=" & sourcePath & "&CloudName=" & g_cloudinary_cloud_name & "&APIKey=" & g_cloudinary_api_key & "&APISecret=" & g_cloudinary_api_secret & "&ProductID=1&MaxSize=" & g_cloudinary_max_size, False
+				
+				
+				xmlRecv2.setRequestHeader "Content-Type", "application/x-www-form-urlencoded; charset=UTF-8"
+				xmlRecv2.setTimeouts 5000, 5000, 15000, 15000
+				xmlRecv2.send ""
+				pResult = xmlRecv2.responseText
+				
+				
+				if Len(pResult) > 0 then
+					pResult = Replace(pResult, "[""", "")
+					pResult = Replace(pResult, """]", "")
+					ar_pResult = Split(pResult, """,""")
+				end if
+				
+				cloud_public_id = ""
+				cloud_url = ""
+				cloud_secure_url = ""
+				
+				if Len(ar_pResult(0)) > 0 then
+					cloud_public_id = ar_pResult(0)
+				end if
+				
+				if Len(ar_pResult(1)) > 0 then
+					cloud_url = ar_pResult(1)
+				end if
+				
+				if Len(ar_pResult(2)) > 0 then
+					cloud_secure_url = ar_pResult(2)
+				end if
+				
+				sql = "SELECT * FROM " & g_storeid & "_product_image WHERE pf_id = '" & pf_id & "' AND image_name = '" & pf_productimage & "'"
+				set rsu = dest_conn.execute(sql)
+				if not rsu.EOF then
+				else
+					sqlu = "INSERT INTO " & g_storeid & "_product_image (pf_id,image_name,cloud_public_id, cloud_url, cloud_secure_url, image_label, sort_order, disabled) VALUES "
+					sqlu = sqlu & "('"& pf_id &"','" & pf_productimage & "','" & cloud_public_id & "','" & cloud_url & "','" & cloud_secure_url  & "','" & s_label & "'," & s_position & "," & s_disabled & ")"
+					dest_conn.execute(sqlu)
+					Response.Write(s_entity_id & ":" & s_value & "----" & s_label & "--" & s_position & "--" & s_disabled &  "---" & destPath & "-------<br>")
+				end if
+				
+					
+				
+			
+			end if
+			
+			rs.MoveNext
+		loop
+		rs.Close
+		set rs = nothing
+	
+		rsx.MoveNext
+	loop
+	rsx.Close
+	set rsx = nothing
+	
+	Response.Write("+++++++++++ " & s_entity_id & " +++++++++++++++")
+%>
+	

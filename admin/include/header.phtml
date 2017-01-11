@@ -255,7 +255,7 @@
 					</li>
 					<li class="menu-dropdown classic-menu-dropdown <% if InStr(current_menu,"tool_") then%>active<% end if %>">
 						<a href="javascript:;">
-							<i class="icon-briefcase"></i> Tools
+							<i class="icon-wrench"></i> Tools
 							<span class="arrow"></span>
 						</a>
 						<ul class="dropdown-menu pull-left">
@@ -386,6 +386,49 @@
 							</li>
 						</ul>
 					</li>
+					<% if g_enable_backoffice = "1" then %>
+					<li class="menu-dropdown classic-menu-dropdown <% if InStr(current_menu,"backoffice_") then%>active<% end if %>">
+						<a href="javascript:;">
+							<i class="icon-grid"></i> Backoffice
+							<span class="arrow"></span>
+						</a>
+						<ul class="dropdown-menu pull-left">
+							<li <% if InStr(current_menu,"backoffice_members") then%>class="active"<% end if %>>
+								<a href="backoffice_members.phtml" class="nav-link">
+									<i class="icon-settings"></i> Members
+								</a>
+							</li>
+							<li class="dropdown-submenu <% if InStr(current_menu,"backoffice_magento_") then%>active<% end if %>">
+								<a href="javascript:;" class="nav-link nav-toggle ">
+									<i class="icon-star"></i> Magento
+									<span class="arrow"></span>
+								</a>
+								<ul class="dropdown-menu">
+									<li <% if InStr(current_menu,"backoffice_magento_orders") then%>class="active"<% end if %>>
+										<a href="backoffice_magento_orders.phtml" class="nav-link">
+											<i class="icon-basket-loaded"></i> Orders
+										</a>
+									</li>
+								</ul>
+							</li>
+							<!--
+							<li class="dropdown-submenu <% if InStr(current_menu,"backoffice_request_") then%>active<% end if %>">
+								<a href="javascript:;" class="nav-link nav-toggle ">
+									<i class="icon-star"></i> Request
+									<span class="arrow"></span>
+								</a>
+								<ul class="dropdown-menu">
+									<li <% if InStr(current_menu,"backoffice_request_applydebitcard") then%>class="active"<% end if %>>
+										<a href="backoffice_request_applydebitcard.phtml" class="nav-link">
+											<i class="icon-basket-loaded"></i> Debit Card
+										</a>
+									</li>
+								</ul>
+							</li>
+							-->
+						</ul>
+					</li>
+					<% end if %>
 				</ul>
 			</div>
 			<!-- END MEGA MENU -->

@@ -1,0 +1,164 @@
+<%
+	'sql = "SELECT * FROM " & g_storeid & "_dept WHERE parent_dept='" & g_dept_id & "'"
+	
+	sql = "SELECT dept_id, LEN(dept_id) as a, dept_name, parent_dept, dept_row, url_Key, ISNULL(CONVERT(nvarchar(100),b.field_value),'') as dept_name_2"
+	sql = sql & " FROM " & g_storeid & "_dept as a "
+	sql = sql & " LEFT OUTER JOIN " & g_storeid & "_store_type_data_varchar b"
+	sql = sql & " ON a.dept_id = b.entity_id"
+	sql = sql & " AND b.type_id =1 AND b.field_id = 1 AND view_id = " &  Session("CURRENT_VIEW_ID")
+	sql = sql & " WHERE a.include_topnav = 1 AND a.is_hidden = 0 "
+	sql = sql & " AND a.parent_dept = '" & g_dept_id & "'"
+	sql = sql & " ORDER BY a, dept_row"
+		
+	set rssub = dbconn.execute(sql)
+	if not rssub.EOF then
+%>
+<div class="box side-category side-category-left side-category-accordion" id="journal-side-category-64463059">
+	<div class="box-heading">
+		Category
+	</div>
+	<div class="box-category">
+		<ul>
+			<%
+				do while not rssub.EOF
+					
+					m_dept_id = rssub("dept_id")
+					m_dept_name  = rssub("dept_name")
+					dept_name_2  = rssub("dept_name_2")
+					m_url_key  = rssub("url_key")
+					if Len(m_url_key) > 0 then
+						m_dept_link = g_store_url & m_url_key & ".html"
+					else
+						m_dept_link = g_store_url & "dept.phtml?dept_id=" & m_dept_id
+					end if
+					
+					if Len(dept_name_2)> 0 then
+						m_dept_name = dept_name_2
+					end if
+					
+					
+			%>
+			<li>
+			<a href="<%=m_dept_link%>" class=""><%=m_dept_name%></a>
+			</li>
+			<%
+					rssub.MoveNext
+				loop
+			%>
+		</ul>
+	</div>
+	<script>
+		$('#journal-side-category-64463059 .box-category a i').click(function(e, first){
+			e.preventDefault();
+			$('+ ul', $(this).parent()).slideToggle(first ? 0 : 400);
+			$(this).parent().toggleClass('active');
+			$(this).html($(this).parent().hasClass('active') ? "<span>-</span>" : "<span>+</span>");
+			return false;
+		});
+		$('#journal-side-category-64463059 .is-active i').trigger('click', true);
+	</script>
+</div>
+<%
+	end if
+%>
+
+<%
+	if Len(icecat_category) > 0 then
+%>
+
+<%
+	'FOR FILTERS --- ICECAT
+	categoryid = icecat_category
+
+%>
+
+
+<% else %>
+
+<%
+	'private filter
+	sql = "SELECT DISTINCT TOP 10 attribute_id FROM " & g_storeid & "_product_entity_varchar WHERE entity_id IN (SELECT pf_id FROM " & g_storeid & "_dept_prod WHERE dept_id like '" & dept_id & "%')"
+	set rsFilter = dbconn.Execute(sql)
+%>
+<div id="journal-super-filter-54" class="journal-sf" >
+	
+	<% If Len(manufacturer) > 0 Then %>
+	<% Else %>
+	<!--
+	<div class="box sf-manufacturer sf-list sf-single">
+		<div class="box-heading">
+			Shop by Brand
+		</div>
+		<div class="box-content">
+			<ul class="">
+				<li><label><input data-keyword="hipster" type="checkbox" name="manufacturer" value="14"><span class="sf-name">Hipster (1) </span></label></li>
+			</ul>
+		</div>
+	</div>
+	-->
+	<% end if %>
+	<%
+		do while not rsFilter.EOF
+			f_attribute_id = rsFilter(0)
+			sql = "SELECT attribute_id, frontend_label FROM " & g_storeid & "_eav_attribute WHERE attribute_id = " & f_attribute_id
+			set rsAttrName = dbconn.Execute(sql)
+			if not rsAttrName.EOF then
+				f_attribute_name = rsAttrName(1)
+			end if
+			rsAttrName.Close
+			set rsAttrName = nothing
+			
+			
+			sOptions = ""
+			sql = "SELECT DISTINCT value FROM " & g_storeid & "_product_entity_varchar WHERE attribute_id = " & f_attribute_id & " AND entity_id IN (SELECT pf_id FROM " & g_storeid & "_dept_prod WHERE dept_id like '" & dept_id & "%')"
+			set rsAttrOption = dbconn.Execute(sql)
+			do while not rsAttrOption.EOF
+				sOptions = sOptions & rsAttrOption(0) & ","
+				rsAttrOption.MoveNext
+			loop
+			rsAttrOption.Close
+			set rsAttrOption = nothing
+			
+			if Len(sOptions) > 0 then
+				sOptions = Left(sOptions, Len(sOptions)-1)
+			end if
+	%>
+	<div class="box sf-manufacturer sf-list sf-single">
+		<div class="box-heading">
+			<%=f_attribute_name%>
+		</div>
+		<div class="box-content">
+			<ul class="">
+				<!--
+				<li><label><input data-keyword="hipster" type="checkbox" name="manufacturer" value="14"><span class="sf-name">Hipster (1) </span></label></li>
+				-->
+				<select class="form-control input-sm">
+				<option value="">Select</option>
+				<%
+					sql = "SELECT option_id, option_name FROM " & g_storeid & "_eav_attribute_option WHERE "
+					sql = sql & " attribute_id=" & f_attribute_id 
+					sql = sql & " AND option_id IN (" & sOptions & ") "
+					sql = sql & " ORDER BY option_name"
+					set rsOptions = dbconn.Execute(sql)
+					do while not rsOptions.EOF
+						'if InStr(sOptions, "," & rsOptions(0) & ",") then
+				%>
+				<option value="<%=rsOptions(0)%>"><%=rsOptions(1)%></option>
+				<%
+						'end if
+						rsOptions.MoveNext
+					loop
+					rsOptions.Close
+					set rsOptions = nothing
+				%>
+				</select>
+			</ul>
+		</div>
+	</div>
+	<%
+			rsFilter.MoveNext
+		loop
+		rsFilter.Close
+	%>
+</div>
+<% end if %>

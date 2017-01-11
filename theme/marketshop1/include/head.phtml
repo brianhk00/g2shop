@@ -1,9 +1,8 @@
-<meta charset="UTF-8" />
-<meta name="format-detection" content="telephone=no" />
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-<link href="image/favicon.png" rel="icon" />
+<%
+	config_general_default_meta_tags = GetSettingValue("config_general_default_meta_tags", "")
+%>
 <title><%=g_page_title%></title>
-<meta name="description" content="Responsive and clean html template design for any kind of ecommerce webshop">
+<%=config_general_default_meta_tags%>
 <!-- CSS Part Start-->
 <link rel="stylesheet" type="text/css" href="<%=skin_base_url%>theme/<%=THEME_TEMPLATE%>/js/bootstrap/css/bootstrap.min.css" />
 <link rel="stylesheet" type="text/css" href="<%=skin_base_url%>theme/<%=THEME_TEMPLATE%>/css/font-awesome/css/font-awesome.min.css" />
@@ -11,9 +10,6 @@
 <link rel="stylesheet" type="text/css" href="<%=skin_base_url%>theme/<%=THEME_TEMPLATE%>/css/owl.carousel.css" />
 <link rel="stylesheet" type="text/css" href="<%=skin_base_url%>theme/<%=THEME_TEMPLATE%>/css/owl.transitions.css" />
 <% if g_route_page_id = "product" then %>
-<link rel="stylesheet" type="text/css" href="<%=skin_base_url%>theme/<%=THEME_TEMPLATE%>/js/swipebox/src/css/swipebox.min.css">
-<% end if %>
-<% if g_route_page_id = "config" then %>
 <link rel="stylesheet" type="text/css" href="<%=skin_base_url%>theme/<%=THEME_TEMPLATE%>/js/swipebox/src/css/swipebox.min.css">
 <% end if %>
 <link rel="stylesheet" type="text/css" href="<%=skin_base_url%>theme/<%=THEME_TEMPLATE%>/css/responsive.css" />

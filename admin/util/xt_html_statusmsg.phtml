@@ -1,0 +1,11 @@
+<SCRIPT LANGUAGE=VBScript RUNAT=Server>
+
+Sub AddToHTMLMsgHldr(ByRef str_msg_hldr,str_msg,bNewLine)
+	if(bNewLine) then
+		str_msg_hldr=chr(13)&chr(10)&str_msg_hldr&"<br>"&str_msg
+	else
+		str_msg_hldr=str_msg_hldr&str_msg
+	end if
+End Sub
+
+</SCRIPT>

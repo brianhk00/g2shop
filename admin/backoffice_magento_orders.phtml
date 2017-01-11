@@ -11,8 +11,19 @@
 <link href="../assets/global/plugins/bootstrap-datepicker/css/bootstrap-datepicker3.min.css" rel="stylesheet" type="text/css" />
 <!-- END PAGE LEVEL PLUGINS -->
 <!--#INCLUDE FILE="include/head_bottom.phtml"-->
-</head>
+<style>
+div.cv {
+    color: blue;
+}
+div.hzone {
+    color: red;
+}
 
+div.ps {
+    color: green;
+}
+</style>
+</head>
 <body class="page-container-bg-solid">
 <div class="page-wrapper">
 	<div class="page-wrapper-row">
@@ -41,15 +52,16 @@
 											<div class="portlet-title">
 												<div class="caption">
 													<i class="icon-settings font-dark"></i>
-													<span class="caption-subject font-dark sbold uppercase">Customer List</span>
+													<span class="caption-subject font-dark sbold uppercase">Order List</span>
 												</div>
 												<div class="actions">
+													<!--
 													<a class="btn green btn-circle" href="customer_manage_customer_detail.phtml?shopper_id=0"> 
 														<i class="fa fa-plus"></i>
 														Create New Customer
 													</a>
+													-->
 													<div class="btn-group">
-														<!--
 														<a class="btn red btn-outline btn-circle" href="javascript:;" data-toggle="dropdown">
 															<i class="fa fa-share"></i>
 															<span class="hidden-xs"> Tools </span>
@@ -57,20 +69,9 @@
 														</a>
 														<ul class="dropdown-menu pull-right">
 															<li>
-																<a href="javascript:;"> Export to Excel </a>
-															</li>
-															<li>
-																<a href="javascript:;"> Export to CSV </a>
-															</li>
-															<li>
-																<a href="javascript:;"> Export to XML </a>
-															</li>
-															<li class="divider"> </li>
-															<li>
-																<a href="javascript:;"> Print Invoices </a>
+																<a href="javascript:ExportExcel();"> Export to Excel </a>
 															</li>
 														</ul>
-														-->
 													</div>
 												</div>
 											</div>
@@ -78,6 +79,7 @@
 												<div class="table-container">
 													<div class="table-actions-wrapper">
 														<span> </span>
+														<!--
 														<select class="table-group-action-input form-control input-inline input-small input-sm">
 															<option value="">Select...</option>
 															<option value="Print">Print</option>
@@ -95,6 +97,7 @@
 														</select>
 														<button class="btn btn-sm green table-group-action-submit">
 															<i class="fa fa-check"></i> Submit</button>
+														-->
 													</div>
 													<table class="table table-striped table-bordered table-hover table-checkable" id="datatable_customer_manage_customer">
 														<thead>
@@ -105,48 +108,21 @@
 																		<span></span>
 																	</label>
 																</th>
-																<th width="8%"> ID&nbsp;# </th>
-																<th width="120"> Name </th>
-																<th width="120"> Email </th>
-																<th width="20"> Group </th>
-																<th width="10%"> Telephone </th>
-																<th width="5%"> Country </th>
-																<th width="10%"> State </th>
-																<th width="15%"> Customer Since </th>
-																<th width="5%"> Actions </th>
+																<th> No&nbsp;# </th>
+																<th> Customer Info </th>
+																<th> Shipping Name <br> SSN/Phone</th>
+																<th> State</th>
+																<th> City </th>
+																<th> Zip</th>
+																<th> Shipping Address</th>
+																<th> Items </th>
+																<th> Total<br>CV </th>
 															</tr>
 															<tr role="row" class="filter">
-																<td> </td>
-																<td>
-																	<input type="text" class="form-control form-filter input-sm" name="shopper_id"> 
-																</td>
-																<td>
-																	<input type="text" class="form-control form-filter input-sm" name="shopper_name"> 
-																</td>
-																<td>
-																	<input type="text" class="form-control form-filter input-sm" name="shopper_email"> 
-																</td>
-																<td>
-																	<select name="shopper_group" class="form-control form-filter input-sm">
-																		<option value="">Select...</option>
-																		<option value="A">A</option>
-																		<option value="B">B</option>
-																		<option value="C">C</option>
-																		<option value="D">D</option>
-																	</select>
-																</td>
-																<td>
-																	<input type="text" class="form-control form-filter input-sm" name="shopper_phone"> 
-																</td>
-																<td>
-																	<input type="text" class="form-control form-filter input-sm" name="shopper_country"> 
-																</td>
-																<td>
-																	<input type="text" class="form-control form-filter input-sm" name="shopper_state"> 
-																</td>
-																<td>
-																	<div class="input-group date date-picker margin-bottom-5" data-date-format="mm/dd/yyyy">
-																		<input type="text" class="form-control form-filter input-sm" readonly name="shopper_date_from" placeholder="From">
+																<td></td>
+																<td colspan="3">
+																	<div class="input-group date date-picker margin-bottom-5" data-date-format="yyyy-mm-dd" style="float:left">
+																		<input type="text" class="form-control form-filter input-sm" readonly name="created_at_from" placeholder="From">
 																		<span class="input-group-btn">
 																			<button class="btn btn-sm default" type="button">
 																				<i class="fa fa-calendar"></i>
@@ -154,7 +130,7 @@
 																		</span>
 																	</div>
 																	<div class="input-group date date-picker" data-date-format="mm/dd/yyyy">
-																		<input type="text" class="form-control form-filter input-sm" readonly name="shopper_date_to" placeholder="To">
+																		<input type="text" class="form-control form-filter input-sm" readonly name="created_at_to" placeholder="To">
 																		<span class="input-group-btn">
 																			<button class="btn btn-sm default" type="button">
 																				<i class="fa fa-calendar"></i>
@@ -163,12 +139,61 @@
 																	</div>
 																</td>
 																<td>
+																</td>
+																<td>
+																</td>
+																<td>
+																</td>
+																<td>
+																</td>
+																<td>
+																	<input type="text" class="form-control form-filter input-sm" name="D_TICKET"> 
+																</td>
+																<td style="text-align:left">
 																	<div class="margin-bottom-5">
 																		<button class="btn btn-sm green btn-outline filter-submit margin-bottom">
 																			<i class="fa fa-search"></i> Search</button>
 																	</div>
-																	<button class="btn btn-sm red btn-outline filter-cancel">
-																		<i class="fa fa-times"></i> Reset</button>
+																	<div class="margin-bottom-5">
+																		<button class="btn btn-sm red btn-outline filter-cancel">
+																			<i class="fa fa-times"></i> Reset</button>
+																	</div>
+																	
+																</td>
+															</tr>
+															<tr role="row" class="filter">
+																<td> </td>
+																<td>
+																	<input type="text" class="form-control form-filter input-sm" name="increment_id"> 
+																</td>
+																<td>
+																	<input type="text" class="form-control form-filter input-sm" name="D_UID"> 
+																</td>
+																<td>
+																	<input type="text" class="form-control form-filter input-sm" name="D_SID">
+																</td>
+																<td>
+																	
+																</td>
+																<td>
+																	
+																</td>
+																<td>
+																	
+																</td>
+																<td>
+																	<input type="text" class="form-control form-filter input-sm" name="D_ADDRESS">
+																</td>
+																<td>
+																	<select name="D_ITEM" class="form-control form-filter input-sm">
+																		<option value="">All</option>
+																		<option value="1">Prime Only</option>
+																		<option value="2">H_Zone Only</option>
+																		<option value="3">Purchase Service Only</option>
+																	</select>
+																</td>
+																<td>
+																	
 																</td>
 															</tr>
 														</thead>
@@ -180,6 +205,7 @@
 									</div>
 								</div>
 							</div>
+							<iframe id="export_frame"style="visibility:hidden;border:solid 1px;width:0px;height:0px;"></iframe>
 							<!-- END PAGE CONTENT INNER -->
 						</div>
 					</div>
@@ -223,7 +249,7 @@ var TableDatatablesAjax = function () {
         });
     }
 	
-	var grid;
+	var grid
 	
     var handleDemo1 = function () {
 
@@ -250,23 +276,28 @@ var TableDatatablesAjax = function () {
                 // So when dropdowns used the scrollable div should be removed. 
                 //"dom": "<'row'<'col-md-8 col-sm-12'pli><'col-md-4 col-sm-12'<'table-group-actions pull-right'>>r>t<'row'<'col-md-8 col-sm-12'pli><'col-md-4 col-sm-12'>>",
                 columnDefs: [ 
-					{ orderable: false, targets: [0,8,9] },
-					{ className: "text-center", targets: [6,7,8] },
-					{ className: "text-right", targets: [5] }
+					{ orderable: false, targets: [0,2,3,4,5,6,7,8,9] },
+					{ "width": "100", "targets": 1 },
+					{ "width": "420", "targets": 8 },
+					{ "width": "180", "targets": 7 },
+					{ "width": "180", "targets": 2 },
+					{ "width": "130", "targets": 3 },
+					{ "width": "20", "targets": [4,5,6] },
+					{ className: "center", "targets": [9] }
 				],
 					
                 "bStateSave": true, // save datatable state(pagination, sort, etc) in cookie.
-
+				
                 "lengthMenu": [
                     [10, 20, 50, 100, 150, -1],
                     [10, 20, 50, 100, 150, "All"] // change per page values here
                 ],
-                "pageLength": 20, // default record count per page
+                "pageLength": 50, // default record count per page
                 "ajax": {
-                    "url": "api/sp_customer_list_ex.phtml", // ajax source
+                    "url": "api/sp_backoffice_order_list.phtml", // ajax source
                 },
                 "order": [
-                    [1, "asc"]
+                    [1, "desc"]
                 ]// set first column as a default sort by asc
             }
         });
@@ -314,7 +345,7 @@ var TableDatatablesAjax = function () {
             handleDemo1();
         },
 		
-		submitFilter: function () {
+		 submitFilter: function () {
 
             grid.submitFilter();
         }
@@ -327,13 +358,19 @@ jQuery(document).ready(function() {
     TableDatatablesAjax.init();
 	
 	$('.form-filter').keypress(function (e) {
-		if (e.which == 13) {
-			TableDatatablesAjax.submitFilter();
-			return false; 
-		}
+	  if (e.which == 13) {
+		TableDatatablesAjax.submitFilter();
+		return false; 
+	  }
 	});
-	
-});	
+});
+
+function ExportExcel()
+{
+	url = "backoffice_magento_order_excel.phtml?" + $('input[name="id[]"]:checked').serialize();
+	$('#export_frame').attr('src', url)
+}
+
 </script>
 <!-- END PAGE LEVEL SCRIPTS -->
 </body>

@@ -1,0 +1,57 @@
+<%
+	Const adTypeBinary = 1
+	Const adSaveCreateOverWrite = 2
+	Const adSaveCreateNotExist = 1 
+				
+	g_storeid = "hisandher"
+	
+	Server.ScriptTimeout=2000
+	mysqlsvr = "DRIVER={MySQL ODBC 5.2 ANSI Driver};Server=207.32.182.87;Database=hisandhe_hisandher4;Uid=hisandhe_root;Pwd=apple1132U;"
+	'mysqlsvr = "DRIVER={MySQL ODBC 5.2a Driver};Server=207.32.182.87;Database=hisandhe_hisandher4;Uid=hisandhe_root;Pwd=apple1132U;"
+	Set conn = Server.CreateObject("ADODB.connection")
+	conn.open mysqlsvr
+	
+	g_connection_string = "Provider=SQLOLEDB;Data Source=localhost;Database=GSHOP;uid=dinamall_hanta_user;pwd=hanta_pw0105;"
+	Set dbconn = Server.CreateObject("ADODB.Connection")
+	dbconn.open g_connection_string
+	
+	sql = "SELECT * FROM catalog_product_entity_text WHERE attribute_id = 72 AND store_id = 0 AND entity_id IN "
+	sql = sql & " (SELECT entity_id FROM catalog_product_flat_1 WHERE type_id='configurable') AND entity_id < 38714 ORDER BY entity_id"
+	set rs = conn.Execute(sql)
+	do while not rs.EOF
+		pf_id = CStr(1200000000 + rs("entity_id"))
+		Response.Write("========================" & pf_id & "==============================<br>")
+		x_value = rs("value")
+		
+		if Len(x_value) > 0 then
+			
+			Set rsUpdate = Server.CreateObject("ADODB.Recordset")
+			with rsUpdate
+				.ActiveConnection = dbconn
+				.CursorLocation = 3
+				.CursorType = 1
+				.LockType = 3
+				.Source = g_storeid & "_product WHERE pf_id='" & pf_id & "'"
+				.Open
+			end with
+			
+			rsUpdate("details") = x_value
+			
+			If dbconn.Errors.Count > 0 Then
+				dbconn.Errors.Clear
+				rsUpdate.CancelUpdate
+			else
+				rsUpdate.Update
+			End If
+			
+			rsUpdate.Close
+			set rsUpdate = nothing
+		
+		end if
+		
+		rs.MoveNext
+	loop
+	rs.Close
+	set rs = nothing
+	
+%>

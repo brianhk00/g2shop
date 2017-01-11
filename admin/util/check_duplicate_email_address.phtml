@@ -1,0 +1,16 @@
+<!--#INCLUDE FILE="../local/local.phtml" -->
+<!--#INCLUDE FILE="xt_func_string.phtml"-->
+<%
+	new_email = Trim(Request("new_email"))
+	new_email = FilterEmailString(new_email)
+	
+	sql = "SELECT shopper_id FROM " & g_storeid & "_shopper WHERE email='" & new_email & "'"
+	set rs = dbconn.Execute(sql)
+	if not rs.EOF then
+		response.write("false")
+	else
+		response.write("true")
+	end if
+	rs.close
+	set rs = nothing
+%>

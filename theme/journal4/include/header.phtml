@@ -13,13 +13,13 @@
 <div id="header" class="journal-header row z-2">
 	<div class="journal-links j-min xs-100 sm-100 md-50 lg-50 xl-50">
 		<div class="links j-min">
-			<a href="#" class="text-only"><span class="top-menu-link">About Us</span></a>
+			<a href="/aboutus.html" class="text-only"><span class="top-menu-link">About Us</span></a>
 			<span class="no-link">&bull;</span>
-			<a href="#" class="text-only"><span class="top-menu-link">Contact Us</span></a>
+			<a href="/contactus.html" class="text-only"><span class="top-menu-link">Contact Us</span></a>
 			<span class="no-link">&bull;</span>
-			<a href="#"><span class="top-menu-link">Specials</span></a>
-			<span class="no-link">&bull;</span>
-			<a href="#"><span class="top-menu-link">Site Feedback</span></a>
+			<a href="/sale-clearance.html"><span class="top-menu-link">Specials</span></a>
+			<!--<span class="no-link">&bull;</span>
+			<a href="#"><span class="top-menu-link">Site Feedback</span></a>-->
 		</div>
 	</div>
 	<div class="journal-secondary j-min xs-100 sm-100 md-50 lg-50 xl-50">
@@ -39,10 +39,18 @@
 	</div>
 	<div class="journal-search j-min xs-100 sm-50 md-30 lg-25 xl-25">
 		<div id="search" class="input-group j-min">
+			<form id="search_mini_form" action="<%=g_store_url%>search.phtml" method="get">
+			<input id="filter_name" type="text" name="sp" value="" placeholder="<%=a("Search")%>..." class="form-control input-lg"/>
+			<div class="button-search">
+				<button type="button"><i></i></button>
+			</div>
+			</form>
+			<!--
 			<input type="text" name="search" value="" placeholder="Search our entire store..." autocomplete="off" class="form-control input-lg"/>
 			<div class="button-search">
 				<button type="button"><i></i></button>
 			</div>
+			-->
 		</div>
 	</div>
 	<div class="journal-logo j-100 xs-100 sm-100 md-40 lg-50 xl-50">

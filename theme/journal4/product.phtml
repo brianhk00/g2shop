@@ -1,12 +1,12 @@
 <%
 	Response.CodePage = 65001
 	Response.CharSet = "UTF-8"
-	g_route_page_id = "index"
+	g_route_page_id = "product"
 %>
 <!--#INCLUDE FILE="template_setting.phtml"-->
-<!--#INCLUDE FILE="../../core/include_index_start.phtml"-->
+<!--#INCLUDE FILE="../../core/catalog/include_product_start.phtml"-->
 <!DOCTYPE html>
-<html dir="ltr" lang="en" class="webkit chrome chrome53 win journal-desktop is-guest skin-4 header-center header-center-sticky product-grid-second-image product-list-second-image home-page layout-1 route-common-home oc2 one-column">
+<html dir="ltr" lang="en" class="webkit chrome chrome53 win journal-desktop is-guest skin-4 header-center header-center-sticky backface product-grid-second-image product-list-second-image product-page product-page-74 layout-2 route-product-product oc2 one-column" data-j2v="2.7.6">
 <head>
 <!--#INCLUDE FILE="include/head.phtml"-->
 </head>
@@ -15,11 +15,17 @@
 <header class="journal-header-center nolang-nocurr">
 <!--#INCLUDE FILE="include/header.phtml"-->
 </header>
-<!--#INCLUDE FILE="custom/index_top.phtml"-->
 <div class="extended-container">
-<!--#INCLUDE FILE="include/index.phtml"-->	
+	<div id="container" class="container j-container">
+		<!--#INCLUDE FILE="include/breadcrumb.phtml"-->
+		<!--#INCLUDE FILE="include/product.phtml"-->
+	</div>
+</div>
+<div id="bottom-modules">
+	
 </div>
 <footer class="boxed-footer">
+<div id="footer">
 <!--#INCLUDE FILE="include/footer.phtml"-->
 </footer>
 <div class="scroll-top">
@@ -29,4 +35,4 @@
 <!--#INCLUDE FILE="include/AbsoluteFooter.phtml"-->
 </body>
 </html>
-<!--#INCLUDE FILE="../../core/include_index_end.phtml"-->
+<!--#INCLUDE FILE="../../core/catalog/include_product_end.phtml"-->

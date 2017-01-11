@@ -5,8 +5,74 @@
 <script type="text/javascript" src="<%=skin_base_url%>theme/<%=THEME_TEMPLATE%>/lib/respond/respond.js?j2v=2.7.6"></script>
 <script type="text/javascript" src="<%=skin_base_url%>theme/<%=THEME_TEMPLATE%>/lib/sticky/jquery.sticky.js?j2v=2.7.6"></script>
 <script type="text/javascript" src="<%=skin_base_url%>theme/<%=THEME_TEMPLATE%>/js/init.js?j2v=2.7.6"></script>
+<% if g_route_page_id = "index" then %>
+<script>
+$(document).ready(function () {
+	
+	Journal.enableStickyHeader();
+});
+</script>
+<% end if %>
+<% if g_route_page_id = "dept" then %>
+<script>
+$(document).ready(function () {
+	
+	Journal.enableStickyHeader();
+});
+</script>
+<% end if %>
 <% if g_route_page_id = "product" then %>
+<script>
+$(document).ready(function () {
+	
+	$('.product-info .image-additional a').click(function (e) {
+        e.preventDefault();
+        var thumb = $(this).find('img').attr('src');
+        var image = $(this).attr('href');
+        Journal.changeProductImage(thumb, image);
+        return false;
+    });
+	
+	$('.product-tabs').insertAfter('.product-info');
+	
+	Journal.enableStickyHeader();
 
+	if ($('html').hasClass('product-page') || $('html').hasClass('quickview')) {
+		//Journal.enableCloudZoom('inner');
+		//alert("yo");
+		var $image = $('#image');
+
+		$image.ImageZoom({
+			showDescription: false,
+			bigImageSrc: $image.attr('data-largeimg'),
+			type: 'inner',
+			offset: [0, 0],
+			zoomSize: [$image.width(), $image.height()]
+		});
+	}
+	
+	if (!$('html').hasClass('quickview')) {
+        $('.product-info .image-gallery .swipebox').swipebox();
+		
+        $('.zm-viewer').live('click', function () {
+            var src = $(this).find('img').not('.zm-fast').attr('src');
+            $('.product-info .image-gallery a.swipebox[href="' + src + '"]').first().click();
+            return false;
+        });
+
+        $('#image').parent().click(function () {
+            $('.product-info .image-gallery a.swipebox[href="' + $(this).attr('href') + '"]').first().click();
+            return false;
+        });
+        $('.gallery-text').click(function () {
+            $('.product-info .image-gallery a.swipebox').first().click();
+            return false;
+        });
+    }
+	
+	//Journal.productPageGallery();
+});
+</script>
 <% end if %>
 <% if g_route_page_id = "sproduct" then %>
 

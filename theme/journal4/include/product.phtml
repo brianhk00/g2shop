@@ -1,0 +1,328 @@
+<div id="column-right" class="col-sm-3 hidden-xs side-column ">
+	<!--#INCLUDE FILE="../custom/product_left.phtml"-->
+</div>
+<div class="row">
+	<div id="content" class="product-page-content" itemscope itemtype="http://schema.org/Product">
+		<h1 class="heading-title" itemprop="name"><%=x_prod_name%></h1>
+		<div class="row product-info split-50-50">
+			<div class="left">
+				<div class="image">
+					<a href="<%=x_prod_zoom_image%>" title="Beige Ruffle Dress"><img src="<%=x_prod_image%>" title="<%=x_prod_name%>" alt="<%=x_prod_name%>" id="image" data-largeimg="<%=x_prod_zoom_image%>" itemprop="image"/></a>
+				</div>
+				<div class="gallery-text">
+					<span>Click Image for Gallery</span>
+				</div>
+				<div id="product-gallery" class="image-additional journal-carousel">
+					<a href="<%=x_prod_zoom_image%>"  title="<%=x_prod_name%>"><img src="<%=x_prod_thumb_image%>" title="<%=x_prod_name%>"/></a>
+					<%
+						sql = "SELECT * FROM " & g_storeid & "_product_image WHERE pf_id = '" & pf_id & "' AND image_name <> '" & x_prod_image_file & "'"
+						set rs = dbconn.Execute(sql)
+						do while not rs.EOF
+							cloudImg = Trim(rs("cloud_url"))
+							ssImg = Replace(cloudImg, "upload/", ssImgSize)
+							ssImg1 = Replace(cloudImg, "upload/", ssThumbSize)
+							ssImg2 = Replace(cloudImg, "upload/", ssZoomSize)
+							
+					%>
+					<a href="<%=ssImg2%>" title="Beige Ruffle Dress"><img src="<%=ssImg1%>" title="<%=x_prod_name%>" alt="<%=x_prod_name%>"/></a>
+					<%
+							rs.MoveNext
+						loop
+						rs.Close
+						set rs = nothing
+					%>
+				</div>
+				<script>
+					(function () {
+					var opts = {
+					itemsCustom:[
+					[0, parseInt('4', 10)],
+					[470, parseInt('4', 10)],
+					[760, parseInt('4', 10)],
+					[980, parseInt('4', 10)],
+					[1100, parseInt('4', 10)]
+					],
+					navigation:true,
+					scrollPerPage:true,
+					navigationText : false,
+					stopOnHover: true,
+					cssAnimation: false,
+					paginationSpeed: 300,
+					margin:parseInt('15', 10)
+					};
+					opts.autoPlay = parseInt('3000', 10);
+					opts.stopOnHover = true;
+					jQuery("#product-gallery").owlCarousel(opts);
+					$('#product-gallery .owl-buttons').addClass('side-buttons');
+					})();
+				</script>
+				<div class="journal-custom-tab">
+					&nbsp;
+				</div>
+				<div class="image-gallery" style="display: none !important;">
+					<a href="<%=x_prod_zoom_image%>" title="Beige Ruffle Dress" class="swipebox"><img src="<%=x_prod_image%>" title="Beige Ruffle Dress" alt="Beige Ruffle Dress"/></a>
+					<%
+						sql = "SELECT * FROM " & g_storeid & "_product_image WHERE pf_id = '" & pf_id & "' AND image_name <> '" & x_prod_image_file & "'"
+						set rs = dbconn.Execute(sql)
+						do while not rs.EOF
+							cloudImg = Trim(rs("cloud_url"))
+							ssImg = Replace(cloudImg, "upload/", ssImgSize)
+							ssImg1 = Replace(cloudImg, "upload/", ssThumbSize)
+							ssImg2 = Replace(cloudImg, "upload/", ssZoomSize)
+							
+					%>
+					<a href="<%=ssImg2%>" title="<%=x_prod_name%>" class="swipebox"><img src="<%=ssImg%>" title="<%=x_prod_name%>" alt="<%=x_prod_name%>"/></a>
+					<%
+							rs.MoveNext
+						loop
+						rs.Close
+						set rs = nothing
+					%>
+				</div>
+				<div class="product-tabs">
+					<ul id="tabs" class="nav nav-tabs htabs">
+						<li class="active"><a href="#tab-description" data-toggle="tab">Details</a></li>
+						<% for ii = 1 to 5 %>
+						<% if pf_tab_show(ii) = 1 then %>
+						<li><a href="#tab<%=ii%>" data-toggle="tab"><%=pf_tab_name(ii)%></a></li>
+						<% end if %>
+						<% next %>
+						<li><a href="#tab-review" data-toggle="tab">Reviews (<%=x_review_count%>)</a></li>
+					</ul>
+					<div class="tabs-content">
+						<div id="tab-description" class="tab-pane tab-content active">
+							<div>
+								<%=x_prod_detail%>
+							</div>
+						</div>
+						<% for ii = 1 to 5 %>
+						<% if pf_tab_show(ii) = 1 then %>
+						<div id="tab<%=ii%>" class="tab-pane tab-content">
+						<%=GetTabContent(pf_id, ii, pf_tab_type(ii))%>
+						</div>
+						<% end if %>
+						<% next %>
+						<div id="tab-review" class="tab-pane tab-content">
+							<form action="tp_write_review.phtml" class="form-horizontal" method="post" id="review-form">
+							<input type="hidden" name="pf_id" value="<%=pf_id%>" />
+								<div id="review">
+									<div>
+										<%
+											sql = "SELECT * FROM " & g_storeid & "_Rating WHERE ProductID = '" & pf_id & "' ORDER BY CreatedOn DESC"
+											set rsRating = dbconn.Execute(sql)
+											do while not rsRating.EOF
+												review_rating = rsRating("rating")
+												review_comment = rsRating("Comments")
+												review_date = FormatDateTime(rsRating("CreatedOn"),2)
+												if Len(review_comment) > 0 then
+													review_comment = Replace(review_comment, VbCrLF, "<br>")
+												end if
+												shopper_sql = "SELECT * FROM " & g_storeid & "_shopper WHERE shopper_id = '" & rsRating("CustomerID") & "'"
+												set shopper = dbconn.Execute(shopper_sql)
+												
+												if not shopper.EOF then
+													review_owner_name = shopper("FirstName") & " " & shopper("LastName")
+												else
+													review_owner_name = ""
+												end if 
+												shopper.Close
+												set shopper = nothing
+										%>
+										<table class="table table-striped table-bordered">
+										<tbody>
+										<tr>
+											<td style="width: 50%;">
+												<strong><span><%=rsRating("ReviewTitle")%> | <%=review_owner_name%></span></strong>
+											</td>
+											<td class="text-right">
+												<span><%=review_date%></span>
+											</td>
+										</tr>
+										<tr>
+											<td colspan="2">
+												<p>
+													<%=review_comment%>
+												</p>
+												<div class="rating">
+													<%
+														for ii =1 to 5
+														
+															if review_rating >= ii then
+																Response.Write("<span class=""fa fa-stack""><i class=""fa fa-star fa-stack-2x""></i><i class=""fa fa-star-o fa-stack-2x""></i></span>")
+															else
+																Response.Write("<span class=""fa fa-stack""><i class=""fa fa-star-o fa-stack-2x""></i></span>")
+															end if
+													
+														next
+													%>
+												</div>
+											</td>
+										</tr>
+										</tbody>
+										</table>
+										<%
+												rsRating.MoveNext
+											loop
+											
+											rsRating.Close
+											set rsRating = nothing
+										%>
+									</div>
+									<div class="text-right">
+									</div>
+								</div>
+								
+								<% if x_bWriteReview then %>
+								<h2><%=a("Write a review")%></h2>
+								<div class="form-group required">
+									<div class="col-sm-12">
+										<label for="input-title" class="control-label"><%=a("Title")%></label>
+										<input type="text" class="form-control" id="title" value="" name="title">
+									</div>
+								</div>
+								<div class="form-group required">
+									<div class="col-sm-12">
+										<label for="input-review" class="control-label"><%=a("Your Review")%></label>
+										<textarea class="form-control" id="review" rows="5" name="review"></textarea>
+										<div class="help-block">
+											<span class="text-danger">Note:</span> <%=a("HTML is not translated!")%>
+										</div>
+									</div>
+								</div>
+								<div class="form-group required">
+									<div class="col-sm-12">
+										<label class="control-label" for="rating"><%=a("Rating")%></label>
+										&nbsp;&nbsp;&nbsp; Bad&nbsp; <input type="radio" value="1" name="rating">
+										&nbsp; <input type="radio" value="2" name="rating">
+										&nbsp; <input type="radio" value="3" name="rating">
+										&nbsp; <input type="radio" value="4" name="rating">
+										&nbsp; <input type="radio" value="5" name="rating">
+										&nbsp;Good
+									</div>
+								</div>
+								<div class="buttons">
+									<div class="pull-right">
+										<button class="btn btn-primary" id="button-review" type="submit"><%=a("Continue")%></button>
+									</div>
+								</div>
+								<% End If %>
+							</form>
+						</div>
+					</div>
+				</div>
+			</div>
+			<div class="right">
+				<div id="product" class="product-options">
+					<ul class="list-unstyled description">
+						<!--
+						<li class="p-brand"><%=a("Brand")%>: <%=x_vendor_name%></a></li>
+						-->
+						<li class="p-model"><%=a("SKU")%>: <span class="p-model" itemprop="model"><%=x_prod_sku%></span></li>
+						<li class="p-stock"><%=a("Availability")%>: <span class="journal-stock instock"><%=x_prod_stock_status_display%></span></li>
+					</ul>
+					<div class="product-sold-count-text">
+						<%=x_prod_desc%>
+					</div>
+					<ul class="list-unstyled price" itemprop="offers" itemscope itemtype="http://schema.org/Offer">
+						<meta itemprop="itemCondition" content="http://schema.org/NewCondition"/>
+						<meta itemprop="priceCurrency" content="USD"/>
+						<link itemprop="availability" href="http://schema.org/InStock"/>
+						<% if x_prod_on_sale = 1 then %>
+						<meta itemprop="price" content="<%=FormatNumber(x_prod_sale_price,2)%>"/>
+						<li class="price-old">$<%=FormatNumber(x_prod_group_price,2)%></li>
+						<li class="price-new">$<%=FormatNumber(x_prod_sale_price,2)%></li>
+						<% else %>
+						<meta itemprop="price" content="<%=FormatNumber(x_prod_group_price,2)%>"/>
+						<li class="product-price">$<%=FormatNumber(x_prod_group_price,2)%></li>
+						<% end if %>
+					</ul>
+					<div class="options push-select push-image push-checkbox push-radio">
+						<%
+							sql = "SELECT * FROM Style WHERE StyleNo = '" & prod_sku & "'"
+						%>
+					
+					
+					
+						<h3>Available Options</h3>
+						<div class="option form-group option-select">
+							<label class="control-label" for="input-option235">Size</label>
+							<select name="option[235]" id="input-option235" class="form-control">
+								<option value=""> --- Please Select --- </option>
+								<option value="37">XS </option>
+								<option value="35">S </option>
+								<option value="34">M </option>
+								<option value="33">L </option>
+							</select>
+						</div>
+						<div class="option form-group option-image">
+							<label class="control-label">Color</label>
+							<div id="input-option227">
+								<div class="radio">
+									<label>
+									<input type="radio" name="option[227]" value="18"/>
+									<img src="//digital-cdn.net/4/image/cache/data/colors/2-30x30.png" alt="Silver" class="img-thumbnail"/> Silver </label>
+								</div>
+								<div class="radio">
+									<label>
+									<input type="radio" name="option[227]" value="17"/>
+									<img src="//digital-cdn.net/4/image/cache/data/colors/13-30x30.png" alt="Yellow" class="img-thumbnail"/> Yellow </label>
+								</div>
+							</div>
+						</div>
+					</div>
+					<script>Journal.enableSelectOptionAsButtonsList();</script>
+					<div class="form-group cart ">
+						<div>
+							<span class="qty">
+							<label class="control-label text-qty" for="input-quantity">Qty</label>
+							<input type="text" name="quantity" value="1" size="2" data-min-value="1" id="input-quantity" class="form-control"/>
+							<input type="hidden" name="product_id" value="74"/>
+							<script>
+								/* quantity buttons */
+								var $input = $('.cart input[name="quantity"]');
+								function up() {
+								var val = parseInt($input.val(), 10) + 1 || parseInt($input.attr('data-min-value'), 10);
+								$input.val(val);
+								}
+								function down() {
+								var val = parseInt($input.val(), 10) - 1 || 0;
+								var min = parseInt($input.attr('data-min-value'), 10) || 1;
+								$input.val(Math.max(val, min));
+								}
+								$('<a href="javascript:;" class="journal-stepper">-</a>').insertBefore($input).click(down);
+								$('<a href="javascript:;" class="journal-stepper">+</a>').insertAfter($input).click(up);
+								$input.keydown(function (e) {
+								if (e.which === 38) {
+								up();
+								return false;
+								}
+								if (e.which === 40) {
+								down();
+								return false;
+								}
+								});
+							</script>
+							</span>
+							<button type="button" id="button-cart" data-loading-text="Loading..." class="button"><span class="button-cart-text">Add to Cart</span></button>
+						</div>
+					</div>
+					<div class="wishlist-compare">
+						<span class="links">
+						<a onclick="addToWishList('74');">Add to Wish List</a>
+						</span>
+					</div>
+					<div class="rating">
+						<p>
+							<span class="fa fa-stack"><i class="fa fa-star-o fa-stack-1x"></i></span>
+							<span class="fa fa-stack"><i class="fa fa-star-o fa-stack-1x"></i></span>
+							<span class="fa fa-stack"><i class="fa fa-star-o fa-stack-1x"></i></span>
+							<span class="fa fa-stack"><i class="fa fa-star-o fa-stack-1x"></i></span>
+							<span class="fa fa-stack"><i class="fa fa-star-o fa-stack-1x"></i></span>
+							<a href="" onclick="$('a[href=\'#tab-review\']').trigger('click'); return false;">0 reviews</a> / <a href="" onclick="$('a[href=\'#tab-review\']').trigger('click'); return false;">Write a review</a>
+						</p>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+</div>

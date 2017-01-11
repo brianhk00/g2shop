@@ -2,6 +2,10 @@
 <!-- #INCLUDE File="util/xt_func_util.phtml" -->
 <!-- #INCLUDE File="util/xt_func_string.phtml" -->
 <!-- #INCLUDE File="include/i_login.phtml" -->
+<%
+	header_logo_image = GetSettingValue("header_logo_image", "logo.png")
+	global_email_address = GetSettingValue("global_email_address", "support@mydomain.com")
+%>
 <!--#INCLUDE FILE="include/doctype.phtml"-->
 <head>
 <!--#INCLUDE FILE="include/head.phtml"-->
@@ -26,15 +30,7 @@
 					<!-- BEGIN CONTENT BODY -->
 					<!-- BEGIN PAGE HEAD-->
 					<div class="page-head">
-						<div class="container-fluid">
-							<!-- BEGIN PAGE TITLE -->
-							<div class="page-title">
-								<h1>Configuration
-									<small>information & settings</small>
-								</h1>
-							</div>
-							<!-- END PAGE TITLE -->
-						</div>
+						
 					</div>
 					<!-- END PAGE HEAD-->
 					<!-- BEGIN PAGE CONTENT BODY -->
@@ -45,208 +41,203 @@
 								<div class="row">
 									<div class="col-md-12">
 										<form id="form_edit_1" class="form-horizontal form-row-seperated" action="#">
+										<div class="portlet">
+											<div class="portlet-title">
+												<div class="caption">
+												<i class="fa fa-gears"></i>
+												Configuration
+												</div>
+												<div class="actions btn-set">
+													<button type="button" onclick="location.href='dashboard.phtml';" name="back" class="btn btn-default">
+														<i class="fa fa-angle-left"></i> Back
+													</button>
+													<button class="btn btn-success" onclick="savebutton='1';">
+														<i class="fa fa-check"></i> Save
+													</button>
+													<button class="btn btn-success" onclick="savebutton='0';">
+														<i class="fa fa-check-circle"></i> Save & Continue Edit
+													</button>
+												</div>
+											</div>
+											<div class="alert alert-danger display-hide">
+												<button class="close" data-close="alert"></button> You have some form errors. Please check below. 
+												</div>
+												<div class="alert alert-success display-hide">
+												<button class="close" data-close="alert"></button> The information has been saved.
+												</div>
+												<div class="alert alert-warning display-hide">
+												<button class="close" data-close="alert"></button> The information has not been saved properly. Please contact system administrator.
+											</div>
+											<div class="portlet-body">
+											</div>
+										</div>
 										<div class="tabbable-bordered">
 											<ul class="nav nav-tabs">
 												<li class="active">
-													<a href="#tab_general" data-toggle="tab"> General / Web </a>
+													<a href="#tab_general" data-toggle="tab">General</a>
 												</li>
 												<li>
-													<a href="#tab_catalog" data-toggle="tab"> Private Catalog </a>
+													<a href="#tab_catalog" data-toggle="tab">Catalog </a>
 												</li>
 												<% if g_store_use_icecat_catalog = "1" then %>
 												<li>
-													<a href="#tab_icecat" data-toggle="tab"> ICECAT Catalog </a>
+													<a href="#tab_icecat" data-toggle="tab">ICECAT Catalog </a>
 												</li>
 												<% end if %>
 												<li>
-													<a href="#tab_transactions" data-toggle="tab"> Transactions</a>
+													<a href="#tab_transactions" data-toggle="tab">Transactions </a>
 												</li>
 												<li>
-													<a href="#tab_advanced" data-toggle="tab"> Advanced </a>
+													<a href="#tab_advanced" data-toggle="tab">Customers </a>
 												</li>
 											</ul>
 											<div class="tab-content">
 												<div class="tab-pane active" id="tab_general">
-													<div class="portlet light">
-														<div class="portlet-title">
-															<div class="caption font-green-sharp">
-																<i class="icon-share font-green-sharp"></i>
-																<span class="caption-subject bold uppercase"> Design</span>
-															</div>
+													<div class="panel panel-primary">
+														<div class="panel-heading">
+															<h3 class="panel-title">General</h3>
 														</div>
-														<div class="portlet-body">
+														<div class="panel-body"> 
 															<div class="form-group">
-																<label class="col-md-2 control-label" for="configuration_general_logo">
+																<label class="col-md-2 control-label" for="header_logo_image">
 																	Logo <span class="symbol required"></span>
 																</label>
 																<div class="col-md-4">
-																	<input type="text" placeholder="" class="form-control input-sm" id="configuration_general_logo" name="configuration_general_logo" value="<%=configuration_general_logo%>">
+																	<input type="text" placeholder="" class="form-control input-sm" id="header_logo_image" name="header_logo_image" value="<%=header_logo_image%>">
 																	<span class="help-inline">Upload your logo to /media/logo</span>
 																</div>
 															</div>
 															<div class="form-group">
-																<label class="col-md-2 control-label" for="configuration_general_logo">
+																<label class="col-md-2 control-label" for="global_email_address">
 																	Default Email Address <span class="symbol required"></span>
 																</label>
 																<div class="col-md-4">
-																	<input type="text" placeholder="" class="form-control input-sm" id="configuration_general_logo" name="configuration_general_logo" value="<%=configuration_general_logo%>">
+																	<input type="text" placeholder="" class="form-control input-sm" id="global_email_address" name="global_email_address" value="<%=global_email_address%>">
 																</div>
 															</div>
 														</div>
 													</div>
-													<div class="portlet light">
-														<div class="portlet-title">
-															<div class="caption font-green-sharp">
-																<i class="icon-share font-green-sharp"></i>
-																<span class="caption-subject bold uppercase"> Meta Tags</span>
-															</div>
+													<div class="panel panel-primary">
+														<div class="panel-heading">
+															<h3 class="panel-title">Meta Tags</h3>
 														</div>
-														<div class="portlet-body">
+														<div class="panel-body"> 
 															<div class="form-group">
-																<label class="col-sm-2 control-label" for="configuration_general_logo">
+																<label class="col-sm-2 control-label" for="config_general_default_page_title">
 																	Default Page Title <span class="symbol required"></span>
 																</label>
 																<div class="col-sm-9">
-																	<input type="text" placeholder="" class="form-control input-sm" id="configuration_general_logo" name="configuration_general_logo" value="<%=configuration_general_logo%>">
+																	<input type="text" placeholder="" class="form-control input-sm" id="config_general_default_page_title" name="config_general_default_page_title" value="<%=GetSettingValue("config_general_default_page_title", "")%>">
 																</div>
 															</div>
 															<div class="form-group">
-																<label class="col-sm-2 control-label" for="configuration_general_logo">
+																<label class="col-sm-2 control-label" for="config_general_default_meta_tags">
 																	Meta Tags <span class="symbol required"></span>
 																</label>
 																<div class="col-sm-9">
-																	<textarea class="form-control" rows="3"></textarea>
+																	<textarea class="form-control input-sm" rows="8" id="config_general_default_meta_tags" name="config_general_default_meta_tags"><%=GetSettingValue("config_general_default_meta_tags", "")%></textarea>
 																</div>
 															</div>
 														</div>
 													</div>
-													<div class="portlet light">
-														<div class="portlet-title">
-															<div class="caption font-green-sharp">
-																<i class="icon-share font-green-sharp"></i>
-																<span class="caption-subject bold uppercase"> Terms & Conditions</span>
-															</div>
+													<div class="panel panel-primary">
+														<div class="panel-heading">
+															<h3 class="panel-title">Terms & Conditions</h3>
 														</div>
-														<div class="portlet-body">
+														<div class="panel-body"> 
 															<div class="form-group">
-																<label class="col-sm-2 control-label" for="configuration_general_logo">
+																<label class="col-sm-2 control-label" for="config_general_terms_shopping_cart">
 																	Shopping Cart <span class="symbol required"></span>
 																</label>
 																<div class="col-sm-9">
-																	<textarea class="form-control" rows="3"></textarea>
+																	<textarea class="form-control" rows="3" id="config_general_terms_shopping_cart" name="config_general_terms_shopping_cart"><%=GetSettingValue("config_general_terms_shopping_cart", "")%></textarea>
 																</div>
 															</div>
 															<div class="form-group">
-																<label class="col-sm-2 control-label" for="configuration_general_logo">
+																<label class="col-sm-2 control-label" for="config_general_terms_checkout">
 																	Checkout <span class="symbol required"></span>
 																</label>
 																<div class="col-sm-9">
-																	<textarea class="form-control" rows="3"></textarea>
+																	<textarea class="form-control" rows="3" id="config_general_terms_checkout" name="config_general_terms_checkout"><%=GetSettingValue("config_general_terms_checkout", "")%></textarea>
 																</div>
 															</div>
 															<div class="form-group">
-																<label class="col-sm-2 control-label" for="configuration_general_logo">
+																<label class="col-sm-2 control-label" for="config_general_terms_receipt">
 																	Order Receipt <span class="symbol required"></span>
 																</label>
 																<div class="col-sm-9">
-																	<textarea class="form-control" rows="3"></textarea>
+																	<textarea class="form-control" rows="3" id="config_general_terms_receipt" name="config_general_terms_receipt"><%=GetSettingValue("config_general_terms_receipt", "")%></textarea>
 																</div>
 															</div>
 														</div>
 													</div>
 												</div>
 												<div class="tab-pane" id="tab_catalog">
-													<div class="portlet light">
-														<div class="portlet-title">
-															<div class="caption font-green-sharp">
-																<i class="icon-share font-green-sharp"></i>
-																<span class="caption-subject bold uppercase"> General</span>
-															</div>
+													<div class="panel panel-primary">
+														<div class="panel-heading">
+															<h3 class="panel-title">General</h3>
 														</div>
-														<div class="portlet-body">
+														<div class="panel-body"> 
 															<div class="form-group">
 																<label class="col-sm-2 control-label" for="configuration_general_logo">
 																	Show Related Items on Product Page
 																</label>
 																<div class="col-sm-4">
-																	<select class="form-control">
-                                                                        <option>Yes</option>
-                                                                        <option>No</option>
+																	<select class="form-control input-sm" id="config_catalog_general_show_related" name="config_catalog_general_show_related">
+                                                                        <option value="1" <%if GetSettingValue("config_catalog_general_show_related", "1") = "1" then%>selected<%end if%>>Yes</option>
+                                                                        <option value="0" <%if GetSettingValue("config_catalog_general_show_related", "1") = "0" then%>selected<%end if%>>No</option>
                                                                     </select>
 																</div>
 															</div>
 														</div>
 													</div>
-													<div class="portlet light">
-														<div class="portlet-title">
-															<div class="caption font-green-sharp">
-																<i class="icon-share font-green-sharp"></i>
-																<span class="caption-subject bold uppercase"> Inventory</span>
-															</div>
+													<div class="panel panel-primary">
+														<div class="panel-heading">
+															<h3 class="panel-title">Inventory</h3>
 														</div>
-														<div class="portlet-body">
+														<div class="panel-body"> 
 															<div class="form-group">
-																<label class="col-sm-2 control-label" for="configuration_general_logo">
-																	Inventory Mode <span class="symbol required"></span>
+																<label class="col-sm-2 control-label" for="configuration_catalog_inventory_inventory_mode">
+																	Inventory Mode <span class="symbol required">*</span>
 																</label>
 																<div class="col-sm-9">
-																	<div class="mt-radio-list">
-																		<label class="mt-radio">
-																			<input name="optionsRadios" id="optionsRadios22" type="radio" checked="" value="option1"> No Inventory Control
-																			<span></span>
-																		</label>
-																		<label class="mt-radio">
-																			<input name="optionsRadios" id="optionsRadios23" type="radio" checked="" value="option2"> Simple Inventory
-																			<span></span>
-																		</label>
-																		<label class="mt-radio">
-																			<input name="optionsRadios" id="optionsRadios24" type="radio" value="option2"> Inventory - Not Allow Backorder
-																			<span></span>
-																		</label>
-																		<label class="mt-radio">
-																			<input name="optionsRadios" id="optionsRadios24" type="radio" value="option2"> Inventory - Allow Backorder
-																			<span></span>
-																		</label>
-																	</div>
-																</div>
-															</div>
-															<div class="form-group">
-																<label class="col-sm-2 control-label" for="configuration_general_logo">
-																	Out of Stock Message <span class="symbol required"></span>
-																</label>
-																<div class="col-sm-9">
-																	<textarea class="form-control" rows="3"></textarea>
-																</div>
-															</div>
-														</div>
-													</div>
-													<div class="portlet light">
-														<div class="portlet-title">
-															<div class="caption font-green-sharp">
-																<i class="icon-share font-green-sharp"></i>
-																<span class="caption-subject bold uppercase"> Review</span>
-															</div>
-														</div>
-														<div class="portlet-body">
-															<div class="form-group">
-																<label class="col-sm-2 control-label" for="configuration_general_logo">
-																	Allow Guest to write a review
-																</label>
-																<div class="col-sm-4">
-																	<select class="form-control">
-                                                                        <option>Yes</option>
-                                                                        <option>No</option>
+																	<select class="form-control input-sm" id="configuration_catalog_inventory_inventory_mode" name="configuration_catalog_inventory_inventory_mode">
+                                                                        <option value="1" <%if GetSettingValue("configuration_catalog_inventory_inventory_mode", "0") = "0" then%>selected<%end if%>>No Inventory Control</option>
+                                                                        <option value="0" <%if GetSettingValue("configuration_catalog_inventory_inventory_mode", "0") = "1" then%>selected<%end if%>>Simple Inventory</option>
+																		<option value="0" <%if GetSettingValue("configuration_catalog_inventory_inventory_mode", "0") = "2" then%>selected<%end if%>>Full Inventory - Do Not Allow Backorder</option>
+																		<option value="0" <%if GetSettingValue("configuration_catalog_inventory_inventory_mode", "0") = "3" then%>selected<%end if%>>Full Inventory - Allow Backorder</option>
                                                                     </select>
 																</div>
 															</div>
 															<div class="form-group">
-																<label class="col-sm-2 control-label" for="configuration_general_logo">
-																	Require previous purchase to write a review
+																
+															</div>
+														</div>
+													</div>
+													<div class="panel panel-primary">
+														<div class="panel-heading">
+															<h3 class="panel-title">Reviews</h3>
+														</div>
+														<div class="panel-body"> 
+															<div class="form-group">
+																<label class="col-sm-2 control-label" for="configuration_cataglo_review_allow_guest">
+																	Allow Guest to write a review <span class="symbol required">*</span>
 																</label>
 																<div class="col-sm-4">
-																	<select class="form-control">
-                                                                        <option>Yes</option>
-                                                                        <option>No</option>
+																	<select class="form-control input-sm" id="configuration_cataglo_review_allow_guest" name="configuration_cataglo_review_allow_guest">
+                                                                        <option value="1" <%if GetSettingValue("configuration_cataglo_review_allow_guest", "0") = "1" then%>selected<%end if%>>Yes</option>
+                                                                        <option value="0" <%if GetSettingValue("configuration_cataglo_review_allow_guest", "0") = "0" then%>selected<%end if%>>No</option>
+                                                                    </select>
+																</div>
+															</div>
+															<div class="form-group">
+																<label class="col-sm-2 control-label" for="configuration_cataglo_review_require_previous_purchase">
+																	Require previous purchase to write a review <span class="symbol required">*</span>
+																</label>
+																<div class="col-sm-4">
+																	<select class="form-control input-sm" id="configuration_cataglo_review_require_previous_purchase" name="configuration_cataglo_review_require_previous_purchase">
+                                                                        <option value="1" <%if GetSettingValue("configuration_cataglo_review_require_previous_purchase", "0") = "1" then%>selected<%end if%>>Yes</option>
+                                                                        <option value="0" <%if GetSettingValue("configuration_cataglo_review_require_previous_purchase", "0") = "0" then%>selected<%end if%>>No</option>
                                                                     </select>
 																</div>
 															</div>
@@ -254,37 +245,17 @@
 													</div>
 												</div>
 												<div class="tab-pane" id="tab_icecat">
-													<div class="portlet light">
-														<div class="portlet-title">
-															<div class="caption font-green-sharp">
-																<i class="icon-share font-green-sharp"></i>
-																<span class="caption-subject bold uppercase"> General</span>
-															</div>
+													<div class="panel panel-primary">
+														<div class="panel-heading">
+															<h3 class="panel-title">General</h3>
 														</div>
-														<div class="portlet-body">
+														<div class="panel-body"> 
 															<div class="form-group">
 																<label class="col-sm-2 control-label" for="configuration_general_logo">
 																	Availability <span class="symbol required"></span>
 																</label>
 																<div class="col-sm-9">
-																	<div class="mt-radio-list">
-																		<label class="mt-radio">
-																			<input name="optionsRadios" id="optionsRadios22" type="radio" checked="" value="option1"> Show Availability / Disallow Backorder
-																			<span></span>
-																		</label>
-																		<label class="mt-radio">
-																			<input name="optionsRadios" id="optionsRadios23" type="radio" checked="" value="option2"> Show Availability / Allow Backorder
-																			<span></span>
-																		</label>
-																		<label class="mt-radio">
-																			<input name="optionsRadios" id="optionsRadios24" type="radio" value="option2"> Hide Availability / Disable Backorder
-																			<span></span>
-																		</label>
-																		<label class="mt-radio">
-																			<input name="optionsRadios" id="optionsRadios24" type="radio" value="option2"> Hide Availability / Allow Backorder
-																			<span></span>
-																		</label>
-																	</div>
+																	
 																</div>
 															</div>
 															<div class="form-group">
@@ -292,10 +263,7 @@
 																	Out of Stock Items
 																</label>
 																<div class="col-sm-4">
-																	<select class="form-control">
-                                                                        <option>Hide</option>
-                                                                        <option>Show</option>
-                                                                    </select>
+																	
 																</div>
 															</div>
 															<div class="form-group">
@@ -303,20 +271,7 @@
 																	SKU Display <span class="symbol required"></span>
 																</label>
 																<div class="col-sm-9">
-																	<div class="mt-radio-list">
-																		<label class="mt-radio">
-																			<input name="optionsRadios" id="optionsRadios22" type="radio" checked="" value="option1"> Internal Part Number
-																			<span></span>
-																		</label>
-																		<label class="mt-radio">
-																			<input name="optionsRadios" id="optionsRadios23" type="radio" checked="" value="option2"> ICECAT Part Number
-																			<span></span>
-																		</label>
-																		<label class="mt-radio">
-																			<input name="optionsRadios" id="optionsRadios24" type="radio" value="option2"> Manufacturer Part Number
-																			<span></span>
-																		</label>
-																	</div>
+																	
 																</div>
 															</div>
 															<div class="form-group">
@@ -324,16 +279,7 @@
 																	Retail Price <span class="symbol required"></span>
 																</label>
 																<div class="col-sm-9">
-																	<div class="mt-radio-list">
-																		<label class="mt-radio">
-																			<input name="optionsRadios" id="optionsRadios22" type="radio" checked="" value="option1"> Show (if available)
-																			<span></span>
-																		</label>
-																		<label class="mt-radio">
-																			<input name="optionsRadios" id="optionsRadios23" type="radio" checked="" value="option2"> Hide
-																			<span></span>
-																		</label>
-																	</div>
+																	
 																</div>
 															</div>
 															<div class="form-group">
@@ -341,12 +287,7 @@
 																	Price Rule <span class="symbol required"></span>
 																</label>
 																<div class="col-sm-9">
-																	<select class="form-control">
-                                                                        <option>Use Best Price</option>
-                                                                        <option>Use Ingram Micro Price First</option>
-																		<option>Use Tech Data Price First</option>
-																		<option>Use Synnex Price First</option>
-                                                                    </select>
+																	
 																</div>
 															</div>
 															<div class="form-group">
@@ -354,13 +295,7 @@
 																	Inventory Rule
 																</label>
 																<div class="col-sm-9">
-																	<select class="form-control">
-                                                                        <option>Set out of stock if item is not available on all distributors</option>
-                                                                        <option>Set out of stock if item is not available on Ingram Micro</option>
-																		<option>Set out of stock if item is not available on Tech Data</option>
-																		<option>Set out of stock if item is not available on Synnex</option>
-																		<option>Always in stock</option>
-                                                                    </select>
+																	
 																</div>
 															</div>
 															<div class="form-group">
@@ -368,91 +303,166 @@
 																	Real-time availability on storefront
 																</label>
 																<div class="col-sm-9">
-																	<div class="mt-checkbox-list">
-																		<label class="mt-checkbox mt-checkbox-outline">
-																			<input type="checkbox" name="DA1" value="1" <%if DA1="1" then%>checked<%end if%> class="grey">
-																			Ingram Micro<span></span>
-																		</label>
-																		<label class="mt-checkbox mt-checkbox-outline">
-																			<input type="checkbox" name="DA2" value="1" <%if DA2="1" then%>checked<%end if%> class="grey">
-																			Tech Data<span></span>
-																		</label>
-																		
-																	</div>
+																	
 																</div>
 															</div>
 														</div>
 													</div>
 												</div>
 												<div class="tab-pane" id="tab_transactions">
-													<div class="portlet light">
-														<div class="portlet-title">
-															<div class="caption font-green-sharp">
-																<i class="icon-share font-green-sharp"></i>
-																<span class="caption-subject bold uppercase"> Inventory</span>
-															</div>
+													<div class="panel panel-primary">
+														<div class="panel-heading">
+															<h3 class="panel-title">General</h3>
 														</div>
-														<div class="portlet-body">
-															<div class="form-group">
-																<label class="col-sm-2 control-label" for="configuration_general_logo">
-																	API Login ID <span class="symbol required"></span>
-																</label>
-																<div class="col-sm-9">
-																	<input type="text" placeholder="" class="form-control input-sm" id="configuration_general_logo" name="configuration_general_logo" value="<%=configuration_general_logo%>">
+														<div class="panel-body"> 
+															
+														</div>
+													</div>
+													<div class="panel panel-primary">
+														<div class="panel-heading">
+															<h3 class="panel-title">Emails</h3>
+														</div>
+														<div class="panel-body"> 
+															<div class="row">
+																<div class="col-md-3 col-sm-3 col-xs-3">
+																	<ul class="nav nav-tabs tabs-left">
+																		<li class="active">
+																			<a href="#tab_6_1" data-toggle="tab"> Order Confirmation </a>
+																		</li>
+																		<li>
+																			<a href="#tab_6_2" data-toggle="tab"> Shipping Confirmation </a>
+																		</li>
+																		<li>
+																			<a href="#tab_6_3" data-toggle="tab"> Order Cancellation </a>
+																		</li>
+																	</ul>
 																</div>
-															</div>
-															<div class="form-group">
-																<label class="col-sm-2 control-label" for="configuration_general_logo">
-																	API Login ID <span class="symbol required"></span>
-																</label>
-																<div class="col-sm-9">
-																	<input type="text" placeholder="" class="form-control input-sm" id="configuration_general_logo" name="configuration_general_logo" value="<%=configuration_general_logo%>">
-																</div>
-															</div>
-															<div class="form-group">
-																<label class="col-sm-2 control-label" for="configuration_general_logo">
-																	API Login ID <span class="symbol required"></span>
-																</label>
-																<div class="col-sm-9">
-																	<input type="text" placeholder="" class="form-control input-sm" id="configuration_general_logo" name="configuration_general_logo" value="<%=configuration_general_logo%>">
+																<div class="col-md-9 col-sm-9 col-xs-9">
+																	<div class="tab-content">
+																		<div class="tab-pane active" id="tab_6_1">
+																			<div class="form-group">
+																				<label class="col-sm-2 control-label" for="configuration_transaction_emails_order_confirmation_enable">
+																					Enabled <span class="symbol required">*</span>
+																				</label>
+																				<div class="col-sm-8">
+																					<select class="form-control input-sm" id="configuration_transaction_emails_order_confirmation_enable" name="configuration_transaction_emails_order_confirmation_enable">
+																						<option value="1" <%if GetSettingValue("configuration_transaction_emails_order_confirmation_enable", "1") = "1" then%>selected<%end if%>>Yes</option>
+																						<option value="0" <%if GetSettingValue("configuration_transaction_emails_order_confirmation_enable", "1") = "0" then%>selected<%end if%>>No</option>
+																					</select>
+																				</div>
+																			</div>
+																			<div class="form-group">
+																				<label class="col-sm-2 control-label" for="configuration_transaction_emails_order_confirmation_from_email">
+																					From Email <span class="symbol required">*</span>
+																				</label>
+																				<div class="col-sm-8">
+																					<input type="text" placeholder="" class="form-control input-sm" id="configuration_transaction_emails_order_confirmation_from_email" name="configuration_transaction_emails_order_confirmation_from_email" value="<%=GetSettingValue("configuration_transaction_emails_order_confirmation_from_email", "")%>">
+																				</div>
+																			</div>
+																			<div class="form-group">
+																				<label class="col-sm-2 control-label" for="configuration_transaction_emails_order_confirmation_from_name">
+																					From Name <span class="symbol required">*</span>
+																				</label>
+																				<div class="col-sm-8">
+																					<input type="text" placeholder="" class="form-control input-sm" id="configuration_transaction_emails_order_confirmation_from_name" name="configuration_transaction_emails_order_confirmation_from_name" value="<%=GetSettingValue("configuration_transaction_emails_order_confirmation_from_name", "")%>">
+																				</div>
+																			</div>
+																			<div class="form-group">
+																				<label class="col-sm-2 control-label" for="configuration_transaction_emails_order_confirmation_template">
+																					Template <span class="symbol required">*</span>
+																				</label>
+																				<div class="col-sm-8">
+																					<input type="text" placeholder="" class="form-control input-sm" id="configuration_transaction_emails_order_confirmation_template" name="configuration_transaction_emails_order_confirmation_template" value="<%=GetSettingValue("configuration_transaction_emails_order_confirmation_template", "")%>">
+																				</div>
+																			</div>
+																		</div>
+																		<div class="tab-pane fade" id="tab_6_2">
+																			<div class="form-group">
+																				<label class="col-sm-2 control-label" for="configuration_transaction_emails_order_ship_enable">
+																					Enabled <span class="symbol required">*</span>
+																				</label>
+																				<div class="col-sm-8">
+																					<select class="form-control input-sm" id="configuration_transaction_emails_order_ship_enable" name="configuration_transaction_emails_order_ship_enable">
+																						<option value="1" <%if GetSettingValue("configuration_transaction_emails_order_ship_enable", "1") = "1" then%>selected<%end if%>>Yes</option>
+																						<option value="0" <%if GetSettingValue("configuration_transaction_emails_order_ship_enable", "1") = "0" then%>selected<%end if%>>No</option>
+																					</select>
+																				</div>
+																			</div>
+																			<div class="form-group">
+																				<label class="col-sm-2 control-label" for="configuration_transaction_emails_order_ship_from_email">
+																					From Email <span class="symbol required">*</span>
+																				</label>
+																				<div class="col-sm-8">
+																					<input type="text" placeholder="" class="form-control input-sm" id="configuration_transaction_emails_order_ship_from_email" name="configuration_transaction_emails_order_ship_from_email" value="<%=GetSettingValue("configuration_transaction_emails_order_ship_from_email", "")%>">
+																				</div>
+																			</div>
+																			<div class="form-group">
+																				<label class="col-sm-2 control-label" for="configuration_transaction_emails_order_ship_from_name">
+																					From Name <span class="symbol required">*</span>
+																				</label>
+																				<div class="col-sm-8">
+																					<input type="text" placeholder="" class="form-control input-sm" id="configuration_transaction_emails_order_ship_from_name" name="configuration_transaction_emails_order_ship_from_name" value="<%=GetSettingValue("configuration_transaction_emails_order_ship_from_name", "")%>">
+																				</div>
+																			</div>
+																			<div class="form-group">
+																				<label class="col-sm-2 control-label" for="configuration_transaction_emails_order_ship_template">
+																					Template <span class="symbol required">*</span>
+																				</label>
+																				<div class="col-sm-8">
+																					<input type="text" placeholder="" class="form-control input-sm" id="configuration_transaction_emails_order_ship_template" name="configuration_transaction_emails_order_ship_template" value="<%=GetSettingValue("configuration_transaction_emails_order_ship_template", "")%>">
+																				</div>
+																			</div>
+																		</div>
+																		<div class="tab-pane fade" id="tab_6_3">
+																			<div class="form-group">
+																				<label class="col-sm-2 control-label" for="configuration_transaction_emails_order_cancel_enable">
+																					Enabled <span class="symbol required">*</span>
+																				</label>
+																				<div class="col-sm-8">
+																					<select class="form-control input-sm" id="configuration_transaction_emails_order_cancel_enable" name="configuration_transaction_emails_order_cancel_enable">
+																						<option value="1" <%if GetSettingValue("configuration_transaction_emails_order_cancel_enable", "1") = "1" then%>selected<%end if%>>Yes</option>
+																						<option value="0" <%if GetSettingValue("configuration_transaction_emails_order_cancel_enable", "1") = "0" then%>selected<%end if%>>No</option>
+																					</select>
+																				</div>
+																			</div>
+																			<div class="form-group">
+																				<label class="col-sm-2 control-label" for="configuration_transaction_emails_order_cancel_from_email">
+																					From Email <span class="symbol required">*</span>
+																				</label>
+																				<div class="col-sm-8">
+																					<input type="text" placeholder="" class="form-control input-sm" id="configuration_transaction_emails_order_cancel_from_email" name="configuration_transaction_emails_order_cancel_from_email" value="<%=GetSettingValue("configuration_transaction_emails_order_cancel_from_email", "")%>">
+																				</div>
+																			</div>
+																			<div class="form-group">
+																				<label class="col-sm-2 control-label" for="configuration_transaction_emails_order_cancel_from_name">
+																					From Name <span class="symbol required">*</span>
+																				</label>
+																				<div class="col-sm-8">
+																					<input type="text" placeholder="" class="form-control input-sm" id="configuration_transaction_emails_order_cancel_from_name" name="configuration_transaction_emails_order_cancel_from_name" value="<%=GetSettingValue("configuration_transaction_emails_order_cancel_from_name", "")%>">
+																				</div>
+																			</div>
+																			<div class="form-group">
+																				<label class="col-sm-2 control-label" for="configuration_transaction_emails_order_cancel_template">
+																					Template <span class="symbol required">*</span>
+																				</label>
+																				<div class="col-sm-8">
+																					<input type="text" placeholder="" class="form-control input-sm" id="configuration_transaction_emails_order_cancel_template" name="configuration_transaction_emails_order_cancel_template" value="<%=GetSettingValue("configuration_transaction_emails_order_cancel_template", "")%>">
+																				</div>
+																			</div>
+																		</div>
+																	</div>
 																</div>
 															</div>
 														</div>
 													</div>
 												</div>
 												<div class="tab-pane" id="tab_advanced">
-													<div class="portlet light">
-														<div class="portlet-title">
-															<div class="caption font-green-sharp">
-																<i class="icon-share font-green-sharp"></i>
-																<span class="caption-subject bold uppercase"> Inventory</span>
-															</div>
+													<div class="panel panel-primary">
+														<div class="panel-heading">
+															<h3 class="panel-title">General</h3>
 														</div>
-														<div class="portlet-body">
-															<div class="form-group">
-																<label class="col-sm-2 control-label" for="configuration_general_logo">
-																	API Login ID <span class="symbol required"></span>
-																</label>
-																<div class="col-sm-9">
-																	<input type="text" placeholder="" class="form-control input-sm" id="configuration_general_logo" name="configuration_general_logo" value="<%=configuration_general_logo%>">
-																</div>
-															</div>
-															<div class="form-group">
-																<label class="col-sm-2 control-label" for="configuration_general_logo">
-																	API Login ID <span class="symbol required"></span>
-																</label>
-																<div class="col-sm-9">
-																	<input type="text" placeholder="" class="form-control input-sm" id="configuration_general_logo" name="configuration_general_logo" value="<%=configuration_general_logo%>">
-																</div>
-															</div>
-															<div class="form-group">
-																<label class="col-sm-2 control-label" for="configuration_general_logo">
-																	API Login ID <span class="symbol required"></span>
-																</label>
-																<div class="col-sm-9">
-																	<input type="text" placeholder="" class="form-control input-sm" id="configuration_general_logo" name="configuration_general_logo" value="<%=configuration_general_logo%>">
-																</div>
-															</div>
+														<div class="panel-body"> 
+															
 														</div>
 													</div>
 												</div>
@@ -481,12 +491,121 @@
 </div>
 <!--#INCLUDE FILE="include/js.phtml"-->
 <!-- BEGIN PAGE LEVEL PLUGINS -->
-
+<script src="../assets/global/plugins/jquery-validation/js/jquery.validate.min.js" type="text/javascript"></script>
+<script src="../assets/global/plugins/jquery-validation/js/additional-methods.min.js" type="text/javascript"></script>
+<script src="assets/plugins/jquery-ui/jquery-ui-1.10.1.custom.min.js" type="text/javascript"></script>
 <!-- END PAGE LEVEL PLUGINS -->
 
 <!-- BEGIN PAGE LEVEL SCRIPTS -->
+<script language="javascript">
+var savebutton = "1";
+</script>
 <script type="text/javascript">
+var FormValidation = function () {
+	// basic validation
+	var handleValidation1 = function() {
+		var form1 = $('#form_edit_1');
+		var error1 = $('.alert-danger', form1);
+		var success1 = $('.alert-success', form1);
+		var warning1 = $('.alert-warning', form1);
+
+		form1.validate({
+			errorElement: 'span', //default input error message container
+			errorClass: 'help-block help-block-error', // default input error message class
+			focusInvalid: false, // do not focus the last invalid input
+			ignore: "",  // validate all fields including form hidden input
+			//RULES
+			rules: {
+				header_logo_image: {
+					required: true
+				},
+				global_email_address: {
+					required: true,
+					email: true
+				},
+				config_general_default_page_title: {
+					required: true
+				},
+				config_general_default_meta_tags: {
+					required: true
+				}
+				
+			},
+
+			invalidHandler: function (event, validator) { //display error alert on form submit              
+				success1.hide();
+				error1.show();
+				App.scrollTo(error1, -200);
+			},
+			/*
+			errorPlacement: function (error, element) { // render error placement for each input type
+				var cont = $(element).parent('.input-group');
+				if (cont) {
+					cont.after(error);
+				} else {
+					element.after(error);
+				}
+			},
+			*/
+
+			highlight: function (element) { // hightlight error inputs
+
+				$(element)
+					.closest('.form-group').addClass('has-error'); // set error class to the control group
+			},
+
+			unhighlight: function (element) { // revert the change done by hightlight
+				$(element)
+					.closest('.form-group').removeClass('has-error'); // set error class to the control group
+			},
+
+			success: function (label) {
+				label
+					.closest('.form-group').removeClass('has-error'); // set success class to the control group
+			},
+
+			submitHandler: function (form) {
+				success1.hide();
+				error1.hide
+				warning1.hide();
+				
+				$.ajax({
+					type: "POST",
+					url: "api/sp_store_configuration_update.phtml",
+					data: form1.serialize(),
+					success: function() {
+						success1.show();
+						if (savebutton == "1")
+						{
+						setTimeout(function () {
+								window.location.replace("dashboard.phtml");
+							}, 500);
+						}
+					},
+					error: function() {
+						warning1.show();
+					}
+				});
+			}
+		});
+
+
+	};
 	
+	
+	return {
+		//main function to initiate the module
+		init: function () {
+			handleValidation1();
+		}
+	};
+
+}();
+</script>
+<script type="text/javascript">
+jQuery(document).ready(function() { 
+   FormValidation.init();
+});
 </script>
 <!-- END PAGE LEVEL SCRIPTS -->
 </body>

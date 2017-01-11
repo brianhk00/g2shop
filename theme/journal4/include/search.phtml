@@ -1,0 +1,142 @@
+<h1 class="heading-title"><%=g_dept_name%></h1>
+<div class="category-info">
+	<div class="image">
+		<img width="250" height="250" src="//digital-cdn.net/4/image/cache/data/belts-250x250.jpg" alt="Belts"/>
+	</div>
+</div>
+<div id="refine-images" class="owl-carousel">
+</div>
+<script>
+</script>
+<div class="product-filter">
+	<div class="display">
+		<a onclick="Journal.gridView()" class="grid-view"><i style="margin-right: 5px; color: rgb(68, 67, 73); font-size: 32px; top: 1px" data-icon="&#xe689;"></i></a>
+		<a onclick="Journal.listView()" class="list-view"><i style="margin-right: 5px; color: rgb(68, 67, 73); font-size: 32px; top: 1px" data-icon="&#xe68c;"></i></a>
+	</div>
+	<div class="limit">
+		<b>Show:</b>
+		<select id="input-limit" class="form-control" onchange="setLocation(this.value);">
+			<option value="<%=strSortURL_10 %>" <% if show="10" then %>selected="selected" <%end if %>>
+			10 </option>
+			<option value="<%=strSortURL_20 %>" <% if show="20" then %>selected="selected" <%end if %>>
+			20 </option>
+			<option value="<%=strSortURL_40 %>" <% if show="40" then %>selected="selected" <%end if %>>
+			40 </option>
+			<option value="<%=strSortURL_60 %>" <% if show="60" then %>selected="selected" <%end if %>>
+			60 </option>
+			<option value="<%=strSortURL_80 %>" <% if show="80" then %>selected="selected" <%end if %>>
+			80 </option>
+		</select>
+	</div>
+	<div class="sort">
+		<b>Sort By:</b>
+		<select id="input-sort" class="form-control col-sm-3" onchange="setLocation(this.value)">
+			<option value="<%=strSortURL_Name %>" <% if so="0" then %>selected="selected" <%end if %>>Name (A - Z)</option>
+			<option value="<%=strSortURL_Name_desc %>" <% if so="1" then %>selected="selected" <%end if %>>Name (Z - A)</option>
+			<option value="<%=strSortURL_Price %>" <% if so="8" then %>selected="selected" <%end if %>>Price (Low &gt; High)</option>
+			<option value="<%=strSortURL_Price_desc %>" <% if so="9" then %>selected="selected" <%end if %>>Price (High &gt; Low)</option>
+			<option value="<%=strSortURL_PartNumber %>" <% if so="6" then %>selected="selected" <%end if %>>SKU (A - Z)</option>
+			<option value="<%=strSortURL_PartNumber_desc %>" <% if so="7" then %>selected="selected" <%end if %>>SKU (Z - A)</option>
+		</select>
+	</div>
+</div>
+<div class="row main-products product-list" data-grid-classes="xs-100 sm-50 md-50 lg-33 xl-25 display-icon block-button">
+<!--#INCLUDE FILE="../../../core/catalog/include_dept_productlist_loop_start.phtml"-->
+<%
+	'TEMPLATE FIX
+	if Len(g_prod_name) > 60 then
+		g_prod_name = Left(g_prod_name, 60) & "..."
+	end if
+	
+	g_prod_description = Replace (g_prod_description, "<p>", "")
+	g_prod_description = Replace (g_prod_description, "</p>", "")
+	g_prod_description = Replace (g_prod_description, "<strong>", "")
+	g_prod_description = Replace (g_prod_description, "</strong>", "")
+%>
+<div class="product-list-item xs-100 sm-100 md-100 lg-100 xl-100">
+	<div class="product-thumb ">
+		<div class="image">
+			<a href="<%=g_product_link%>">
+			<img class="lazy first-image" width="250" height="250" src="//digital-cdn.net/4/image/cache/data/journal2/transparent-250x250.png" data-src="<%=g_thumb_image_link%>" title="<%=g_prod_name%>" alt="<%=g_prod_name%>"/>
+			</a>
+			<% if g_prod_on_sale = 1 then %>
+			<span class="label-sale"><b>-29%</b></span>
+			<% end if %>
+			<div class="wishlist">
+				<a onclick="addToWishList('159');" class="hint--top" data-hint="Add to Wish List"><i class="wishlist-icon"></i><span class="button-wishlist-text">Add to Wish List</span></a>
+			</div>
+		</div>
+		<div class="product-details">
+			<div class="caption">
+				<h4 class="name"><a href="<%=g_product_link%>"><%=g_prod_name%></a></h4>
+				<p class="description">
+					<%=g_prod_description%>
+				</p>
+				<p class="price">
+					<% if g_prod_on_sale = 1 then %>
+						<span class="price-old">$<%=FormatNumber(g_prod_group_price,2)%></span><span class="price-new">$<%=FormatNumber(g_prod_sale_price,2)%></span>
+					<% else %>
+						$<%=FormatNumber(g_prod_group_price,2)%>
+					<% end if %>
+				</p>
+			</div>
+			<div class="button-group">
+				<div class="cart ">
+					<a onclick="addToCart('159');" class="button hint--top" data-hint="Add to Cart"><i class="button-left-icon"></i><span class="button-cart-text">Add to Cart</span><i class="button-right-icon"></i></a>
+				</div>
+				<div class="wishlist">
+					<a onclick="addToWishList('159');" class="hint--top" data-hint="Add to Wish List"><i class="wishlist-icon"></i><span class="button-wishlist-text">Add to Wish List</span></a>
+				</div>
+				<div class="compare">
+					<a onclick="addToCompare('159');" class="hint--top" data-hint="Compare this Product"><i class="compare-icon"></i><span class="button-compare-text">Compare this Product</span></a>
+				</div>
+			</div>
+		</div>
+	</div>
+</div>
+<!--#INCLUDE FILE="../../../core/catalog/include_dept_productlist_loop_end.phtml"-->
+</div>
+<div class="row pagination">
+	<div class="col-sm-6 text-left links">
+		<ul class="">
+			<%
+				rest = page mod block_size
+				if rest = 0 then rest = block_size end if
+				start = page - rest + 1
+			%>
+			<%if start-block_size > 0 Then %>
+					<li>
+					<a class="previous" href="<%=strPageURL %>&page=<%=start-block_size%>" title="Previous">
+					Prev </a>
+					</li>
+			<% end if %>
+
+			<%
+				for xp = start to start+block_size-1
+				if xp <= page_count then
+				if xp = page then
+			%>
+				<li class="active"><span><%=xp%></span></li>
+			<%
+				else
+			%>
+				<li><a href="<%=strPageURL %>&page=<%=xp%>"><%=xp%></a></li>
+			<%
+				end if
+			end if
+			next
+			%>
+
+			<% if start+block_size <= page_count Then %>
+				<li>
+				<a class="next" href="<%=strPageURL %>&page=<%=start+block_size%>" title="Next">
+				Next </a>
+				</li>
+			<% end if %>
+		</ul>
+	</div>
+	<div class="col-sm-6 text-right results">
+		Showing <%=i_start%> to <%=i_last%> of <%=list_count%>
+	</div>
+</div>
+<script>Journal.applyView('grid');</script>

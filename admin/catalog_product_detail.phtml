@@ -498,6 +498,43 @@
 <link rel="stylesheet" type="text/css" href="assets/plugins/grid/grid-0.5.6.min.css" />
 <link href="../assets/global/plugins/bootstrap-modal/css/bootstrap-modal-bs3patch.css" rel="stylesheet" type="text/css" />
 <link href="../assets/global/plugins/bootstrap-modal/css/bootstrap-modal.css" rel="stylesheet" type="text/css" />
+<style>
+/* CSV Table Classes */
+TABLE.CSVTable {
+	font: 0.8em Verdana,Arial,Geneva,Helvetica,sans-serif;
+	border-collapse: collapse;
+	width: 450px;
+}
+
+/* Header */
+TABLE.CSVTable THEAD TR {
+	background: #E8EDFF;
+}
+TABLE.CSVTable TH {
+	font-family: "Lucida Sans Unicode","Lucida Grande",Sans-Serif;
+	font-size: 1.2em;
+}
+
+/* Table Cells */
+TABLE.CSVTable TD, TABLE.CSVTable TH {
+	padding: 8px;
+	text-align: left;
+	border-bottom: 1px solid #FFFFFF;
+	border-top: 1px solid transparent;
+}
+/* Default background color for rows */
+TABLE.CSVTable TR {
+	background: #F0F0F0;
+}
+/* Background color for odd rows */
+TABLE.CSVTable TR.odd {
+	background: #F9F9F9;
+}
+/* Hover color for all rows */
+TABLE.CSVTable TR:hover {
+	background: #E8EDFF;
+}
+</style>
 <!-- END PAGE LEVEL PLUGINS -->
 <!--#INCLUDE FILE="include/head_bottom.phtml"-->
 </head>
@@ -594,6 +631,9 @@
 															</li>
 															<li>
 																<a href="#tab_tabs" data-toggle="tab"> Tabs </a>
+															</li>
+															<li>
+																<a href="#tab_csv" data-toggle="tab"> Config Data </a>
 															</li>
 															<li>
 																<a href="#tab_filter" data-toggle="tab"> Filter Data </a>
@@ -1412,6 +1452,25 @@
 																	<input type="hidden" name="pf_related_items" id="pf_related_items" value="">
 																</div>
 															</div>
+															<div class="tab-pane" id="tab_csv">
+																<div class="row">
+																	<div class="col-sm-6">
+<textarea id="configdata"  rows="30" class="form-control input-sm">
+album|artist|price
+lateralus|tool|13.00
+aenima|tool|12.00
+10,000 days|tool|14.00
+down in it|nine inch nails|3.00
+broken|nine inch nails|6.00
+</textarea>
+																	</div>
+																	<div class="col-sm-6">
+																		<div id="CSVTable">
+
+																		</div>
+																	</div>
+																</div>
+															</div>
 														</div>
 													</div>
 												</div>
@@ -1585,6 +1644,117 @@
 <script src="assets/plugins/grid/grid-0.5.6.min.js" type="text/javascript"></script>
 <script src="../assets/global/plugins/bootstrap-modal/js/bootstrap-modalmanager.js" type="text/javascript"></script>
 <script src="../assets/global/plugins/bootstrap-modal/js/bootstrap-modal.js" type="text/javascript"></script>
+<script>
+/**
+ * CSV to Table plugin
+ *
+ * Copyright (c) 2010 Steve Sobel
+ * http://honestbleeps.com/
+ *
+ * 
+ *
+ */
+ 
+ (function($){
+
+	/**
+	*
+	* CSV Parser credit goes to Brian Huisman, from his blog entry entitled "CSV String to Array in JavaScript":
+	* http://www.greywyvern.com/?post=258
+	*
+	*/
+	String.prototype.splitCSV = function(sep) {
+		for (var thisCSV = this.split(sep = sep || ","), x = thisCSV.length - 1, tl; x >= 0; x--) {
+			if (thisCSV[x].replace(/"\s+$/, '"').charAt(thisCSV[x].length - 1) == '"') {
+				if ((tl = thisCSV[x].replace(/^\s+"/, '"')).length > 1 && tl.charAt(0) == '"') {
+					thisCSV[x] = thisCSV[x].replace(/^\s*"|"\s*$/g, '').replace(/""/g, '"');
+				} else if (x) {
+					thisCSV.splice(x - 1, 2, [thisCSV[x - 1], thisCSV[x]].join(sep));
+				} else thisCSV = thisCSV.shift().split(sep).concat(thisCSV);
+			} else thisCSV[x].replace(/""/g, '"');
+		} return thisCSV;
+	};
+
+	$.fn.CSVToTable = function(csvsource, options) {
+		var defaults = {
+			tableClass: "CSVTable",
+			theadClass: "",
+			thClass: "",
+			tbodyClass: "",
+			trClass: "",
+			tdClass: "",
+			loadingImage: "",
+			loadingText: "Loading CSV data...",
+			separator: "|",
+			startLine: 0
+		};	
+		var options = $.extend(defaults, options);
+		return this.each(function() {
+			var obj = $(this);
+			var error = '';
+			(options.loadingImage) ? loading = '<div style="text-align: center"><img alt="' + options.loadingText + '" src="' + options.loadingImage + '" /><br>' + options.loadingText + '</div>' : loading = options.loadingText;
+			obj.html(loading);
+			
+			var tableHTML = '<table class="' + options.tableClass + '">';
+			data = $("#" + csvsource).val();
+			
+			
+			var lines = data.replace('\r','').split('\n');
+			var printedLines = 0;
+			var headerCount = 0;
+			var headers = new Array();
+			$.each(lines, function(lineCount, line) {
+				if ((lineCount == 0) && (typeof(options.headers) != 'undefined')) {
+					headers = options.headers;
+					headerCount = headers.length;
+					tableHTML += '<thead class="' + options.theadClass + '"><tr class="' + options.trClass + '">';
+					$.each(headers, function(headerCount, header) {
+						tableHTML += '<th class="' + options.thClass + '">' + header + '</th>';
+					});
+					tableHTML += '</tr></thead><tbody class="' + options.tbodyClass + '">';
+				}
+				if ((lineCount == options.startLine) && (typeof(options.headers) == 'undefined')) {
+					headers = line.splitCSV(options.separator);
+					headerCount = headers.length;
+					tableHTML += '<thead class="' + options.theadClass + '"><tr class="' + options.trClass + '">';
+					$.each(headers, function(headerCount, header) {
+						tableHTML += '<th class="' + options.thClass + '">' + header + '</th>';
+					});
+					tableHTML += '</tr></thead><tbody class="' + options.tbodyClass + '">';
+				} else if (lineCount >= options.startLine) {
+					var items = line.splitCSV(options.separator);
+					if (items.length > 1) {
+						printedLines++;
+						if (items.length != headerCount) {
+							error += 'error on line ' + lineCount + ': Item count (' + items.length + ') does not match header count (' + headerCount + ') \n';
+						}
+						(printedLines % 2) ? oddOrEven = 'odd' : oddOrEven = 'even';
+						tableHTML += '<tr class="' + options.trClass + ' ' + oddOrEven + '">';
+						$.each(items, function(itemCount, item) {
+							tableHTML += '<td class="' + options.tdClass + '">' + item + '</td>';
+						});
+						tableHTML += '</tr>';
+					}
+				}
+			});
+			tableHTML += '</tbody></table>';
+			if (error) {
+				obj.html(error);
+			} else {
+				obj.fadeOut(500, function() {
+					obj.html(tableHTML)
+				}).fadeIn(function() {
+					// trigger loadComplete
+					setTimeout(function() {
+						obj.trigger("loadComplete");	
+					},0);
+				});
+			}
+		});
+	};
+
+})(jQuery);
+</script>
 <!-- END PAGE LEVEL PLUGINS -->
 <!-- BEGIN PAGE LEVEL SCRIPTS -->
 <script language="javascript">
@@ -2118,6 +2288,7 @@ jQuery(document).ready(function() {
    UITreeview.init();
    DoMyAjax("");
    TableData.init();
+   $('#CSVTable').CSVToTable('configdata', { loadingImage: 'assets/images/ajax-loader.gif', startLine: 0 });
    
    jQuery.ajax({
 		type:"post",
@@ -2307,7 +2478,12 @@ jQuery(document).ready(function() {
 			}
 		});
 	});
-
+	
+	
+	
+	jQuery( "#configdata" ).change(function() {
+		$('#CSVTable').CSVToTable('configdata', { loadingImage: 'assets/images/ajax-loader.gif', startLine: 0 });
+	});
    
 });
 </script>

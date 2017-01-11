@@ -1,6 +1,176 @@
-<p>&nbsp;</p><p>&nbsp;</p><p>&nbsp;</p><p>&nbsp;</p><p>&nbsp;</p><p>&nbsp;</p>
-<p>&nbsp;</p><p>&nbsp;</p><p>&nbsp;</p><p>&nbsp;</p><p>&nbsp;</p><p>&nbsp;</p>
-<p>&nbsp;</p><p>&nbsp;</p><p>&nbsp;</p><p>&nbsp;</p><p>&nbsp;</p><p>&nbsp;</p>
-<p>&nbsp;</p><p>&nbsp;</p><p>&nbsp;</p><p>&nbsp;</p><p>&nbsp;</p><p>&nbsp;</p>
-<p>&nbsp;</p><p>&nbsp;</p><p>&nbsp;</p><p>&nbsp;</p><p>&nbsp;</p><p>&nbsp;</p>
-<p>&nbsp;</p><p>&nbsp;</p><p>&nbsp;</p><p>&nbsp;</p><p>&nbsp;</p><p>&nbsp;</p>
+<div id="container" class="container j-container">
+	<div class="row">
+		<div id="column-left" class="col-sm-3 hidden-xs side-column ">
+			<!--
+			<div class="box oc-module side-products">
+				<div class="box-heading">
+					Recently Viewed
+				</div>
+				<div class="box-content">
+					<div class="box-product">
+						<div class="product-grid-item xs-100 sm-50 md-50 lg-33 xl-25 display-icon block-button">
+							<div class="product-wrapper">
+								<div class="image">
+									<a href="http://journal.digital-atelier.com/4/index.php?route=product/product&amp;product_id=74">
+									<img width="50" height="50" src="//digital-cdn.net/4/image/cache/data/yellow-50x50.jpg" title="Beige Ruffle Dress" alt="Beige Ruffle Dress"/>
+									</a>
+								</div>
+								<div class="product-details">
+									<div class="name">
+										<a href="http://journal.digital-atelier.com/4/index.php?route=product/product&amp;product_id=74">Beige Ruffle Dress</a>
+									</div>
+									<div class="price">
+										 $72.00
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+			-->
+			<%
+				g_static_block_code = "TPL_JOURNAL4_INDEX_LEFT_1"
+			%>
+			<!--#INCLUDE FILE="../../../core/cms/include_show_static_block.phtml"-->
+			<%
+				sql = "SELECT TOP 6 * FROM " & g_storeid & "_product WHERE on_sale = 1 ORDER BY pf_id DESC"
+				Set rsIndexOnSale = dbconn.Execute(sql)
+				if not rsIndexOnSale.EOF then
+					
+			%>
+			<div class="box oc-module side-products">
+				<div class="box-heading">
+					On Sale
+				</div>
+				<div class="box-content">
+					<div class="box-product">
+						<%
+							do while not rsIndexOnSale.EOF
+							
+								prod_name =rsIndexOnSale("name")
+								prod_on_sale = rsIndexOnSale("on_sale")
+								prod_url_key = rsIndexOnSale("url_key")
+								prod_mm_type = rsIndexOnSale("mm_type")
+								prod_thumb_image = rsIndexOnSale("image_file")
+								prod_espec_sku = Trim(rsIndexOnSale("espec_sku"))
+								prod_use_icecat_images = rsIndexOnSale("use_icecat_images")
+								prod_group_price = rsIndexOnSale("price_"& Session("LOGINGROUP"))
+								prod_sale_price = rsIndexOnSale("sale_price")
+								'===================================================
+								'SEO URLs
+								if Len(prod_url_key) > 0 then
+									g_product_link = g_store_url & prod_url_key & ".html"
+								else
+									g_product_link = g_store_url & "product.phtml?pf_id=" & pf_id
+								end if
+								'===================================================
+								
+								ssImgSize = "upload/w_" & "50" & ",h_" & "50" & ",c_pad/"
+			
+								if prod_thumb_image = "--" then
+									cloudImg = g_noimage_url
+									ssImg = Replace(cloudImg, "upload/", ssImgSize)
+								else
+									if prod_mm_type = 1 then
+										if Len(prod_espec_sku) > 0 AND prod_use_icecat_images = 1 then
+											'USE ICECAT IMAGE
+											icecat_id = 0
+											if Session("ENABLEINT") = "2" OR Session("ENABLEINT") = "3" then
+												sql = "SELECT * FROM A_ssprice_CA WHERE sku='" & prod_espec_sku & "'"
+											else
+												sql = "SELECT * FROM A_ssprice_main WHERE sku='" & prod_espec_sku & "'"
+											end If
+
+											set rsPA = conn_ss1.Execute(sql)
+											if not rsPA.EOF then
+												image_published = rsPA("image_published")
+												categoryid = Trim(rsPA("CATEGORY"))
+												icecat_id = rsPA("icecat_id")
+											end if
+											rsPA.Close
+
+											sql = "SELECT cloudinary_url FROM [192.168.5.134].[icecat].dbo.cloudinary_images WHERE product_id = " & icecat_id
+											Set rsCloudImage = conn_ss1.Execute(sql)
+											If Not rsCloudImage.EOF Then
+												cloudImg = Trim(rsCloudImage("cloudinary_url"))
+											Else
+												sql = "SELECT * FROM " & g_storeid & "_product_image WHERE image_name = '" & prod_thumb_image & "'"
+												Set rsCloudImage2 = dbconn.Execute(sql)
+												If Not rsCloudImage2.EOF Then
+													cloudImg = Trim(rsCloudImage2("cloud_url"))
+												Else
+													cloudImg = g_noimage_url
+												End If
+												rsCloudImage2.Close
+												Set rsCloudImage2 = Nothing
+											End If
+											rsCloudImage.Close
+											Set rsCloudImage = Nothing
+											ssImg = Replace(cloudImg, "upload/", ssImgSize)
+										else
+											sql = "SELECT * FROM " & g_storeid & "_product_image WHERE image_name = '" & prod_thumb_image & "'"
+											Set rsCloudImage2 = dbconn.Execute(sql)
+											If Not rsCloudImage2.EOF Then
+												cloudImg = Trim(rsCloudImage2("cloud_url"))
+											Else
+												cloudImg = g_noimage_url
+											End If
+											rsCloudImage2.Close
+											Set rsCloudImage2 = Nothing
+											ssImg = Replace(cloudImg, "upload/", ssImgSize)
+										end if
+									else
+										ssImg = "http://a4.res.cloudinary.com/dd3llssvr/image/fetch/" & "w_" & "200" & ",h_" & "200" & ",c_pad,c_fill/" & g_store_url & "assets/pmedia/prod_img/" & Server.URLEncode(prod_thumb_image)
+									end if
+								end if
+								
+								thumb_image_link = ssImg
+						%>
+						<div class="product-grid-item xs-100 sm-50 md-50 lg-33 xl-25 display-icon block-button">
+							<div class="product-wrapper">
+								<div class="image">
+									<a href="<%=g_product_link%>">
+									<img width="50" height="50" src="<%=thumb_image_link%>" title="<%=prod_name%>" alt="<%=prod_name%>"/>
+									</a>
+								</div>
+								<div class="product-details">
+									<div class="name">
+										<a href="<%=g_product_link%>"><%=prod_name%></a>
+									</div>
+									<div class="price">
+										<span class="price-old">$<%=FormatNumber(prod_group_price,2)%></span><span class="price-new">$<%=FormatNumber(prod_sale_price,2)%></span>
+									</div>
+								</div>
+							</div>
+						</div>
+						<%
+								rsIndexOnSale.MoveNext
+							loop
+							set rsIndexOnSale = nothing
+						%>
+					</div>
+				</div>
+			</div>
+			<%
+				end if
+			%>
+		</div>
+		<div id="content" class="col-sm-9">
+			<%
+				custom_category_index = 0
+			%>
+			<!--#INCLUDE FILE="../custom/include_custom_productlist.phtml"-->
+			<%
+				custom_category_index = 1
+			%>
+			<!--#INCLUDE FILE="../custom/include_custom_productlist.phtml"-->
+			
+			<%
+				g_static_block_code = "TPL_JOURNAL4_INDEX_BRANDS"
+			%>
+			<!--#INCLUDE FILE="../../../core/cms/include_show_static_block.phtml"-->
+			
+		</div>
+	</div>
+</div>

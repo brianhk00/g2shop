@@ -1,0 +1,2722 @@
+<!-- #INCLUDE File="xt_html_statusmsg.phtml" -->
+<!-- #INCLUDE File="xt_func_file.phtml" -->
+<!-- #INCLUDE File="xt_func_util.phtml" -->
+<SCRIPT LANGUAGE="VBScript" RUNAT="Server">
+
+function GetStoreImageOptionTags(str_selected,ByRef bImageFound)
+	'returns string of option tags
+	'fills 'bImageFound' with true/false depending if there exists at least on image file
+	
+	dim s,path,lensel,i
+	
+	bImageFound=false
+	
+	s="<option value='--'>-No Image-</option>"
+	path=Server.MapPath("../prod_img")
+
+	if(DirFilesToOptionTags(path,"gifjpg",s)=true) then
+		lensel=Len(str_selected)
+		if(lensel>0) then
+			i=InStr(1,s,str_selected)
+			
+			if((i>0)and((Mid(s,i+lensel,1)=">")or(Mid(s,i+lensel,1)=""""))) then
+				s=Left(s,i+lensel)&" SELECTED"&Mid(s,i+lensel+1)
+				bImageFound=true
+			else
+				if (not str_selected = "--") then
+					s=chr(13)&chr(10)&"<option value="""&str_selected&""">"&str_selected&"</option>"&s
+				end if
+			end if
+		end if
+	end if
+	GetStoreImageOptionTags=s
+end function
+
+function GetStoreThumbOptionTags(str_selected,ByRef bImageFound)
+	'returns string of option tags
+	'fills 'bImageFound' with true/false depending if there exists at least on image file
+	
+	dim s,path,lensel,i
+	
+	bImageFound=false
+	
+	s="<option value='--'>-No Image-</option>"
+	path=Server.MapPath("../thumb_img")
+
+	if(DirFilesToOptionTags(path,"gifjpg",s)=true) then
+		lensel=Len(str_selected)
+		if(lensel>0) then
+			i=InStr(1,s,str_selected)
+			
+			if((i>0)and((Mid(s,i+lensel,1)=">")or(Mid(s,i+lensel,1)=""""))) then
+				s=Left(s,i+lensel)&" SELECTED"&Mid(s,i+lensel+1)
+				bImageFound=true
+			else
+				if (not str_selected = "--") then
+					s=chr(13)&chr(10)&"<option value="""&str_selected&""">"&str_selected&"</option>"&s
+				end if
+			end if
+			
+		end if
+	end if
+	GetStoreThumbOptionTags=s
+end function
+
+function IsValidAdminLogin(str_db,str_uid,str_password)
+	'returns true/false
+	'fills str_cid if customer found to exist
+	
+	dim sql,rs,bEC
+	sql="SELECT UserID FROM :9_profile WHERE (UserID='"&str_uid&"' AND Password='"&str_password&"')"
+	sql = Replace(sql, ":9", Session("StoreID"))
+	set rs=server.CreateObject("ADODB.Recordset")
+	rs.Open sql,str_db
+	bEC=(not rs.EOF)
+	
+	IsValidAdminLogin=bEC
+	rs.Close
+end function
+
+function UpdatePaymentMethod(ByRef str_db, ByRef str_status_msg,_
+								str_visa, str_master, str_discover,_
+								str_amex, str_cod, str_billme, str_willcall)
+
+	if(str_db="")then
+		AddToHTMLMsgHldr str_status_msg,"Insuffiecient info specified to add new product.",true
+		UpdatePaymentMethod=false
+		exit function
+	end if
+	
+	if (not str_visa="1") then
+		str_visa = "0"
+	end if	
+	if (not str_master="1") then
+		str_master = "0"
+	end if
+	if (not str_discover="1") then
+		str_discover = "0"
+	end if
+	if (not str_amex="1") then
+		str_amex = "0"
+	end if
+	if (not str_cod="1") then
+		str_cod = "0"
+	end if
+	if (not str_billme = "1") then
+		str_billme = "0"
+	end if
+	if (not str_willcall = "1") then
+		str_willcall = "0"
+	end if
+	
+	sql = "UPDATE :9_profile SET Visa=" & str_visa
+	
+	sql = sql & ",MasterCard=" & str_master
+	sql = sql & ",Discover=" & str_discover
+	sql = sql & ",AmericanExpress=" & str_amex
+	sql = sql & ",COD=" & str_cod
+	sql = sql & ",BillMe=" & str_billme
+	sql = sql & ",WillCall=" & str_willcall
+	
+	sql = Replace(sql, ":9", Session("StoreID"))
+	
+	set dbconn=server.CreateObject("ADODB.Connection")
+	dbconn.Open db
+	dbconn.Execute sql
+	
+	
+	UpdatePaymentMethod=true
+end function
+
+function SetFlatShippingRate(ByRef str_db, ByRef sh_charge, ByRef str_status_msg)
+
+	if(str_db="")then
+		AddToHTMLMsgHldr str_status_msg,"Insuffiecient info specified to add new product.",true
+		SetFlatShippingRate=false
+		exit function
+	end if
+	
+	if(not IsNumeric(sh_charge))then
+		AddToHTMLMsgHldr str_status_msg,"Please specify the dollar amount you wish to charge for shipping and handing.",true
+		SetFlatShippingRate=false
+		exit function
+	end if
+	
+	sql = "UPDATE :9_profile SET sh_method=0"
+	
+	sql = sql & ",sh_flatrate=" & sh_charge
+	sql = Replace(sql, ":9", Session("StoreID"))
+	
+	set dbconn=server.CreateObject("ADODB.Connection")
+	dbconn.Open db
+	dbconn.Execute sql
+
+	SetFlatShippingRate = true
+end function
+
+function UpdateCustomShippingTable(ByRef str_db, ByRef array_from, ByRef array_charge, ByRef str_basis, ByRef str_status_msg)
+	
+	if(str_db="")then
+		AddToHTMLMsgHldr str_status_msg,"Insuffiecient info specified to update shipping table.",true
+		UpdateCustomShippingTable=false
+		exit function
+	end if
+	
+	'Delete all current shipping info
+	
+	sql="DELETE FROM :9_custom_shipping"
+	sql = Replace(sql, ":9", Session("StoreID"))
+	set dbconn=server.CreateObject("ADODB.Connection")
+	dbconn.Open db
+	dbconn.Execute sql
+	
+	'process array (~) and insert into the recordset
+	dim sp1, sp2
+	dim tmpFrom, tmpCharge
+	
+	do while(Len(array_from) > 1 )
+		sp1 = instr(array_from, "~")
+		tmpFrom = left(array_from, sp1-1)
+		array_from = mid(array_from, sp1+1)
+	
+		sp2 = instr(array_charge, "~")
+		tmpCharge = left(array_charge, sp2-1)
+		array_charge = mid(array_charge, sp2+1)
+	
+		sql="INSERT INTO :9_custom_shipping (range_from, range_charge) VALUES(" & tmpFrom & "," & tmpCharge & ")"
+		sql=Replace(sql, ":9", Session("StoreID"))
+	
+		dbconn.Execute sql
+	loop
+	
+	'Update profile table for shipping method and charge basis
+	sql = "UPDATE :9_profile SET sh_method=1"
+	
+	sql = sql & ",sh_basis=" & str_basis
+	sql = Replace(sql, ":9", Session("StoreID"))
+	
+	dbconn.Execute sql
+	
+	'Close database connection...
+	dbconn.Close
+
+	UpdateCustomShippingTable = true
+	
+end function
+
+function UpdateUPSInfo(ByRef str_db,ByRef GND,ByRef DM1,ByRef DA1,_
+						ByRef DP1,ByRef DM2,ByRef DA2,ByRef DS3,_
+						ByRef sh_handling, ByRef sh_markup, ByRef str_show_tracking, ByRef str_status_msg)
+
+	if(str_db="")then
+		AddToHTMLMsgHldr str_status_msg,"Insuffiecient info specified to update shipping table.",true
+		UpdateUPSInfo=false
+		exit function
+	end if
+	
+	flags = ""
+	
+	if(GND = "1")then
+		flags = flags + "1"
+	else
+		flags = flags + "0"
+	end if
+	
+	if(DM1 = "1")then
+		flags = flags + "1"
+	else
+		flags = flags + "0"
+	end if
+	
+	if(DA1 = "1")then
+		flags = flags + "1"
+	else
+		flags = flags + "0"
+	end if
+	
+	if(DP1 = "1")then
+		flags = flags + "1"
+	else
+		flags = flags + "0"
+	end if
+	
+	if(DM2 = "1")then
+		flags = flags + "1"
+	else
+		flags = flags + "0"
+	end if
+	
+	if(DA2 = "1")then
+		flags = flags + "1"
+	else
+		flags = flags + "0"
+	end if
+	
+	if(DS3 = "1")then
+		flags = flags + "1"
+	else
+		flags = flags + "0"
+	end if
+	
+	flags = flags + "0"
+	
+	if Len(sh_handling) > 0 then
+		
+	else
+		sh_handling = "0"
+	end if
+	
+	if Len(sh_markup) > 0 then
+		
+	else
+		sh_markup = "1"
+	end if
+	
+	if Len(str_show_tracking) > 0 then
+		
+	else
+		str_show_tracking = "0"
+	end if
+	
+	'Check for sh_markup
+	if CInt(sh_markup) > 0 then
+	
+	else
+		sh_markup = "1"
+	end if
+	
+	set dbconn=server.CreateObject("ADODB.Connection")
+	
+	'Update profile table for shipping method and charge basis
+	sql = "UPDATE :9_profile SET sh_method=2"
+	
+	sql = sql & ",sh_ups_flags=" & flags
+	sql = sql & ",sh_handling=" & sh_handling
+	sql = sql & ",sh_markup=" & sh_markup
+	sql = sql & ",show_ups_tracking=" & str_show_tracking
+	
+	sql = Replace(sql, ":9", Session("StoreID"))
+	
+	dbconn.Open str_db
+	dbconn.Execute sql
+	
+	UpdateUPSInfo = true
+end function
+
+function GetClientSalesTaxRate(ByRef str_db,_
+								ByRef str_state_abbr,ByRef str_zip,ByRef num_sales_tax, ByRef str_shopper_id, ByRef b_tax_on_sh)
+									
+	num_sales_tax=0
+	
+	set dbconn=server.CreateObject("ADODB.Connection")
+	dbconn.Open Session("ConnectionString")
+	
+	b_tax_on_sh = 0
+	
+	'Get shopper information...
+	
+	if Len(str_shopper_id) > 1 then
+		ssql = "SELECT * FROM " & Session("StoreID") & "_shopper WHERE shopper_id='" & str_shopper_id & "'"
+		set rs1 = dbconn.Execute(ssql)
+		
+		if not rs1.EOF then
+			
+			func_billing_city = Trim(rs1("City"))
+			func_billing_state = Trim(rs1("State"))
+			func_billing_zip = Trim(rs1("ZipCode"))
+			
+			func_shipping_city = Trim(rs1("shipping_City"))
+			
+			if Len(str_state_abbr) > 1 then
+				if str_state_abbr = "--" then
+					func_shipping_state = Trim(rs1("shipping_State"))
+				else
+					func_shipping_state = str_state_abbr
+				end if
+			else
+				func_shipping_state = Trim(rs1("shipping_State"))
+			end if
+			
+			if Len(str_zip) > 1 then
+				func_shipping_zip = str_zip
+			else
+				func_shipping_zip = Trim(rs1("shipping_ZipCode"))
+			end if
+			
+			use_shopper_tax = rs1("use_shopper_tax")
+			shopper_tax = rs1("shopper_tax")
+			
+		else
+			
+			func_billing_city = ""
+			func_billing_state = str_state_abbr
+			func_billing_zip = str_zip
+			
+			func_shipping_city = ""
+			func_shipping_state = str_state_abbr
+			func_shipping_zip = str_zip
+			
+			use_shopper_tax = false
+			shopper_tax = 0
+		
+		end if
+		
+		rs1.Close
+		
+	else
+		'No shopper ID...
+		func_billing_city = ""
+		func_billing_state = str_state_abbr
+		func_billing_zip = str_zip
+		
+		func_shipping_city = ""
+		func_shipping_state = str_state_abbr
+		func_shipping_zip = str_zip
+		
+		use_shopper_tax = false
+		shopper_tax = 0
+	
+	end if
+	
+	'Headquater Information...
+	psql = "SELECT * FROM " & Session("StoreID") & "_profile"
+	set rsProf = dbconn.Execute(psql)
+	if not rsProf.EOF then
+		hq_state = Trim(rsProf("State"))
+		hq_zip = Trim(rsProf("Zip"))
+	end if
+	rsProf.Close
+	
+		
+	if use_shopper_tax then
+	
+		num_sales_tax = shopper_tax
+		
+	else
+	
+		'Get tax from nexus table...
+		nsql = "SELECT * FROM " & Session("StoreID") & "_nexus_tax WHERE CollectionMethod <> 0"
+		set rsNexus = dbconn.Execute(nsql)
+		
+		do while not rsNexus.EOF
+			
+			n_state_id = Trim(rsNexus("StateID"))
+			n_tax_method = rsNexus("CollectionMethod")
+			n_tax_on_freight = rsNexus("TaxOnFreight")
+			n_nexus_city = Trim(rsNexus("NexusCity"))
+			n_nexus_zip = Trim(rsNexus("NexusZip"))
+			
+			t_StateSalesTax = 0
+			t_StateUseTax = 0
+			t_County = ""
+			t_CountySalesTax = 0
+			t_CountyUseTax = 0
+			t_City = ""
+			t_CitySalesTax = 0
+			t_CityUseTax = 0
+			t_DistrictSalesTax = 0
+			t_DistrictUseTax = 0
+			t_CombinedSalesTax = 0
+			t_CombinedUseTax = 0
+			
+			x_num_sales_tax = 0
+			
+			shipping_state = func_shipping_state
+			shipping_zip = func_shipping_zip
+
+			if Len(shipping_zip) > 5 then
+				shipping_zip = Left(shipping_zip,5)
+			end if
+			
+			billing_zip = func_billing_zip
+			
+			if Len(billing_zip) > 5 then
+				billing_zip = Left(billing_zip,5)
+			else
+				billing_zip = shipping_zip
+			end if
+			
+			if Len(func_billing_state) > 0 then
+				billing_state = func_billing_state
+			else
+				billing_state = shipping_state
+			end if
+									
+			SELECT CASE n_tax_method
+			
+			CASE 1 'ship-to sales tax
+			
+				if (n_state_id = shipping_state) then
+			
+					tsql = "SELECT * FROM A_Sales_tax WHERE Zip='" & shipping_zip & "'"
+					set rsTax = dbconn.Execute(tsql)
+					if not rsTax.EOF then
+					
+						t_StateSalesTax = rsTax("StateSalesTax")
+						t_StateUseTax = rsTax("StateUseTax")
+						t_County = rsTax("County")
+						t_CountySalesTax = rsTax("CountySalesTax")
+						t_CountyUseTax = rsTax("CountyUseTax")
+						t_City = rsTax("City")
+						t_CitySalesTax = rsTax("CitySalesTax")
+						t_CityUseTax = rsTax("CityUseTax")
+						t_DistrictSalesTax = rsTax("DistrictSalesTax")
+						t_DistrictUseTax = rsTax("DistrictUseTax")
+						t_CombinedSalesTax = rsTax("CombinedSalesTax")
+						t_CombinedUseTax = rsTax("CombinedUseTax")
+					
+					end if
+					rsTax.Close
+					
+					x_num_sales_tax = (t_StateSalesTax + t_CountySalesTax + t_CitySalesTax + t_DistrictSalesTax) * 100
+										
+					if x_num_sales_tax > 0 then
+						num_sales_tax = x_num_sales_tax
+					end if
+					
+					b_tax_on_sh = n_tax_on_freight
+					
+				end if
+			
+			CASE 2 'billing sales tax
+			
+				if (n_state_id = billing_state) then
+				
+					tsql = "SELECT * FROM A_Sales_tax WHERE Zip='" & billing_zip & "'"
+					set rsTax = dbconn.Execute(tsql)
+					if not rsTax.EOF then
+					
+						t_StateSalesTax = rsTax("StateSalesTax")
+						t_StateUseTax = rsTax("StateUseTax")
+						t_County = rsTax("County")
+						t_CountySalesTax = rsTax("CountySalesTax")
+						t_CountyUseTax = rsTax("CountyUseTax")
+						t_City = rsTax("City")
+						t_CitySalesTax = rsTax("CitySalesTax")
+						t_CityUseTax = rsTax("CityUseTax")
+						t_DistrictSalesTax = rsTax("DistrictSalesTax")
+						t_DistrictUseTax = rsTax("DistrictUseTax")
+						t_CombinedSalesTax = rsTax("CombinedSalesTax")
+						t_CombinedUseTax = rsTax("CombinedUseTax")
+					
+					end if
+					rsTax.Close
+					
+					x_num_sales_tax = (t_StateSalesTax + t_CountySalesTax + t_CitySalesTax + t_DistrictSalesTax) * 100
+					
+					if x_num_sales_tax > 0 then
+						num_sales_tax = x_num_sales_tax
+					end if
+					
+					b_tax_on_sh = n_tax_on_freight
+					
+				end if
+				
+			CASE 3 'Nexus location
+			
+				if billing_state = n_state_id OR shipping_state = n_state_id then
+				
+					if Len(n_nexus_zip) > 0 then
+					
+						tsql = "SELECT * FROM A_Sales_tax WHERE Zip='" & n_nexus_zip & "'"
+						set rsTax = dbconn.Execute(tsql)
+						if not rsTax.EOF then
+						
+							t_StateSalesTax = rsTax("StateSalesTax")
+							t_StateUseTax = rsTax("StateUseTax")
+							t_County = rsTax("County")
+							t_CountySalesTax = rsTax("CountySalesTax")
+							t_CountyUseTax = rsTax("CountyUseTax")
+							t_City = rsTax("City")
+							t_CitySalesTax = rsTax("CitySalesTax")
+							t_CityUseTax = rsTax("CityUseTax")
+							t_DistrictSalesTax = rsTax("DistrictSalesTax")
+							t_DistrictUseTax = rsTax("DistrictUseTax")
+							t_CombinedSalesTax = rsTax("CombinedSalesTax")
+							t_CombinedUseTax = rsTax("CombinedUseTax")
+						
+						end if
+						rsTax.Close
+						
+						x_num_sales_tax = (t_StateSalesTax + t_CountySalesTax + t_CitySalesTax + t_DistrictSalesTax) * 100
+						
+						if x_num_sales_tax > 0 then
+							num_sales_tax = x_num_sales_tax
+						end if
+					
+					else
+					
+						tsql = "SELECT * FROM A_Sales_tax WHERE Zip='" & shipping_zip & "'"
+						set rsTax = dbconn.Execute(tsql)
+						if not rsTax.EOF then
+						
+							t_StateSalesTax = rsTax("StateSalesTax")
+							t_StateUseTax = rsTax("StateUseTax")
+							t_County = rsTax("County")
+							t_CountySalesTax = rsTax("CountySalesTax")
+							t_CountyUseTax = rsTax("CountyUseTax")
+							t_City = rsTax("City")
+							t_CitySalesTax = rsTax("CitySalesTax")
+							t_CityUseTax = rsTax("CityUseTax")
+							t_DistrictSalesTax = rsTax("DistrictSalesTax")
+							t_DistrictUseTax = rsTax("DistrictUseTax")
+							t_CombinedSalesTax = rsTax("CombinedSalesTax")
+							t_CombinedUseTax = rsTax("CombinedUseTax")
+						
+						end if
+						rsTax.Close
+						
+						x_num_sales_tax = (t_StateSalesTax + t_CountySalesTax + t_CitySalesTax + t_DistrictSalesTax) * 100
+						
+						if x_num_sales_tax > 0 then
+							num_sales_tax = x_num_sales_tax
+						end if
+					
+					end if
+					
+					b_tax_on_sh = n_tax_on_freight
+					
+				end if
+				
+			CASE 4 'Headquater..
+			
+				if shipping_state = n_state_id then
+				
+					if Len(hq_zip) > 0 then
+					
+						tsql = "SELECT * FROM A_Sales_tax WHERE Zip='" & hq_zip & "'"
+						set rsTax = dbconn.Execute(tsql)
+						if not rsTax.EOF then
+						
+							t_StateSalesTax = rsTax("StateSalesTax")
+							t_StateUseTax = rsTax("StateUseTax")
+							t_County = rsTax("County")
+							t_CountySalesTax = rsTax("CountySalesTax")
+							t_CountyUseTax = rsTax("CountyUseTax")
+							t_City = rsTax("City")
+							t_CitySalesTax = rsTax("CitySalesTax")
+							t_CityUseTax = rsTax("CityUseTax")
+							t_DistrictSalesTax = rsTax("DistrictSalesTax")
+							t_DistrictUseTax = rsTax("DistrictUseTax")
+							t_CombinedSalesTax = rsTax("CombinedSalesTax")
+							t_CombinedUseTax = rsTax("CombinedUseTax")
+						
+						end if
+						rsTax.Close
+						
+						x_num_sales_tax = (t_StateSalesTax + t_CountySalesTax + t_CitySalesTax + t_DistrictSalesTax) * 100
+						
+						if x_num_sales_tax > 0 then
+							num_sales_tax = x_num_sales_tax
+						end if
+					
+					else
+					
+						tsql = "SELECT * FROM A_Sales_tax WHERE Zip='" & shipping_zip & "'"
+						set rsTax = dbconn.Execute(tsql)
+						if not rsTax.EOF then
+						
+							t_StateSalesTax = rsTax("StateSalesTax")
+							t_StateUseTax = rsTax("StateUseTax")
+							t_County = rsTax("County")
+							t_CountySalesTax = rsTax("CountySalesTax")
+							t_CountyUseTax = rsTax("CountyUseTax")
+							t_City = rsTax("City")
+							t_CitySalesTax = rsTax("CitySalesTax")
+							t_CityUseTax = rsTax("CityUseTax")
+							t_DistrictSalesTax = rsTax("DistrictSalesTax")
+							t_DistrictUseTax = rsTax("DistrictUseTax")
+							t_CombinedSalesTax = rsTax("CombinedSalesTax")
+							t_CombinedUseTax = rsTax("CombinedUseTax")
+						
+						end if
+						rsTax.Close
+						
+						x_num_sales_tax = (t_StateSalesTax + t_CountySalesTax + t_CitySalesTax + t_DistrictSalesTax) * 100
+						
+						if x_num_sales_tax > 0 then
+							num_sales_tax = x_num_sales_tax
+						end if
+					
+					end if
+					
+					b_tax_on_sh = n_tax_on_freight
+					
+				end if
+				
+			CASE 6 'ship-to use tax
+			
+				if (n_state_id = shipping_state) then
+					tsql = "SELECT * FROM A_Sales_tax WHERE Zip='" & shipping_zip & "'"
+					set rsTax = dbconn.Execute(tsql)
+					if not rsTax.EOF then
+					
+						t_StateSalesTax = rsTax("StateSalesTax")
+						t_StateUseTax = rsTax("StateUseTax")
+						t_County = rsTax("County")
+						t_CountySalesTax = rsTax("CountySalesTax")
+						t_CountyUseTax = rsTax("CountyUseTax")
+						t_City = rsTax("City")
+						t_CitySalesTax = rsTax("CitySalesTax")
+						t_CityUseTax = rsTax("CityUseTax")
+						t_DistrictSalesTax = rsTax("DistrictSalesTax")
+						t_DistrictUseTax = rsTax("DistrictUseTax")
+						t_CombinedSalesTax = rsTax("CombinedSalesTax")
+						t_CombinedUseTax = rsTax("CombinedUseTax")
+					
+					end if
+					rsTax.Close
+					
+					x_num_sales_tax = (t_StateUseTax + t_CountyUseTax + t_CityUseTax + t_DistrictUseTax) * 100
+					
+					if x_num_sales_tax > 0 then
+						num_sales_tax = x_num_sales_tax
+					end if
+					
+					b_tax_on_sh = n_tax_on_freight
+					
+				end if
+				
+			CASE 7 'billing use tax
+			
+				if (n_state_id = billing_state) then
+					tsql = "SELECT * FROM A_Sales_tax WHERE Zip='" & billing_zip & "'"
+					set rsTax = dbconn.Execute(tsql)
+					if not rsTax.EOF then
+					
+						t_StateSalesTax = rsTax("StateSalesTax")
+						t_StateUseTax = rsTax("StateUseTax")
+						t_County = rsTax("County")
+						t_CountySalesTax = rsTax("CountySalesTax")
+						t_CountyUseTax = rsTax("CountyUseTax")
+						t_City = rsTax("City")
+						t_CitySalesTax = rsTax("CitySalesTax")
+						t_CityUseTax = rsTax("CityUseTax")
+						t_DistrictSalesTax = rsTax("DistrictSalesTax")
+						t_DistrictUseTax = rsTax("DistrictUseTax")
+						t_CombinedSalesTax = rsTax("CombinedSalesTax")
+						t_CombinedUseTax = rsTax("CombinedUseTax")
+					
+					end if
+					rsTax.Close
+					
+					x_num_sales_tax = (t_StateUseTax + t_CountyUseTax + t_CityUseTax + t_DistrictUseTax) * 100
+					
+					if x_num_sales_tax > 0 then
+						num_sales_tax = x_num_sales_tax
+					end if
+					
+					b_tax_on_sh = n_tax_on_freight
+				
+				end if
+				
+			
+			CASE ELSE
+			
+				if (n_state_id = shipping_state) then
+				
+					tsql = "SELECT * FROM A_Sales_tax WHERE Zip='" & shipping_zip & "'"
+					set rsTax = dbconn.Execute(tsql)
+					if not rsTax.EOF then
+					
+						t_StateSalesTax = rsTax("StateSalesTax")
+						t_StateUseTax = rsTax("StateUseTax")
+						t_County = rsTax("County")
+						t_CountySalesTax = rsTax("CountySalesTax")
+						t_CountyUseTax = rsTax("CountyUseTax")
+						t_City = rsTax("City")
+						t_CitySalesTax = rsTax("CitySalesTax")
+						t_CityUseTax = rsTax("CityUseTax")
+						t_DistrictSalesTax = rsTax("DistrictSalesTax")
+						t_DistrictUseTax = rsTax("DistrictUseTax")
+						t_CombinedSalesTax = rsTax("CombinedSalesTax")
+						t_CombinedUseTax = rsTax("CombinedUseTax")
+					
+					end if
+					rsTax.Close
+					
+					x_num_sales_tax = (t_StateSalesTax + t_CountySalesTax + t_CitySalesTax + t_DistrictSalesTax) * 100
+					
+					if x_num_sales_tax > 0 then
+						num_sales_tax = x_num_sales_tax
+					end if
+					
+					b_tax_on_sh = n_tax_on_freight
+					
+				end if
+			
+			END SELECT
+			
+			rsNexus.MoveNext
+		
+		loop
+		rsNexus.Close
+	
+	end if
+	
+	if IsNumeric(num_sales_tax) then
+		num_sales_tax=Round(num_sales_tax,3)
+	else
+		num_sales_tax=0
+	end if
+	
+	GetClientSalesTaxRate=true
+	
+	'dbconn.close
+	
+		
+end function
+
+function GetClientSalesTaxRateOLD(ByRef str_db,_
+								ByRef str_state_abbr,ByRef str_zip,ByRef num_sales_tax, ByRef str_shopper_id)
+								
+	dim str_sql,bok, bmore
+	
+	num_sales_tax=0.0
+	bmore = false
+
+	'validate
+	if((IsNull(str_db))or(Len(str_db)=0)) then
+		GetClientSalesTaxRate=false
+		Exit Function
+	end if
+	
+	set dbconn=server.CreateObject("ADODB.Connection")
+	dbconn.Open str_db
+	'See if shooper has own tax table...
+	if Len(str_shopper_id) > 0 then
+		str_sql = "SELECT use_shopper_tax, shopper_tax FROM :9_shopper WHERE shopper_id='" & str_shopper_id & "'"
+		str_sql = Replace(str_sql, ":9", Session("StoreID"))
+		set rs1 = dbconn.Execute(str_sql)
+		if not rs1.EOF then
+			if rs1("use_shopper_tax") then
+				num_sales_tax = rs1("shopper_tax")
+				bmore = false
+				bok = true
+			else
+				bmore = true
+			end if
+		else
+			bmore = true
+		end if
+	
+		rs1.close
+		dbconn.close
+	else
+		bmore = true
+	end if
+	
+	if bmore then
+		if((Len(str_state_abbr)=0)and(Len(str_zip)=0)) then
+			GetClientSalesTaxRate=false
+			Exit Function
+		end if
+
+		'get the states where sales tax applies
+		str_sql="SELECT * FROM :9_profile"
+		str_sql = Replace(str_sql, ":9", Session("StoreID"))
+		set rs=server.CreateObject("ADODB.Recordset")
+		rs.Open str_sql,str_db
+	
+		if(rs.EOF) then
+			rs.Close
+			GetClientSalesTaxRate=false
+			exit function
+		end if
+		bok=false
+	
+		'For now, compare state only...
+		if(rs("State")=str_state_abbr) then
+			num_sales_tax=rs("tax_rate")
+			bok = true
+		end if
+	
+		rs.Close
+		
+		'Compare zip code for exceptions..
+		str_zip_code = str_zip
+		if Len(str_zip_code) > 5  then
+			str_zip_code = Left(str_zip_code,5)
+		end if
+		
+		if Len(str_zip_code) < 5 then
+			str_zip_code ="xxx"
+		end if
+	
+		str_sql="SELECT tax_rate2, tax_rate3, tax_zip2, tax_zip3 FROM :9_profile"
+		str_sql = Replace(str_sql, ":9", Session("StoreID"))
+		set rs=server.CreateObject("ADODB.Recordset")
+		rs.Open str_sql,str_db
+	
+		if not rs.EOF then
+			tax_rate2 = rs("tax_rate2")
+			tax_rate3 = rs("tax_rate3")
+			tax_zip2 = rs("tax_zip2")
+			tax_zip3 = rs("tax_zip3")
+			
+			if InStr(tax_zip2, str_zip_code) > 0 then
+				num_sales_tax = tax_rate2
+				bok = true
+			else
+				if InStr(tax_zip3, str_zip_code) > 0 then
+					num_sales_tax = tax_rate3
+					bok = true
+				end if
+			end if
+			
+		end if
+	
+		rs.close
+		
+	end if
+	
+	if(bok) then
+		if IsNumeric(num_sales_tax) then
+			num_sales_tax=Round(num_sales_tax,2)
+		else
+			num_sales_tax=0
+		end if
+		GetClientSalesTaxRateOLD=true
+		exit function
+	end if
+	GetClientSalesTaxRateOLD=false
+end function
+
+function GetClientSalesTaxRateCA(ByRef str_db,_
+								str_state_abbr,str_zip,ByRef num_sales_tax1, ByRef num_sales_tax2, ByRef str_shopper_id)
+								
+	dim str_sql,bok, bmore
+	
+	num_sales_tax=0.0
+	bmore = false
+
+	'validate
+	if((IsNull(str_db))or(Len(str_db)=0)) then
+		GetClientSalesTaxRateCA=false
+		Exit Function
+	end if
+	
+	set dbconn=server.CreateObject("ADODB.Connection")
+	dbconn.Open str_db
+	'See if shooper has own tax table...
+	if Len(str_shopper_id) > 0 then
+		str_sql = "SELECT use_shopper_tax, shopper_tax FROM :9_shopper WHERE shopper_id='" & str_shopper_id & "'"
+		str_sql = Replace(str_sql, ":9", Session("StoreID"))
+		set rs1 = dbconn.Execute(str_sql)
+		if not rs1.EOF then
+			if rs1("use_shopper_tax") then
+				num_sales_tax1 = rs1("shopper_tax")
+				bmore = false
+				bok = true
+			else
+				bmore = true
+			end if
+		else
+			bmore = true
+		end if
+	
+		rs1.close
+	else
+		bmore = true
+	end if
+	
+	if bmore then
+		if Len(str_state_abbr)=0 then
+			GetClientSalesTaxRateCA=false
+			Exit Function
+		end if
+
+		'get the states where sales tax applies
+		SELECT CASE str_state_abbr
+		CASE "Alberta"
+			str_sql = "SELECT gst01, pst01 FROM :9_profile_CA"
+		CASE "British Columbia"
+			str_sql = "SELECT gst02, pst02 FROM :9_profile_CA"
+		CASE "Manitoba"
+			str_sql = "SELECT gst03, pst03 FROM :9_profile_CA"
+		CASE "New Brunswick"
+			str_sql = "SELECT gst04, pst04 FROM :9_profile_CA"
+		CASE "Newfoundland"
+			str_sql = "SELECT gst05, pst05 FROM :9_profile_CA"
+		CASE "N.W. Territories"
+			str_sql = "SELECT gst06, pst06 FROM :9_profile_CA"
+		CASE "Nova Scotia"
+			str_sql = "SELECT gst07, pst07 FROM :9_profile_CA"
+		CASE "Nunavut"
+			str_sql = "SELECT gst08, pst08 FROM :9_profile_CA"
+		CASE "Ontario"
+			str_sql = "SELECT gst09, pst09 FROM :9_profile_CA"
+		CASE "Prince Edward Island"
+			str_sql = "SELECT gst10, pst10 FROM :9_profile_CA"
+		CASE "Quebec"
+			str_sql = "SELECT gst11, pst11 FROM :9_profile_CA"
+		CASE "Saskatchewan"
+			str_sql = "SELECT gst12, pst12 FROM :9_profile_CA"
+		CASE "Yukon"
+			str_sql = "SELECT gst13, pst13 FROM :9_profile_CA"
+			
+		CASE "AB"
+			str_sql = "SELECT gst01, pst01 FROM :9_profile_CA"
+		CASE "BC"
+			str_sql = "SELECT gst02, pst02 FROM :9_profile_CA"
+		CASE "MB"
+			str_sql = "SELECT gst03, pst03 FROM :9_profile_CA"
+		CASE "NB"
+			str_sql = "SELECT gst04, pst04 FROM :9_profile_CA"
+		CASE "NL"
+			str_sql = "SELECT gst05, pst05 FROM :9_profile_CA"
+		CASE "NT"
+			str_sql = "SELECT gst06, pst06 FROM :9_profile_CA"
+		CASE "NS"
+			str_sql = "SELECT gst07, pst07 FROM :9_profile_CA"
+		CASE "NU"
+			str_sql = "SELECT gst08, pst08 FROM :9_profile_CA"
+		CASE "ON"
+			str_sql = "SELECT gst09, pst09 FROM :9_profile_CA"
+		CASE "PE"
+			str_sql = "SELECT gst10, pst10 FROM :9_profile_CA"
+		CASE "QC"
+			str_sql = "SELECT gst11, pst11 FROM :9_profile_CA"
+		CASE "SK"
+			str_sql = "SELECT gst12, pst12 FROM :9_profile_CA"
+		CASE "YT"
+			str_sql = "SELECT gst13, pst13 FROM :9_profile_CA"
+		CASE ELSE
+			str_sql = "SELECT gst00, pst00 FROM :9_profile_CA"
+		END SELECT
+		
+		str_sql = Replace(str_sql, ":9", Session("StoreID"))
+		set rs1 = dbconn.Execute(str_sql)
+		
+		if not rs1.EOF then
+			num_sales_tax1 = rs1(0)
+			num_sales_tax2 = rs1(1)
+		else
+			num_sales_tax1 = 20
+			num_sales_tax2 = 20
+		end if
+		rs1.Close
+		bok = true
+			
+	end if
+	
+	dbconn.close
+
+	if(bok) then
+		if IsNumeric(num_sales_tax1) then
+			num_sales_tax1=Round(num_sales_tax1,2)
+		else
+			num_sales_tax1=0
+		end if
+		if IsNumeric(num_sales_tax2) then
+			num_sales_tax2=Round(num_sales_tax2,2)
+		else
+			num_sales_tax2=0
+		end if
+		GetClientSalesTaxRateCA=true
+		exit function
+	end if
+
+	GetClientSalesTaxRateCA=false
+end function
+
+function UpdateTaxRate(str_db,str_tax_rate,str_status_msg)
+
+	if((str_db="") or (str_tax_rate=""))then
+		AddToHTMLMsgHldr str_status_msg,"Insuffiecient info specified to update tax.",true
+		UpdateTaxRate=false
+		exit function
+	end if
+	
+	if(not IsNumeric(str_tax_rate))then
+		AddToHTMLMsgHldr str_status_msg,"Please specify tax rate as percent.",true
+		UpdateTaxRate=false
+		exit function
+	end if
+	
+	'Update profile table for shipping method and charge basis
+	sql = "UPDATE :9_profile SET "
+	
+	sql = sql & "tax_rate=" & str_tax_rate
+	sql = Replace(sql, ":9", Session("StoreID"))
+	
+	set dbconn=server.CreateObject("ADODB.Connection")
+	dbconn.Open db
+	dbconn.Execute sql
+	
+	'Close database connection...
+	dbconn.Close
+	
+	UpdateTaxRate = true
+end function
+
+function UpdateAdminInformation(ByRef str_db,_
+					ByRef str_userid, ByRef str_password1, ByRef str_password2,_
+					ByRef str_status_msg)
+	
+	if((str_db=""))then
+		AddToHTMLMsgHldr str_status_msg,"Insuffiecient info specified to update administrator information.",true
+		UpdateAdminInformation=false
+		exit function
+	end if
+	
+	if(Len(str_userid)<=3)then
+		AddToHTMLMsgHldr str_status_msg,"User ID longer than 3 characters is required.",true
+		UpdateAdminInformation=false
+		exit function
+	end if
+
+	if(str_password1="") then
+		AddToHTMLMsgHldr str_status_msg,"A password is required to continue.",true
+		UpdateAdminInformation=false
+		exit function
+	else
+		if(str_password1 = str_password2) then
+			UpdateAdminInformation=true
+		else
+			AddToHTMLMsgHldr str_status_msg,"please use same password to proceed.",true
+			UpdateAdminInformation=false
+			exit function
+		end if
+	end if
+	
+	'Update profile table for shipping method and charge basis
+	sql = "UPDATE :9_profile SET "
+	
+	sql = sql & "UserID='" & str_userid
+	sql = sql & "',Password='" & str_password1 &"'"
+	sql = Replace(sql, ":9", Session("StoreID"))
+	
+	set dbconn=server.CreateObject("ADODB.Connection")
+	dbconn.Open db
+	dbconn.Execute sql
+	
+	'Close database connection...
+	dbconn.Close
+	
+	UpdateAdminInformation=true
+	
+end function
+
+function UpdateContactInformation(Byref str_db,ByRef str_company,_
+				ByRef str_address, ByRef str_city, ByRef str_state,_
+				ByRef str_zip,ByRef str_phone, ByRef str_email,_
+				ByRef str_status_msg)
+
+	if((str_db="")or(str_company="")or(str_address="")or(str_city="")or(str_state="")_
+		or(str_zip="")or(str_phone="")or(str_email=""))then
+		AddToHTMLMsgHldr str_status_msg,"Insuffiecient info specified to update contact information.",true
+		UpdateContactInformation=false
+		exit function
+	end if
+	
+	if((CheckEmailAddress(str_email))= false)then
+		AddToHTMLMsgHldr str_status_msg,"Valid e-mail address is required.",true
+		UpdateContactInformation=false
+		exit function
+	end if
+	'Update profile table for shipping method and charge basis
+	sql = "UPDATE :9_profile SET "
+	
+	sql = sql & "Company='" & CheckString(str_company)&"'"
+	sql = sql & ",Address='" & CheckString(str_address) &"'"
+	sql = sql & ",City='" & CheckString(str_city) &"'"
+	sql = sql & ",State='" & str_state &"'"
+	sql = sql & ",Zip='" & CheckString(str_zip) &"'"
+	sql = sql & ",Phone='" & CheckString(str_phone) &"'"
+	sql = sql & ",Email='" & CheckString(str_email) &"'"
+	sql = Replace(sql, ":9", Session("StoreID"))
+	
+	set dbconn=server.CreateObject("ADODB.Connection")
+	dbconn.Open db
+	dbconn.Execute sql
+	
+	'Close database connection...
+	dbconn.Close
+	UpdateContactInformation=true
+	
+end function
+
+function SendOrderNotificationViaEmail(ByRef str_db,ByRef str_status_msg,_
+						ByRef str_order_id, ByRef str_shopper_id, ByRef str_total, ByRef str_email_flag)
+
+	dim ar_option
+	redim ar_option(10,2)
+	dim ar_product_name
+	redim ar_product_name(10)
+
+	if((str_db="")or(str_order_id=""))then
+		SendOrderNotificationViaEmail=false
+		exit function
+	end if
+	
+	str_sql="SELECT * FROM :9_profile"
+	str_sql = Replace(str_sql, ":9", Session("StoreID"))
+	set dbconn=server.CreateObject("ADODB.Connection")
+	
+	dbconn.Open str_db
+	set rs = dbconn.Execute(str_sql)
+
+	if not rs.EOF then
+		company_name = Trim(rs("Company"))
+		company_email_address = Trim(rs("Email"))
+		espec_part_number_mode = rs("espec_part_number_mode")
+	else
+		SendOrderNotificationViaEmail=false
+		exit function
+	end if
+
+	rs.Close
+	
+	'===================================================================
+	'company_name : name of the company
+	'company_email_address : default company email address
+	'===================================================================
+
+	
+	'===================================================================
+	' GET ORDER INFORMATION
+	'===================================================================
+	str_sql = "SELECT * FROM " & Session("StoreID") & "_order WHERE order_id='" & str_order_id & "'"
+
+	Set rsOrder = dbconn.Execute(str_sql)
+
+	if not rsOrder.EOF then
+	
+		order_shopper_id = rsOrder("shopper_id")
+		status_type = Trim(rsOrder("status"))
+		date_entered = rsOrder("date_entered")
+		date_changed = rsOrder("date_changed")
+		trans_status = Trim(rsOrder("status"))
+	
+		card_name = rsOrder("CardName")
+		card_address = rsOrder("CardAddress")
+		card_address2 = rsOrder("CardCity")& ", "& rsOrder("CardState")& " " & rsOrder("CardZip")
+
+		cardCity = Trim(rsOrder("CardCity"))
+		CardState = Trim(rsOrder("CardState"))
+		CardZip = Trim(rsOrder("CardZip"))
+		billing_country = Trim(rsOrder("CardCountry"))
+
+		card_type = UCASE(rsOrder("CardType"))
+		card_number = rsOrder("CardNumber")
+		card_exp = rsOrder("CardExpirationMonth") & " / " & rsOrder("CardExpirationYear")
+		
+		'======================================================================
+		' RC4 / ADMIN ACCESS ONLY
+		if Len(card_number) > 0 then
+			if IsRC4Encrypted(card_number) then
+				card_number = EnDeCrypt(card_number, Session("STORE_OP"))
+			end if
+		end if
+		'=====================================================================
+	
+		ship_name = rsOrder("ShipFirstName")& " " & rsOrder("ShipLastName")
+		ShipLastName = rsOrder("ShipLastName")
+		ShipFirstName = rsOrder("ShipFirstName")
+		ship_address = rsOrder("ShipAddress")
+		ShipAddress = rsOrder("ShipAddress")
+		ship_address2 = rsOrder("ShipCity")& ", "& rsOrder("ShipState")& " " & rsOrder("ShipZIP")
+		ShipCity = rsOrder("ShipCity")
+		ShipState = rsOrder("ShipState")
+		ShipZip = rsOrder("ShipZip")
+		ShipPhone = Trim(rsOrder("ShipPhone"))
+		ship_phone = ShipPhone
+		SH_Method = rsOrder("SH_Method")
+		shipping_country = Trim(rsOrder("ShipCountry"))
+
+		order_total = rsOrder("Total")
+
+		tracking_number = rsOrder("UPS_tracking")	
+
+		po_number = rsOrder("po_number")
+		
+		Order_Comments = rsOrder("Order_Comments")
+		if Len(Order_Comments) > 0 then
+			Order_Comments = Replace(Order_comments, chr(13), "<br>")
+		else
+			Order_Comments = ""
+		end if
+		
+		'===============================================================
+		' overwrite email..if necessary..
+		email_to = Trim(rsOrder("email_to"))
+		email_cc = Trim(rsOrder("email_cc"))
+		email_subject = Trim(rsOrder("email_subject"))
+		email_msg = Trim(rsOrder("email_msg"))
+		'===============================================================
+
+		billing_company = Trim(rsOrder("bill_company"))
+		shipping_company = Trim(rsOrder("ship_company"))
+		billing_contact = Trim(rsOrder("bill_contact"))
+		shipping_contact = Trim(rsOrder("ship_contact"))
+		billing_phone = Trim(rsOrder("bill_phone"))
+	
+		ship_status = status_type
+		if(ship_status = "Shipped") then
+			ship_date = rsOrder("ShipDate")
+		else
+			ship_date = ""
+		end if
+		
+		shopper_lastname = Trim(rsOrder("shopper_lastname"))
+		shopper_firstname = Trim(rsOrder("shopper_firstname"))
+
+		shopper_email = Trim(rsOrder("shopper_email"))
+		order_carrier = rsOrder("tracking_carrier")	
+
+		order_coupon_id = Trim(rsOrder("coupon_id"))
+		order_discount_amount = rsOrder("discount_amount")
+
+		order_tax = rsOrder("Tax")
+		order_shipping = rsOrder("SH")
+
+		salesrep_id = Trim(rsOrder("salesrep_id"))
+
+
+		if IsNumeric(order_discount_amount) then
+		else
+			order_discount_amount = 0
+		end if
+
+		if Len (billing_phone) > 0 then
+			shopper_phone = billing_phone
+		end if
+
+		'billing contact and shipping contact..
+		if Len(billing_contact) > 0 then
+		else
+			billing_contact = shopper_firstname & " " & shopper_lastname
+		end if
+
+		if Len(shipping_contact) > 0 then
+		else
+			shipping_contact = ShipFirstName & " " & ShipLastName
+		end if
+		
+		UDF01 = Trim(rsOrder("UDF01"))
+		UDF02 = Trim(rsOrder("UDF02"))
+		UDF03 = Trim(rsOrder("UDF03"))
+		UDF04 = Trim(rsOrder("UDF04"))
+		UDF05 = Trim(rsOrder("UDF05"))
+		
+		tax_rate = rsOrder("order_tax_rate")
+		
+		if Session("ENABLEINT") = "2" OR Session("ENABLEINT")="3" then
+			order_tax2 = rsOrder("Tax2")
+			tax_rate2 = rsOrder("order_tax_rate2")
+		end if
+
+	end if
+
+	rsOrder.Close
+	
+	date_created = ConvertToTimeZone(date_created)
+	'date_updated = ConvertToTimeZone(date_updated)
+	
+	'GET USER DEFINED FIELD SETTINGS...
+	b_UDF01 = 0
+	b_UDF02 = 0
+	b_UDF03 = 0
+	b_UDF04 = 0
+	b_UDF05 = 0
+	
+	s_UDF01 = ""
+	s_UDF02 = ""
+	s_UDF03 = ""
+	s_UDF04 = ""
+	s_UDF05 = ""
+	
+	sql = "SELECT * FROM " & Session("StoreID") & "_UserField"
+	set rsUDF = dbconn.Execute(sql)
+	do while not rsUDF.EOF
+		
+		SELECT CASE rsUDF("UserField_ID")
+		CASE "UDF01"
+			b_UDF01 = rsUDF("UserField_SalesOrder")
+			s_UDF01 = Trim(rsUDF("UserField_Name"))
+		CASE "UDF02"
+			b_UDF02 = rsUDF("UserField_SalesOrder")
+			s_UDF02 = Trim(rsUDF("UserField_Name"))
+		CASE "UDF03"
+			b_UDF03 = rsUDF("UserField_SalesOrder")
+			s_UDF03 = Trim(rsUDF("UserField_Name"))
+		CASE "UDF04"
+			b_UDF04 = rsUDF("UserField_SalesOrder")
+			s_UDF04 = Trim(rsUDF("UserField_Name"))
+		CASE "UDF05"
+			b_UDF05 = rsUDF("UserField_SalesOrder")
+			s_UDF05 = Trim(rsUDF("UserField_Name"))
+		END SELECT
+		
+		rsUDF.MoveNext
+	loop
+	rsUDF.Close
+	
+	a_email_flag = str_email_flag
+	
+	if str_email_flag = "1000" then
+		'Based on order status....
+		SELECT CASE status_type
+		CASE "Pending"
+			str_email_flag = "1001"
+		CASE "Authorized"
+			str_email_flag = "1002"
+		CASE "Shipped"
+			str_email_flag = "1003"
+		CASE "Incomplete"
+			str_email_flag = "1004"
+		CASE "Canceled"
+			str_email_flag = "1005"
+		CASE ELSE
+		
+		END SELECT
+	
+	end if
+
+	'===================================================================
+	'GET STORE EMAIL
+	'===================================================================
+	strSQL = "SELECT * FROM " & Session("StoreID") & "_store_email WHERE mail_id=" & str_email_flag
+	set rsEmail = dbconn.Execute(strSQL)
+
+	if not rsEmail.EOF then
+		subject = Trim(rsEmail("subject"))
+		send_address = Trim(rsEmail("send_address"))
+		send_name = Trim(rsEmail("send_name"))
+		content = Trim(rsEmail("content"))
+		include_invoice = rsEmail("include_invoice")
+		include_manager = rsEmail("include_manager")
+	else
+		subject = ""
+		send_address = ""
+		send_name = ""
+		content = ""
+		include_invoice = 0
+		include_manager = 0
+	end if
+
+	rsEmail.Close
+
+	'=====================================================
+	'PROCESS FOR NEW VERSION
+	'=====================================================
+	if Len(ShipLastName) > 0 then
+	else
+		ShipLastName = ""
+	end if
+
+	if Len(ShipFirstName) > 0 then
+	else
+		ShipFirstName = ""
+		if Len(ShipLastName) > 0 then
+		else
+			ShipLastName = shipping_contact
+		end if
+	end if
+
+	if Len(shipping_company) > 0 then
+	else
+		shipping_company = ""
+	end if
+
+	if Len(ShipAddress) > 0 then
+	else
+		ShipAddress = ""
+	end if
+
+	if Len(ShipAddress) > 0 then
+	else
+		ShipAddress = ""
+	end if
+
+	if Len(ShipState) > 0 then
+	else
+		ShipState = ""
+	end if
+
+	if Len(ShipZip) > 0 then
+	else
+		ShipZip = ""
+	end if
+
+	if Len(ShipPhone) > 0 then
+	else
+		ShipPhone = ""
+	end if
+
+	if Len(ShipAddress) > 0 then
+	else
+		ShipAddress = ""
+	end if
+
+	if Len(card_type) > 0 then
+	else
+		card_type = ""
+	end if
+
+	if Len(SH_Method) > 0 then
+	else
+		SH_Method = ""
+	end if
+
+	'-------------------------------------------------
+	if Len(billing_company) > 0 then
+	else
+		billing_company = ""
+	end if
+
+	if Len(card_address) > 0 then
+	else
+		card_address = ""
+	end if
+
+	if Len(cardCity) > 0 then
+	else
+		cardCity = ""
+	end if
+
+	if Len(CardState) > 0 then
+	else
+		CardState = ""
+	end if
+
+	if Len(CardZip) > 0 then
+	else
+		CardZip = ""
+	end if
+
+	if Len(billing_phone) > 0 then
+	else
+		billing_phone = ""
+	end if
+
+
+	if Len(shopper_lastname)  > 0 then
+	else
+		shopper_lastname = ""
+	end if
+
+	if Len(shopper_firstname)  > 0 then
+	else
+		shopper_firstname = ""
+	end if
+
+	'-------------------------------------------------
+
+	'BILLING INFO...
+	if Len(billing_company) > 0 then
+		s_billing_info = billing_company & "<br>" & card_address & "<br>" & cardCity & ", " & CardState & " " & CardZip & "<br>" & billing_country & "<br>" & billing_phone & "<br>" & billing_contact & "<br>"
+	else
+		s_billing_info = billing_contact & "<br>" & card_address & "<br>" & cardCity & ", " & CardState & " " & CardZip & "<br>" & billing_country & "<br>" & billing_phone & "<br>"
+	end if
+
+	if Len(shipping_company) > 0 then
+		s_shipping_info = shipping_company & "<br>" & ship_address & "<br>" & ShipCity & ", " & ShipState & " " & ShipZip & "<br>" & shipping_country & "<br>" & ShipPhone & "<br>" & shipping_contact & "<br>"
+	else
+		s_shipping_info = shipping_contact & "<br>" & ship_address & "<br>" & ShipCity & ", " & ShipState & " " & ShipZip & "<br>" & shipping_country & "<br>" & ShipPhone & "<br>"
+	end if
+
+	'=====================================================
+	'TRACKING NUMBERS
+	'=====================================================
+	
+	if Len(tracking_number) > 0 then
+		'this is old version of order
+	else
+
+		'new version .. read from _tn table..
+
+		s_pkdata = ""
+		s_ccdata = ""
+		i_pk_item_count = 0
+
+		sql = "SELECT * FROM " & Session("StoreID") & "_order_tn WHERE order_id='" & str_order_id & "' ORDER BY shipped_date DESC"
+		set rsTN = dbconn.Execute(sql)
+
+		do while not rsTN.EOF
+			s_pkdata = s_pkdata & rsTN("tracking_number") & ","
+			if s_ccdata = "" then
+				s_ccdata = rsTN("carrier")
+			end if
+			i_pk_item_count = i_pk_item_count + 1
+			rsTN.MoveNext
+		loop
+		rsTN.Close
+
+		if Len(s_pkdata) > 0 then
+			s_pkdata = Left(s_pkdata, Len(s_pkdata)-1)
+		end if
+
+		tracking_number = s_pkdata
+		order_carrier = s_ccdata
+
+	end if
+
+	'=====================================================
+	'EMAIL MESSAGE BODY
+	'=====================================================
+	
+	'Convert Time String
+	sz_date_entered = ConvertToTimeZone(date_entered)
+
+	if Len(content) > 0 then
+		content = Replace(content, "[~LN~]", ShipLastName)
+		content = Replace(content, "[~FN~]", ShipFirstName)
+
+		'NEED TO change..
+		content = Replace(content, "[~CMPY~]", shipping_company)
+		'content = Replace(content, "[~CMPY~]", company_name)
+
+		content = Replace(content, "[~ADD~]", ShipAddress)
+		content = Replace(content, "[~CITY~]", ShipCity)
+		content = Replace(content, "[~ST~]", ShipState)
+		content = Replace(content, "[~ZIP~]", ShipZip)
+		content = Replace(content, "[~PN~]", ShipPhone)
+		content = Replace(content, "[~STNM~]", Session("StoreFullName"))
+		content = Replace(content, "[~ON~]", str_order_id)
+		content = Replace(content, "[~PMT~]", card_type)
+		content = Replace(content, "[~SHIP~]", SH_Method)
+
+		if Len(tracking_number) > 0 then
+			content = Replace(content, "[~TN~]", tracking_number)
+		else
+			content = Replace(content, "[~TN~]", "N/A")
+		end if
+
+		if Len(order_carrier) > 0 then
+			content = Replace(content, "[~CARR~]", order_carrier)
+		else
+			content = Replace(content, "[~CARR~]", "N/A")
+		end if
+
+		content = Replace(content, "[~OD~]", sz_date_entered)
+		content = replace(content, chr(13), "<br>")
+
+		content = Replace(content, "[~BCMPY~]", billing_company)
+		content = Replace(content, "[~BADD~]", card_address)
+		content = Replace(content, "[~BCITY~]", cardCity)
+		content = Replace(content, "[~BST~]", CardState)
+		content = Replace(content, "[~BZIP~]", CardZip)
+		content = Replace(content, "[~BPN~]", billing_phone)
+
+		content = Replace(content, "[~BLN~]", shopper_lastname)
+		content = Replace(content, "[~BFN~]", shopper_firstname)
+		
+		'content = Replace(content, "[~UDF01~]", UDF01)
+		'content = Replace(content, "[~UDF02~]", UDF02)
+		'content = Replace(content, "[~UDF03~]", UDF03)
+		'content = Replace(content, "[~UDF04~]", UDF04)
+		'content = Replace(content, "[~UDF05~]", UDF05)
+		
+		if Len(UDF01) > 0 then
+			content = Replace(content, "[~UDF01~]", UDF01)
+		else
+			content = Replace(content, "[~UDF01~]", "")
+		end if
+		if Len(UDF02) > 0 then
+			content = Replace(content, "[~UDF02~]", UDF02)
+		else
+			content = Replace(content, "[~UDF02~]", "")
+		end if
+		if Len(UDF03) > 0 then
+			content = Replace(content, "[~UDF03~]", UDF03)
+		else
+			content = Replace(content, "[~UDF03~]", "")
+		end if
+		if Len(UDF04) > 0 then
+			content = Replace(content, "[~UDF04~]", UDF04)
+		else
+			content = Replace(content, "[~UDF04~]", "")
+		end if
+		if Len(UDF05) > 0 then
+			content = Replace(content, "[~UDF05~]", UDF05)
+		else
+			content = Replace(content, "[~UDF05~]", "")
+		end if
+		
+
+	else
+		
+		'System Default...
+		content = "Thank you for shopping at " &Session("StoreFullName")& ".<BR>"
+		content = content & "We hope your shopping experience in our site was enjoyable.<br>"
+		content = content & "We will immediately begin reviewing your order.<br>"
+		content = content & "If you have any questions about your order, please contact us.<br>"   
+		content = content & "Thank you.<br>"
+		content = content & "Please visit " & Session("StoreURL") & " for contact information."
+
+	end if
+
+	'================================================================================
+	' content : Email Message Header
+	'================================================================================
+
+	'================================================================================
+	' READ TEMPLATE FILE
+	'================================================================================
+	Set fs = Server.CreateObject("Scripting.FileSystemObject")
+	
+	if Session("ENABLEINT") = "2" OR Session("ENABLEINT")="3" then
+		Set Out = fs.OpenTextFile(Server.MapPath("order_email_template_2_ca.html"),1,FALSE, FALSE)
+	else
+		Set Out = fs.OpenTextFile(Server.MapPath("order_email_template_2.html"),1,FALSE, FALSE)
+	end if
+		
+	'Set Out = fs.OpenTextFile(Server.MapPath("order_email_template_2.html"),1,FALSE, FALSE)
+	s1 = Out.ReadAll
+
+	Out.close
+
+
+	s1 = Replace(s1, "<" & "!--TRANS_ID-->", str_order_id)
+	s1 = Replace(s1, "<" & "!--SHOPPER_ID-->", order_shopper_id)
+	s1 = Replace(s1, "<" & "!--QUOTE_CREATED_DATE-->", date_entered)
+	s1 = Replace(s1, "<" & "!--BILLING-->", s_billing_info)
+	s1 = Replace(s1, "<" & "!--SHIPPING-->", s_shipping_info)
+	s1 = Replace(s1, "<" & "!--SH_METHOD-->", sh_method)
+	s1 = Replace(s1, "<" & "!--PAYMENT_METHOD-->", card_type)
+
+	s1 = Replace(s1, "<" & "!--CC_NUMBER-->", "xxxx-xxxx-xxxx-" & right(card_number,4))
+	s1 = Replace(s1, "<" & "!--CC_EXP-->", card_exp)
+	s1 = Replace(s1, "<" & "!--CUSTOMER_EMAIL-->", shopper_email)
+
+	s1 = Replace(s1, "<" & "!--PO_NUMBER-->", po_number)
+	s1 = Replace(s1, "<" & "!--QUOTE_STATUS-->", trans_status)
+	
+	'================================================================================
+	'UDFs...
+	'================================================================================
+	if b_UDF01 = 1 then
+		s1 = Replace(s1, "<" & "!--UDF01-->", s_UDF01 & ":" & UDF01)
+	end if
+	if b_UDF02 = 1 then
+		s1 = Replace(s1, "<" & "!--UDF02-->", s_UDF02 & ":" & UDF02)
+	end if
+	if b_UDF03 = 1 then
+		s1 = Replace(s1, "<" & "!--UDF03-->", s_UDF03 & ":" & UDF03)
+	end if
+	if b_UDF04 = 1 then
+		s1 = Replace(s1, "<" & "!--UDF04-->", s_UDF04 & ":" & UDF04)
+	end if
+	if b_UDF05 = 1 then
+		s1 = Replace(s1, "<" & "!--UDF05-->", s_UDF05 & ":" & UDF05)
+	end if
+
+
+	'================================================================================
+	'ORDER LINE ITEMS...
+	'================================================================================
+	ii = 0
+	subtotal = 0
+	i_system = 1
+
+	data_empty_cell_height = 300
+
+	sql = "SELECT * FROM " & Session("StoreID") & "_order_item WHERE order_id='" & str_order_id & "' ORDER by row_id"
+
+	set rsItems = dbconn.Execute(sql)
+	
+	trans_subtotal = 0
+
+	do while not rsItems.EOF
+
+		item_sku =rsItems("sku")
+		item_mfg_part = rsItems("item_sku2")
+		item_description = rsItems("item_description")
+		item_quantity = rsItems("quantity")
+		item_price = rsItems("adjusted_price")
+		item_mode = rsItems("row_mode")
+		item_options = rsItems("options")
+
+		trans_subtotal = trans_subtotal + (item_price * item_quantity)
+
+		if Len(item_sku) > 0 then
+					
+			s2 = "<tr height=35>"
+			
+			s2 = s2 & "<td align=center>" & item_quantity & "</td>"
+			
+			if item_mode = "4" then
+				s2 = s2 & "<td width=99999>" & item_description & " <sup>*</sup>(<b>" & i_system &  "</b>)"
+			else
+				s2 = s2 & "<td width=99999>" & item_description
+			end if
+			
+			if item_mode = "7" AND espec_part_number_mode  = "1" then
+				s2 = s2 & "<br><small>sku#:<b>" & item_mfg_part & "</b></small></td>"
+			else
+				s2 = s2 & "<br><small>sku#:<b>" & item_sku & "</b></small></td>"
+			end if
+			
+			s2 = s2 & "</td>"
+			
+			'if item_mode = "7" AND espec_part_number_mode  = "1" then
+				's2 = s2 & "<td align=center>" & item_mfg_part & "</td>"
+			'else
+				's2 = s2 & "<td align=center>" & item_sku & "</td>"
+			'end if
+			
+			'=========================================================================================
+			's2 = s2 & "<td align=right>" & FormatNumber(item_price, 2,,,0) & "</td>"
+			's2 = s2 & "<td align=right>" & FormatNumber(item_price * item_quantity, 2,,,0) & "</td>"
+			
+			s2 = s2 & "<td align=right>" & FormatCurrencyEx(item_price) & "</td>"
+			s2 = s2 & "<td align=right>" & FormatCurrencyEx(item_price * item_quantity) & "</td>"
+			'=========================================================================================
+
+			s2 = s2 & "</tr>"
+
+			s1 = Replace(s1, "<" & "!--" & CStr(ii+1) & "-->", s2)
+
+			if item_mode = "4" then
+				s1 = Replace(s1, "<" & "!--PAGE_BREAK-->", "<p style='page-break-before:always'></p>")
+				
+				s_item_options = ""
+				if Len(item_options) > 0 then
+				
+					'item_options = "<tr><td width=100><font size=1>" & Replace(item_options, "~", "</font></td></tr><tr><td width=100><font size=1>")& "</font></td></tr>"
+					'item_options = Replace(item_options, " : ", "</font></td><td width=300><font size=1>")
+					'item_options = Left(item_options, Len(item_options)-1)
+					
+					'ar_options = Split(item_options, "~")
+					
+					ar_options = Split(item_options, "~")
+					z1 = UBound(ar_options)
+					if z1 > 1 then
+						'old config settings........
+						bNewSetting = false
+					else
+						bNewSetting = true
+					end if
+					
+					if bNewSetting then	
+					
+						'TODO: REPLACE.....
+						
+						'----------------------------------------------
+						ar_options = Split(item_options, chr(2))
+						z1 = Ubound(ar_options)
+						ar_options = Split(item_options, chr(1))
+						z2 = Ubound(ar_options)
+						if z2 > z1 then
+							'it is ok.....
+						else
+							'need to replace some characters.....
+							item_options = replace(item_options, chr(2), chr(3))
+							item_options = replace(item_options, chr(1), chr(2))
+							item_options = replace(item_options, chr(3), chr(1))
+						end if
+						'----------------------------------------------
+						
+						ar_options = Split(item_options, chr(2))
+			 
+						For ii = 0 To UBound(ar_options)
+							if Len(ar_options(ii)) > 1 then
+								ar_option_items = Split(ar_options(ii), chr(1))
+							
+								if Len(ar_option_items(4)) > 0 then
+
+									item_pf_id = ar_option_items(4)
+									If item_pf_id = "--" Then
+									item_pf_id = ""
+									End if
+									s_item_options = s_item_options & "<tr>"
+
+									If Len(item_pf_id) > 0 then
+									s_item_options = s_item_options & "<td><b>" & ar_option_items(0) & "</b><br>" & ar_option_items(1) & "(" & item_pf_id & ")</td>"
+									Else
+									s_item_options = s_item_options & "<td><b>" & ar_option_items(0) & "</b><br>" & ar_option_items(1) & "</td>"
+									End if
+
+									s_item_options = s_item_options & "<td><b>" & ar_option_items(0) & "</b><br>" & ar_option_items(1) & "</td>"
+									s_item_options = s_item_options & "<td></td>"
+									s_item_options = s_item_options & "<td align=right>" & FormatNumber((ar_option_items(2) - ar_option_items(3)),2) & "</td>"
+									s_item_options = s_item_options & "</tr>"
+								end if
+								
+							end if
+						Next
+						
+						s3 = "(" & i_system & ")" & item_description & "<table border=0 cellspacing=0 cellpadding=4><tr bgcolor='#E7E7E7'><td><b>Description</b></td><td></td><td nowrap><b>Price [+/-] from <br>base price</b></td></tr>" & s_item_options & "</table><br>"
+						
+					else	        
+						' Old Settings......
+						ar_options = Split(item_options, "~")
+						's3 = "START:"
+						For ii = 0 To UBound(ar_options)
+							options_line = Trim(ar_options(ii))
+							If Len(options_line) > 0 Then
+								ar_options_line = Split(options_line , " : ")
+								bShowLine = false
+								If UBound(ar_options_line) = 1 Then
+									bShowLine = true
+									options_line_header = ar_options_line(0)
+									options_line_value = ar_options_line(1)
+									
+									'-------------------------------------------------------
+									'Gentech PC Only....Remove part number
+									if Session("StoreID") = "gentechpc" then
+										pos1 = InStrRev(options_line_value, "(")
+										If pos1 > 0 Then
+											options_line_value = Left(options_line_value, pos1-1)
+										End if
+									end if
+									'-------------------------------------------------------   				
+								End if
+								If bShowLine then
+									s_item_options = s_item_options & "<tr><td>" & options_line_header & "</td><td>" & options_line_value & "</td>"
+								End if
+							End If
+							
+						Next
+						s3 = "(" & i_system & ")" & item_description & "<table width=100% border=1 cellspacing=0 cellpadding=2>" & s_item_options & "</table><br>"
+						's3 = item_options
+					end if 'bNewSetting
+				else
+					s_item_options = ""
+					s3 = ""
+				end if
+
+				's3 = "(" & i_system & ")" & item_description & "<table width=100% border=1 cellspacing=0 cellpadding=2>" & s_item_options & "</table><br>"
+				's3 = "(" & i_system & ")" & item_description & "<table border=0 cellspacing=0 cellpadding=4><tr bgcolor='#E7E7E7'><td><b>Description</b></td><td></td><td nowrap><b>Price [+/-] from <br>base price</b></td></tr>" & s_item_options & "</table><br>"
+
+				s1 = Replace(s1, "<" & "!--SYSTEM_" & CStr(i_system) & "-->", s3)
+
+				i_system = i_system + 1
+
+			end if
+
+		end if
+
+
+		ii = ii + 1
+
+		data_empty_cell_height = data_empty_cell_height - 35
+
+		rsItems.MoveNext
+	loop
+	rsItems.Close
+
+	's1 = Replace(s1, "<" & "!--TAX-->", FormatNumber(order_tax,2))
+	s1 = Replace(s1, "<" & "!--TAX-->", FormatCurrencyEx(order_tax))
+	s1 = Replace(s1, "<" & "!--TAX_RATE-->", FormatNumber(tax_rate))
+	
+	if Session("ENABLEINT") = "2" OR Session("ENABLEINT")="3" then
+		s1 = Replace(s1, "<" & "!--TAX_RATE2-->", FormatNumber(tax_rate2))
+		s1 = Replace(s1, "<" & "!--TAX2-->", FormatNumber(order_tax2,2))
+	End if
+	
+	's1 = Replace(s1, "<" & "!--TOTAL-->", FormatNumber(order_total,2))
+	's1 = Replace(s1, "<" & "!--SHIPPING_RATE-->", FormatNumber(order_shipping,2))
+	's1 = Replace(s1, "<" & "!--SUBTOTAL-->", FormatNumber(trans_subtotal,2))
+	s1 = Replace(s1, "<" & "!--TOTAL-->", FormatCurrencyEx(order_total))
+	s1 = Replace(s1, "<" & "!--SHIPPING_RATE-->", FormatCurrencyEx(order_shipping))
+	s1 = Replace(s1, "<" & "!--SUBTOTAL-->", FormatCurrencyEx(trans_subtotal))
+
+	if Len(Order_Comments) > 0 then
+		s1 = Replace(s1, "<" & "!--REMARK-->", "<br>*" & Order_Comments)
+	end if
+	
+	'================================================================================
+	'Look up sales rep table...
+	'================================================================================
+	if Len(salesrep_id) > 0 then
+		sql = "SELECT Email, FirstName, LastName FROM " & Session("StoreID") & "_users WHERE user_id='" & salesrep_id & "'"
+		set rs = dbconn.Execute(sql)
+		if not rs.EOF then
+			trans_owner_name = rs("FirstName") & " " & rs("LastName")
+			salesrep_email = Trim(rs("Email"))
+		else
+			trans_owner_name = ""
+			salesrep_email = ""
+		end if
+		rs.Close
+	end if
+	
+	s1 = Replace(s1, "<" & "!--QUOTE_OWNER_NAME-->", trans_owner_name)
+
+	'================================================================================
+	' s1 : Invoice Data...
+	'================================================================================
+	
+	if include_manager = 1 then
+		s_manager_email_body = content & s1
+	else
+		s_manager_email_body = s1
+	end if
+
+	if include_invoice = 1 then
+		s_customer_email_body = content & s1
+	else
+		s_customer_email_body = content
+	end if
+
+	'================================================================================
+	' s_manager_email_body : message body for manager
+	' s_customer_email_body : message body for customer
+	'================================================================================
+
+	'================================================================================
+	'Look up sysemail and add it to CC later
+	'================================================================================
+	sql = "SELECT sysemail_order1 FROM :9_sysemail"
+	sql = Replace(sql, ":9", Session("StoreID"))
+	set rs = dbconn.Execute(sql)
+	if not rs.EOF then
+		sysemail_order = rs("sysemail_order1")
+	else
+		sysemail_order = ""
+	end if
+	rs.Close
+
+	'================================================================================
+	' sysemail_order : Additional email to receive new order confirmation
+	'================================================================================
+
+	'================================================================================
+	' salesrep_email : sales rep email address
+	'================================================================================
+	
+	'================================================================================
+	' subject line customization - added by BK 6/2/2005
+	'================================================================================
+	if Len(subject) > 0 then
+	
+		subject = Replace(subject, "[~LN~]", ShipLastName)
+		subject = Replace(subject, "[~FN~]", ShipFirstName)
+
+		'NEED TO change..
+		subject = Replace(subject, "[~CMPY~]", shipping_company)
+		'subject = Replace(subject, "[~CMPY~]", company_name)
+
+		subject = Replace(subject, "[~ADD~]", ShipAddress)
+		subject = Replace(subject, "[~CITY~]", ShipCity)
+		subject = Replace(subject, "[~ST~]", ShipState)
+		subject = Replace(subject, "[~ZIP~]", ShipZip)
+		subject = Replace(subject, "[~PN~]", ShipPhone)
+		subject = Replace(subject, "[~STNM~]", Session("StoreFullName"))
+		subject = Replace(subject, "[~ON~]", str_order_id)
+		subject = Replace(subject, "[~PMT~]", card_type)
+		subject = Replace(subject, "[~SHIP~]", SH_Method)
+
+		if Len(tracking_number) > 0 then
+			subject = Replace(subject, "[~TN~]", tracking_number)
+		else
+			subject = Replace(subject, "[~TN~]", "N/A")
+		end if
+
+		if Len(order_carrier) > 0 then
+			subject = Replace(subject, "[~CARR~]", order_carrier)
+		else
+			subject = Replace(subject, "[~CARR~]", "N/A")
+		end if
+
+		subject = Replace(subject, "[~OD~]", date_entered)
+		subject = replace(subject, chr(13), "<br>")
+
+		subject = Replace(subject, "[~BCMPY~]", billing_company)
+		subject = Replace(subject, "[~BADD~]", card_address)
+		subject = Replace(subject, "[~BCITY~]", cardCity)
+		subject = Replace(subject, "[~BST~]", CardState)
+		subject = Replace(subject, "[~BZIP~]", CardZip)
+		subject = Replace(subject, "[~BPN~]", billing_phone)
+
+		subject = Replace(subject, "[~BLN~]", shopper_lastname)
+		subject = Replace(subject, "[~BFN~]", shopper_firstname)
+		
+		if Len(UDF01) > 0 then
+			subject = Replace(subject, "[~UDF01~]", UDF01)
+		else
+			subject = Replace(subject, "[~UDF01~]", "")
+		end if
+		if Len(UDF02) > 0 then
+			subject = Replace(subject, "[~UDF02~]", UDF02)
+		else
+			subject = Replace(subject, "[~UDF02~]", "")
+		end if
+		if Len(UDF03) > 0 then
+			subject = Replace(subject, "[~UDF03~]", UDF03)
+		else
+			subject = Replace(subject, "[~UDF03~]", "")
+		end if
+		if Len(UDF04) > 0 then
+			subject = Replace(subject, "[~UDF04~]", UDF04)
+		else
+			subject = Replace(subject, "[~UDF04~]", "")
+		end if
+		if Len(UDF05) > 0 then
+			subject = Replace(subject, "[~UDF05~]", UDF05)
+		else
+			subject = Replace(subject, "[~UDF05~]", "")
+		end if
+		'subject = Replace(subject, "[~UDF02~]", UDF02)
+		'subject = Replace(subject, "[~UDF03~]", UDF03)
+		'subject = Replace(subject, "[~UDF04~]", UDF04)
+		'subject = Replace(subject, "[~UDF05~]", UDF05)
+	
+	
+	end if
+	
+	'================================================================================
+	'TO / CC / FROM / SUBJECT SETTINGS for manager side...
+	'================================================================================
+	if Len(salesrep_email) > 0 then
+		m_to = salesrep_email
+		if Len(sysemail_order) > 0 then
+			m_cc = sysemail_order
+		else
+			m_cc = company_email_address
+		end if
+	else
+		if Len(sysemail_order) > 0 then
+			m_to = sysemail_order
+			m_cc = company_email_address
+		else
+			m_to = company_email_address
+			m_cc = ""
+		end if
+	end if
+
+	m_from = Replace(company_name, ",", "") & " (" & company_email_address & ")"
+	m_subject = "New Order Confirmation: " & str_order_id
+
+	'================================================================================
+	'TO / CC / FROM / SUBJECT SETTINGS for customer side...
+	'================================================================================
+	if Len(salesrep_email) > 0 then
+		if Len(send_name) > 0 then
+			c_from = Replace(send_name, ",", "") & " (" & salesrep_email & ")"
+		else
+			c_from = Replace(company_name, ",", "") & " (" & salesrep_email & ")"
+		end if
+	else
+		if Len(send_name) > 0 then
+			c_from = Replace(send_name, ",", "")
+		else
+			c_from = Replace(company_name, ",", "")
+		end if
+
+		if Len(send_address) > 0 then
+			c_from = c_from & " (" & send_address & ")"
+		else
+			c_from = c_from & " (" & company_email_address & ")"
+		end if
+
+	end if
+
+	c_to = shopper_email
+
+	if Len(subject) > 0 then
+		c_subject = subject & " (Order #:" & str_order_id & ")"
+		m_subject = "[New Order Confirmation:" & str_order_id & "]" & subject & ":" & str_order_id
+	else
+		c_subject = "Your Order Receipt : " & str_order_id
+		m_subject = "New Order Confirmation: " & str_order_id
+	end if
+
+
+	'================================================================================
+	'SEND NEW ORDER NOTIFICATION TO MANAGERS if it is a new order...
+	'================================================================================
+
+	if str_email_flag = "1001" then
+		
+		'Set objMail = Server.CreateObject("CDO.Message")
+		'objMail.From = m_from
+		'objMail.To = m_to
+		'objMail.Subject= m_subject
+		'objMail.HTMLBody = s_manager_email_body
+		'objMail.Send
+		
+		if a_email_flag = "1000" then
+		else
+						
+			if SystemSendMailEx(company_email_address, Replace(company_name, ",", ""), m_to, m_subject, s_manager_email_body, "") then		
+			end if
+			
+		end if
+
+	end if
+
+	'================================================================================
+	'SEND ORDER NOTIFICATION to customer
+	'================================================================================
+
+	if Len(c_to) > 0 then
+
+		'Set objMail = Server.CreateObject("CDO.Message")
+		'objMail.From = c_from
+		'objMail.To = c_to
+		'objMail.Subject= c_subject
+		'objMail.HTMLBody = s_customer_email_body
+		'objMail.Send
+		
+		if Len(salesrep_email) > 0 then
+			if Len(send_name) > 0 then
+				c1_from = Replace(send_name, ",", "")
+				c1_from_email = salesrep_email
+			else
+				c1_from = Replace(company_name, ",", "")
+				c1_from_email = salesrep_email
+			end if
+		else
+			if Len(send_name) > 0 then
+				c1_from = Replace(send_name, ",", "")
+			else
+				c1_from = Replace(company_name, ",", "")
+			end if
+
+			if Len(send_address) > 0 then
+				c1_from_email = send_address
+			else
+				c1_from_email = company_email_address
+			end if
+
+		end if
+		
+		if a_email_flag = "1000" then
+			'===============================================================
+			if Len(email_to) > 0 then
+				c_to = email_to
+			end if
+			if Len(email_cc) > 0 then
+				c_cc = email_cc
+			else
+				c_cc = ""
+			end if
+			if Len(email_subject) > 0 then
+				c_subject = email_subject
+			end if
+			
+			if Len(email_msg) > 0 then
+				's_customer_email_body = email_msg
+				s_customer_email_body = email_msg & s1
+			end if
+			'===============================================================
+		end if
+			
+		if SystemSendMailEx(c1_from_email, c1_from, c_to, c_subject, s_customer_email_body, c_cc) then
+		
+		end if
+
+	end if
+
+	dbconn.Close
+
+	SendOrderNotificationViaEmail = true
+	
+end function
+
+function UpdateAboutPageInfo(ByRef str_db,ByRef str_about_heading1, ByRef str_about_text1,_
+							ByRef str_about_heading2, ByRef str_about_text2,_
+							ByRef str_about_url, ByRef str_status_msg)
+
+	if((str_db=""))then
+		AddToHTMLMsgHldr str_status_msg,"Insuffiecient info specified to update about page information.",true
+		UpdateAboutPageInfo=false
+		exit function
+	end if
+	
+	
+	'Update profile
+	
+	sql = "UPDATE :9_profile SET "
+	
+	if(str_about_heading1="")then
+		sql = sql & "about_heading1=Null"
+	else
+		sql = sql & "about_heading1='" & CheckString(str_about_heading1) & "'"
+	end if
+	if(str_about_text1="")then
+		sql = sql & ",about_text1=Null"
+	else
+		sql = sql & ",about_text1='" & CheckString(str_about_text1) & "'"
+	end if
+	if(str_about_heading2="")then
+		sql = sql & ",about_heading2=Null"
+	else
+		sql = sql & ",about_heading2='" & CheckString(str_about_heading2) & "'"
+	end if
+	if(str_about_text2="")then
+		sql = sql & ",about_text2=Null"
+	else
+		sql = sql & ",about_text2='" & CheckString(str_about_text2) & "'"
+	end if
+	if(str_about_url="")then
+		sql = sql & ",about_url=Null"
+	else
+		sql = sql & ",about_url='" & CheckString(str_about_url) & "'"
+	end if
+	
+	sql = Replace(sql, ":9", Session("StoreID"))
+	
+	set dbconn=server.CreateObject("ADODB.Connection")
+	dbconn.Open db
+	dbconn.Execute sql
+	
+	'Close database connection...
+	dbconn.Close
+	
+	UpdateAboutPageInfo=true
+	
+end function
+
+function UpdateContactPageInfo(ByRef str_db,ByRef str_contact_text, ByRef str_status_msg)
+
+	if((str_db=""))then
+		AddToHTMLMsgHldr str_status_msg,"Insuffiecient info specified to update contact page information.",true
+		UpdateAboutPageInfo=false
+		exit function
+	end if
+	
+	
+	'Update profile
+	
+	sql = "UPDATE :9_profile SET "
+	
+	if(str_contact_text="")then
+		sql = sql & "contact_text=Null"
+	else
+		sql = sql & "contact_text='" & CheckString(str_contact_text) & "'"
+	end if
+	
+	sql = Replace(sql, ":9", Session("StoreID"))
+	
+	set dbconn=server.CreateObject("ADODB.Connection")
+	dbconn.Open db
+	dbconn.Execute sql
+	
+	'Close database connection...
+	dbconn.Close
+	
+	UpdateContactPageInfo=true
+	
+end function
+
+function UpdateTextFlags(ByRef str_db,ByRef i_pos, ByRef str_flag)
+
+	if((str_db=""))then
+		AddToHTMLMsgHldr str_status_msg,"Insuffiecient info specified to update contact page information.",true
+		UpdateTextFlags=false
+		exit function
+	end if
+		
+	set dbconn=server.CreateObject("ADODB.Connection")
+	dbconn.Open db
+	
+	sql = "SELECT text_flags FROM :9_profile"
+	sql = Replace(sql, ":9", Session("StoreID"))
+	set rs = dbconn.execute(sql)
+	
+	if not rs.EOF then
+		text_flags = rs("text_flags")
+	else
+		text_flags = "00000000000000000000"
+	end if
+	
+	rs.Close
+	
+	if i_pos > 1 then
+		
+		flag1 = Left(text_flags,i_pos-1)
+		flag2 = Mid(text_flags, i_pos+1)
+		
+		text_flags = flag1 & str_flag & flag2
+	else
+		flag2 = Mid(text_flags, 2)
+		text_flags = str_flag & flag2
+	end if
+	
+	'Update profile
+	sql = "UPDATE :9_profile SET "
+	sql = sql & "text_flags='" & text_flags & "'"
+	sql = Replace(sql, ":9", Session("StoreID"))
+
+	dbconn.Execute sql
+	
+	'Close database connection...
+	dbconn.Close
+	
+	UpdateTextFlags=true
+	
+end function
+
+Function GetUPSCost(ByRef str_db, ByRef str_orig_postal, ByRef str_dest_postal, ByRef i_weight, ByRef str_ups_flags, ByRef i_sh_handling, ByRef i_sh_markup)
+
+	dim str_ups_ret
+	str_ups_ret = ""
+	if((str_db=""))then
+		GetUPSCost=""
+		exit function
+	end if
+	
+	postal1 =	Left(str_orig_postal,3)
+	postal2 = Left(str_dest_postal,3)
+	
+	'UPS tables...(2)
+	EA="0" 'Early AM
+	EX="0"	'Express
+	ES="0"	'Express Saver
+	EP="0" 'Expedited
+	ST="0"	'standard
+		
+	if mid(str_ups_flags,1,1) = "1" then
+		EA = "1"
+	end if
+	if mid(str_ups_flags,2,1) = "1" then
+		EX = "1"
+	end if
+	if mid(str_ups_flags,3,1) = "1" then
+		ES = "1"
+	end if
+	if mid(str_ups_flags,4,1) = "1" then
+		EP = "1"
+	end if
+	if mid(str_ups_flags,5,1) = "1" then
+		ST = "1"
+	end if
+	
+	set dbconn=server.CreateObject("ADODB.Connection")
+	dbconn.Open str_db
+	
+	sql = "SELECT * FROM A_UPS_ZONE WHERE origin_postal >= '" & postal1 & "' AND Right(dest_postal,3) >= '" & postal2 & "' ORDER BY origin_postal, dest_postal"
+	set rsUPS = dbconn.Execute(sql)
+	
+	if not rsUPS.EOF then
+		z_EA = rsUPS("z_early_am")
+		z_EX = rsUPS("z_express")
+		z_ES = rsUPS("z_xpr_saver")
+		z_EP = rsUPS("z_exped")
+		z_ST = rsUPS("z_std")
+		
+		if Len(z_EA) < 3 OR isNull(z_EA) then
+			EA = "0"
+		end if
+		
+		if Len(z_EX) < 3 OR isNull(z_EX) then
+			EX = "0"
+		end if
+		
+		if Len(z_ES) < 3 OR isNull(z_ES) then
+			ES = "0"
+		end if
+		
+		if Len(z_EP) < 3 OR isNull(z_EP) then
+			EP = "0"
+		end if
+		
+		if Len(z_ST) < 3 OR isNull(z_ST) then
+			ST = "0"
+		end if
+				
+	end if
+
+	if EA = "1" then
+		sql = "SELECT Z" & Z_EA & " FROM A_UPS_EARLY_AM WHERE wt_to >= " & i_weight & " ORDER BY wt_to"
+		set rs1 = dbconn.Execute(sql)
+		if not rs1.EOF then
+			EA_charge = rs1(0)
+			EA_charge = (EA_charge * i_sh_markup) + i_sh_handling
+		end if
+		rs1.Close
+		str_ups_ret=str_ups_ret & chr(13) & chr(10) & "<OPTION VALUE=""Express Early AM~" & FormatNumber(EA_charge,2,0,0,0) & """>Express Early AM (" & FormatCurrency(EA_charge) & ")</option>"
+	End if
+	
+	if EX = "1" then
+		sql = "SELECT Z" & Z_EX & " FROM A_UPS_EXPRESS WHERE wt_to >= " & i_weight & " ORDER BY wt_to"
+		set rs1 = dbconn.Execute(sql)
+		if not rs1.EOF then
+			EX_charge = rs1(0)
+			EX_charge = (EX_charge * i_sh_markup) + i_sh_handling
+		end if
+		rs1.Close
+		str_ups_ret=str_ups_ret & chr(13) & chr(10) & "<OPTION VALUE=""Express~" & FormatNumber(EX_charge,2,0,0,0) & """>Express (" & FormatCurrency(EX_charge) & ")</option>"
+	End if
+	
+	if ES = "1" then
+		sql = "SELECT Z" & Z_ES & " FROM A_UPS_XPR_SAVER WHERE wt_to >= " & i_weight & " ORDER BY wt_to"
+		set rs1 = dbconn.Execute(sql)
+		if not rs1.EOF then
+			ES_charge = rs1(0)
+			ES_charge = (ES_charge * i_sh_markup) + i_sh_handling
+		end if
+		rs1.Close
+		str_ups_ret=str_ups_ret & chr(13) & chr(10) & "<OPTION VALUE=""Express Saver~" & FormatNumber(ES_charge,2,0,0,0) & """>Express Saver (" & FormatCurrency(ES_charge) & ")</option>"
+	End if
+	
+	if EP = "1" then
+		sql = "SELECT Z" & Z_EP & " FROM A_UPS_EXPED WHERE wt_to >= " & i_weight & " ORDER BY wt_to"
+		set rs1 = dbconn.Execute(sql)
+		if not rs1.EOF then
+			EP_charge = rs1(0)
+			EP_charge = (EP_charge * i_sh_markup) + i_sh_handling
+		end if
+		rs1.Close
+		str_ups_ret=str_ups_ret & chr(13) & chr(10) & "<OPTION VALUE=""Expedited~" & FormatNumber(EP_charge,2,0,0,0) & """>Expedited (" & FormatCurrency(EP_charge) & ")</option>"
+	End if
+	
+	if ST = "1" then
+		sql = "SELECT Z" & Z_ST & " FROM A_UPS_STD WHERE wt_to >= " & i_weight & " ORDER BY wt_to"
+		set rs1 = dbconn.Execute(sql)
+		if not rs1.EOF then
+			ST_charge = rs1(0)
+			ST_charge = (ST_charge * i_sh_markup) + i_sh_handling
+		end if
+		rs1.Close
+		str_ups_ret=str_ups_ret & chr(13) & chr(10) & "<OPTION VALUE=""Standard~" & FormatNumber(ST_charge,2,0,0,0) & """>Standard (" & FormatCurrency(ST_charge) & ")</option>"
+	End if
+	
+	'Close database connection...
+	dbconn.Close
+	GetUPSCost = str_ups_ret
+End Function
+
+Function SystemSendMailEx(ByRef str_FromEmail, ByRef str_FromName, ByRef str_To, ByRef str_Subject, ByRef str_SendBody, ByRef str_cc)
+
+	on error resume next
+
+	set econn=server.CreateObject("ADODB.Connection")
+	econn.Open Session("ConnectionString")
+
+	sql = "SELECT * FROM " & Session("StoreID") & "_profile2"
+
+	SET rsProfile2 = econn.Execute(sql)
+
+	if not rsProfile2.EOF then
+
+		smtp_flag = rsProfile2("smtp_flag")
+		smtp_server = Trim(rsProfile2("smtp_server"))
+		smtp_server_port = Trim(rsProfile2("smtp_server_port"))
+		smtp_server_auth = rsProfile2("smtp_server_auth")
+		smtp_server_username = Trim(rsProfile2("smtp_server_username"))
+		smtp_server_password = Trim(rsProfile2("smtp_server_password"))
+		smtp_server_usessl = Trim(rsProfile2("smtp_server_usessl"))
+
+	end if
+	
+	if smtp_flag = 0 Or Len(smtp_flag) = 0 then
+		sql = "SELECT * FROM A_ATTRIBUTES"
+
+		SET rsProfile2 = econn.Execute(sql)
+
+		if not rsProfile2.EOF then
+
+			smtp_flag = 1
+			smtp_server = Trim(rsProfile2("fl_smtp_server"))
+			smtp_server_port = Trim(rsProfile2("fl_smtp_server_port"))
+			smtp_server_auth = 1
+			smtp_server_username = Trim(rsProfile2("fl_smtp_server_username"))
+			smtp_server_password = Trim(rsProfile2("fl_smtp_server_password"))
+			smtp_server_usessl = Trim(rsProfile2("fl_smtp_server_usessl"))
+
+		end if
+	end if
+
+	rsProfile2.Close
+	econn.Close
+	
+	'=======================================================================
+	'CREATE MAIL LOG
+	Set fs = CreateObject("Scripting.FileSystemObject")
+	Set a = fs.OpenTextFile("c:\\customers\\maillog\\" & Month(Now()) & "-" & Day(Now()) & ".log", 8, True)
+	a.WriteLine("--------------------------------------------------")
+	a.WriteLine(Now() & " : " & Session("StoreID"))
+	a.WriteLine(smtp_flag & " : " & smtp_server & " : " & smtp_server_username & ":" & Request.ServerVariables("SCRIPT_NAME"))
+	a.WriteLine(str_FromEmail & " : " & str_FromName & " : " & str_To & " : " & str_Subject & " : " & str_cc)
+	'=======================================================================
+	
+	szStoreID = Session("StoreID")
+	If smtp_server_usessl = "1" Then
+		smtp_server_usessl = "true"
+	Else
+		smtp_server_usessl = "false"
+	End If
+
+	szUserID = smtp_server_username
+	szPassword = smtp_server_password
+	szFromEmail = str_FromEmail
+	szFromName = str_FromName
+	szToEmail = str_To
+	szToCCEmail = str_cc
+	szToBCCEmail = ""
+	szSubject = str_Subject
+	szBody = str_SendBody
+	szHost = smtp_server
+	nPort = smtp_server_port
+	bUseSSL = smtp_server_usessl
+	
+	szRet = SendEmail(szStoreID, szUserID, szPassword, szFromEmail, szFromName, szToEmail, szToCCEmail, szToBCCEmail, szSubject, szBody, szHost, nPort, bUseSSL)
+	
+	a.WriteLine(szRet)
+	a.Close
+	Set fs = Nothing
+
+	SystemSendMailEx = true
+
+End Function
+
+Function SendEmail(szStoreID, szUserID, szPassword, szFromEmail, szFromName, szToEmail, szToCCEmail, szToBCCEmail, szSubject, szBody, szHost, nPort, bUseSSL)
+	
+	szParam = "StoreID=" & szStoreID
+	szParam = szParam & "&UserID=" & szUserID
+	szParam = szParam & "&Password=" & szPassword
+	szParam = szParam & "&FromEmail=" & szFromEmail
+	szParam = szParam & "&FromName=" & szFromName
+	szParam = szParam & "&ToEmail=" & szToEmail
+	szParam = szParam & "&ToCCEmail=" & szToCCEmail
+	szParam = szParam & "&ToBCCEmail=" & szToBCCEmail
+	szParam = szParam & "&Subject=" & Replace(szSubject, "&", "")
+	szParam = szParam & "&Body=" & Replace(szBody, "&", "")
+	szParam = szParam & "&Host=" & szHost
+	szParam = szParam & "&Port=" & nPort
+	szParam = szParam & "&UseSSL=" & bUseSSL
+
+	set xmlRecv = Server.CreateObject("Msxml2.ServerXMLHTTP")
+
+		xmlRecv.open "POST", "https://emailgateway.flashecom.com/Send.phtmlx", false
+
+		xmlRecv.setRequestHeader "Content-Type", "application/x-www-form-urlencoded"
+		xmlRecv.setTimeouts 10000, 10000, 30000, 30000
+		
+		xmlRecv.send szParam
+		
+		szHeaders = xmlRecv.getAllResponseHeaders()
+		szStatus = xmlRecv.statusText
+		szResult = xmlRecv.responseText
+
+	set xmlRecv = Nothing
+	
+	SendEmail = szResult
+
+End Function
+
+Function GenerateELF2Log(ByRef str_orderid)
+
+	set dbconn=server.CreateObject("ADODB.Connection")
+	dbconn.Open Session("ConnectionString")
+	
+	dim mDay
+	dim mMonth
+	
+	mDay = Day(Date())
+	mMonth = Month(Date())
+	mMonth2 = MonthName(mMonth, True)
+	mYear = Year(Date())
+	
+	mHour = Hour(Now())
+	mMin = Minute(Now())
+	mSecond = Second(Now())	
+	
+	if Len(mDay) = 1 then
+		mDay = "0" & mDay
+	end if
+	
+	if Len(mMonth) = 1 then
+		mMonth = "0" & mMonth
+	end if
+	
+	if Len(mHour) = 1 then
+		mHour = "0" & mHour
+	end if
+	
+	if Len(mMin) = 1 then
+		mMin = "0" & mMin
+	end if
+	
+	if Len(mSecond) = 1 then
+		mSecond = "0" & mSecond
+	end if
+	
+	mLogDate = "[" & mDay & "/" & mMonth2 & "/" & mYear & ":" & mHour & ":" & mMin & ":" & mSecond & " -0800]"
+	
+	mReferrer = GetSession(Session("SESSIONKEY"), "sREFERER")
+	if Len(mReferrer) > 0 then
+	else
+		mReferrer = "-"
+	end if
+	
+	d_row = chr(13) & chr(10)
+	d_col = chr(9)
+	
+	Set fs = CreateObject("Scripting.FileSystemObject")
+	Set a = fs.OpenTextFile("c:\\Urchin\\" & Session("StoreID") & "\\elf2.txt", 8, True)
+	
+	sTransactionLine = ""
+	
+	strSQL = "SELECT * FROM " & Session("StoreID") & "_order WHERE order_id='" & str_orderid & "'"
+	Set rsOrderLog = dbconn.Execute(strSQL)
+		
+	if not rsOrderLog.EOF then
+	
+		order_id = rsOrderLog("order_id")
+		
+		payment_city = Trim(rsOrderLog("CardCity"))
+		payment_state = Trim(rsOrderLog("CardState"))
+		payment_zip = Trim(rsOrderLog("CardZip"))
+		
+		order_tax = rsOrderLog("tax")
+		order_sh = rsOrderLog("SH")
+		order_total = rsOrderLog("Total")
+		
+		sTransactionLine = "!"
+		sTransactionLine = sTransactionLine & order_id & d_col
+		sTransactionLine = sTransactionLine & Request.ServerVariables("LOCAL_ADDR") & d_col
+		sTransactionLine = sTransactionLine & mLogDate & d_col
+		sTransactionLine = sTransactionLine & Session("StoreID") & d_col
+		sTransactionLine = sTransactionLine & Session.SessionID & d_col
+		sTransactionLine = sTransactionLine & FormatNumber(order_total,2) & d_col
+		sTransactionLine = sTransactionLine & FormatNumber(order_tax,2) & d_col
+		sTransactionLine = sTransactionLine & FormatNumber(order_sh,2) & d_col
+		sTransactionLine = sTransactionLine & payment_city & d_col
+		sTransactionLine = sTransactionLine & payment_state & d_col
+		sTransactionLine = sTransactionLine & payment_zip & d_col
+		sTransactionLine = sTransactionLine & "US" & d_col
+		sTransactionLine = sTransactionLine & Request.ServerVariables("HTTP_USER_AGENT") & d_col
+		sTransactionLine = sTransactionLine & "RefererCookie=" & mReferrer
+		'sTransactionLine = sTransactionLine & Request.ServerVariables("HTTP_COOKIE")
+	
+	end if
+	rsOrderLog.Close
+	
+	a.WriteLine(sTransactionLine)
+	
+	sItemLine = ""
+	
+	strSQL = "SELECT * FROM " & Session("StoreID") & "_order_item WHERE order_id='" & str_orderid & "' ORDER BY row_id"
+
+	Set rsOrderItem = dbconn.Execute(strSQL)
+	do while not rsOrderItem.EOF
+		item_sku = rsOrderItem("sku")
+		item_options = "-"
+		item_qty = rsOrderItem("quantity")
+		item_price = rsOrderItem("adjusted_price")
+		item_mode = rsOrderItem("row_mode")
+		item_description = rsOrderItem("item_description")
+		
+		sItemLine = str_orderid & d_col
+		sItemLine = sItemLine & Request.ServerVariables("LOCAL_ADDR") & d_col
+		sItemLine = sItemLine & mLogDate & d_col
+		sItemLine = sItemLine & item_sku & d_col
+		sItemLine = sItemLine & item_description & d_col
+		sItemLine = sItemLine & item_options & d_col
+		sItemLine = sItemLine & FormatNumber(item_price,2) & d_col
+		sItemLine = sItemLine & item_qty & d_col
+		sItemLine = sItemLine & "0" & d_col
+		sItemLine = sItemLine & Request.ServerVariables("HTTP_USER_AGENT") & d_col
+		sItemLine = sItemLine & "RefererCookie=" & mReferrer
+		'sItemLine = sItemLine & Request.ServerVariables("HTTP_COOKIE")
+		
+		a.WriteLine(sItemLine)
+		
+		rsOrderItem.MoveNext
+	loop
+	rsOrderItem.Close
+	
+	a.Close
+	Set fs = Nothing
+				
+
+	dbconn.Close
+END FUNCTION
+</script>

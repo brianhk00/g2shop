@@ -1,0 +1,108 @@
+<SCRIPT LANGUAGE=VBScript RUNAT=Server>
+
+Function IsImageFilename(ByRef str)
+	'returns true/false
+	dim fext
+	
+	fext=LCase(Right(str,4))
+	if((fext=".gif")Or(fext=".jpg")) then
+		IsImageFilename=true
+	else
+		IsImageFilename=false
+	end if
+End Function
+	
+Function DirFilesToOptionTags(folderspec,file_extensions_include_string,ByRef string_to_fill)
+	'returns true/false
+	'fills "string_to_fill" with CRLF delimeted option tags of all files in directory: "folderspec" 
+	'having a 3-char file extension that is a sub-string of "file_extensions_include_string"
+	'file_extensions_include_string format: "gifjpg"
+
+	Dim fso, f, f1, fc,at_least_one,i,bok,ext
+	
+	Set fso = CreateObject("Scripting.FileSystemObject")
+	IF ReportFolderStatus(folderspec)=0 THEN
+		CreateFolders(folderspec)
+	END IF
+	Set f = fso.GetFolder(folderspec)
+	Set fc = f.Files
+	at_least_one = false
+	for each f1 in fc
+		bok=true
+		if(Len(file_extensions_include_string)>0) then
+			i=1
+			do while(bok)
+				ext=LCase(Mid(file_extensions_include_string,i,3))
+				i=i+3
+				if(Len(ext)=0) then
+					bok=false
+				else
+					'Response.Write(" |ext="&ext&"| ")
+					'Response.Write(" |Right(f1.name,3)="&Right(f1.name,3)&"| ")
+					if(LCase(Right(f1.name,3))=ext) then
+						at_least_one = true
+						string_to_fill=string_to_fill &_
+							chr(13)&chr(10)&"<option value="""&f1.name&""">"&f1.name&"</option>"
+						exit do
+					end if
+				end if
+			loop
+		else
+			at_least_one = true
+			string_to_fill=string_to_fill &_
+				chr(13)&chr(10)&"<option value="""&f1.name&""">"&f1.name&"</option>"
+		end if
+	next
+	DirFilesToOptionTags = at_least_one
+End Function
+
+Function CreateFolder(str_path)
+	'returns true/false
+
+	dim fso, f
+
+	if(str_path="") then
+		CreateFolder=false
+		exit function
+	end if	
+	
+	'debug
+	'Response.Write("CreateFolder() - str_path="&str_path&"| ")
+	
+	'NOTE: currently no error checking nor permissions checking!  Hey Mike!
+	set fso = CreateObject("Scripting.FileSystemObject")
+	if(not fso.FolderExists(str_path)) then 
+		set f = fso.CreateFolder(str_path)
+	end if
+	CreateFolder = true
+End Function
+
+Function CreateFolders(fldr)
+	Dim folder1,fso,f
+	folder1=left(fldr,InstrRev(fldr,"\",-1,1)-1)
+	IF ReportFolderStatus(folder1)=0 THEN
+		CreateFolders(folder1)
+	END IF
+	Set fso = CreateObject("Scripting.FileSystemObject")
+	Set f = fso.CreateFolder(fldr)
+End Function
+
+function DeleteFolder(filespec)
+	'returns true/false
+	Dim fso
+	Set fso = CreateObject("Scripting.FileSystemObject")
+	if(fso.FolderExists(filespec)) then
+		fso.DeleteFolder(filespec)
+		DeleteFolder=true
+		exit function
+	end if
+	DeleteFolder=false
+End function
+
+Function ReportFolderStatus(fldr)
+	'returns true/false
+	Dim fso
+	Set fso = CreateObject("Scripting.FileSystemObject")
+	ReportFolderStatus=fso.FolderExists(fldr)
+End Function
+</SCRIPT>

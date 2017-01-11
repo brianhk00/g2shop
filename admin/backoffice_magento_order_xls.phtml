@@ -1,0 +1,220 @@
+<%@ Language=VBScript %>
+<%
+	Response.CodePage = 65001
+	Response.CharSet = "UTF-8"
+	Response.Expires = -1
+	Response.ContentType = "application/vnd.ms-excel"
+	Response.AddHeader "Content-Disposition", "attachment; filename=excelTest.xls"
+%>
+<!-- #INCLUDE File="local/local.phtml" -->
+<!-- #INCLUDE File="util/xt_func_util.phtml" -->
+<!-- #INCLUDE File="util/xt_func_string.phtml" -->
+<%
+	Function myDateFormat(myDate)
+		d = WhatEver(Day(myDate))
+		m = WhatEver(Month(myDate))    
+		y = Year(myDate)
+		myDateFormat= y & m & d
+	End Function
+
+	Function WhatEver(num)
+		If(Len(num)=1) Then
+			WhatEver="0"&num
+		Else
+			WhatEver=num
+		End If
+	End Function
+	
+	ids = Trim(Request("id[]"))
+	current_date = Now()
+	O_DATE = myDateFormat(current_date)
+%>
+<table>
+	<tr>
+		<th>RCVR NAME</th>
+		<th>RCVR SECRET NO</th>
+		<th>RCVR ADDRESS</th>
+		<th>RCVR ADDRESS2</th>
+		<th>RCVR PHONE</th>
+		<th>RCVR MOBILE</th>
+		<th>PIECE</th>
+		<th>WEIGHT</th>
+		<th>INVOICE VALUE</th>
+		<td>PAYMENT</td>
+		<th>SHIPMENT TYPE</th>
+		<th>CHARGE</th>
+		<th>INSURANCE</th>
+		<th>REFERENCE</th>
+		<th>Description 1</th>
+		<th>Piece 1</th>
+		<th>Invoice Values 1</th>
+		<th>Description 2</th>
+		<th>Piece 2</th>
+		<th>Invoice Values 2</th>
+		<th>Description 3</th>
+		<th>Piece 3</th>
+		<th>Invoice Values 3</th>
+		<th>Description 4</th>
+		<th>Piece 4</th>
+		<th>Invoice Values 4</th>
+		<th>Description 5</th>
+		<th>Piece 5</th>
+		<th>Invoice Values 5</th>
+		<th>Description 6</th>
+		<th>Piece 6</th>
+		<th>Invoice Values 6</th>
+		<th>Description 7</th>
+		<th>Piece 7</th>
+		<th>Invoice Values 7</th>
+		<th>Description 8</th>
+		<th>Piece 8</th>
+		<th>Invoice Values 8</th>
+		<th>Description 9</th>
+		<th>Piece 9</th>
+		<th>Invoice Values 9</th>
+		<th>Description 10</th>
+		<th>Piece 10</th>
+		<th>Invoice Values 10</th>
+		<th>Description 11</th>
+		<th>Piece 11</th>
+		<th>Invoice Values 11</th>
+		<th>Description 12</th>
+		<th>Piece 12</th>
+		<th>Invoice Values 12</th>
+		<th>Description 13</th>
+		<th>Piece 13</th>
+		<th>Invoice Values 13</th>
+	</tr>
+	<%
+		if Len(ids) > 1 then
+	%>
+	<%
+		sql = "SELECT * FROM sales_flat_order WHERE increment_id IN ('" &  Replace(ids, ", ", "','")  & "') ORDER BY entity_id DESC"
+		set rs = dbconnExt.Execute(sql)
+		
+	%>
+	<%
+		do while not rs.EOF
+		
+			order_id = rs("entity_id")
+			customer_id = rs("customer_id")
+			
+			s_increment_id = rs("increment_id")
+			shipping_address_id = rs("shipping_address_id")
+			'=======================================================
+			s_prefix = ""
+			sql = "SELECT * FROM sales_flat_order_address WHERE entity_id = " & shipping_address_id
+			set rsx = dbconnExt.Execute(sql)
+			if not rsx.EOF then
+				sh_prefix = rsx("prefix")
+				sh_firstname = rsx("firstname")
+				sh_lastname = rsx("lastname")
+				sh_telephone = rsx("telephone")
+				sh_company = rsx("company")
+				sh_region = rsx("region")
+				sh_city = rsx("city")
+				sh_postcode = rsx("postcode")
+				sh_street = rsx("street")
+				sh_telephone = rsx("telephone")
+				sh_country_id = rsx("country_id")
+			end if
+			rsx.Close
+			set rsx = nothing
+			'=======================================================
+	%>
+    <tr>
+		<td><%=sh_prefix%></td>
+		<td><%=sh_company%></td>
+		<td><%=sh_street%>, <%=sh_city%>, <%=sh_region%>, <%=sh_country_id%></td>
+		<td>&#x200c;<%=sh_postcode%></td>
+		<td><%=sh_telephone%></td>
+		<td><%=sh_telephone%></td>
+		<%	
+			i_piece = 0
+			i_amount = 0
+			
+			sql = "SELECT a.product_id, a.sku, a.qty_ordered, a.price, b.name FROM sales_flat_order_item AS a, catalog_product_flat_1 AS b WHERE  a.product_id = b.entity_id AND a.order_id =" & order_id 
+			set rsx = dbconnExt.Execute(sql)
+			do while not rsx.EOF
+				'GET FAKE VALUE ...
+				i_amount = i_amount + CDbl(rsx("price")) * Cint(rsx("qty_ordered"))
+				rsx.MoveNext
+			loop
+			rsx.Close
+			set rsx = nothing
+		%>
+		<td>1</td>
+		<td></td>
+		<td><%=FormatNumber(i_amount,2)%></td>
+		<td>CD</td>
+		<td>1</td>
+		<td></td>
+		<td></td>
+		<td><%=s_increment_id%></td>
+		
+		<%	
+			ii = 1
+			sql = "SELECT a.product_id, a.sku, a.qty_ordered, a.price, b.name FROM sales_flat_order_item AS a, catalog_product_flat_1 AS b WHERE  a.product_id = b.entity_id AND a.order_id =" & order_id 
+			set rsx = dbconnExt.Execute(sql)
+			do while not rsx.EOF
+			
+				'GET FAKE NAME ..
+				s_item_name = rsx("name")
+				sql = "SELECT value FROM catalog_product_entity_varchar WHERE attribute_id=207 AND entity_id = " & rsx("product_id")
+				set rs2 = dbconnExt.Execute(sql)
+				if not rs2.EOF then
+					x_item_name = rs2(0)
+					if Len(x_item_name) > 0 then
+						s_item_name = x_item_name
+					end if
+				end if
+				rs2.Close
+				set rs2 = nothing
+				
+				item_price = rsx("price")
+				'GET FAKE VALUE ...
+				sql = "SELECT value FROM catalog_product_entity_varchar WHERE attribute_id=208 AND entity_id = " & rsx("product_id")
+				set rs2 = dbconnExt.Execute(sql)
+				if not rs2.EOF then
+					if IsNumeric(rs2(0)) then
+						item_price = rs2(0)
+					end if
+				end if
+				rs2.Close
+				set rs2 = nothing
+				
+		%>
+		<td><%=s_item_name%></td>
+		<td><%=rsx("qty_ordered")%></td>
+		<td><%=FormatNumber(item_price,2)%></td>
+		<%
+				ii = ii + 1
+				rsx.MoveNext
+			loop
+			rsx.Close
+			set rsx = nothing
+		%>
+		
+		<%
+			for i = ii to 13
+		%>
+		<td></td>
+		<td></td>
+		<td></td>
+		<%
+			next
+		%>
+	</tr>
+	<%
+			rs.MoveNext
+		loop
+		rs.Close
+		
+		set rs = nothing
+	%>
+	<%
+		end if
+	%>
+</table>
+</body>
+</html>

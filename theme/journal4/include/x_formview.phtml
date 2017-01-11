@@ -1,0 +1,328 @@
+<% if inc_image then %>
+<form method="post" ENCTYPE="multipart/form-data" action="xi_formsubmit.asp" name="xformsubmit" onsubmit="return ValidateData();">
+<% else %>
+<form action="x_formsubmit.asp" method="post" name="xformsubmit" onsubmit="return ValidateData();">
+<% end if %>
+<DIV style="width: 90%;">
+<table width="90%" border="0" cellpadding="0" cellspacing="0" align="center">
+	<tr>
+		<td>
+			<font face="Arial" color="000000" size=2>
+			<b><%=form_title%></b>
+			</font>
+		</td>
+	</tr>
+	<tr><td>&nbsp;</td></tr>
+	<tr>
+		<td>	
+			<font face="Arial" color="000000" size=2>
+			<p><%=form_description%></p>
+			</font>
+		</td>
+	</tr>
+	<tr><td>&nbsp;</td></tr>
+<%
+	str_formitem_id = ""
+	str_imgitem_id = ""
+
+	'Get field items...
+	sql = "SELECT * FROM " & g_storeid & "_form_item WHERE form_id='" & form_id & "' ORDER BY row_id"
+	set rsFormItem = dbconn.Execute(sql)
+	
+	findex = 0
+	sv = ""
+
+	do while not rsFormItem.EOF
+		form_item_id = rsFormItem("form_item_id")
+		item_type = rsFormItem("item_type")
+		field_name = rsFormItem("field_name")
+		caption_value = rsFormItem("caption_value")
+		default_value = Trim(rsFormItem("default_value"))
+		item_alignment = rsFormItem("item_alignment")
+		font_type = rsFormItem("font_type")
+		font_size = rsFormItem("font_size")
+		font_color = rsFormItem("font_color")
+		font_style = rsFormItem("font_style")
+
+		is_required = rsFormItem("is_required")
+		validation_rule = rsFormItem("validation_rule")
+
+		maximum_length = rsFormItem("maximum_length")
+
+		item_option1 = rsFormItem("item_option1")
+		item_option2 = rsFormItem("item_option2")
+		item_option3 = rsFormItem("item_option3")
+		item_option4 = rsFormItem("item_option4")
+		item_option5 = rsFormItem("item_option5")
+
+		item_line = Trim(rsFormItem("item_line"))
+		item_instruction = Trim(rsFormItem("item_instruction"))
+
+		if item_type = "7" then
+			str_imgitem_id = str_imgitem_id & form_item_id & "|*|"
+		else
+			if item_type = "8" then
+			else
+				str_formitem_id = str_formitem_id & form_item_id & "|*|"
+			end if
+		end if
+		
+%>
+	<tr>
+		<td valign="middle" width=500>
+			<% 
+			SELECT CASE item_type
+			CASE "8"
+			CASE "9"
+			CASE ELSE
+			%>
+			<span style="font-family:<%=font_type%>;font-size:<%=font_size%>px;color:<%=font_color%>;">
+			<% if font_style = "" OR font_style= "<x>~<x>" or IsNull(font_style) then %>
+				<%=caption_value%>
+			<% else %>
+				<%=Replace(font_style, "~", caption_value)%>
+			<% end if %>
+			<% if is_required > 0 then %><font color="red">*</font><% end if %>
+			<% if maximum_length > 0 then %>
+				<% if item_type = "5" OR item_type = "6" then %>
+					&nbsp;(<%=maximum_length%> characters maximum)
+				<%end if%>
+			<% end if %>
+			</span>
+			<% if Len(item_instruction) > 0 then %>
+			<a href="javascript:open_win('popup_form_help.asp?formitem=<%=form_item_id%>')"><img src="site_img/<%=Session("LN")%>a_help.gif" border=0 align=absbottom></a>
+			<% end if %>
+			<%
+				END SELECT
+			%>
+		</td>
+	</tr>
+	<tr>
+		<td valign="middle" width=500 class="text13">
+		<%
+			SELECT CASE item_type
+			CASE "1" 'Checkbox
+		%>
+		<%
+			ar_itemline = Split(item_line, VbCrLf)
+
+			if is_required > 0 then
+				sv = sv & "j=0;"
+			end if
+
+		%>
+		<%
+			for j = 0 to UBound(ar_itemline)
+		%>
+		<input type=checkbox name="<%=field_name%>" value="<%=Trim(ar_itemline(j))%>" <%if Trim(ar_itemline(j))=default_value then%>checked<%end if%> ><%=Trim(ar_itemline(j))%><%if item_option1="rows" then %><%else%><br><%end if%>
+		<%
+				if is_required > 0 then
+					sv = sv & "if(document.xformsubmit[" & findex & "].checked) j++;"
+				end if
+			
+				findex = findex + 1
+
+			Next
+
+			if is_required > 0 then
+				sv = sv & "if(j == 0){alert ('You need to enter information for " & FilterJString(caption_value) & "');return(false);}"
+			end if
+
+		%>
+		<%
+			CASE "2" 'DROP DOWN BOX
+		%>
+		<SELECT name="<%=field_name%>" <%if item_option1="YES" then %>multiple size="<%=item_option2%>"<%end if%>>
+		<%
+			ar_itemline = Split(item_line, VbCrLf)
+		%>
+		<% if is_required > 0 then %>
+		<option value="">Please select</option>
+		<% end if %>
+		<%
+			for j = 0 to UBound(ar_itemline)
+		%>
+		<option value="<%=Trim(ar_itemline(j))%>" <%if Trim(ar_itemline(j))=default_value then%>selected<%end if%>><%=Trim(ar_itemline(j))%></option>
+		<%
+			Next
+
+			if is_required > 0 then
+				sv = sv & "if(document.xformsubmit[" & findex & "].selectedIndex < 1){alert ('You need to enter information for " & FilterJString(caption_value) & "');return(false);}"
+			end if
+
+			findex = findex + 1
+		%>
+		</SELECT>
+		<%
+			CASE "3" 'Radio
+		%>
+		<%
+			ar_itemline = Split(item_line, VbCrLf)
+
+			if is_required > 0 then
+				sv = sv & "j=0;"
+			end if
+		%>
+		<%
+			for j = 0 to UBound(ar_itemline)
+		%>
+		<input type=radio name="<%=field_name%>" value="<%=Trim(ar_itemline(j))%>" <%if Trim(ar_itemline(j))=default_value then%>checked<%end if%>><%=Trim(ar_itemline(j))%><%if item_option1="rows" then %><%else%><br><%end if%>
+		<%
+				if is_required > 0 then
+					sv = sv & "if(document.xformsubmit[" & findex & "].checked) j++;"
+				end if
+			
+				findex = findex + 1
+
+			Next
+
+			if is_required > 0 then
+				sv = sv & "if(j == 0){alert ('You need to enter information for " & FilterJString(caption_value) & "');return(false);}"
+			end if
+
+		%>
+		<%
+			CASE "4" 'Header/separation
+		%>
+
+		<%
+			CASE "5" 'Text field
+		%>
+		<% if item_option2 = "YES" then %>
+		<input type="password" name="<%=field_name%>" value="" size="<%=item_option1%>">
+		<% else %>
+		<input type="text" name="<%=field_name%>" value="<%=default_value%>" size="<%=item_option1%>">
+		<% end if %>
+
+		<%
+			if is_required > 0 then
+				sv = sv & "if (!ForceEntry(document.xformsubmit[" & findex & "], '" & FilterJString(caption_value) & "')){return(false);}"
+			end if
+
+			if maximum_length > 0 then
+				sv = sv & "if (!ForceLength(document.xformsubmit[" & findex & "]," & maximum_length & ", '" & FilterJString(caption_value) & " must be less than " & maximum_length & " characters.')){return(false);}"
+			end if
+
+			SELECT CASE validation_rule
+			CASE "1" 'numeric
+				sv = sv & "if (!ForceNumber(document.xformsubmit[" & findex & "], '" & FilterJString(caption_value) & "')){return(false);}"
+			CASE "2" 'alphanumeric
+				sv = sv & "if (!ForceAlphaNumberic(document.xformsubmit[" & findex & "], '" & FilterJString(caption_value) & "')){return(false);}"
+			CASE "3" 'Email Format
+				sv = sv & "if (!ForceEmail(document.xformsubmit[" & findex & "], '" & FilterJString(caption_value) & "')){return(false);}"
+			CASE "4" 'Money Format
+				sv = sv & "if (!ForceMoney(document.xformsubmit[" & findex & "], '" & FilterJString(caption_value) & "')){return(false);}"
+			CASE "5" 'US Zip code
+				sv = sv & "if (!ForceUSZip(document.xformsubmit[" & findex & "], '" & FilterJString(caption_value) & "')){return(false);}"
+			CASE "6" 'Date
+				sv = sv & "if (!ForceDate(document.xformsubmit[" & findex & "], '" & FilterJString(caption_value) & "')){return(false);}"
+			CASE ELSE
+
+			END SELECT
+
+			findex = findex + 1
+		%>
+
+		<%
+			CASE "6" 'Text area
+		%>
+		<textarea name="<%=field_name%>" cols="<%=item_option1%>" rows="<%=item_option2%>"><%=default_value%></textarea>
+
+		<%
+			if is_required > 0 then
+				sv = sv & "if (!ForceEntry(document.xformsubmit[" & findex & "], '" & FilterJString(caption_value) & "')){return(false);}"
+			end if
+
+			if maximum_length > 0 then
+				sv = sv & "if (!ForceLength(document.xformsubmit[" & findex & "]," & maximum_length & ", '" & FilterJString(caption_value) & " must be less than " & maximum_length & " characters.')){return(false);}"
+			end if
+
+			SELECT CASE validation_rule
+			CASE "1" 'numeric
+				sv = sv & "if (!ForceNumber(document.xformsubmit[" & findex & "], '" & FilterJString(caption_value) & "')){return(false);}"
+			CASE "2" 'alphanumeric
+				sv = sv & "if (!ForceAlphaNumberic(document.xformsubmit[" & findex & "], '" & FilterJString(caption_value) & "')){return(false);}"
+			CASE "3" 'Email Format
+				sv = sv & "if (!ForceEmail(document.xformsubmit[" & findex & "], '" & FilterJString(caption_value) & "')){return(false);}"
+			CASE "4" 'Money Format
+				sv = sv & "if (!ForceMoney(document.xformsubmit[" & findex & "], '" & FilterJString(caption_value) & "')){return(false);}"
+			CASE "5" 'US Zip code
+				sv = sv & "if (!ForceUSZip(document.xformsubmit[" & findex & "], '" & FilterJString(caption_value) & "')){return(false);}"
+			CASE ELSE
+
+			END SELECT
+
+			findex = findex + 1
+		%>
+
+		<%
+			CASE "7"
+		%>
+		<input type="file" name="<%=field_name%>" size="35">
+
+		<%
+			if is_required > 0 then
+				sv = sv & "if (!ForceEntry(document.xformsubmit[" & findex & "], '" & FilterJString(caption_value) & "')){return(false);}"
+			end if
+
+			if item_option1 = "Other" then
+			else
+				sv = sv & "if (!ForceWebImage(document.xformsubmit[" & findex & "], '" & FilterJString(caption_value) & "')){return(false);}"
+			end if
+
+			findex = findex + 1
+		%>
+		
+		<%
+			CASE "8"
+		%>
+			<% if item_option1 = "2" then %>
+				<hr color="<%=item_option3%>" <% if item_option4 = "NO" then %>noshade<%end if %> size="<%=item_option2%>">
+			<% else %>
+				<img src="images/x.gif" border=0 height="<%=item_option2%>" width=1>
+			<% end if %>
+
+		<%
+			CASE "9"
+		%>
+		<table border="0" width="100%" bgcolor="White" cellpadding="0" cellspacing="0">
+			<tr><td><%=item_line%></td></tr>
+		</table>
+		<%
+			END SELECT
+		%>
+
+		</td>
+	</tr>
+	<tr><td>&nbsp;</td></tr>
+<%
+		rsFormItem.MoveNext
+	Loop
+	rsFormItem.Close
+%>
+<tr>
+		<td>
+			<% if Len(form_submit_image) > 0 then %>
+				<a href="Javascript:SubmitForm()"><img src="form_img/<%=form_submit_image%>" border=0></a>
+			<% else %>
+				<input type=submit name=submit value="submit">
+			<% end if %>
+
+			<% if form_show_reset = 1 then %>
+				<% if Len(form_reset_image) > 0 then %>
+					<a href="Javascript:document.xformsubmit.reset()"><img src="form_img/<%=form_reset_image%>" border=0></a>
+				<% else %>
+					<input type=reset name=reset value="reset">
+				<% end if %>
+			<% end if %>
+		</td>
+	</tr>
+</table>
+</DIV>
+<input type="hidden" name="form_id" value="<%=form_id%>">
+<input type="hidden" name="formitem_id" value="<%=str_formitem_id%>">
+<input type="hidden" name="imgitem_id" value="<%=str_imgitem_id%>">
+<input type="hidden" name="msg1" value="<%=form_msg1%>">
+<input type="hidden" name="xprodinfo" value="<%=Request.Form%>">
+
+</form>

@@ -1,0 +1,3692 @@
+<!-- #INCLUDE File="xt_html_statusmsg.phtml" -->
+<SCRIPT LANGUAGE="vbscript" RUNAT="server">
+function FilterString(s)
+	dim sLen
+	sLen = Len(s)
+	for i=1 to sLen
+	  s1 = Asc(Mid(s,i,1))
+	  if ((s1 >= 48) AND (s1 =< 57)) OR ((s1 >= 65) AND (s1 =< 90)) OR ((s1 >= 97) AND (s1 =< 122)) OR (s1=32) OR (s1=45) then
+			'Response.Write Mid(s,i,1)
+		else
+			s = Mid(s, 1, i-1) & "_" & Mid(s, i+1)
+		end if
+	next
+	FilterString = s
+end function
+
+function GetAddrNumber(s)
+	dim sLen
+	sLen = Len(s)
+	for i=1 to sLen
+	  s1 = Asc(Mid(s,i,1))
+	  if ((s1 >= 48) AND (s1 =< 57))then
+		else
+			saddr = Left(s, i-1)
+			Exit For
+		end if
+	next
+	GetAddrNumber = saddr
+	
+end function
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+' This is for MCK that uses 2.x DLL.
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+sub LogNotification2(snotifyLog, sPop, nLogStatus, sCode)
+   On Error Resume Next
+   Dim fs, a, sTimeStamp, sNotificationLoc, sDebugMsg
+
+   sNotificationLoc = snotifyLog
+   Set fs = CreateObject("Scripting.FileSystemObject")
+   Set a = fs.OpenTextFile(sNotificationLoc, 8, TRUE)
+
+   if (Err.Number = 0) then
+      a.WriteLine(sPop)
+      a.Close()
+   end if
+
+   if (Err.Number <> 0) then
+      Err.Clear()
+      nLogStatus = nE_No_NotifLog 
+      sCode = "300"
+      exit sub
+   end if
+
+   nStatus = nE_NoErr 
+   sCode = "000"
+end sub
+
+'ADDED BY BK 1/28/02
+Function ChargeCreditCardEx(ByRef str_db, ByRef str_cc_error, ByRef str_provider, _
+							ByRef str_orderid, ByRef str_msghldr,_
+							ByRef str_validation_number,ByRef str_ref_number, ByRef str_charge_url)
+	
+	'cc_error_code
+	'1: No Order info
+	'2: Payment Gateway Not Supported
+	'3: Payment Gateway Processing Error
+	
+	'Initialize...
+	str_validation_number = ""
+	str_ref_number = ""
+	str_charge_url = ""
+					
+	Set dbconn = Server.CreateObject("ADODB.Connection")
+	dbconn.open str_db
+	
+	'Read it from order table...
+	sql = "SELECT * FROM " & Session("StoreID") & "_order WHERE order_id='" & str_orderid & "'"
+	Set rsOrderInfo = dbconn.Execute(sql)
+	
+	if not rsOrderInfo.EOF then
+		od_shopper_id = Trim(rsOrderInfo("shopper_id"))
+		od_po_number = Trim(rsOrderInfo("po_number"))
+		'Shipping Info
+		sh_lastname = Trim(rsOrderInfo("ShipLastName"))
+		sh_firstname = Trim(rsOrderInfo("ShipFirstName"))
+		sh_address = Trim(rsOrderInfo("ShipAddress"))
+		sh_city = Trim(rsOrderInfo("ShipCity"))
+		sh_state = Trim(rsOrderInfo("ShipState"))
+		sh_zip = Trim(rsOrderInfo("ShipZIP"))
+		'sh_country = "US"
+		sh_country = Trim(rsOrderInfo("ShipCountry"))
+		if Len(sh_country) > 0 then
+			if sh_country = "USA" then
+				sh_country = "US"
+			end if
+		else
+			sh_country = "US"
+		end if
+		
+		sh_name = sh_firstname & " " & sh_lastname
+		
+		'Card Info		
+		cc_type = rsOrderInfo("CardType")
+		cc_name = Trim(rsOrderInfo("CardName"))
+		cc_number = Trim(rsOrderInfo("CardNumber"))
+		
+		'======================================================================
+		' RC4
+		if Len(cc_number) > 0 then
+			if IsRC4Encrypted(cc_number) then
+				cc_number = EnDeCrypt(cc_number, Session("STORE_OP"))
+			end if
+		end if
+		'=====================================================================
+		
+		if Len(cc_number) > 0 then
+			cc_number=trimtodigits(cc_number)
+		end if
+		
+		cc_exp_month = Trim(rsOrderInfo("CardExpirationMonth"))
+		cc_exp_year = Trim(rsOrderInfo("CardExpirationYear"))
+		
+		'Billing Address...
+		cc_address = Trim(rsOrderInfo("CardAddress"))
+		cc_city = Trim(rsOrderInfo("CardCity"))
+		cc_state = Trim(rsOrderInfo("CardState"))
+		cc_zip = Trim(rsOrderInfo("CardZip"))
+		cc_country = Trim(rsOrderInfo("CardCountry")) 'TODO: Read from country...
+		'cc_country = "US"
+		if Len(cc_country) > 0 then
+			if cc_country = "USA" then
+				cc_country = "US"
+			end if
+		else
+			cc_country = "US"
+		end if
+		
+		od_taxamount = rsOrderInfo("Tax")
+		od_sh_cost = rsOrderInfo("SH")
+		od_total = rsOrderInfo("Total")
+		
+		cvv2 = Trim(rsOrderInfo("cvv_info"))
+		'order_ip_addr = Request.ServerVariables("REMOTE_ADDR")
+		order_ip_addr = rsOrderInfo("order_ip_addr")
+
+		cc_email = Trim(rsOrderInfo("shopper_email"))
+		cc_phone = Trim(rsOrderInfo("shopper_phone"))
+		
+	else
+		'No record...
+		str_cc_error = "1"
+		ChargeCreditCardEx = false
+		Exit Function
+	end if
+	
+	rsOrderInfo.Close
+	
+	'Get Billing first name and last name...additional shopper info..
+	sql = "SELECT * FROM " & Session("StoreID") & "_shopper WHERE shopper_id='" & od_shopper_id & "'"
+	Set rsShopperInfo = dbconn.Execute(sql)
+	if not rsShopperInfo.EOF then
+		cc_email = rsShopperInfo("Email")
+		cc_firstname = Trim(rsShopperInfo("FirstName"))
+		cc_lastname = Trim(rsShopperInfo("LastName"))
+	end if
+	rsShopperInfo.Close
+	
+	strSQL = "SELECT * FROM " & Session("StoreID") & "_profile2"
+	Set rsProfile2 = dbconn.Execute(strSQL)
+	
+	if not rsProfile2.EOF then
+		m1_szAPIUsername = Trim(rsProfile2("paypal_APIUsername"))
+		m1_szAPIPassword = Trim(rsProfile2("paypal_APIPassword"))
+		m1_szAPISignature = Trim(rsProfile2("paypal_APISignature"))
+	end if
+
+	rsProfile2.Close
+	
+	if NOT (cc_type="visa" or cc_type="mc" or cc_type="discover" or cc_type="amex")then
+	'if cc_type="billme" or cc_type="cod" or cc_type="willcall" then
+		'No Credit card processing is needed...
+		str_cc_error = "0"
+		ChargeCreditCardEx = true
+		Exit Function
+	else
+		'Format Date...Format debit Amount...AND Charge Account...
+		SELECT CASE str_provider
+		CASE "1" 'CYBERCASH
+			cc_expdate = cc_exp_month & "/" & Right(cc_exp_year,2) '"01/02"
+			debit_amount = "usd " & CStr(FormatNumber(od_total, 2))
+			call Numberize(debit_amount)
+			
+			if(ChargeCreditCard(Session("CYBERCASH_CONFIG_FILE"), str_msghldr,_
+								str_orderid,_
+								cc_number, cc_expdate, debit_amount,_
+								cc_name, cc_address, cc_city, cc_state,_
+								cc_zip, cc_country,_
+								str_validation_number, str_ref_number,_
+								str_status)) then
+				str_cc_error = "0"
+			else
+				str_cc_error = "3"
+				ChargeCreditCardEx = false
+				Exit Function
+			end if
+				
+			
+		CASE "2" 'PAYFLOW
+			cc_expdate = cc_exp_month & Right(cc_exp_year,2) '"0102"
+			debit_amount = CStr(FormatNumber(od_total, 2))
+			call Numberize(debit_amount)
+			
+			'check for ip address...
+			if IsIPAddressBlocked(order_ip_addr) then
+				str_msghldr = "Your IP Address(" & order_ip_addr & ") has been blocked. Please call our support for help."
+				str_cc_error = "3"
+				ChargeCreditCardEx = false
+				Exit Function
+			else
+				'Initialize...
+				str_cvv2_flag = "0"
+				str_avs_flag = "0"
+				
+				if ChargeCreditCard_Payflow(str_msghldr, Session("PAYFLOW_HOST_ADDRESS"), str_orderid,_
+								cc_number, cc_expdate, debit_amount,_
+								cc_name, cc_address, cc_city, cc_state, cc_zip,_
+								Session("PAYFLOW_MERCHANT_ID"), Session("PAYFLOW_MERCHANT_PW"),_
+								cvv2,_
+								str_validation_number, str_ref_number,_
+								str_cvv2_flag, str_avs_flag,_
+								str_status, cc_email, cc_lastname, cc_firstname) then
+					str_cc_error = "0"
+					
+					'UPDATE flags...
+					sql = "UPDATE " & Session("StoreID") & "_order SET CVV2_flag=" & str_cvv2_flag & ",AVS_flag=" & str_avs_flag & " WHERE order_id='" & str_orderid & "'"
+					dbconn.Execute sql
+					
+				else
+          
+          if Len(order_ip_addr) > 0 then
+					  if ProcessIPFraud(order_ip_addr) then
+					  end if
+					end if
+
+					str_cc_error = "3"
+					ChargeCreditCardEx = false
+					Exit Function
+				end if
+
+			end if
+				
+				
+		CASE "3" 'ACCESS POINT
+			'N/A
+			cc_expdate = ""
+			debit_amount = CStr(FormatNumber(od_total, 2))
+			call Numberize(debit_amount)
+			
+			url_charge = Session("APC_HOST_ADDRESS")	
+			url_charge = Replace(url_charge, ":A:", debit_amount)
+			url_charge = Replace(url_charge, ":ID:", Session("APC_MERCHANT_ID"))
+			url_charge = Replace(url_charge, ":BN:", cc_name)
+			url_charge = Replace(url_charge, ":BA:", cc_address)
+			url_charge = Replace(url_charge, ":BZ:", cc_zip)
+			url_charge = Replace(url_charge, ":BM:", cc_email)
+			url_charge = Replace(url_charge, ":CN:", cc_number)
+			url_charge = Replace(url_charge, ":EM:", cc_exp_month)
+			url_charge = Replace(url_charge, ":EY:", cc_exp_year)
+					
+			'WORK ON IT!!!
+			str_cc_error = "0"
+			str_charge_url = url_charge
+			
+						
+		CASE "4" 'Card Service Link Point
+			'N/A
+			cc_expdate = ""
+			debit_amount = CStr(FormatNumber(od_total, 2))
+			call Numberize(debit_amount)
+
+			cc_exp_month = Trim(cc_exp_month)
+			cc_exp_year = Right(Trim(cc_exp_year),2)
+			
+			if ChargeCreditCard_linkpt_v4(str_msghldr,_
+							Session("LINKPT_CONFIG_FILE"), Session("LINKPT_KEY_FILE"),_
+							Session("LINKPT_HOST_URL"), Session("LINKPT_HOST_PORT"),_
+							str_orderid, od_shopper_id,_
+							cc_number, cc_exp_month, cc_exp_year, debit_amount,_
+							cc_name, cc_address, cc_city, cc_state, cc_zip,_
+							sh_name, sh_address, sh_city, sh_state, sh_zip,_
+							cvv2,order_ip_addr,_
+							str_validation_number, str_ref_number,_
+							str_status) then
+				str_cc_error = "0"
+			else
+				str_cc_error = "3"
+				ChargeCreditCardEx = false
+				Exit Function			
+			end if
+			
+		CASE "5" 'Payflow link....
+			cc_expdate = cc_exp_month & "/" & Right(cc_exp_year,2) '"01/02"
+			debit_amount = CStr(FormatNumber(od_total, 2))
+			call Numberize(debit_amount)
+			
+			url_charge = Session("PAYFLOWLINK_HOST_ADDRESS")	
+			url_charge = Replace(url_charge, ":A:", debit_amount)
+			url_charge = Replace(url_charge, ":ID:", Session("PAYFLOWLINK_LOGIN_ID"))
+			url_charge = Replace(url_charge, ":PT:", Session("PAYFLOWLINK_PARTNER"))
+			url_charge = Replace(url_charge, ":CN:", cc_number)
+			url_charge = Replace(url_charge, ":ED:", cc_expdate)
+			url_charge = url_charge & "&user1=" & db
+			url_charge = url_charge & "&user2=" & Session("StoreID")
+			url_charge = url_charge & "&user3=" & Session("order_id")
+			 
+			'WORK ON IT!!!
+			str_cc_error = "0"
+			str_charge_url = url_charge
+			
+		CASE "6"  'Authorizenet
+			cc_expdate = cc_exp_month & "/" & Right(cc_exp_year,2) '"01/02"
+			debit_amount = CStr(FormatNumber(od_total, 2))
+			call Numberize(debit_amount)
+			
+			'check for ip address...
+			if IsIPAddressBlocked(order_ip_addr) then
+				str_msghldr = "Your IP Address(" & order_ip_addr & ") has been blocked. Please call our support for help."
+				str_cc_error = "3"
+				ChargeCreditCardEx = false
+				Exit Function
+			else
+
+				if ChargeCreditCard_authorizenet_AIM(str_msghldr,_
+								Session("AUTHORIZENET_LOGIN_ID"), debit_amount,_
+								Session("AUTHORIZENET_LOGIN_PWD"), Session("AUTHORIZENET_TRANS_TYPE"),_
+								Session("AUTHORIZENET_TRAN_KEY"),_
+								cc_expdate, cc_number,_
+								cc_firstname, cc_lastname, cc_address, cc_city, cc_state, cc_zip, cc_country,_
+								cc_email, cc_phone,_
+								sh_firstname, sh_lastname, sh_address, sh_city, sh_state, sh_zip, sh_country,_
+								cvv2, order_ip_addr,_
+								od_shopper_id, str_orderid,_
+								str_validation_number, str_ref_number,_
+								str_cvv2_flag, str_avs_flag,_
+								str_status) then
+					str_cc_error = "0"
+
+					'UPDATE flags...
+					sql = "UPDATE " & Session("StoreID") & "_order SET CVV2_flag=" & str_cvv2_flag & ",AVS_flag=" & str_avs_flag & " WHERE order_id='" & str_orderid & "'"
+					dbconn.Execute sql
+
+				else
+          
+          if Len(order_ip_addr) > 0 then
+					  if ProcessIPFraud(order_ip_addr) then
+					  end if
+					end if
+					
+					str_cc_error = "3"
+					ChargeCreditCardEx = false
+					Exit Function
+					
+				end if
+
+			end if
+
+		
+		CASE "7" 'Surepay...
+			cc_expdate = cc_exp_month & "/" & Right(cc_exp_year,2) '"01/02"
+			debit_amount = CStr(FormatNumber(od_total, 2))
+			call Numberize(debit_amount)
+			
+			cc_name = cc_firstname & " " & cc_lastname
+			sh_name = sh_firstname & " " & sh_lastname
+			
+			if ChargeCreditCard_surepay(str_msghldr,_
+							str_orderid, od_sh_cost, od_taxamount, od_po_number,_
+							cc_expdate, cc_number,_
+							cc_name, cc_address, cc_city, cc_state, cc_zip, cc_country,_
+							sh_name, sh_address, sh_city, sh_state, sh_zip, sh_country,_
+							str_validation_number, str_ref_number,_
+							str_status) then
+				str_cc_error = "0"
+			else
+				str_cc_error = "3"
+				ChargeCreditCardEx = false
+				Exit Function		
+			end if
+		
+		CASE "8" 'Moneris
+			debit_amount = CStr(FormatNumber(od_total, 2))
+			call Numberize(debit_amount)
+			
+			'Testing Only...
+			'cc_exp_month = "10"
+			'cc_exp_year = "2002"
+			'debit_amount = "0.01"
+			'cc_number = "5454545454545454"
+			'Response.Write("<p>..Moneris Payment Gateway..</p>")
+			'/Testing Only
+			
+			if ChargeCreditCard_monerisEx(str_msghldr,_
+							debit_amount, str_orderid,_
+							cc_exp_month, cc_exp_year, cc_number,_
+							cc_firstname, cc_lastname, cc_address, cc_city, cc_state, cc_zip, cc_country,_
+							sh_firstname, sh_lastname, sh_address, sh_city, sh_state, sh_zip, sh_country,_
+							str_validation_number, str_ref_number,_
+							cc_email,_
+							str_status) then
+				str_cc_error = "0"			
+			else
+				str_cc_error = "3"
+				ChargeCreditCardEx = false
+				Exit Function		
+			end if
+			
+		CASE "9" 'Paypal Payment Pro
+		
+			debit_amount = CStr(FormatNumber(od_total, 2))
+			call Numberize(debit_amount)
+			
+			if ChargeCreditCard_PaypalPaymentPro(str_msghldr,_
+			    debit_amount, str_orderid,_
+			    cc_exp_month, cc_exp_year, cc_number,_
+			    cc_firstname, cc_lastname, cc_address, cc_city, cc_state, cc_zip, cc_country,_
+			    sh_name, sh_address, sh_city, sh_state, sh_zip, sh_country,_
+			    cvv2, order_ip_addr,_
+			    str_validation_number, str_ref_number,_
+			    str_cvv2_flag, str_avs_flag,_
+			    str_status) then
+			
+				str_cc_error = "0"
+				
+				'UPDATE flags...
+				sql = "UPDATE " & Session("StoreID") & "_order SET CVV2_flag=" & str_cvv2_flag & ",AVS_flag=" & str_avs_flag & " WHERE order_id='" & str_orderid & "'"
+				dbconn.Execute sql
+			
+			else
+			
+				str_cc_error = "3"
+				ChargeCreditCardEx = false
+				Exit Function	
+					
+			end if
+			
+		CASE "91" 'Paypal Payment Pro - Version2 :APISignature Version
+		
+		  debit_amount = CStr(FormatNumber(od_total, 2))
+			call Numberize(debit_amount)
+			
+			if ChargeCreditCard_PaypalPaymentPro_V2(str_msghldr,_
+			    m1_szAPIUsername, m1_szAPIPassword, m1_szAPISignature,_
+			    debit_amount, str_orderid,_
+			    cc_exp_month, cc_exp_year, cc_number,_
+			    cc_firstname, cc_lastname, cc_address, cc_city, cc_state, cc_zip, cc_country,_
+			    sh_name, sh_address, sh_city, sh_state, sh_zip, sh_country,_
+			    cvv2, order_ip_addr,_
+			    str_validation_number, str_ref_number,_
+			    str_cvv2_flag, str_avs_flag,_
+			    str_status) then
+			
+				str_cc_error = "0"
+				
+				'UPDATE flags...
+				sql = "UPDATE " & Session("StoreID") & "_order SET CVV2_flag=" & str_cvv2_flag & ",AVS_flag=" & str_avs_flag & " WHERE order_id='" & str_orderid & "'"
+				dbconn.Execute sql
+			
+			else
+			
+				str_cc_error = "3"
+				ChargeCreditCardEx = false
+				Exit Function	
+					
+			end if
+
+		CASE "10" ' QBMS (QuickBook Merchant Service)
+		
+			debit_amount = CStr(FormatNumber(od_total, 2))
+			call Numberize(debit_amount)
+			
+			if ChargeCreditCard_QBMS(str_msghldr, str_orderid, debit_amount,_
+			    cc_exp_month, cc_exp_year, cc_number, cvv2,_
+			    cc_name, cc_address, cc_city, cc_state, cc_zip, cc_country,_
+			    str_validation_number, str_ref_number,_
+			    str_status) then
+			
+				str_cc_error = "0"	
+			
+			else
+			
+				str_cc_error = "3"
+				ChargeCreditCardEx = false
+				Exit Function	
+					
+			end if
+
+		CASE "11" ' Exact (ChasePaymentech.ca)
+		
+			debit_amount = CStr(FormatNumber(od_total, 2))
+			call Numberize(debit_amount)
+			
+			if ChargeCreditCard_Exact(str_msghldr, str_orderid, debit_amount,_
+			    cc_exp_month, cc_exp_year, cc_number, cvv2,_
+			    cc_name, cc_address, cc_city, cc_state, cc_zip, cc_country,_
+			    str_validation_number, str_ref_number,_
+			    str_status) then
+			
+				str_cc_error = "0"
+			
+			else
+			
+				str_cc_error = "3"
+				ChargeCreditCardEx = false
+				Exit Function	
+					
+			end if
+
+		CASE "17" ' Paymentech (Orbital Gateway)
+		
+			debit_amount = CStr(FormatNumber(od_total, 2))
+			call Numberize(debit_amount)
+			
+			if ChargeCreditCard_Paymentech(str_msghldr, str_orderid, debit_amount, _
+			    cc_exp_month, cc_exp_year, cc_number, cvv2, _
+			    cc_name, cc_address, cc_city, cc_state, cc_zip, cc_country, _
+			    str_validation_number, str_ref_number, str_cvv2_flag, str_avs_flag, _
+			    str_status) then
+			
+				str_cc_error = "0"	
+			
+				'UPDATE flags...
+  			sql = "UPDATE " & Session("StoreID") & "_order SET CVV2_flag=" & str_cvv2_flag & ",AVS_flag=" & str_avs_flag & " WHERE order_id='" & str_orderid & "'"
+				dbconn.Execute sql
+			else
+			
+				str_cc_error = "3"
+				ChargeCreditCardEx = false
+				Exit Function	
+					
+			end if
+
+		CASE ELSE
+			'No Payment gateway specified
+			str_cc_error = "0"
+			ChargeCreditCardEx = false
+			Exit Function
+
+		END SELECT
+	
+	end if
+	
+	dbconn.Close
+	
+	ChargeCreditCardEx = true
+			
+End Function
+
+Function ChargeCreditCard(ByRef str_configfile, ByRef str_msghldr,_
+							ByRef str_orderid,_
+							ByRef str_ccnumber,ByRef str_cc_expdate,ByRef str_debit_amount,_
+							ByRef str_cc_name,ByRef str_cc_address,ByRef str_cc_city,ByRef str_cc_state,_
+							ByRef str_cc_zip,ByRef str_cc_country,_
+							ByRef str_validation_number,ByRef str_ref_number,_
+							ByRef str_status)
+
+	'returns true/false
+	'attempt to debit credit cards through cybercash's 'CashRegister' (www.cybercash.com)
+	
+	'declarations
+    Dim sCode, nLogStatus, sPOP, snotifyLog
+
+	'initialize vars to fill later on
+	str_validation_number=""
+	str_ref_number=""
+	str_status=""
+
+	'ensure valid parameters
+	if((str_configfile="")Or(str_ccnumber="")Or(str_cc_expdate="")Or(str_debit_amount="")Or(str_orderid="")) then
+		AddToHTMLMsgHldr str_msghldr,"Unable to charge to credit card due to invalid parameters specified in ChargeCreditCard().",true
+		ChargeCreditCard=false
+		exit function
+	end if
+	
+	Set mbConfig   = Server.CreateObject("CyberCashMCK.MessageBlock")
+	Set MO         = Server.CreateObject("CyberCashMCK.MessageBlock")
+	Set CPI        = Server.CreateObject("CyberCashMCK.MessageBlock")
+	Set mbRequest  = Server.CreateObject("CyberCashMCK.MessageBlock")
+	Set mbResponse = Server.CreateObject("CyberCashMCK.MessageBlock")
+	Set POP        = Server.CreateObject("CyberCashMCK.MessageBlock")
+
+	'mbConfig.ReadFile "c:\\flashecom\\flashpc-88\\mck-cgi\\conf\\merchant_conf", &H0001
+	mbConfig.ReadFile str_configfile, &H0001
+	
+	if (mbConfig.Lookup("CCPS_HOST") <> "") then
+      mbConfig.Remove("CCPS_HOST")
+	end if
+
+	' This is the CyberCash CGI that will process your payment--
+	' this should NOT be altered.
+   
+	mbConfig.Add "CCPS_HOST", "http://cr.cybercash.com/cgi-bin/directcardpayment.cgi"
+   
+	MO.Add "mo.order-id", str_orderid
+   
+	orderIDStr = MO.Lookup("mo.order-id")
+
+	MO.Add "mo.cybercash-id", mbConfig.Lookup("CYBERCASH_ID")
+	MO.Add "mo.version",  sMCKversion 'sMCKversion = "3.3.1"
+
+	' the fields below are collected in the HTML form with the same
+	' field names as that passed to CyberCash using the MessageBlock API.
+   
+	' these are the recommended and mandatory fields for using the
+	' CashRegister. However this may change in the future.
+   
+	MO.Add "mo.price", str_debit_amount
+
+	CPI.Add "cpi.card-number",   str_ccnumber
+	CPI.Add "cpi.card-exp",      str_cc_expdate	'FORMAT: "mm/yy"
+	CPI.Add "cpi.card-name",     str_cc_name
+	CPI.Add "cpi.card-address",  str_cc_address
+	CPI.Add "cpi.card-city",     str_cc_city
+	CPI.Add "cpi.card-state",    str_cc_state
+	CPI.Add "cpi.card-zip",      str_cc_zip
+	CPI.Add "cpi.card-country",  str_cc_country
+	'CPI.Add "cpi.card-type",     str_cc_type 'new field...
+	
+	mbRequest.Add "CPI", CPI.Write
+	mbRequest.Add "MO",  MO.Write
+
+	' send request to the CyberCash CashRegister server via the 
+	' sendMessageBlock Socket Object
+
+	Set SockObj    = Server.CreateObject("CyberCashMCK.socket.1")
+	Set mbResponse = SockObj.SendMessageBlock(mbConfig, mbRequest)
+
+	' At this point we should have received a response from the
+	' CyberCash server. However it is possible during early integration to
+	' receive errors from the MCK if the latter is not configured correctly.
+
+	POP.Read mbResponse.Lookup("POP")
+
+	' Log the result here ...
+
+	snotifyLog = mbConfig.Lookup("NOTIFICATION_LOG")
+	sPOP = mbResponse.Lookup("POP")
+	Call LogNotification2(snotifyLog, sPOP, nLogStatus, sCode) 'Need to be customized..
+	
+	str_status = POP.Lookup("pop.status")
+
+	if (POP.Lookup("pop.status") = "success") or (POP.Lookup("pop.status") = "success-duplicate") then
+		AddToHTMLMsgHldr str_msghldr, "Thank you for your purchase.", true
+
+		str_validation_number=POP.Lookup("pop.auth-code")
+		str_ref_number=POP.Lookup("pop.ref-code")
+
+		ChargeCreditCard=true
+	else
+		if (POP.Lookup("pop.status") = "failure-bad-money") then
+			AddToHTMLMsgHldr str_msghldr, "We're sorry but your order cannot be processed.", false
+			ChargeCreditCard=false
+		else
+			AddToHTMLMsgHldr str_msghldr, "We're sorry but we were unable to complete your order at this time.", false
+			ChargeCreditCard=false
+		end if
+	end if
+	'---------------------------------------------------------------------------------'
+	  
+end function
+
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+' This is for Verisign Payflow Pro SDK.
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
+FUNCTION retrieveValue (nameStr, resultStr)
+  startpos = 1
+  doloop = 1
+  Do
+    cpos     = InStr(startpos, resultStr, "&")
+    if cpos < 1 then 
+        doloop = 0
+        cpos = Len(resultStr)+1
+    end if
+    thisPair = (Mid(resultStr, startpos, cpos - startpos ) )
+
+	eqPos = InStr(thisPair, "=")
+    name  = Left(thisPair, eqPos-1)
+	value = Right(thisPair, Len(thisPair) - eqPos )
+
+	if 	name = nameStr then 
+	  retrieveValue = value	  
+	end if
+	startpos = cpos + 1
+  Loop while doloop = 1
+END FUNCTION
+
+'Create the Unique ID
+Function generateRequestID(tmpLength)
+
+	Randomize Timer
+  	Dim tmpCounter, tmpGUID
+  	Const strValid = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+  	For tmpCounter = 1 To tmpLength
+    	tmpGUID = tmpGUID & Mid(strValid, Int(Rnd(1) * Len(strValid)) + 1, 1)
+  	Next
+  	generateRequestID = tmpGUID
+
+End Function
+
+Function ChargeCreditCard_Payflow(ByRef str_msghldr,_
+							ByRef str_host_address,_
+							ByRef str_orderid,_
+							ByRef str_ccnumber, ByRef str_cc_expdate, ByRef str_debit_amount,_
+							ByRef str_cc_name, ByRef str_cc_addr, ByRef str_cc_city, ByRef str_cc_state, ByRef str_cc_zip,_
+							ByRef str_merchant_id, ByRef str_merchant_pw,_
+							ByRef str_cvv2,_
+							ByRef str_validation_number, ByRef str_ref_number,_
+							ByRef str_cvv2_flag, ByRef str_avs_flag,_
+							ByRef str_status, ByRef str_cc_email, ByRef str_cc_last, ByRef str_cc_first)
+	
+	'ensure valid parameters
+	if((str_host_address="")Or(str_ccnumber="")Or(str_cc_expdate="")Or(str_debit_amount="")Or(str_orderid="")Or(str_cc_zip="")_
+	   Or(str_merchant_id="")Or(str_merchant_pw="")) then
+		AddToHTMLMsgHldr str_msghldr,"Unable to charge to credit card due to invalid parameters specified in ChargeCreditCard_Payflow().",true
+		ChargeCreditCard_Payflow=false
+		exit function
+	end if
+	
+	'Create the Signio COM Client
+	'Set client = Server.CreateObject("PFProCOMControl.PFProCOMControl.1")
+
+	'set the host adress
+	'client.HostAddress = str_host_address
+
+	'set the host port
+	'client.HostPort = 443
+
+	'set the timeout value
+	'client.TimeOut = 30
+	
+	dim xmlHttp
+	set xmlHttp = Server.CreateObject("Msxml2.ServerXMLHTTP")
+
+	'build the parameter list, such that we have a sale transaction and
+	'a credit card tender.
+	if Session("PAYFLOW_TRANS_TYPE") = "S" then
+	  PAYFLOW_TRANS_TYPE = "S"
+	else
+	  PAYFLOW_TRANS_TYPE = "A"
+	end if
+	
+	parmList = "TRXTYPE=" & PAYFLOW_TRANS_TYPE & "&TENDER=C&PARTNER=" & Session("PAYFLOW_PARTNER") & "&ZIP=" & str_cc_zip & "&COMMENT1=" & str_orderid
+
+	'set the account form the html form
+	parmList = parmList + "&ACCT=" + str_ccnumber
+
+	'set the password from the html form
+	parmList = parmList + "&PWD=" + str_merchant_pw
+
+	'set the userid from the HTML form
+	parmList = parmList + "&USER=" + str_merchant_id
+	
+	'set the vendor from the HTML form
+	parmList = parmList + "&VENDOR=" + str_merchant_id
+
+	'set the expiration date form the HTML form
+	parmList = parmList + "&EXPDATE=" + str_cc_expdate
+
+	'set the amount from the HTML form
+	parmList = parmList + "&AMT=" + str_debit_amount
+	
+	'set the CVV2 from the HTML form
+	parmList = parmList + "&CVV2=" + str_cvv2
+	
+	'set the street address from the HTML form
+	parmList = parmList + "&STREET=" + str_cc_addr
+	
+	if Session("ENABLEINT") = "2" OR Session("ENABLEINT") = "3" then
+	  parmList = parmList + "&CURRENCY=CAD"
+	else
+	  parmList = parmList + "&CURRENCY=USD"
+	end If
+	
+	'set the street address from the HTML form
+	parmList = parmList + "&BILLTOSTREET=" + str_cc_addr
+	parmList = parmList + "&BILLTOZIP=" + str_cc_zip
+	parmList = parmList + "&BILLTOCITY=" + str_cc_city
+	parmList = parmList + "&BILLTOSTATE=" + str_cc_state
+	parmList = parmList + "&BILLTOEMAIL=" + str_cc_email
+	parmList = parmList + "&BILLTOLASTNAME=" + str_cc_last
+	parmList = parmList + "&BILLTOFIRSTNAME=" + str_cc_first
+
+	'set the parameter list property
+	'client.ParmList = parmList
+
+	'process the transaction
+	'client.ProcessTransaction()
+	
+	xmlHttp.open "POST", "https://payflowpro.paypal.com", false
+	xmlHttp.setRequestHeader "Content-Type", "text/namevalue"  ' for XML, use text/xml
+  xmlHttp.SetRequestHeader "X-VPS-Timeout", "30"
+  xmlHttp.SetRequestHeader "X-VPS-Request-ID", generateRequestID(32)
+	
+	xmlHttp.send(parmList)
+	
+	curString = xmlHttp.ResponseText
+	
+	Set xmlHttp = Nothing
+	
+	
+	'loop until we're done processing the entire string
+  Do while Len(curString) <> 0
+    'get the next name value pair
+    if InStr(curString,"&") Then
+    varString = Left(curString, InStr(curString , "&" ) -1)
+    else
+    varString = curString
+    end if
+      
+    'get the name part of the name/value pair
+    name = Left(varString, InStr(varString, "=" ) -1)
+
+    'get the value out of the name/value pair
+    value = Right(varString, Len(varString) - (Len(name)+1))
+   
+    if name = "RESULT" Then
+      x_RESULT = value
+    end if
+    
+    if name = "RESPMSG" Then
+      x_RESPMSG = value
+    end if
+    
+    if name = "AUTHCODE" Then
+      str_validation_number = value
+    end if
+    
+    if name = "PNREF" Then
+      str_ref_number = value
+    end if
+    
+    if name = "AVSADDR" Then
+      str_avs_flag = value
+    end if
+    
+    if name = "CVV2MATCH" Then
+      str_cvv2match = value
+    end if
+      
+    'skip over the &
+    if Len(curString) <> Len(varString) Then 
+      curString = Right(curString, Len(curString) - (Len(varString)+1))
+    else
+      curString = ""
+    end if
+    
+  Loop
+	
+
+	'x_RESULT = Trim(retrieveValue ("RESULT", client.Response))
+	'x_RESPMSG = Trim(retrieveValue ("RESPMSG", client.Response))
+	
+	str_result = x_RESULT
+	
+	if str_result = "0" then
+		'str_validation_number=Trim(retrieveValue ( "AUTHCODE", client.Response))
+		'str_ref_number=Trim(retrieveValue ( "PNREF", client.Response))
+		'Added by BK .. 9/12/2002
+		'str_cvv2match = Trim(retrieveValue ("CVV2MATCH", client.Response))
+		'str_avsaddr = Trim(retrieveValue ("AVSADDR", client.Response))
+		
+		SELECT CASE str_cvv2match
+		CASE "Y"
+			str_cvv2_flag = "1"
+		CASE "N"
+			str_cvv2_flag = "2"
+		CASE "X"
+			str_cvv2_flag = "0"
+		CASE ELSE
+			str_cvv2_flag = "0"
+		END SELECT
+		
+		SELECT CASE str_avsaddr
+		CASE "Y"
+			str_avs_flag = "1"
+		CASE "N"
+			str_avs_flag = "2"
+		CASE "X"
+			str_avs_flag = "0"
+		CASE ELSE
+			str_avs_flag = "0"
+		END SELECT
+
+		ChargeCreditCard_Payflow = true	
+	else
+		'Declined or Error
+		'AddToHTMLMsgHldr str_msghldr, "We're sorry but your order cannot be processed.", false
+		str_msghldr = x_RESPMSG & "(" & x_RESULT & ")"
+		ChargeCreditCard_Payflow = false
+	end if
+
+End Function
+
+'------------------------------------------------------------------------------
+'Card Service.. linkpt.com
+'------------------------------------------------------------------------------
+
+' Created from ccapi_error.h from API 3.8.3.17
+Const Fail = 0
+Const Succeed = 1
+
+' Created from ccapi_client.h from API 3.8.3.17
+
+'Request types possible for OrderField_Chargetype
+Const Chargetype_Auth = 0
+Const Chargetype_Sale = 0
+Const Chargetype_Preauth = 1
+Const Chargetype_Postauth = 2
+Const Chargetype_Credit = 3
+Const Chargetype_Voidsale = 9
+Const Chargetype_Error = 0
+
+'Result types possible for OrderField_Result
+Const Result_Live = 0 
+Const Result_Good = 1
+Const Result_Duplicate = 2
+Const Result_Decline = 3
+
+'ESD types for ItemField_Esdtype
+Const Esdtype_None = 0
+Const Esdtype_Softgood = 1
+Const Esdtype_Key = 2
+
+Const CVM_Not_Provided = "0"
+Const CVM_Provided     = "1"
+Const CVM_Illegible    = "2"
+Const CVM_No_Imprint   = "9"
+Const CVM_Not_Present  = " "
+
+Const ECI_TRANSACTION    = "0"
+Const MOTO_TRANSACTION   = "1"
+Const RETAIL_TRANSACTION = "2"
+
+Const TTYPE_UNSPECIFIED     = "0"
+Const TTYPE_STANDALONE      = "1"
+Const TTYPE_POS             = "2"
+Const TTYPE_UNATTENDED      = "3"
+
+' OrderField_t
+Const OrderField_Oid = 0   
+Const OrderField_Userid = 1
+Const OrderField_Bcompany = 2
+Const OrderField_Bcountry = 3
+Const OrderField_Bname = 4   
+Const OrderField_Baddr1 = 5  
+Const OrderField_Baddr2 = 6
+Const OrderField_Bcity = 7
+Const OrderField_Bstate = 8
+Const OrderField_Bzip = 9
+Const OrderField_Sname = 10
+Const OrderField_Saddr1 = 11
+Const OrderField_Saddr2 = 12
+Const OrderField_Scity = 13
+Const OrderField_Sstate = 14
+Const OrderField_Szip = 15
+Const OrderField_Scountry = 16
+Const OrderField_Phone = 17
+Const OrderField_Fax = 18
+Const OrderField_Refer = 19
+Const OrderField_Shiptype = 20
+Const OrderField_Shipping = 21
+Const OrderField_Tax = 22
+Const OrderField_Subtotal = 23 
+Const OrderField_Vattax = 24
+Const OrderField_Comments = 25
+Const OrderField_PONumber = 26
+Const OrderField_TaxExempt = 27
+Const OrderField_MaxItems = 28
+Const OrderField_Email = 29
+Const OrderField_Cardnumber = 30 
+Const OrderField_Expmonth = 31
+Const OrderField_Expyear = 32
+Const OrderField_Chargetype = 33
+Const OrderField_Chargetotal = 34
+Const OrderField_Referencenumber = 35 
+Const OrderField_Result = 36
+Const OrderField_Addrnum = 37
+Const OrderField_Ip = 38
+Const OrderField_MercType = 39
+Const OrderField_SwitchStartDate = 40
+Const OrderField_SwitchIssueNumber = 41
+Const OrderField_CVMIndicator = 42
+Const OrderField_CVMValue = 43
+Const OrderField_MotoTransaction = 44
+Const OrderField_RecurringTransaction = 45
+Const OrderField_TDate = 46
+Const OrderField_Track = 47
+Const OrderField_TerminalType = 48
+
+' Responses 
+Const OrderField_R_Time = 49
+Const OrderField_R_Ref = 50
+Const OrderField_R_Approved = 51
+Const OrderField_R_Code = 52
+Const OrderField_R_Ordernum = 53
+Const OrderField_R_Error = 54
+Const OrderField_R_FraudCode = 55
+Const OrderField_R_AuthResponse = 56
+Const OrderField_R_Message = 57
+Const OrderField_R_TDate = 58
+
+
+' ReqField_t
+Const ReqField_Configfile = 0
+Const ReqField_Keyfile = 1
+Const ReqField_Appname = 2
+Const ReqField_Host = 3
+Const ReqField_Port = 4
+
+' ItemField_t
+Const ItemField_Itemid = 0   
+Const ItemField_Description = 1
+Const ItemField_Price = 2
+Const ItemField_Quantity = 3
+Const ItemField_Softfile = 4
+Const ItemField_Esdtype = 5
+Const ItemField_Serial = 6
+Const ItemField_MaxOptions = 7
+
+' ShippingField_t
+Const ShippingField_Country = 0
+Const ShippingField_State = 1
+Const ShippingField_Total = 2
+Const ShippingField_Items = 3
+Const ShippingField_Weight = 4
+Const ShippingField_Carrier = 5
+' Responses 
+Const ShippingField_R_Total = 6
+
+' TaxField_t
+Const TaxField_State = 0
+Const TaxField_Zip = 1
+Const TaxField_Total = 2
+' Responses 
+Const TaxField_R_Total = 3
+
+' OptionField_t
+Const OptionField_Option = 0
+Const OptionField_Choice = 1
+
+' PbOrder_t
+Const PbOrder_Submit = 0
+Const PbOrder_Modify = 1
+Const PbOrder_Cancel = 2
+Const PbOrder_Process = 3
+
+' PeriodicField_t
+Const PeriodicField_Startdate = 0
+Const PeriodicField_Periodicity = 1
+Const PeriodicField_Installments = 2
+Const PeriodicField_Threshold = 3
+Const PeriodicField_Comments = 4
+
+' CheckOrder_t
+Const CheckOrder_Submit = 0
+Const CheckOrder_Void = 1
+
+' CheckField_t;  
+Const CheckField_AccountType = 0
+Const CheckField_TransitRouting = 1
+Const CheckField_MICR = 2
+Const CheckField_CheckNumber = 3
+Const CheckField_Comments = 4
+
+' Opaque contexts
+Dim OrderCtx
+Dim ItemCtx
+Dim OptionCtx
+Dim ReqCtx
+Dim ShippingCtx
+Dim TaxCtx
+Dim ApiDriver
+
+Function ChargeCreditCard_linkpt(ByRef str_msghldr,_
+							ByRef str_config_file, ByRef str_key_file, ByRef str_host_url, ByRef str_host_port,_
+							ByRef str_orderid, ByRef str_uid,_
+							ByRef str_ccnumber, ByRef str_cc_exp_month, ByRef str_cc_exp_year, ByRef str_debit_amount,_
+							ByRef str_bname, ByRef str_baddr, ByRef str_bcity, ByRef str_bstate, ByRef str_bzip,_
+							ByRef str_sname, ByRef str_saddr, ByRef str_scity, ByRef str_sstate, ByRef str_szip,_
+							ByRef str_cvv2, ByRef str_order_ip,_
+							ByRef str_validation_number, ByRef str_ref_number,_
+							ByRef str_status)
+
+	dim addr_nbr
+  'Create Object..
+  Set ApiDriver = Server.CreateObject("LpiCom_5_4.LinkPointCom")
+  if (Err.Number <> 0) Then
+	Response.Write("Error creating object: " & Err.Description & "<BR>")
+  End if
+  
+  addr_nbr = GetAddrNumber(str_baddr)
+  'Allocation..
+  OrderCtx =	ApiDriver.csi_order_alloc()
+  ReqCtx =		ApiDriver.csi_req_alloc()
+  
+  Flag = ApiDriver.csi_order_setrequest(OrderCtx, ReqCtx)
+  
+  Flag = ApiDriver.csi_req_set(ReqCtx, ReqField_Configfile, CStr(str_config_file))
+  Flag = ApiDriver.csi_req_set(ReqCtx, ReqField_Keyfile, "C:\\customers\\linkpt\\" & str_key_file)
+  Flag = ApiDriver.csi_req_set(ReqCtx, ReqField_Host, CStr(str_host_url))
+  Flag = ApiDriver.csi_req_set(ReqCtx, ReqField_Port, CInt(str_host_port))
+  
+  Flag = ApiDriver.csi_order_set(OrderCtx, OrderField_Userid, CStr(str_uid))
+  Flag = ApiDriver.csi_order_set(OrderCtx, OrderField_Bname, CStr(str_bname))
+  Flag = ApiDriver.csi_order_set(OrderCtx, OrderField_Baddr1, CStr(str_baddr))
+  Flag = ApiDriver.csi_order_set(OrderCtx, OrderField_Bcity, CStr(str_bcity))
+  Flag = ApiDriver.csi_order_set(OrderCtx, OrderField_Bstate, CStr(str_bstate))
+  Flag = ApiDriver.csi_order_set(OrderCtx, OrderField_Bzip, CStr(str_bzip))
+  Flag = ApiDriver.csi_order_set(OrderCtx, OrderField_Bcountry, "US")
+  Flag = ApiDriver.csi_order_set(OrderCtx, OrderField_Sname, CStr(str_sname))
+  Flag = ApiDriver.csi_order_set(OrderCtx, OrderField_Saddr1, CStr(str_saddr))
+	Flag = ApiDriver.csi_order_set(OrderCtx, OrderField_Scity, CStr(str_scity))
+	Flag = ApiDriver.csi_order_set(OrderCtx, OrderField_Sstate, CStr(str_sstate))
+	Flag = ApiDriver.csi_order_set(OrderCtx, OrderField_Szip, CStr(str_szip))
+	Flag = ApiDriver.csi_order_set(OrderCtx, OrderField_Scountry, "US")
+  Flag = ApiDriver.csi_order_set(OrderCtx, OrderField_ChargeType, Chargetype_Preauth)
+  Flag = ApiDriver.csi_order_set(OrderCtx, OrderField_Result, Result_Live)
+  Flag = ApiDriver.csi_order_set(OrderCtx, OrderField_Addrnum, CStr(addr_nbr))
+  '...
+  if Len(str_cvv2) > 0 then
+		Flag = ApiDriver.csi_order_set(OrderCtx, OrderField_CVMIndicator, CVM_Provided)
+		Flag = ApiDriver.csi_order_set(OrderCtx, OrderField_CVMValue, CStr(str_cvv2))
+	end if
+  Flag = ApiDriver.csi_order_set(OrderCtx, OrderField_Ip, CStr(str_order_ip))
+  
+  Flag = ApiDriver.csi_order_set(OrderCtx, OrderField_Cardnumber, CStr(str_ccnumber))
+  Flag = ApiDriver.csi_order_set(OrderCtx, OrderField_Expmonth, CStr(str_cc_exp_month))
+  Flag = ApiDriver.csi_order_set(OrderCtx, OrderField_Expyear, CStr(str_cc_exp_year))
+  
+  Flag = ApiDriver.csi_order_set(OrderCtx, OrderField_Oid, CStr(str_orderid))
+  
+  Flag = ApiDriver.csi_order_set(OrderCtx, OrderField_Chargetotal, CDbl(str_debit_amount))
+    
+  'Process order..
+  Flag = ApiDriver.csi_order_process(OrderCtx)
+  
+  if ApiDriver.bStat <> Succeed Then
+    
+    str_msghldr = "csi_order_process(E): " + ApiDriver.csi_util_errorstr(ApiDriver.csi_order_error(OrderCtx))
+    'str_msghldr = "We're sorry but your order cannot be processed. - E"
+		'str_msghldr = "E"
+    ChargeCreditCard_linkpt = false
+    Exit Function
+		
+  Else
+    r_time = ApiDriver.csi_order_get(OrderCtx, OrderField_R_Time)
+    r_ref =  ApiDriver.csi_order_get(OrderCtx, OrderField_R_Ref)
+    r_approved = CStr(ApiDriver.csi_order_get(OrderCtx, OrderField_R_Approved))
+    r_code = ApiDriver.csi_order_get(OrderCtx, OrderField_R_Code)
+    r_error = ApiDriver.csi_order_get(OrderCtx, OrderField_R_Error)
+    
+    str_validation_number = CStr(r_code)
+    str_ref_number = CStr(r_ref)
+    
+  end if
+  
+  Flag = ApiDriver.csi_order_drop(OrderCtx)
+  Flag = ApiDriver.csi_req_drop(ReqCtx)
+  
+  if r_approved = "APPROVED" then	
+    ChargeCreditCard_linkpt = true
+  else
+		ChargeCreditCard_linkpt = false
+		'AddToHTMLMsgHldr str_msghldr, "We're sorry but your order cannot be processed.", false
+		if r_approved = "DECLINED" then
+		  'AddToHTMLMsgHldr str_msghldr, "Your order cannot be processed. Please verify your credit card information. - code: D", false
+			str_msghldr = "DECLINED"
+			'str_msghldr = "csi_order_process(D): " + ApiDriver.csi_util_errorstr(ApiDriver.csi_order_error(OrderCtx))
+		else
+		  'AddToHTMLMsgHldr str_msghldr, "Your order cannot be processed. Please verify your credit card information. - code: F", false
+			'str_msghldr = "F"
+			str_msghldr = "csi_order_process(F): " + ApiDriver.csi_util_errorstr(ApiDriver.csi_order_error(OrderCtx))
+		end if
+  end if
+  
+  'Reset the Object..
+  Set ApiDriver = nothing
+  
+  if Session("DEBUGMODE") = "1" then
+		Set fs = CreateObject("Scripting.FileSystemObject")
+		Set a = fs.OpenTextFile("c:\\PCStores\\" & Session("StoreID") & ".log", 8, True)
+		a.WriteLine("-----------ChargeCreditCard_linkpt----------------")
+		a.WriteLine(Now() & ";ORDER ID:" & str_orderid)
+		a.WriteLine("IP:" & str_order_ip & ";CVM: " & str_cvv2)
+		a.WriteLine(r_approved & ";" & CStr(r_code) & ";" & CStr(r_ref) & ";")
+		a.WriteLine("-----------*ChargeCreditCard_linkpt*---------------")
+		a.Close
+		Set fs = Nothing
+	end if
+  						
+End Function
+
+'------------------------------------------------------------------------------
+'Authorize.net
+'------------------------------------------------------------------------------
+function ChargeCreditCard_authorizenet(ByRef str_msghldr,_
+							ByRef str_login_id, ByRef str_debit_amount,_
+							ByRef str_login_pwd, ByRef str_trans_type,_
+							ByRef str_exp_date, ByRef str_card_num,_
+							ByRef str_bfirstname, ByRef str_blastname, ByRef str_baddr, ByRef str_bcity, ByRef str_bstate, ByRef str_bzip, ByRef str_bcountry,_
+							ByRef str_sh_firstname, ByRef str_sh_lastname, ByRef str_sh_addr, ByRef str_sh_city, ByRef str_sh_state, ByRef str_sh_zip, ByRef str_sh_country,_
+							ByRef str_validation_number, ByRef str_ref_number,_
+							ByRef str_status)
+	
+	PostData = "x_Login=" & str_login_id
+
+	if Len(str_login_pwd) > 1 then
+		'PostData = PostData &
+	end if
+
+	if Len(str_trans_type) > 1 then
+		PostData = PostData & "&x_Type=" & str_trans_type
+	end if
+	
+	PostData = PostData & "&x_Card_Num=" & str_card_num
+	PostData = PostData & "&x_Exp_Date=" & str_exp_date & "&x_Amount=" & str_debit_amount
+	PostData = PostData & "&x_FirstName=" & Server.URLEncode(str_bfirstname) & "&x_Last_Name=" & Server.URLEncode(str_blastname)
+	PostData = PostData & "&x_Address=" & Server.URLEncode(str_baddr) & "&x_City=" & Server.URLEncode(str_bcity) & "&x_State=" & Server.URLEncode(str_bstate) & "&x_Zip=" & Server.URLEncode(str_bzip) & "&x_Country=" & str_bcountry
+	PostData = PostData & "&x_Ship_To_FirstName=" & Server.URLEncode(str_sh_firstname) & "&x_Ship_To_Last_Name=" & Server.URLEncode(str_sh_lastname)
+	PostData = PostData & "&x_Ship_To_Address=" & Server.URLEncode(str_sh_addr) & "&x_Ship_To_City=" & Server.URLEncode(str_sh_city) & "&x_Ship_To_State=" & Server.URLEncode(str_sh_state) & "&x_Ship_To_Zip=" & Server.URLEncode(str_sh_zip) & "&x_Ship_To_Country=" & str_sh_country
+					
+	dim objHTTP
+	set objHTTP = Server.CreateObject("Coalesys.CSHttpClient.1")
+			
+	'Set the webpage URL 
+	objHTTP.RequestURL = "http://64.167.83.8/authnet/process.phtml?" & PostData
+
+	'Execute the Request using GET 
+	objHTTP.Execute("GET")
+
+	'set the HTTPResponseStatus 
+	HTTPResponseStatus = objHTTP.ResponseStatus
+
+	'set the HTTPResponseHeader 
+	HTTPResponseHeaders = objHTTP.ResponseHeaders
+
+	'set the HTTPResponseBody as string 
+	HTTPResponseBody = objHTTP.ResponseBody(0)
+		
+	if Len(HTTPResponseBody) > 0 then
+		if InStr(HTTPResponseBody, "*SUCCESS*") > 0 then
+			ChargeCreditCard_authorizenet = true
+			
+			'Get validation Number...
+			pos1 = InStr(HTTPResponseBody, "*VN*")
+			if pos1 > 0 then
+				pos2 = InStr(HTTPResponseBody, ":VN:")
+				if pos2 > 0 then
+					str_validation_number = Mid(HTTPResponseBody,pos1+4, pos2-pos1-4)
+				else
+					str_validation_number = "000000"
+				end if
+			else
+				str_validation_number = "000000"
+			end if
+			
+			'Get Ref number...
+			pos1 = InStr(HTTPResponseBody, "*RN*")
+			if pos1 > 0 then
+				pos2 = InStr(HTTPResponseBody, ":RN:")
+				if pos2 > 0 then
+					str_ref_number = Mid(HTTPResponseBody,pos1+4, pos2-pos1-4)
+				else
+					str_ref_number = "0"
+				end if
+			else
+				str_ref_number = "0"
+			end if
+			
+		else
+			ChargeCreditCard_authorizenet = false
+			
+			'Get status msg...
+			pos1 = InStr(HTTPResponseBody, "*FAIL*")
+			if pos1 > 0 then
+				pos2 = InStr(HTTPResponseBody, ":FAIL:")
+				if pos2 > 0 then
+					str_msghldr = Mid(HTTPResponseBody,pos1+6, pos2-pos1-6)
+				else
+					str_msghldr = ""
+				end if
+			else
+				str_msghldr = ""
+			end if
+			
+		end if
+	else
+		ChargeCreditCard_authorizenet = false
+	end if
+			
+end function
+
+'------------------------------------------------------------------------------
+'Surepay
+'------------------------------------------------------------------------------
+dim xmlDoc, root, mstrXML, child0, child, child1, newattr, atts
+dim anXMLhttpObject, newXMLhttpObject
+	
+function ChargeCreditCard_surepay(ByRef str_msghldr,_
+							ByRef str_orderid, ByRef str_shipping_cost, ByRef str_tax_amount, ByRef str_po_number,_
+							ByRef str_exp_date, ByRef str_card_num,_
+							ByRef str_bname, ByRef str_baddr, ByRef str_bcity, ByRef str_bstate, ByRef str_bzip, ByRef str_bcountry,_
+							ByRef str_sname, ByRef str_sh_addr, ByRef str_sh_city, ByRef str_sh_state, ByRef str_sh_zip, ByRef str_sh_country,_
+							ByRef str_validation_number, ByRef str_ref_number,_
+							ByRef str_status)
+	
+
+	' CREATE XML OBJECTS
+	Set xmlDoc     = Server.CreateObject("Msxml2.DomDocument")
+	Set newDoc     = Server.CreateObject("Msxml2.DomDocument")
+	Set xmlResult    = Server.CreateObject("Msxml2.DomDocument")
+	Set anXMLhttpObject  = Server.CreateObject("Msxml2.ServerXMLHTTP")
+	Set newXMLhttpObject = Server.CreateObject("Msxml2.ServerXMLHTTP")
+	
+	' TESTING URL
+	'TransactionURL = "https://xml.test.surepay.com"
+	' LIVE URL
+	TransactionURL = "https://xml.surepay.com"
+	
+	anXMLhttpObject.open "POST",TransactionURL,false
+  anXMLhttpObject.setRequestHeader "Content-type", "text/xml"
+  newXMLhttpObject.open "POST",TransactionURL,false
+  newXMLhttpObject.setRequestHeader "Content-type", "text/xml"
+	
+	' CREATE ROOT ELEMENT - REQUEST
+	set root = xmlDoc.createElement("pp.request")
+	add_attribute_root xmlDoc, "merchant", Session("SUREPAY_USERID") '"1001"
+	add_attribute_root xmlDoc, "password", Session("SUREPAY_PWD") '"password"
+	'add_attribute_root xmlDoc, "merchant", "1001"
+	'add_attribute_root xmlDoc, "password", "password"
+	
+	' CREATE ROOT CHILD ELEMENT - AUTH
+	add_child0 xmlDoc, "pp.auth", ""
+	add_attribute_child0 xmlDoc, "ordernumber", str_orderid
+	add_attribute_child0 xmlDoc, "shippingcost", FormatNumber(str_shipping_cost,2,,,0)&"USD"
+	add_attribute_child0 xmlDoc, "taxamount", FormatNumber(str_tax_amount,2,,,0)&"USD"
+	'add_attribute_child0 xmlDoc, "shippingcost", "0.00USD"
+	'add_attribute_child0 xmlDoc, "taxamount", "0.00USD"
+	root.appendChild(child0)
+	
+	' CREATE ROOT CHILD ELEMENT - CREDIT CARD
+	add_child xmlDoc, "pp.creditcard", ""
+	add_attribute xmlDoc, "number",str_card_num
+	add_attribute xmlDoc, "expiration", str_exp_date '"12/05"	
+	add_child1 xmlDoc, "pp.address", ""
+	add_attribute_child1 xmlDoc, "type","billing"
+	add_attribute_child1 xmlDoc, "fullname", str_bname
+	add_attribute_child1 xmlDoc, "address1", str_baddr
+	add_attribute_child1 xmlDoc, "city", str_bcity
+	add_attribute_child1 xmlDoc, "state", str_bstate
+	add_attribute_child1 xmlDoc, "zip", str_bzip
+	add_attribute_child1 xmlDoc, "country","usa"
+
+	child.appendChild(child1)
+	child0.appendChild(child)
+	
+	' CREATE ROOT CHILD ELEMENT - SHIPPING ADDRESS
+	add_child xmlDoc, "pp.address", ""
+	add_attribute xmlDoc, "type","shipping"
+	add_attribute xmlDoc, "fullname", str_sname
+	add_attribute xmlDoc, "address1", str_sh_addr
+	add_attribute xmlDoc, "city", str_sh_city
+	add_attribute xmlDoc, "state", str_sh_state
+	add_attribute xmlDoc, "zip", str_sh_zip
+	add_attribute xmlDoc, "country","usa"
+	
+	child0.appendChild(child)
+	
+	' CREATE ROOT CHILD ELEMENT - LINE ITEM
+	Set dbconn = Server.CreateObject("ADODB.Connection")
+	dbconn.open Session("ConnectionString")
+	
+	sql = "SELECT * FROM " & Session("StoreID") & "_order_item WHERE order_id='" & str_orderid & "' ORDER BY row_id"
+	Set rsOrderInfo = dbconn.Execute(sql)
+	
+	do while not rsOrderInfo.EOF
+		item_sku = rsOrderInfo("sku")
+		item_qty = rsOrderInfo("quantity")
+		item_unitprice = rsOrderInfo("adjusted_price")
+		item_description = rsOrderInfo("item_description")
+		
+		add_child xmlDoc, "pp.lineitem", ""
+		add_attribute xmlDoc, "sku", item_sku
+		add_attribute xmlDoc, "description", FilterString(item_description)
+		add_attribute xmlDoc, "quantity", CStr(item_qty)
+		add_attribute xmlDoc, "taxrate", "0"
+		add_attribute xmlDoc, "unitprice", FormatNumber(item_unitprice,2,,,0)&"USD"
+		'add_attribute xmlDoc, "unitprice", "11.00USD"
+
+		child0.appendChild(child)
+		
+		rsOrderInfo.MoveNext
+	loop
+	rsOrderInfo.Close
+	dbconn.close
+	
+	mstrXML = root.xml
+	
+	' CREATE XML ORDER STRING USING STRING FROM ABOVE
+	dim orderXMLstring,RequestXMLstring
+	orderXMLstring = "<!DOCTYPE pp.request PUBLIC ""-//IMALL//DTD PUREPAYMENTS 1.0//EN"" ""http://www.purepayments.com/dtd/purepayments.dtd"">"
+
+	orderXMLstring = orderXMLstring & mstrXML
+	RequestXMLstring= "xml=" & orderXMLstring
+	
+	str_msghldr = orderXMLstring
+	
+	'Response.write(orderXMLstring)
+	
+	' SEND REQUEST AND PUT RESPONSE IN TO A STRING AND A DOM
+	anXMLhttpObject.send RequestXMLstring
+	
+	'response.write("<p>RESPONSE STATUS: " &anXMLhttpObject.status & "<p>RESPONSE STATUS TEXT: " & anXMLhttpObject.statusText)
+	strResult = anXMLhttpObject.responseText
+	
+	' strip off the doc stuff to leave just the elements
+	strResult = mid(strResult,119)
+	
+	' load the results and test it
+	xmlResult.async = false
+	xmlResult.loadXML(strResult)
+
+	Response.Write(strResult)
+	'Response.Write "<br>..<br>" & Session("SUREPAY_USERID") & ".." & Session("SUREPAY_PWD") & ".."
+	
+	if xmlResult.parseError <> 0 then
+		'Parse Error
+		'Response.write "<h4>" & xmlResult.parseError.reason & "</h4>"
+	else
+		set roote = xmlResult.documentElement
+		for each item in roote.childNodes
+			'response.write("<p>")
+			'response.write("ELEMENT: " & item.nodeName & "<br>")
+			set atts = item.attributes
+			i = 0
+			do while i < atts.length
+				Session("SP_" & atts.item(i).nodeName) = atts.item(i).nodeValue
+				'response.write("<br>" & atts.item(i).nodeName & "=" & atts.item(i).nodeValue )
+				i = i + 1
+			loop
+		next
+	end if
+	
+	'Result...
+	if Session("SP_authstatus") = "AUTH" then
+		'Successful...
+		str_validation_number = Session("SP_authcode")
+		str_ref_number = Session("SP_transactionid")
+		ChargeCreditCard_surepay = true
+	else
+		'Failed...
+		ChargeCreditCard_surepay = false
+	end if
+	
+end Function
+
+sub display_child_atts
+ dim i
+ i = 0
+ set atts = child.attributes
+ do while i < atts.length
+ response.write("<br>" & atts.item(i).nodeName & "=" & atts.item(i).nodeValue )
+ i = i + 1
+ loop
+end sub
+	
+sub add_attribute_root(attDoc, attName, attValue)
+ Dim newAttribute, atts
+ set atts = root.attributes
+ set newAttribute = attDoc.createAttribute(attName)
+ newAttribute.value = attValue
+ atts.setNamedItem(newAttribute)
+end sub
+	
+sub add_attribute_child0(attDoc, attName, attValue)
+ Dim newAttribute, atts
+ set atts = child0.attributes
+ set newAttribute = attDoc.createAttribute(attName)
+ newAttribute.value = attValue
+ atts.setNamedItem(newAttribute)
+end sub
+	
+sub add_attribute(attDoc, attName, attValue)
+ Dim newAttribute, atts
+ set atts = child.attributes
+ set newAttribute = attDoc.createAttribute(attName)
+ newAttribute.value = attValue
+ atts.setNamedItem(newAttribute)
+end sub
+	
+sub add_attribute_child1(attDoc, attName, attValue)
+ Dim newAttribute, atts
+ set atts = child1.attributes
+ set newAttribute = attDoc.createAttribute(attName)
+ newAttribute.value = attValue
+ atts.setNamedItem(newAttribute)
+end sub
+	
+sub add_child0(cDoc, cChildname, cText)
+ set child0 = cDoc.CreateElement(cChildname)
+ if 1=1 or cValue <> "" then
+ child0.text = cText
+ end if
+end sub
+	
+sub add_child(cDoc, cChildname, cText)
+ set child = cDoc.CreateElement(cChildname)
+ if cValue <> "" then
+ child.text = cText
+ end if
+end sub
+	
+sub add_child_text(cDoc, cChildname, cText)
+ set child = cDoc.CreateElement(cChildname)
+ child.text = "<" & cText & ">"
+end sub
+	
+sub add_child1(cDoc, cChildname, cValue)
+ set child1 = cDoc.CreateElement(cChildname)
+ if cValue <> "" then
+ child1.Value = cValue
+ end if
+end sub
+
+'------------------------------------------------------------------------------
+'Moneris
+'------------------------------------------------------------------------------
+function ChargeCreditCard_moneris(ByRef str_msghldr,_
+							ByRef str_debit_amount,_
+							ByRef str_exp_month, ByRef str_exp_year, ByRef str_card_num,_
+							ByRef str_bfirstname, ByRef str_blastname, ByRef str_baddr, ByRef str_bcity, ByRef str_bstate, ByRef str_bzip, ByRef str_bcountry,_
+							ByRef str_sh_firstname, ByRef str_sh_lastname, ByRef str_sh_addr, ByRef str_sh_city, ByRef str_sh_state, ByRef str_sh_zip, ByRef str_sh_country,_
+							ByRef str_validation_number, ByRef str_ref_number,_
+							ByRef str_bemail,_
+							ByRef str_status)
+
+	'instantiate the COM client
+	dim moneris_chargetype
+	moneris_chargetype = "AUTH"
+	
+	Set FileObject = Server.CreateObject("Scripting.FileSystemObject")
+	Set Out = FileObject.OpenTextFile("C:\customers\moneris\" & Session("StoreID") & ".ini",1,FALSE, FALSE)
+	str_account_token = Trim(Out.ReadLine)
+	Out.Close
+	
+	set eClient = Server.CreateObject("Paygateway.EClient.1")
+	
+	if str_bcountry = "" OR str_bcountry = "USA" then
+		str_bcountry = "US"
+	end if
+	
+	if str_sh_country = "" OR str_sh_country = "USA" then
+		str_sh_country = "US"
+	end if
+	
+	'initialize
+	reqFieldsOK = true
+	
+	if str_account_token = null or str_account_token = "" then
+		'account token is required, though it does not have to be set
+		ChargeCreditCard_moneris = false
+		Exit Function
+	end if
+	
+	'required field
+	retVal = eClient.SetCreditCardNumber(str_card_num)
+	if (retVal = 0) then
+		ChargeCreditCard_moneris = false
+		Exit Function
+	end if
+	
+	retVal = eClient.SetExpireMonth(str_exp_month)
+	if (retVal = 0) then
+		ChargeCreditCard_moneris = false
+		Exit Function
+	end if
+	
+	retVal = eClient.SetExpireYear(str_exp_year)
+	'required field
+	if (retVal = 0) then
+		ChargeCreditCard_moneris = false
+		Exit Function
+	end if
+	
+	retVal = eClient.SetChargeType(moneris_chargetype)
+	'required field
+	if (retVal = 0) then
+		ChargeCreditCard_moneris = false
+		Exit Function
+	end if
+	
+	retVal = eClient.SetChargeTotal(str_debit_amount)
+	'required field
+	if (retVal = 0) then
+		ChargeCreditCard_moneris = false
+		Exit Function
+	end if
+	
+	retVal = eClient.SetBillFirstName(str_bfirstname)
+	'required field	
+	if (retVal = 0) then
+		ChargeCreditCard_moneris = false
+		Exit Function
+	end if
+	
+	retVal = eClient.SetBillLastName(str_blastname)
+	'required field	
+	if (retVal = 0) then
+		ChargeCreditCard_moneris = false
+		Exit Function
+	end if
+	
+	retVal = eClient.SetBillEmail(str_bemail)
+	'required field
+	if (retVal = 0) then
+		ChargeCreditCard_moneris = false
+		Exit Function
+	end if
+		
+	retVal = eClient.SetBillAddressOne(str_baddr)
+	retVal = eClient.SetBillCity(str_bcity)
+	retVal = eClient.SetBillStateOrProvince(str_bstate)
+	retVal = eClient.SetBillPostalCode(str_bzip)
+	retVal = eClient.SetBillCountryCode(str_bcountry)
+		
+	retVal = eClient.SetShipFirstName(str_sh_firstname)
+	retVal = eClient.SetShipLastName(str_sh_lastname)
+	retVal = eClient.SetShipAddressOne(str_sh_addr)
+	retVal = eClient.SetShipCity(str_sh_city)
+	retVal = eClient.SetShipStateOrProvince(str_sh_state)
+	retVal = eClient.SetShipPostalCode(str_sh_zip)
+	retVal = eClient.SetShipCountryCode(str_sh_country)
+	
+	retVal = eClient.DoTransaction("trans_key", str_account_token)
+	noErrors = CheckAndDisplayError(retVal)
+	if noErrors then
+		eClient.GetOrderId x_orderId
+		eClient.GetResponseCode x_responseCode 
+		eClient.GetResponseCodeText x_responseCodeText
+		eClient.GetBankApprovalCode x_bankApprovalCode
+		eClient.GetBankTransactionId x_bankTransactionId 
+	else
+		ChargeCreditCard_moneris = false
+		Exit Function
+	end if
+	
+	eClient.CleanUp
+	set eClient = nothing
+	
+	str_validation_number = x_orderId
+	str_ref_number = x_bankTransactionId
+	
+	SELECT CASE x_responseCode
+	CASE 1
+		str_msghldr = "Successful Transaction."
+		ChargeCreditCard_moneris = true
+	CASE 2
+		str_msghldr = "A required field is missing from the transaction request."
+		ChargeCreditCard_moneris = false
+	CASE 3
+		str_msghldr = "A required field was given an invalid value in the request."
+		ChargeCreditCard_moneris = false
+	CASE 4
+		str_msghldr = "The transaction you attempted is not allowed."
+		ChargeCreditCard_moneris = false
+	CASE 5
+		str_msghldr = "The Transaction Server could not process the transaction."
+		ChargeCreditCard_moneris = false
+	CASE 6
+		str_msghldr = "The transaction you attempted could not be performed."
+		ChargeCreditCard_moneris = false
+	CASE 7
+		str_msghldr = "The software version is out of date."
+		ChargeCreditCard_moneris = false
+	CASE 100
+		str_msghldr = "Credit Card Declined."
+		ChargeCreditCard_moneris = false
+	CASE 101
+		str_msghldr = "The Acquirer Gateway could not process the transaction."
+		ChargeCreditCard_moneris = false
+	CASE 102
+		str_msghldr = "The Payment Engine could not process the transaction."
+		ChargeCreditCard_moneris = false
+	CASE ELSE
+		str_msghldr = "Unspecified Error."
+		ChargeCreditCard_moneris = false
+	END SELECT
+	
+	
+	'Response.Write(".." & x_orderId & ".." & x_responseCode & ".." & x_bankApprovalCode & ".." & x_bankTransactionId & "..")
+	'ChargeCreditCard_moneris = true
+					
+end function
+
+function CheckAndDisplayError(retVal)
+	if (retVal = 0)  then
+		eClient.GetErrorString errorString
+		Response.Write(errorString)
+		CheckAndDisplayError = false
+	else
+		CheckAndDisplayError = true
+	end if
+end function
+
+'------------------------------------------------------------------------------
+'Authorize.net - AIM (Advanced Integration Method)
+'------------------------------------------------------------------------------
+function ChargeCreditCard_authorizenet_AIM(ByRef str_msghldr,_
+							ByRef str_login_id, ByRef str_debit_amount,_
+							ByRef str_login_pwd, ByRef str_trans_type,_
+							ByRef str_tran_key,_
+							ByRef str_exp_date, ByRef str_card_num,_
+							ByRef str_bfirstname, ByRef str_blastname, ByRef str_baddr, ByRef str_bcity, ByRef str_bstate, ByRef str_bzip, ByRef str_bcountry,_
+							ByRef str_bemail, ByRef str_bphone,_
+							ByRef str_sh_firstname, ByRef str_sh_lastname, ByRef str_sh_addr, ByRef str_sh_city, ByRef str_sh_state, ByRef str_sh_zip, ByRef str_sh_country,_
+							ByRef str_cvv2, ByRef str_order_ip,_
+							ByRef str_od_shopper_id, ByRef str_od_order_id,_
+							ByRef str_validation_number, ByRef str_ref_number,_
+							ByRef str_cvv2_flag, ByRef str_avs_flag,_
+							ByRef str_status)
+
+
+	dim aim_request
+
+	'Required for AIM
+	aim_request = "x_Login=" & str_login_id
+	aim_request = aim_request  & "&x_Tran_Key=" & str_tran_key
+	aim_request = aim_request  & "&x_Version=3.1"
+	aim_request = aim_request  & "&x_delim_data=TRUE"
+	aim_request = aim_request  & "&x_Delim_Char=|"
+	aim_request = aim_request  & "&x_Amount=" & str_debit_amount
+	aim_request = aim_request  & "&x_Card_Num=" & str_card_num
+	aim_request = aim_request  & "&x_Exp_Date=" & str_exp_date
+
+	if Len(str_trans_type) > 1 then
+		aim_request = aim_request  & "&x_Type=" & str_trans_type
+	else
+		aim_request = aim_request  & "&x_Type=" & "AUTH_ONLY"
+	end if
+
+	'=============================================================
+	'Test Setting..
+	'=============================================================
+	'aim_request = aim_request  & "&x_Test_Request=TRUE"
+	'=============================================================
+
+	'Customer Name and Billing Address
+	aim_request = aim_request  & "&x_First_Name=" & str_bfirstname
+	aim_request = aim_request  & "&x_Last_Name=" & str_blastname
+	aim_request = aim_request  & "&x_Address=" & str_baddr
+	aim_request = aim_request  & "&x_City=" & str_bcity
+	aim_request = aim_request  & "&x_State=" & str_bstate
+	aim_request = aim_request  & "&x_Zip=" & str_bzip
+	aim_request = aim_request  & "&x_Country=" & str_bcountry
+	aim_request = aim_request  & "&x_Phone=" & str_bphone
+	
+	'Shipping Information
+	aim_request = aim_request  & "&x_ship_to_first_name=" & str_sh_firstname
+	aim_request = aim_request  & "&x_ship_to_last_name=" & str_sh_lastname
+	aim_request = aim_request  & "&x_ship_to_address=" & str_sh_addr
+	aim_request = aim_request  & "&x_ship_to_city=" & str_sh_city
+	aim_request = aim_request  & "&x_ship_to_state=" & str_sh_state
+	aim_request = aim_request  & "&x_ship_to_zip=" & str_sh_zip
+	aim_request = aim_request  & "&x_ship_to_country=" & str_sh_country
+
+	'FOR WELLS FARGO Secure Source Merchant ONLY..
+	if Session("AUTHORIZENET_WF_SS") = "1" then
+		aim_request = aim_request  & "&x_Email=" & str_bemail
+	end if
+
+	'Additional Data...
+	if Len(str_cvv2) > 0 then
+		aim_request = aim_request  & "&x_Card_Code=" & str_cvv2
+	end if
+	aim_request = aim_request  & "&x_Cust_ID=" & str_od_shopper_id 'customer id..
+	aim_request = aim_request  & "&x_Invoice_Num=" & str_od_order_id 'order id..
+	aim_request = aim_request  & "&x_customer_ip=" & str_order_ip 'order ip address..
+
+
+	dim xmlHttp
+	set xmlHttp = Server.CreateObject("Msxml2.ServerXMLHTTP")
+	
+	xmlHttp.open "POST", "https://secure.authorize.net/gateway/transact.dll", false
+
+	'xmlHttp.setTimeouts 5000, 5000, 15000, 15000
+	xmlHttp.send(aim_request)
+
+	httpHeaders = xmlHttp.getAllResponseHeaders()
+	httpStatus = xmlHttp.statusText
+	httpResult = xmlHttp.responseText
+
+	set xmlHttp = Nothing
+
+	'Parse...
+	ar_aim_response = Split(httpResult, "|")
+
+	'Gateway Response Field (+1 for Implementation guide)
+	'0: Response Code (1:Approved;2:Declined;3:Error)
+	'1: Response Subcode
+	'2: Response Reason Code
+	'3: Response Reason Text
+	'4: Apporval Code
+	'5: AVS Result Code
+	'6: Transaction ID
+	'7-36: Echo
+	'37: MD5 Hash
+	'38: Card Code (M:Match;N:No Match;P:Not Processed;S:Should have been present;U:Issuer unable to process request)
+
+	if ar_aim_response(0) = "1" then
+		'Approved..
+		str_validation_number = ar_aim_response(4)
+		str_ref_number = ar_aim_response(6)
+
+		'Card ID and AVS Code..
+		SELECT CASE ar_aim_response(38)
+		CASE "M"
+			str_cvv2_flag = "13"
+		CASE "N"
+			str_cvv2_flag = "14"
+		CASE "P"
+			str_cvv2_flag = "16"
+		CASE "S"
+			str_cvv2_flag = "19"
+		CASE "U"
+			str_cvv2_flag = "21"
+		CASE ELSE
+			str_cvv2_flag = "0"
+		END SELECT
+
+		SELECT CASE ar_aim_response(5)
+		CASE "A"
+			str_avs_flag = "1"
+		CASE "B"
+			str_avs_flag = "2"
+		CASE "E"
+			str_avs_flag = "5"
+		CASE "G"
+			str_avs_flag = "7"
+		CASE "N"
+			str_avs_flag = "12"
+		CASE "P"
+			str_avs_flag = "16"
+		CASE "R"
+			str_avs_flag = "18"
+		CASE "S"
+			str_avs_flag = "19"
+		CASE "U"
+			str_avs_flag = "21"
+		CASE "W"
+			str_avs_flag = "23"
+		CASE "X"
+			str_avs_flag = "24"
+		CASE "Y"
+			str_avs_flag = "25"
+		CASE "Z"
+			str_avs_flag = "26"
+		CASE ELSE
+			str_avs_flag = "0"
+		END SELECT
+
+		ChargeCreditCard_authorizenet_AIM = true
+	else
+		'Declined or Error
+		str_msghldr = ar_aim_response(3) & "(" & ar_aim_response(2) & ")"
+		ChargeCreditCard_authorizenet_AIM = false
+	end if
+
+end function
+
+'============================================================
+' NEW MONERIS - ADDED BY BK 9/12/03
+'============================================================
+function ChargeCreditCard_monerisEx(ByRef str_msghldr,_
+							ByRef str_debit_amount,ByRef str_od_order_id, _
+							ByRef str_exp_month, ByRef str_exp_year, ByRef str_card_num,_
+							ByRef str_bfirstname, ByRef str_blastname, ByRef str_baddr, ByRef str_bcity, ByRef str_bstate, ByRef str_bzip, ByRef str_bcountry,_
+							ByRef str_sh_firstname, ByRef str_sh_lastname, ByRef str_sh_addr, ByRef str_sh_city, ByRef str_sh_state, ByRef str_sh_zip, ByRef str_sh_country,_
+							ByRef str_validation_number, ByRef str_ref_number,_
+							ByRef str_bemail,_
+							ByRef str_status)
+
+	
+	Set FileObject = Server.CreateObject("Scripting.FileSystemObject")
+	Set Out = FileObject.OpenTextFile("C:\customers\moneris\" & Session("StoreID") & ".ini",1,FALSE, FALSE)
+	str_account_token = Trim(Out.ReadLine)
+	str_store_id = Trim(Out.ReadLine)
+	str_capture_flag = Trim(Out.ReadLine)
+	str_test_flag = Trim(Out.ReadLine)
+	szVBVFlag = "0"
+	If (Not Out.AtEndOfLine) Then szVBVFlag = Trim(Out.ReadLine)
+	Out.Close
+
+  ' Added by Derek Yu on 20060710
+  ' Might redirect in the function
+  If szVBVFlag = "1" And Left(str_card_num, 1) = "4" Then
+    nVBV = CheckVBV(str_od_order_id, FormatNumber(str_debit_amount, 2), str_card_num, str_exp_month, str_exp_year, str_msghldr)
+    If CInt(nVBV) = 1 Then
+      ' Process VBV
+      ChargeCreditCard_monerisEx = true
+      ' ****** Stop here ****** '
+      ' VBV will post some information to tp_vbv.phtml
+      Response.End
+    ElseIf CInt(nVBV) = -1 Then
+      ' Must be cancelled
+      ChargeCreditCard_monerisEx = false
+      Exit Function
+    Else
+      ' Normal transaction - keep following below codes
+    End If
+  End If
+
+	set out = Server.CreateObject("Moneris.Request")
+
+	if str_test_flag = "1" then
+		out.initRequest "store1", "yesguy", "http://esqa.moneris.com:43924/gateway2/servlet/MpgRequest"
+	else
+		out.initRequest str_store_id, str_account_token, "https://www3.moneris.com:43924/gateway2/servlet/MpgRequest"
+	end if
+
+	s_exp_date = Right(str_exp_year,2) & str_exp_month
+
+	if str_capture_flag = "1" then
+		set purreq = Server.CreateObject("Moneris.Purchase")
+	else
+		set purreq = Server.CreateObject("Moneris.PreAuth")
+	end if
+
+	out.setRequest purreq.formatRequest(str_od_order_id, str_debit_amount, str_card_num, s_exp_date, "7")
+
+	out.sendRequest
+
+	s_getResponseCode = out.getResponseCode
+	s_getTimedOutStatus = out.getTimedOutStatus
+	s_getReferenceNum = out.getReferenceNum
+	s_getAuthCode = out.getAuthCode
+	s_getMessage = out.getMessage
+	s_getISO = out.getISO
+
+	if isNumeric(s_getResponseCode) then
+		
+		if s_getResponseCode < 50 then
+			'Transaction Approved
+
+			str_validation_number = s_getAuthCode
+			str_ref_number = s_getReferenceNum
+			str_status = s_getResponseCode & ":" & s_getISO
+
+			ChargeCreditCard_monerisEx = true
+		else
+			'Transaction Declined
+			str_msghldr = s_getMessage & "(" & s_getResponseCode & ":" & s_getISO & ")"
+			ChargeCreditCard_monerisEx = false
+		end if
+
+	else
+		str_msghldr = s_getMessage & "(" & s_getResponseCode & ":" & s_getISO & ")"
+		ChargeCreditCard_monerisEx = false
+	end if
+
+	'-----------------------------------------------------------------------------
+	'log the information
+	'-----------------------------------------------------------------------------
+
+	Set fs = CreateObject("Scripting.FileSystemObject")
+	Set a = fs.OpenTextFile("c:\\customers\\moneris\\moneris.log", 8, True)
+	a.WriteLine("=======================================================")
+	a.WriteLine(Now() & ":" & Session("StoreID"))
+	a.WriteLine(s_getResponseCode)
+	a.WriteLine(s_getTimedOutStatus)
+	a.WriteLine(s_getReferenceNum)
+	a.WriteLine(s_getAuthCode)
+	a.WriteLine(s_getMessage)
+	a.WriteLine(s_getISO)
+	a.WriteLine("=======================================================")
+	a.Close
+	Set fs = Nothing
+	'-----------------------------------------------------------------------------
+
+end function
+
+'============================================================
+' FRAUD LOG PROCESS - ADDED BY BK 11/03/03
+'============================================================
+
+function IsIPAddressBlocked(ByRef str_ip_address)
+
+	Set dbconn = Server.CreateObject("ADODB.Connection")
+	dbconn.open Session("ConnectionString")
+	
+	sql = "SELECT * FROM " & Session("StoreID") & "_ip_log WHERE ip_address='" & str_ip_address & "' AND flag=1"
+	
+	set rsIPLog = dbconn.Execute(sql)
+	if not rsIPLog.EOF then
+		IsIPAddressBlocked = true
+		b_ip_update = true
+	else
+		IsIPAddressBlocked = false
+		b_ip_update = false
+	end if
+
+	rsIPLog.Close
+
+	if b_ip_update then
+		sql = "UPDATE " & Session("StoreID") & "_ip_log SET blocked_count = blocked_count + 1 , Last_Accessed='" & Now() & "' WHERE ip_address='" & str_ip_address & "'"
+		dbconn.Execute sql
+	end if
+
+	dbconn.Close
+	
+end function
+
+function ProcessIPFraud(ByRef str_ip_address)
+
+	Set dbconn = Server.CreateObject("ADODB.Connection")
+	dbconn.open Session("ConnectionString")
+
+	'Get Setting...
+	sql = "SELECT * FROM " & Session("StoreID") & "_profile2"
+
+	set rsProfile2 = dbconn.Execute(sql)
+
+	if not rsProfile2.EOF then
+		fraud_ip_alert = rsProfile2("fraud_ip_alert")
+		fraud_ip_alert_count = rsProfile2("fraud_ip_alert_count")
+		fraud_ip_auto = rsProfile2("fraud_ip_auto")
+		fraud_ip_auto_count = rsProfile2("fraud_ip_auto_count")
+		fraud_ip_reset = rsProfile2("fraud_ip_reset")
+		fraud_ip_reset_count = rsProfile2("fraud_ip_reset_count")
+
+	end if
+	rsProfile2.Close
+
+	'LOG IP ADDRESS...
+	sql = "SELECT * FROM " & Session("StoreID") & "_ip_log WHERE ip_address='" & str_ip_address & "'"
+	set rsIPLog = dbconn.Execute(sql)
+	if not rsIPLog.EOF then
+		x_ip_count = rsIPLog("failed_count") + 1
+		'increment counter
+		sql = "UPDATE " & Session("StoreID") & "_ip_log SET failed_count = failed_count + 1 , Last_Accessed='" & Now() & "' WHERE ip_address='" & str_ip_address & "'"
+		dbconn.Execute sql
+	else
+		'insert new
+		x_ip_count = 1
+		sql = "INSERT INTO " & Session("StoreID") & "_ip_log(ip_address, failed_count, Last_Accessed) VALUES('" & str_ip_address & "',1,' " & Now() & "')"
+		dbconn.Execute sql
+	end if
+	rsIPLog.Close
+
+	if fraud_ip_auto = 1 then
+		if x_ip_count >= fraud_ip_auto_count then
+			'Need to block...
+			sql = "UPDATE " & Session("StoreID") & "_ip_log SET flag=1 , system_flag=1 WHERE ip_address='" & str_ip_address & "'"
+			dbconn.Execute sql
+		end if
+	end if
+
+	dbconn.Close
+
+end function
+
+Function ChargeCreditCard_linkpt_v35(ByRef str_msghldr,_
+							ByRef str_config_file, ByRef str_key_file, ByRef str_host_url, ByRef str_host_port,_
+							ByRef str_orderid, ByRef str_uid,_
+							ByRef str_ccnumber, ByRef str_cc_exp_month, ByRef str_cc_exp_year, ByRef str_debit_amount,_
+							ByRef str_bname, ByRef str_baddr, ByRef str_bcity, ByRef str_bstate, ByRef str_bzip,_
+							ByRef str_sname, ByRef str_saddr, ByRef str_scity, ByRef str_sstate, ByRef str_szip,_
+							ByRef str_cvv2, ByRef str_order_ip,_
+							ByRef str_validation_number, ByRef str_ref_number,_
+							ByRef str_status)
+
+	dim configfile
+	dim keyfile
+	dim host
+	dim port
+
+	configfile = str_config_file
+	keyfile = "C:\\customers\\linkpt\\" & str_key_file
+	host = str_host_url
+	port = str_host_port
+
+	'configfile = "1909103877" ' Change this to your store number 
+	'keyfile = "C:\\customers\\linkpt\\linkpt.pem" ' Change this to the name and location of your certificate file 
+	'Const keyfile = "C:\\customers\\linkpt\\linkpt.pem"
+	'host 	   = "staging.linkpt.net"
+	'port	   = "1129"
+
+
+	'/////////////////////////////////////////////////
+	' Settings for debug log
+	'
+	'/////////////////////////////////////////////////
+
+	' Set this one to false if you don't want any logging
+	Const fLog = false
+
+	' set logging level  
+	' 0 - no logging
+	' 1 - errors
+	' 2 - debug ( errors + addl info )
+	' 3 - trace ( full debug mode with call tracing )
+	
+	Const logLvl = 2	
+	Const logFile = "LOGFILENAME" ' Change this if you want logging
+
+
+	' Declarations for form fields
+	Dim bname 
+	Dim bcompany 
+	Dim baddr1 
+	Dim baddr2 
+	Dim bstate 
+	Dim bcity 
+	Dim bcountry 
+	Dim bphone 
+	Dim bfax 
+	Dim bemail 
+	Dim baddrnum 
+	Dim bzip 
+	Dim sname 
+	Dim saddr1 
+	Dim saddr2 
+	Dim scity 
+	Dim sstate 
+	Dim scountry 
+	Dim szip 
+	Dim semail 
+	Dim sfax 
+	Dim saddrnum 
+	Dim sweight 
+	Dim sitems 
+	Dim scarrier 
+	Dim stotal 
+	Dim comments 
+	Dim referred 
+	Dim cardnumber 
+	Dim expmonth 
+	Dim expyear 
+	Dim cvmvalue 
+	Dim cvmindicator 
+	Dim score
+	Dim expyearVal 
+	Dim subtotal 
+	Dim tax 
+	Dim shipping 
+	Dim total 
+	Dim vattax 
+	Dim refnumber 
+	Dim ponumber 
+	Dim taxexempt 
+	Dim oid 
+	Dim startdate 
+	Dim periodicity 
+	Dim installments 
+	Dim pbthreshold 
+	Dim pbcomments 
+	Dim accttype 
+	Dim micr 
+	Dim accountNbr 
+	Dim routeNbr 
+	Dim bankName 
+	Dim bankState 
+	Dim dl 
+	Dim dlState 
+	Dim ssn 
+	Dim checkNbr 	
+	' these two are used for flow control
+	Dim processed 
+	Dim needsProcess 
+
+	' transaction object
+	Dim LPTxn 
+
+	' response holders
+	Dim R_Time 
+	Dim R_Ref 
+	Dim R_Approved 
+	Dim R_Code 
+	Dim R_Authresr 
+	Dim R_Error 
+	Dim R_OrderNum 
+	Dim R_Message 
+	Dim R_Score 
+	Dim R_TDate 
+	Dim R_AVS 
+	Dim R_FraudCode 
+	Dim R_ESD 
+	Dim R_Tax 
+	Dim R_Shipping 
+
+	' Top level LPOrderPart
+	Dim order,op 
+
+	Dim dbg
+	dbg = True
+
+	addr_nbr = GetAddrNumber(str_baddr)
+	s_addr_nbr = GetAddrNumber(str_saddr)
+
+	bname  	= str_bname
+	bcompany  	= ""
+	baddr1  	= str_baddr
+	baddr2  	= ""
+	bstate  	= str_bstate
+	bcity  	= str_bcity
+	bcountry  	= "US"
+	bphone  	= ""
+	bfax  	= ""
+	bemail  	= ""
+	baddrnum  	= addr_nbr
+	bzip  	= str_bzip
+
+	sname  	= str_sname
+	saddr1  	= str_saddr
+	saddr2  	= ""
+	scity  	= str_scity
+	sstate  	= str_sstate
+	scountry  	= "US"
+	szip  	= str_szip
+	semail  	= ""
+	sfax  	= ""
+	saddrnum  	= s_addr_nbr
+
+	sweight  	= ""
+	sitems  	= ""
+	scarrier  	= ""
+	stotal  	= ""
+	comments  	= ""
+	referred  	= ""
+	cardnumber  = str_ccnumber
+	expmonth  	= str_cc_exp_month
+	expyear  	= str_cc_exp_year
+	cvmvalue  	= str_cvv2
+	cvmindicator= "provided"
+	expyearVal  = 2005
+	score	= 70
+	subtotal  	= ""
+	tax  	= ""
+	shipping  	= ""
+	total  	= str_debit_amount
+	vattax  	= ""
+	refnumber  	= ""
+	ponumber  	= ""
+	taxexempt  	= "N"
+	oid  	= str_orderid
+
+	if Len(str_baddr) > 0 then
+		str_baddr = Replace(str_baddr, "&", "&amp;")
+	end if
+	if Len(str_bcity) > 0 then
+		str_bcity = Replace(str_bcity, "&", "&amp;")
+	end if
+
+	if Len(str_saddr) > 0 then
+		str_saddr = Replace(str_saddr, "&", "&amp;")
+	end if
+	if Len(str_scity) > 0 then
+		str_scity = Replace(str_scity, "&", "&amp;")
+	end if
+
+	Set order = Server.CreateObject("LpiCom_6_0.LPOrderPart")
+	order.setPartName("order")
+
+	Set op = Server.CreateObject("LpiCom_6_0.LPOrderPart")
+
+	' Build 'orderoptions'
+	res=op.put("ordertype", "PREAUTH")
+	res=order.addPart("orderoptions", op)
+	
+	' Build 'merchantinfo'
+	res=op.clear()
+	res=op.put("configfile", configfile)
+	res=order.addPart("merchantinfo", op)
+
+	' Build 'creditcard'
+	res=op.clear()
+	res=op.put("cardnumber", cardnumber)
+	res=op.put("cardexpmonth", expmonth)
+	res=op.put("cardexpyear", expyear)
+	res=op.put("cvmvalue", str_cvv2)
+	
+	if Len(str_cvv2) > 0 then
+		res=op.put("cvmindicator", cvmindicator)
+	end if
+	
+	res=order.addPart("creditcard", op)
+
+	' Build 'billing'
+	res=op.clear()
+	res=op.put("name", str_bname)
+	res=op.put("address1", str_baddr)
+	res=op.put("city", str_bcity)
+	res=op.put("state", str_bstate)
+	res=op.put("addrnum", baddrnum)
+	res=op.put("zip", bzip)
+	res=op.put("country", "US")
+	res=order.addPart("billing", op)
+
+	' Build 'shipping'
+	res=op.clear()
+	res=op.put("name", str_sname)
+	res=op.put("address1", str_saddr)
+	res=op.put("city", str_scity)
+	res=op.put("state", str_sstate)
+	res=op.put("zip", str_szip)
+	res=op.put("country", "US")
+	res=order.addPart("shipping", op)
+
+	' Build 'payment'
+	res=op.clear()
+	res=op.put("chargetotal", total)
+	res=order.addPart("payment", op)
+
+	' Add oid
+	res=op.clear()
+	res=op.put("oid", str_orderid)
+	res=op.put("ip", Request.ServerVariables("REMOTE_ADDR"))
+	' add 'transactiondetails to order
+	res=order.addPart("transactiondetails", op)
+
+	' create transaction object	
+	Set LPTxn = Server.CreateObject("LpiCom_6_0.LinkPointTxn")
+
+	if (fLog = True) and ( logLvl > 0 ) Then
+        
+		Dim res1, resDesc
+		
+		'Next call return level of accepted logging in 'res1'
+		'On error 'res1' contains negative number
+		'You can check 'resDesc' to get error description
+		'if any
+		
+		res = LPTxn.setDbgOpts(logFile,logLvl,resDesc,res1)
+		
+	End If
+
+	' get outgoing XML from 'order' object
+	Dim outXml, resp
+	outXml = order.toXML()
+
+	' Call LPTxn
+	resp = LPTxn.send(keyfile, host, port, outXml)
+
+	ParseResponse resp, R_Approved, R_Code, R_Ref, R_Error
+
+
+	'Set fs = CreateObject("Scripting.FileSystemObject")
+	'Set a = fs.OpenTextFile("c:\\PCStores\\" & Session("StoreID") & ".log", 8, True)
+	'a.WriteLine("-----------ChargeCreditCard_linkpt----------------")
+	'a.WriteLine(Now() & ";ORDER ID:" & str_orderid)
+	'a.WriteLine(outXml)
+	'a.WriteLine(resp)
+	'a.WriteLine(R_Approved & ";" & CStr(R_Code) & ";" & CStr(R_Ref) & ";")
+	'a.WriteLine("-----------*ChargeCreditCard_linkpt*---------------")
+	'a.Close
+	'Set fs = Nothing
+
+
+	if R_Approved = "APPROVED" then
+		
+		str_validation_number = CStr(r_code)
+    str_ref_number = CStr(r_ref)
+
+    ChargeCreditCard_linkpt_v35 = true
+  else
+
+		ChargeCreditCard_linkpt_v35 = false
+
+		SELECT CASE R_Approved
+		CASE "DECLINED"
+			
+			AddToHTMLMsgHldr str_msghldr, "Your order cannot be processed. Please verify your credit card information. - code: D" & "<br>" & R_Error, false
+
+		CASE "FRAUD"
+			
+			AddToHTMLMsgHldr str_msghldr, "Your order cannot be processed. Please verify your credit card information. - code: F" & "<br>" & R_Error, false
+
+		CASE ELSE
+
+			AddToHTMLMsgHldr str_msghldr, "Your order cannot be processed. Please verify your credit card information. - code: G" & "<br>" & R_Error, false
+
+		END SELECT
+
+	end if
+
+	Set LPTxn = Nothing
+	Set order = Nothing
+	Set op    = Nothing
+
+	'ChargeCreditCard_linkpt_v35 = true
+end function
+
+
+Sub ParseResponse(ByRef rsp, ByRef R_Approved, ByRef R_Code, ByRef R_Ref, ByRef R_Error)
+
+	R_Time = ParseTag("r_time", rsp)
+	R_Ref = ParseTag("r_ref", rsp)
+	R_Approved = ParseTag("r_approved", rsp)
+	R_Code = ParseTag("r_code", rsp)
+	R_Authresr = ParseTag("r_authresronse", rsp)
+
+	R_OrderNum = ParseTag("r_ordernum", rsp)
+	R_Message = ParseTag("r_message", rsp)
+	R_AVS = ParseTag("r_avs", rsp)
+	R_Error = ParseTag("r_error", rsp)
+	R_TDate = ParseTag("r_tdate", rsp)
+	R_AVS = ParseTag("r_avs", rsp)
+	R_Tax = ParseTag("r_tax", rsp)
+	R_Shipping = ParseTag("r_shipping", rsp)
+	R_FraudCode = ParseTag("r_fraudCode", rsp)
+	R_ESD = ParseTag("esd", rsp)
+
+
+	'parsing score can get complicated and
+	'depends on merchant store setting
+	'you can get up to three different scores
+	'from different providers.
+	'Actual averaging algoritm is then up to the merchant
+	'for this samples we'll use simple value which
+	'we look up in following order
+	' 1. if available, use r_provideraverage 
+	' 2. if available, use r_providerone
+	' 3. use r_score
+	' 
+	R_Score = ParseTag("r_provideraverage", rsp)
+	if R_Score = "" Then
+		R_Score = ParseTag("r_providerone", rsp)
+	End if
+	if R_Score = "" Then
+		R_Score = ParseTag("r_score", rsp)
+		' if scoring error occured this case retuns 'ERR'
+		If R_Score = "ERR" Then
+			R_Score = ""
+		End If
+	End if
+
+End Sub
+
+Function ParseTag( tag ,  rsp ) 
+		Dim sb 
+		Dim idxSt, idxEnd 'As Integer
+		
+		rsp = rsp
+		
+		sb = "<" & tag & ">"
+		idxSt = -1
+		idxEnd = -1
+
+		idxSt = InStr(rsp,sb)
+		If 0 = idxSt Then
+				ParseTag = ""
+				Exit Function
+		End If
+
+		idxSt = idxSt + Len(sb)
+		sb = "</" & tag & ">"
+		idxEnd = InStr(idxSt, rsp,sb)
+
+		If 0 = idxEnd Then
+			 ParseTag = ""
+			 Exit Function
+		End If
+
+		ParseTag = Mid(rsp, idxSt, (idxEnd - idxSt))
+
+End Function
+
+
+Function ChargeCreditCard_PaypalPaymentPro(ByRef str_msghldr,_
+						ByRef str_debit_amount,ByRef str_od_order_id, _
+						ByRef str_exp_month, ByRef str_exp_year, ByRef str_card_num,_
+						ByRef str_bfirstname, ByRef str_blastname, ByRef str_baddr, ByRef str_bcity, ByRef str_bstate, ByRef str_bzip, ByRef str_bcountry,_
+						ByRef str_sname, ByRef str_saddr, ByRef str_scity, ByRef str_sstate, ByRef str_szip, ByRef str_scountry,_
+						ByRef str_cvv2, ByRef str_order_ip,_
+						ByRef str_validation_number, ByRef str_ref_number,_
+						ByRef str_cvv2_flag, ByRef str_avs_flag,_
+						ByRef str_status)
+	
+	Set FileObject = Server.CreateObject("Scripting.FileSystemObject")
+	Set Out = FileObject.OpenTextFile("C:\customers\paypal\" & Session("StoreID") & ".ini",1,FALSE, FALSE)
+		
+	paypal_account_email = Trim(Out.ReadLine)
+	paypal_post_url = Trim(Out.ReadLine)
+	paypal_payment_type = UCase(Trim(Out.ReadLine))
+	paypal_env = Trim(Out.ReadLine)
+					
+	'paypal_account_email = "brianhk_98@yahoo.com" '"brian@flashecom.com"
+	'paypal_post_url = "http://216.102.143.82/paypal.web/DoDirectPayment.phtmlx"
+	
+	if Len(str_card_num) > 0 then
+
+		if Left(str_card_num, 1) = "4" then
+			str_cctype = "visa"
+		end if
+
+		if Left(str_card_num, 2) = "51" OR Left(str_card_num, 2) = "52" OR Left(str_card_num, 2) = "53" OR Left(str_card_num, 2) = "54" OR Left(str_card_num, 2) = "55" then
+			str_cctype = "mc"
+		end if
+
+		if Left(str_card_num, 2) = "34" OR Left(str_card_num, 2) = "37" then
+			str_cctype = "amex"
+		end if
+
+		if Left(str_card_num, 4) = "6011" then
+			str_cctype = "discover"
+		end if
+
+	end if
+	
+	SELECT CASE str_bstate
+	CASE "Alberta"
+		str_bstate = "AB"
+	CASE "British Columbia"
+		str_bstate = "BC"
+	CASE "Manitoba"
+		str_bstate = "MB"
+	CASE "New Brunswick"
+		str_bstate = "NB"
+	CASE "Newfoundland"
+		str_bstate = "NL"
+	CASE "N.W. Territories"
+		str_bstate = "NT"
+	CASE "Nova Scotia"
+		str_bstate = "NS"
+	CASE "Nunavut"
+		str_bstate = "NU"
+	CASE "Ontario"
+		str_bstate = "ON"
+	CASE "Prince Edward Island"
+		str_bstate = "PE"
+	CASE "Quebec"
+		str_bstate = "QC"
+	CASE "Saskatchewan"
+		str_bstate = "SK"
+	CASE "Yukon"
+		str_bstate = "YT"
+	END SELECT
+
+	SELECT CASE str_sstate
+	CASE "Alberta"
+		str_sstate = "AB"
+	CASE "British Columbia"
+		str_sstate = "BC"
+	CASE "Manitoba"
+		str_sstate = "MB"
+	CASE "New Brunswick"
+		str_sstate = "NB"
+	CASE "Newfoundland"
+		str_sstate = "NL"
+	CASE "N.W. Territories"
+		str_sstate = "NT"
+	CASE "Nova Scotia"
+		str_sstate = "NS"
+	CASE "Nunavut"
+		str_sstate = "NU"
+	CASE "Ontario"
+		str_sstate = "ON"
+	CASE "Prince Edward Island"
+		str_sstate = "PE"
+	CASE "Quebec"
+		str_sstate = "QC"
+	CASE "Saskatchewan"
+		str_sstate = "SK"
+	CASE "Yukon"
+		str_sstate = "YT"
+	END SELECT
+	
+	paypal_post_url = Replace(paypal_post_url, "ExpressCheckout1.phtmlx", "DoDirectPayment.phtmlx")
+
+	dim pStr
+	
+	pStr = "paypalemail=" & paypal_account_email
+	pStr = pStr & "&ordertotal=" & str_debit_amount
+	pStr = pStr & "&cur=" & "USD"
+	pStr = pStr & "&ccnum=" & str_card_num
+	pStr = pStr & "&cctype=" & str_cctype
+	pStr = pStr & "&cvv2=" & str_cvv2
+	pStr = pStr & "&expmonth=" & str_exp_month
+	pStr = pStr & "&expyear=" & str_exp_year
+	pStr = pStr & "&street1=" & str_baddr
+	pStr = pStr & "&city=" & str_bcity
+	pStr = pStr & "&state=" & str_bstate
+	pStr = pStr & "&postal=" & str_bzip
+	
+	if str_bcountry = "US" then
+		pStr = pStr & "&country=" & "US"
+	else
+		pStr = pStr & "&country=" & "CA"
+	end if
+	
+	pStr = pStr & "&firstname=" & str_bfirstname
+	pStr = pStr & "&lastname=" & str_blastname
+	pStr = pStr & "&ipaddress=" & str_order_ip
+	pStr = pStr & "&env=" & paypal_env
+	pStr = pStr & "&invoiceid=" & str_od_order_id
+	pStr = pStr & "&ptype=" & paypal_payment_type
+	
+	pStr = pStr & "&sstreet1=" & str_saddr
+	pStr = pStr & "&scity=" & str_scity
+	pStr = pStr & "&sstate=" & str_sstate
+	pStr = pStr & "&spostal=" & str_szip
+	
+	if str_scountry = "US" then
+		pStr = pStr & "&scountry=" & "US"
+	else
+		pStr = pStr & "&scountry=" & "CA"
+	end if
+	
+	
+	pStr = pStr & "&sname=" & str_sname
+		
+	
+	dim xmlRecv
+	set xmlRecv = Server.CreateObject("Msxml2.ServerXMLHTTP")
+
+	xmlRecv.open "POST", paypal_post_url, false
+
+	xmlRecv.setRequestHeader "Content-Type", "application/x-www-form-urlencoded"
+	xmlRecv.setTimeouts 10000, 10000, 30000, 30000
+	
+	xmlRecv.send pStr
+	
+	pHeaders = xmlRecv.getAllResponseHeaders()
+	pStatus = xmlRecv.statusText
+	pResult = xmlRecv.responseText
+			
+	pos1 = InStr(pResult, "<span id=""lbPaypal"">")
+	pos2 = InStr(pos1, pResult, "</span>")
+	
+	xResponse = Mid(pResult, pos1+20, pos2-(pos1+20))
+	
+	'Response.Write(xResponse)
+	
+	Set fs = CreateObject("Scripting.FileSystemObject")
+	Set a = fs.OpenTextFile("c:\\customers\\pp.log", 8, True)
+	a.WriteLine("===========================================================================")
+	a.WriteLine(Now() & ":" & Session("StoreID") & ":" & str_orderid)
+	pStr1 = Replace(pStr, str_card_num , "")
+	a.WriteLine(pStr1)
+	a.WriteLine(xResponse)
+	a.WriteLine("===========================================================================")
+	a.Close
+	Set fs = Nothing
+	
+	xStatus = ""
+	xTransactionID = ""
+	xError = ""
+	
+	if Len(xResponse) > 0 then
+		
+		ar_response = split(xResponse, ":")
+		
+		xStatus = ar_response(0)
+		xTransactionID = ar_response(1)
+		xError = ar_response(2)
+		xAVScode = ar_response(3)
+		xCVV2code = ar_response(4)
+		
+	end if
+			
+	if xStatus = "1" then
+	
+		ChargeCreditCard_PaypalPaymentPro = true
+		str_validation_number = xTransactionID
+		
+		'Card ID and AVS Code..
+		SELECT CASE xCVV2code
+		CASE "M"
+			str_cvv2_flag = "13"
+		CASE "N"
+			str_cvv2_flag = "14"
+		CASE "P"
+			str_cvv2_flag = "16"
+		CASE "S"
+			str_cvv2_flag = "19"
+		CASE "U"
+			str_cvv2_flag = "21"
+		CASE ELSE
+			str_cvv2_flag = "0"
+		END SELECT
+
+		SELECT CASE xAVScode
+		CASE "A"
+			str_avs_flag = "1"
+		CASE "B"
+			str_avs_flag = "2"
+		CASE "E"
+			str_avs_flag = "5"
+		CASE "G"
+			str_avs_flag = "7"
+		CASE "N"
+			str_avs_flag = "12"
+		CASE "P"
+			str_avs_flag = "16"
+		CASE "R"
+			str_avs_flag = "18"
+		CASE "S"
+			str_avs_flag = "19"
+		CASE "U"
+			str_avs_flag = "21"
+		CASE "W"
+			str_avs_flag = "23"
+		CASE "X"
+			str_avs_flag = "24"
+		CASE "Y"
+			str_avs_flag = "25"
+		CASE "Z"
+			str_avs_flag = "26"
+		CASE ELSE
+			str_avs_flag = "0"
+		END SELECT
+		
+	else
+	
+		ChargeCreditCard_PaypalPaymentPro = false
+		str_msghldr = xError
+		
+	end if
+
+end function
+
+Function ChargeCreditCard_PaypalPaymentPro_V2(ByRef str_msghldr,_
+            ByRef str_APIUsername, ByRef str_APIPassword, ByRef str_APISignature, _
+						ByRef str_debit_amount,ByRef str_od_order_id, _
+						ByRef str_exp_month, ByRef str_exp_year, ByRef str_card_num,_
+						ByRef str_bfirstname, ByRef str_blastname, ByRef str_baddr, ByRef str_bcity, ByRef str_bstate, ByRef str_bzip, ByRef str_bcountry,_
+						ByRef str_sname, ByRef str_saddr, ByRef str_scity, ByRef str_sstate, ByRef str_szip, ByRef str_scountry,_
+						ByRef str_cvv2, ByRef str_order_ip,_
+						ByRef str_validation_number, ByRef str_ref_number,_
+						ByRef str_cvv2_flag, ByRef str_avs_flag,_
+						ByRef str_status)
+	
+	Set FileObject = Server.CreateObject("Scripting.FileSystemObject")
+	Set Out = FileObject.OpenTextFile("C:\customers\paypal\" & Session("StoreID") & ".ini",1,FALSE, FALSE)
+		
+	paypal_account_email = Trim(Out.ReadLine)
+	paypal_post_url = Trim(Out.ReadLine)
+	paypal_payment_type = UCase(Trim(Out.ReadLine))
+	paypal_env = Trim(Out.ReadLine)
+					
+	'paypal_account_email = "brianhk_98@yahoo.com" '"brian@flashecom.com"
+	'paypal_post_url = "http://216.102.143.82/paypal.web/DoDirectPayment.phtmlx"
+	
+	if Len(str_card_num) > 0 then
+
+		if Left(str_card_num, 1) = "4" then
+			str_cctype = "visa"
+		end if
+
+		if Left(str_card_num, 2) = "51" OR Left(str_card_num, 2) = "52" OR Left(str_card_num, 2) = "53" OR Left(str_card_num, 2) = "54" OR Left(str_card_num, 2) = "55" then
+			str_cctype = "mc"
+		end if
+
+		if Left(str_card_num, 2) = "34" OR Left(str_card_num, 2) = "37" then
+			str_cctype = "amex"
+		end if
+
+		if Left(str_card_num, 4) = "6011" then
+			str_cctype = "discover"
+		end if
+
+	end if
+	
+	SELECT CASE str_bstate
+	CASE "Alberta"
+		str_bstate = "AB"
+	CASE "British Columbia"
+		str_bstate = "BC"
+	CASE "Manitoba"
+		str_bstate = "MB"
+	CASE "New Brunswick"
+		str_bstate = "NB"
+	CASE "Newfoundland"
+		str_bstate = "NL"
+	CASE "N.W. Territories"
+		str_bstate = "NT"
+	CASE "Nova Scotia"
+		str_bstate = "NS"
+	CASE "Nunavut"
+		str_bstate = "NU"
+	CASE "Ontario"
+		str_bstate = "ON"
+	CASE "Prince Edward Island"
+		str_bstate = "PE"
+	CASE "Quebec"
+		str_bstate = "QC"
+	CASE "Saskatchewan"
+		str_bstate = "SK"
+	CASE "Yukon"
+		str_bstate = "YT"
+	END SELECT
+
+	SELECT CASE str_sstate
+	CASE "Alberta"
+		str_sstate = "AB"
+	CASE "British Columbia"
+		str_sstate = "BC"
+	CASE "Manitoba"
+		str_sstate = "MB"
+	CASE "New Brunswick"
+		str_sstate = "NB"
+	CASE "Newfoundland"
+		str_sstate = "NL"
+	CASE "N.W. Territories"
+		str_sstate = "NT"
+	CASE "Nova Scotia"
+		str_sstate = "NS"
+	CASE "Nunavut"
+		str_sstate = "NU"
+	CASE "Ontario"
+		str_sstate = "ON"
+	CASE "Prince Edward Island"
+		str_sstate = "PE"
+	CASE "Quebec"
+		str_sstate = "QC"
+	CASE "Saskatchewan"
+		str_sstate = "SK"
+	CASE "Yukon"
+		str_sstate = "YT"
+	END SELECT
+	
+	'paypal_post_url = Replace(paypal_post_url, "ExpressCheckout1.phtmlx", "DoDirectPayment.phtmlx")
+	paypal_post_url = "https://gateway.flashecom.com/paypalexp.net/DoDirectPayment.phtmlx"
+
+	dim pStr
+	
+	pStr = "paypalemail=" & paypal_account_email
+	pStr = pStr & "&ordertotal=" & str_debit_amount
+	pStr = pStr & "&cur=" & "USD"
+	pStr = pStr & "&ccnum=" & str_card_num
+	pStr = pStr & "&cctype=" & str_cctype
+	pStr = pStr & "&cvv2=" & str_cvv2
+	pStr = pStr & "&expmonth=" & str_exp_month
+	pStr = pStr & "&expyear=" & str_exp_year
+	pStr = pStr & "&street1=" & str_baddr
+	pStr = pStr & "&city=" & str_bcity
+	pStr = pStr & "&state=" & str_bstate
+	pStr = pStr & "&postal=" & str_bzip
+	
+	if str_bcountry = "US" then
+		pStr = pStr & "&country=" & "US"
+	else
+		pStr = pStr & "&country=" & "CA"
+	end if
+	
+	pStr = pStr & "&firstname=" & str_bfirstname
+	pStr = pStr & "&lastname=" & str_blastname
+	pStr = pStr & "&ipaddress=" & str_order_ip
+	pStr = pStr & "&env=" & paypal_env
+	pStr = pStr & "&invoiceid=" & str_od_order_id
+	pStr = pStr & "&ptype=" & paypal_payment_type
+	
+	pStr = pStr & "&sstreet1=" & str_saddr
+	pStr = pStr & "&scity=" & str_scity
+	pStr = pStr & "&sstate=" & str_sstate
+	pStr = pStr & "&spostal=" & str_szip
+	
+	if str_scountry = "US" then
+		pStr = pStr & "&scountry=" & "US"
+	else
+		pStr = pStr & "&scountry=" & "CA"
+	end if
+	
+	
+	pStr = pStr & "&sname=" & str_sname
+	pStr = pStr & "&Environment=live"
+	pStr = pStr & "&APIUsername=" & Server.URLEncode(str_APIUsername)
+	pStr = pStr & "&APIPassword=" & Server.URLEncode(str_APIPassword)
+	pStr = pStr & "&APISignature=" & Server.URLEncode(str_APISignature)
+	
+		
+	
+	dim xmlRecv
+	set xmlRecv = Server.CreateObject("Msxml2.ServerXMLHTTP")
+
+	xmlRecv.open "POST", paypal_post_url, false
+
+	xmlRecv.setRequestHeader "Content-Type", "application/x-www-form-urlencoded"
+	xmlRecv.setTimeouts 10000, 10000, 30000, 30000
+	
+	xmlRecv.send pStr
+	
+	pHeaders = xmlRecv.getAllResponseHeaders()
+	pStatus = xmlRecv.statusText
+	pResult = xmlRecv.responseText
+			
+	pos1 = InStr(pResult, "<span id=""lbPaypal"">")
+	pos2 = InStr(pos1, pResult, "</span>")
+	
+	xResponse = Mid(pResult, pos1+20, pos2-(pos1+20))
+	
+	'Response.Write(xResponse)
+	
+	Set fs = CreateObject("Scripting.FileSystemObject")
+	Set a = fs.OpenTextFile("c:\\customers\\pp.log", 8, True)
+	a.WriteLine("===========================================================================")
+	a.WriteLine(Now() & ":" & Session("StoreID") & ":" & str_orderid)
+	pStr1 = Replace(pStr, str_card_num , "")
+	a.WriteLine(pStr1)
+	a.WriteLine(xResponse)
+	a.WriteLine("===========================================================================")
+	a.Close
+	Set fs = Nothing
+	
+	xStatus = ""
+	xTransactionID = ""
+	xError = ""
+	
+	if Len(xResponse) > 0 then
+		
+		ar_response = split(xResponse, ":")
+		
+		xStatus = ar_response(0)
+		xTransactionID = ar_response(1)
+		xError = ar_response(2)
+		xAVScode = ar_response(3)
+		xCVV2code = ar_response(4)
+		
+	end if
+			
+	if xStatus = "1" then
+	
+		ChargeCreditCard_PaypalPaymentPro_V2 = true
+		str_validation_number = xTransactionID
+		
+		'Card ID and AVS Code..
+		SELECT CASE xCVV2code
+		CASE "M"
+			str_cvv2_flag = "13"
+		CASE "N"
+			str_cvv2_flag = "14"
+		CASE "P"
+			str_cvv2_flag = "16"
+		CASE "S"
+			str_cvv2_flag = "19"
+		CASE "U"
+			str_cvv2_flag = "21"
+		CASE ELSE
+			str_cvv2_flag = "0"
+		END SELECT
+
+		SELECT CASE xAVScode
+		CASE "A"
+			str_avs_flag = "1"
+		CASE "B"
+			str_avs_flag = "2"
+		CASE "E"
+			str_avs_flag = "5"
+		CASE "G"
+			str_avs_flag = "7"
+		CASE "N"
+			str_avs_flag = "12"
+		CASE "P"
+			str_avs_flag = "16"
+		CASE "R"
+			str_avs_flag = "18"
+		CASE "S"
+			str_avs_flag = "19"
+		CASE "U"
+			str_avs_flag = "21"
+		CASE "W"
+			str_avs_flag = "23"
+		CASE "X"
+			str_avs_flag = "24"
+		CASE "Y"
+			str_avs_flag = "25"
+		CASE "Z"
+			str_avs_flag = "26"
+		CASE ELSE
+			str_avs_flag = "0"
+		END SELECT
+		
+	else
+	
+		ChargeCreditCard_PaypalPaymentPro_V2 = false
+		str_msghldr = xError
+		
+	end if
+
+end function
+
+
+Function ChargeCreditCard_linkpt_v4(ByRef str_msghldr,_
+							ByRef str_config_file, ByRef str_key_file, ByRef str_host_url, ByRef str_host_port,_
+							ByRef str_orderid, ByRef str_uid,_
+							ByRef str_ccnumber, ByRef str_cc_exp_month, ByRef str_cc_exp_year, ByRef str_debit_amount,_
+							ByRef str_bname, ByRef str_baddr, ByRef str_bcity, ByRef str_bstate, ByRef str_bzip,_
+							ByRef str_sname, ByRef str_saddr, ByRef str_scity, ByRef str_sstate, ByRef str_szip,_
+							ByRef str_cvv2, ByRef str_order_ip,_
+							ByRef str_validation_number, ByRef str_ref_number,_
+							ByRef str_status)
+	
+	if Len(str_baddr) > 0 then
+		str_baddr = Replace(str_baddr, "&", "&amp;")
+	end if
+	if Len(str_bcity) > 0 then
+		str_bcity = Replace(str_bcity, "&", "&amp;")
+	end if
+
+	if Len(str_saddr) > 0 then
+		str_saddr = Replace(str_saddr, "&", "&amp;")
+	end if
+	if Len(str_scity) > 0 then
+		str_scity = Replace(str_scity, "&", "&amp;")
+	end if
+	
+	addr_nbr = GetAddrNumber(str_baddr)		
+
+	dim pStr
+	
+	pStr = "configfile=" & str_config_file
+	pStr = pStr & "&storeid=" & Session("StoreID")
+	pStr = pStr & "&hosturl=" & str_host_url
+	pStr = pStr & "&hostport=" & str_host_port
+	pStr = pStr & "&orderid=" & str_orderid
+	
+	pStr = pStr & "&ccnumber=" & str_ccnumber
+	pStr = pStr & "&ccexpmonth=" & str_cc_exp_month
+	pStr = pStr & "&ccexpyear=" & str_cc_exp_year
+	pStr = pStr & "&debitamount=" & str_debit_amount
+	
+	pStr = pStr & "&bname=" & str_bname
+	pStr = pStr & "&baddr=" & str_baddr
+	pStr = pStr & "&bcity=" & str_bcity
+	pStr = pStr & "&bstate=" & str_bstate
+	pStr = pStr & "&bzip=" & str_bzip
+	pStr = pStr & "&baddrnum=" & addr_nbr
+	
+	pStr = pStr & "&sname=" & str_sname
+	pStr = pStr & "&saddr=" & str_saddr
+	pStr = pStr & "&scity=" & str_scity
+	pStr = pStr & "&sstate=" & str_sstate
+	pStr = pStr & "&szip=" & str_szip
+	
+	pStr = pStr & "&cvv2=" & str_cvv2
+	pStr = pStr & "&orderip=" & str_order_ip
+	
+	dim xmlRecv
+	set xmlRecv = Server.CreateObject("Msxml2.ServerXMLHTTP")
+
+	xmlRecv.open "POST", "http://gateway.flashecom.com/yourpay.web/preauth.phtmlx", false
+
+	xmlRecv.setRequestHeader "Content-Type", "application/x-www-form-urlencoded"
+	xmlRecv.setTimeouts 10000, 10000, 25000, 25000
+
+	xmlRecv.send pStr
+		
+	pResult = xmlRecv.responseText
+	
+	pos1 = InStr(pResult, "<span id=""lbRSP"">")
+	pos2 = InStr(pos1, pResult, "</span>")
+	
+	xResponse = Mid(pResult, pos1+17, pos2-(pos1+17))
+	
+	if Len(xResponse) > 0 then
+		
+		ar_response = split(xResponse, "|")
+		
+		R_Approved = ar_response(0)
+		R_Code = ar_response(1)
+		R_Ref = ar_response(2)
+		R_Error = ar_response(3)
+		R_AVS = ar_response(4)
+		R_FraudCode = ar_response(5)
+		R_Message = ar_response(6)
+		
+	end if
+	
+	if R_Approved = "APPROVED" then
+		
+		str_validation_number = CStr(R_Code)
+    str_ref_number = CStr(R_Ref)
+
+    ChargeCreditCard_linkpt_v4 = true
+  else
+
+		ChargeCreditCard_linkpt_v4 = false
+
+		SELECT CASE R_Approved
+		CASE "DECLINED"
+			
+			AddToHTMLMsgHldr str_msghldr, "Your order cannot be processed. Please verify your credit card information. - code: D" & "<br>" & R_Error, false
+
+		CASE "FRAUD"
+			
+			AddToHTMLMsgHldr str_msghldr, "Your order cannot be processed. Please verify your credit card information. - code: F" & "<br>" & R_Error, false
+
+		CASE ELSE
+
+			AddToHTMLMsgHldr str_msghldr, "Your order cannot be processed. Please verify your credit card information. - code: G <br>" & "<br>" & R_Error, false
+
+		END SELECT
+		
+
+	end if
+									
+end function
+
+
+'============================================================
+' QUICKBOOK MERCHANT SERVICE - ADDED BY DY 04/27/06
+'============================================================
+Function ChargeCreditCard_QBMS(ByRef str_msghldr, ByRef str_orderid, ByRef str_debit_amount, _
+						ByRef str_exp_month, ByRef str_exp_year, ByRef str_card_num, ByRef str_cvv2, _
+						ByRef str_bname, ByRef str_baddr, ByRef str_bcity, ByRef str_bstate, ByRef str_bzip, ByRef str_bcountry,_
+						ByRef str_validation_number, ByRef str_ref_number,_
+						ByRef str_status)
+
+	Set objFSO = Server.CreateObject("Scripting.FileSystemObject")
+	Set objOut = objFSO.OpenTextFile("c:\customers\QBMS\" & Session("StoreID") & ".ini", 1, FALSE, FALSE)
+		
+	qbms_post_url = Trim(objOut.ReadLine)
+	qbms_conn_key = Trim(objOut.ReadLine)
+	qbms_payment_type = UCase(Trim(objOut.ReadLine))
+  objOut.Close()
+	Set objFSO = Nothing
+
+
+	szParam = "storeid=" & Session("StoreID")
+	szParam = szParam & "&connkey=" & qbms_conn_key
+	szParam = szParam & "&ptype=" & qbms_payment_type
+	szParam = szParam & "&orderid=" & str_orderid
+	szParam = szParam & "&ccnum=" & str_card_num
+	szParam = szParam & "&expiremonth=" & str_exp_month
+	szParam = szParam & "&expireyear="
+	If Len(str_exp_year) = 2 Then szParam = szParam & "20"
+	szParam = szParam & str_exp_year
+	szParam = szParam & "&amount=" & str_debit_amount
+	szParam = szParam & "&ccname=" & str_bname
+	szParam = szParam & "&ccaddr=" & str_baddr
+	szParam = szParam & "&cccity=" & str_bcity
+	szParam = szParam & "&ccstate=" & str_bstate
+	szParam = szParam & "&cczip=" & str_bzip
+	If str_bcountry = "US" Then
+		szParam = szParam & "&cccountry=" & "US"
+	Else
+		szParam = szParam & "&cccountry=" & "CA"
+	End If
+	szParam = szParam & "&cscode=" & str_cvv2
+
+
+  ' Write Request Log
+  szLog = Replace(szParam, "&ccnum=" & str_card_num, "&ccnum=" & Right(str_card_num, 4))
+  szLog = Replace(szLog, "&cscode=" & str_cvv2, "&cscode=")
+  szLog = Replace(szLog, "&connkey=" & qbms_conn_key, "&connkey=")
+  WriteLogFile "c:\customers\qbms\log", Now() & vbTab & "Request" & vbTab & Session("StoreID") & vbTab & str_orderid & vbTab & szLog
+
+
+	Set objXmlRecv = Server.CreateObject("Msxml2.ServerXMLHTTP")
+
+	objXmlRecv.open "POST", qbms_post_url, False
+
+	objXmlRecv.setRequestHeader "Content-Type", "application/x-www-form-urlencoded"
+	objXmlRecv.setTimeouts 10000, 10000, 30000, 30000
+	
+	objXmlRecv.send szParam
+	
+	arrHeaders = objXmlRecv.getAllResponseHeaders()
+	szStatus = objXmlRecv.statusText
+	szResult = objXmlRecv.responseText
+	
+	nPos1 = InStr(1, szResult, "<span id=""lblQBMS"">")
+	nPos2 = InStr(nPos1, szResult, "</span>")
+	
+	szResponse = Mid(szResult, nPos1 + 19, nPos2 - (nPos1 + 19))
+
+
+  ' Write Response Log
+  WriteLogFile "c:\customers\qbms\log", Now() & vbTab & "Response" & vbTab & Session("StoreID") & vbTab & str_orderid & vbTab & szResponse
+
+	
+	szStatus = ""
+	szTransactionID = ""
+	szError = ""
+	
+	If Len(szResponse) > 0 Then
+		arrResponse = Split(szResponse, ":")
+		
+		szStatus = arrResponse(0)
+		szTransactionID = arrResponse(1)
+		szAuthorizationCode = arrResponse(2)
+		szError = arrResponse(3)
+	End If
+			
+	If szStatus = "1" Then
+		ChargeCreditCard_QBMS = True
+		str_validation_number = szTransactionID
+		str_ref_number = szAuthorizationCode
+	Else
+		ChargeCreditCard_QBMS = False
+		str_msghldr = szError
+	End If
+
+End Function
+
+'============================================================
+' EXACT - ADDED BY DY 20060803
+'============================================================
+Function ChargeCreditCard_Exact(ByRef str_msghldr, ByRef str_orderid, ByRef str_debit_amount, _
+						ByRef str_exp_month, ByRef str_exp_year, ByRef str_card_num, ByRef str_cvv2, _
+						ByRef str_bname, ByRef str_baddr, ByRef str_bcity, ByRef str_bstate, ByRef str_bzip, ByRef str_bcountry,_
+						ByRef str_validation_number, ByRef str_ref_number,_
+						ByRef str_status)
+
+	Set objFSO = Server.CreateObject("Scripting.FileSystemObject")
+	Set objOut = objFSO.OpenTextFile("C:\customers\exact\" & Session("StoreID") & ".ini", 1, FALSE, FALSE)
+		
+	szPostUrl = Trim(objOut.ReadLine)
+	szConnID = Trim(objOut.ReadLine)
+	szConnPwd = Trim(objOut.ReadLine)
+	szPaymentType = UCase(Trim(objOut.ReadLine))
+	szSecure = Trim(objOut.ReadLine)  ' VBV, CVV check, 0 if not check, 1 if have to check
+  objOut.Close()
+	Set objFSO = Nothing
+
+  szExpiryDate = str_exp_month
+  If Len(szExpiryDate) = 1 Then szExpiryDate = "0" & szExpiryDate
+  szExpiryDate = szExpiryDate & Right(str_exp_year, 2)
+
+	szParam = "storeid=" & Session("StoreID")
+	szParam = szParam & "&connid=" & szConnID
+	szParam = szParam & "&connpwd=" & szConnPwd
+	szParam = szParam & "&orderid=" & str_orderid
+	szParam = szParam & "&ptype=" & szPaymentType
+	szParam = szParam & "&ccnum=" & str_card_num
+	szParam = szParam & "&expirydate=" & szExpiryDate
+	szParam = szParam & "&amount=" & str_debit_amount
+	szParam = szParam & "&ccname=" & str_bname
+	szParam = szParam & "&ccaddr=" & str_baddr
+	szParam = szParam & "&cccity=" & str_bcity
+	szParam = szParam & "&ccstate=" & str_bstate
+	szParam = szParam & "&cczip=" & str_bzip
+	If str_bcountry = "US" Then
+		szParam = szParam & "&cccountry=" & "US"
+	Else
+		szParam = szParam & "&cccountry=" & "CA"
+	End If
+	szParam = szParam & "&cvv=" & str_cvv2
+
+
+  ' Write Request Log
+  szLog = "ptype=" & szPaymentType & "&ccnum=" & Right(str_card_num, 4) & "&amount=" & str_debit_amount
+  WriteLogFile "c:\customers\exact\log", Now() & vbTab & "Request" & vbTab & Session("StoreID") & vbTab & str_orderid & vbTab & szLog
+
+
+	Set objXmlRecv = Server.CreateObject("Msxml2.ServerXMLHTTP")
+
+	objXmlRecv.open "POST", szPostUrl, False
+
+	objXmlRecv.setRequestHeader "Content-Type", "application/x-www-form-urlencoded"
+	objXmlRecv.setTimeouts 10000, 10000, 30000, 30000
+	
+	objXmlRecv.send szParam
+	
+	arrHeaders = objXmlRecv.getAllResponseHeaders()
+	szStatus = objXmlRecv.statusText
+	szResult = objXmlRecv.responseText
+	
+	nPos1 = InStr(1, szResult, "<span id=""lblGatewayReturn"">")
+	nPos2 = InStr(nPos1, szResult, "</span>")
+	
+	szResponse = Mid(szResult, nPos1 + 28, nPos2 - (nPos1 + 28))
+
+
+  ' Write Response Log
+  WriteLogFile "c:\customers\exact\log", Now() & vbTab & "Response" & vbTab & Session("StoreID") & vbTab & str_orderid & vbTab & szResponse
+
+	
+	szStatus = ""
+	szTransactionID = ""
+	szError = ""
+	
+	If Len(szResponse) > 0 Then
+		arrResponse = Split(szResponse, ":")
+		
+		szStatus = arrResponse(0)
+		szTransactionID = arrResponse(1)
+		szAuthorizationCode = arrResponse(2)
+		szError = arrResponse(3)
+	End If
+			
+	If szStatus = "1" Then
+		ChargeCreditCard_Exact = True
+		str_validation_number = szTransactionID
+		str_ref_number = szAuthorizationCode
+	Else
+		ChargeCreditCard_Exact = False
+		str_msghldr = szError
+	End If
+
+End Function
+
+'============================================================
+' PAYMENTECH (ORBITAL GATEWAY) - ADDED BY DY 01/22/09
+'============================================================
+Function ChargeCreditCard_Paymentech(ByRef str_msghldr, ByRef str_orderid, ByRef str_debit_amount, _
+						ByRef str_exp_month, ByRef str_exp_year, ByRef str_card_num, ByRef str_cvv2, _
+						ByRef str_bname, ByRef str_baddr, ByRef str_bcity, ByRef str_bstate, ByRef str_bzip, ByRef str_bcountry, _
+						ByRef str_validation_number, ByRef str_ref_number, ByRef str_cvv2_flag, ByRef str_avs_flag, _
+						ByRef str_status)
+
+	Set objFSO = Server.CreateObject("Scripting.FileSystemObject")
+	Set objOut = objFSO.OpenTextFile("c:\customers\paymentech\" & Session("StoreID") & ".ini", 1, FALSE, FALSE)
+		
+	szPTPostUrl = Trim(objOut.ReadLine)
+	szMerchantID = Trim(objOut.ReadLine)
+	szTerminalID = Trim(objOut.ReadLine)
+	szBin = Trim(objOut.ReadLine)
+	szPaymentType = Trim(objOut.ReadLine)
+  objOut.Close()
+	Set objFSO = Nothing
+
+
+	szParam = "StoreID=" & Session("StoreID")
+	szParam = szParam & "&PType=" & szPaymentType
+	szParam = szParam & "&MerchantID=" & szMerchantID
+	szParam = szParam & "&TerminalID=" & szTerminalID
+	szParam = szParam & "&Bin=" & szBin
+	szParam = szParam & "&OrderID=" & str_orderid
+	szParam = szParam & "&CCNum=" & str_card_num
+	szParam = szParam & "&ExpireMonth=" & str_exp_month
+	szParam = szParam & "&ExpireYear="
+	If Len(str_exp_year) = 2 Then szParam = szParam & "20"
+	szParam = szParam & str_exp_year
+	szParam = szParam & "&Amount=" & str_debit_amount
+	szParam = szParam & "&CCName=" & str_bname
+	szParam = szParam & "&CCAddr1=" & str_baddr
+	szParam = szParam & "&CCCity=" & str_bcity
+	szParam = szParam & "&CCState=" & str_bstate
+	szParam = szParam & "&CCZip=" & str_bzip
+	If str_bcountry = "US" Then
+		szParam = szParam & "&CCCountry=" & "US"
+	Else
+		szParam = szParam & "&CCCountry=" & "CA"
+	End If
+	szParam = szParam & "&CSCode=" & str_cvv2
+
+
+  ' Write Request Log
+  szLog = Replace(szParam, "&CCNum=" & str_card_num, "&CCNum=" & Right(str_card_num, 4))
+  szLog = Replace(szLog, "&CSCode=" & str_cvv2, "&CSCode=")
+  szLog = Replace(szLog, "&MerchantID=" & szMerchantID, "&MerchantID=")
+  WriteLogFile "c:\customers\paymentech\log", Now() & vbTab & "Request" & vbTab & str_orderid & vbTab & szLog
+
+
+	Set objXmlRecv = Server.CreateObject("Msxml2.ServerXMLHTTP")
+
+	objXmlRecv.open "POST", szPTPostUrl, False
+
+	objXmlRecv.setRequestHeader "Content-Type", "application/x-www-form-urlencoded"
+	objXmlRecv.setTimeouts 10000, 10000, 30000, 30000
+	
+	objXmlRecv.send szParam
+	
+	arrHeaders = objXmlRecv.getAllResponseHeaders()
+	szStatus = objXmlRecv.statusText
+	szResult = objXmlRecv.responseText
+	
+	nPos1 = InStr(1, szResult, "<span id=""lblPG"">")
+	nPos2 = InStr(nPos1, szResult, "</span>")
+	
+	szResponse = Mid(szResult, nPos1 + 17, nPos2 - (nPos1 + 17))
+
+
+  ' Write Response Log
+  WriteLogFile "c:\customers\paymentech\log", Now() & vbTab & "Response" & vbTab & str_orderid & vbTab & szResponse
+
+	
+	szStatus = ""
+	szApprovalStatus = ""
+	szError = ""
+	
+	If Len(szResponse) > 0 Then
+		arrResponse = Split(szResponse, ":")
+		
+		szStatus = arrResponse(0)         ' procStatus
+  	szApprovalStatus = arrResponse(2) ' approvalStatus
+		szError = arrResponse(4)          ' respCodeMessage
+	End If
+			
+	If szStatus = "0" And szApprovalStatus = "1" Then
+		ChargeCreditCard_Paymentech = True
+		
+		str_validation_number = arrResponse(6)  ' txRefNum
+		str_ref_number = arrResponse(8) & ":" & arrResponse(13)    ' authorizationCode, orderID
+		str_cvv2_flag = Trim(arrResponse(11))   ' cvvRespCode
+		str_avs_flag = Trim(arrResponse(9))   ' avsRespCode
+		
+		SELECT CASE str_cvv2_flag
+		CASE "M"  ' CVV Match
+			str_cvv2_flag = "10004"
+		CASE "N"  ' CVV No Match
+			str_cvv2_flag = "10003"
+		CASE "P"  ' Not processed
+			str_cvv2_flag = "10006"
+		CASE "S"  ' Should have been present
+			str_cvv2_flag = "10001"
+		CASE "U"  ' Unsupported by issuer
+			str_cvv2_flag = "10002"
+		CASE ELSE
+			str_cvv2_flag = "10001"
+		END SELECT
+		
+		SELECT CASE str_avs_flag
+		CASE "F"  ' Zip No Match / Zip4 No Match / Locale match
+			str_avs_flag = "10004"
+		CASE "G"  ' No match at all
+			str_avs_flag = "10003"
+		CASE "6"  ' System unavailable or time-out
+			str_avs_flag = "10008"
+		CASE "7"  ' Address information unavailable
+			str_avs_flag = "10007"
+		CASE "H"  ' Zip Match / Locale match
+			str_avs_flag = "10006"
+		CASE "X", "Z" ' Zip Match / Locale no match
+			str_avs_flag = "10005"
+		CASE "4"  ' Issuer does not participate in AVS
+			str_avs_flag = "10002"
+		CASE ELSE
+			str_avs_flag = "10001"
+		END SELECT		
+	Else
+		ChargeCreditCard_Paymentech = False
+		str_msghldr = szError
+	End If
+
+End Function
+
+'============================================================
+' LOG MANAGEMENT - ADDED BY DY 05/01/06
+'============================================================
+Function WriteLogFile(szRoot, szData)
+	szLogDir = szRoot
+	If Right(szLogDir, 1) = "\\" Then
+	  szLogDir = Left(szLogDir, Len(szLogDir) - 1)
+	End If
+	
+	On Error Resume Next
+	Set objFSO = Server.CreateObject("Scripting.FileSystemObject")
+	If Not objFSO.FolderExists(szLogDir) Then
+	  objFSO.CreateFolder szLogDir
+	End If
+	
+	szYear = Year(Now)
+	szMonth = Month(Now)
+	If szMonth < 10 Then szMonth = "0" & szMonth
+	szDay = Day(Now)
+	If szDay < 10 Then szDay = "0" & szDay
+
+  szLogDir = szLogDir & "\\" & szYear
+	If Not objFSO.FolderExists(szLogDir) Then
+	  objFSO.CreateFolder szLogDir
+	End If
+  szLogDir = szLogDir & "\\" & szMonth
+	If Not objFSO.FolderExists(szLogDir) Then
+	  objFSO.CreateFolder szLogDir
+	End If
+	
+  szLogDir = szLogDir & "\\" & szYear & szMonth & szDay & "_" & Session("StoreID") & ".log"
+	
+	Set objLog = objFSO.OpenTextFile(szLogDir, 8, True)
+	objLog.WriteLine(szData)
+	objLog.Close
+	Set objLog = Nothing
+	Set objFSO = Nothing
+	On Error GoTo 0
+
+End Function
+
+'============================================================
+' Get VBV MPI Url - ADDED BY Derek Yu on 20060710
+'============================================================
+Function GetVBVMPIUrl(szTestMode)
+  If (szTestMode = "1") Then
+    GetVBVMPIUrl = "https://esqa.moneris.com:43924/mpi/servlet/MpiServlet"
+  Else
+    GetVBVMPIUrl = "https://www3.moneris.com:43924/mpi/servlet/MpiServlet"
+  End If
+End Function
+
+'============================================================
+' Check VBV(Verified By Visa) - ADDED BY Derek Yu on 20060710
+'============================================================
+function CheckVBV(szOrderID, ByRef dChargeTotal, _
+							ByRef szCardNum, ByRef szExpMonth, ByRef szExpYear, _
+							ByRef szStatusMsg)
+
+  nRet = -1
+  
+  szAccept = Request.ServerVariables("HTTP_ACCEPT")
+  szUserAgent = Request.ServerVariables("HTTP_USER_AGENT")
+	
+	Set objFile = Server.CreateObject("Scripting.FileSystemObject")
+	Set objStream = objFile.OpenTextFile("C:\customers\moneris\" & Session("StoreID") & ".ini", 1, FALSE, FALSE)
+	szMPIToken = Trim(objStream.ReadLine)
+	szMPIStoreID = Trim(objStream.ReadLine)
+	szSaleFlag = Trim(objStream.ReadLine)
+	szTestFlag = Trim(objStream.ReadLine)
+	szVBVFlag = "0"
+	If (Not objStream.AtEndOfLine) Then szVBVFlag = Trim(objStream.ReadLine)
+	objStream.Close
+
+  ' Test this in real if it works without below code, remove below
+  ' Validate Order ID.
+  If szTestFlag = "1" Or szTestFlag = "0" Then
+	  s = Len(szOrderID)
+    If s <= 20 AND s > 0 Then
+	  	If s < 20 Then
+	  		szOrderID = szOrderID & "-"
+
+	  		d = 20 - Len(szOrderID)
+	  		For i = 1 To d
+	  			szOrderID = szOrderID & "0"
+	  		Next
+	  	End If
+    End If
+  End If
+
+  szMPIUrl = GetVBVMPIUrl(szTestFlag)
+  szMPITxnReturn = Session("SecureURL") & "/tp_vbv.phtml"
+
+  szExpiryDate = Right(szExpYear, 2) & szExpMonth
+
+  szMD = szOrderID & ";" & szMPIStoreID & ";" & szMPIToken & ";" & dChargeTotal & ";" & szCardNum & ";" & szExpiryDate & ";" & szTestFlag & ";"
+  ' Write Request Log
+  szLog = szOrderID & ";" & szMPIStoreID & ";" & szMPIToken & ";" & dChargeTotal & ";" & Right(szCardNum, 4) & ";" & szExpiryDate & ";" & szTestFlag & ";"
+  WriteLogFile "c:\\customers\\vbv\\log", Now() & vbTab & "Request" & vbTab & Session("StoreID") & vbTab & szOrderID & vbTab & szLog
+
+	Set objReq = Server.CreateObject("Moneris.Request")
+	objReq.initMpiRequest szMPIUrl
+
+  Set objMPIReq = Server.CreateObject("Moneris.MPIReq")
+
+  objReq.setRequest objMPIReq.formatRequest(szMPIStoreID, szMPIToken, objMPIReq.formatTxnRequest(szOrderID, dChargeTotal, szCardNum, szExpiryDate, szMD, szMPITxnReturn, szAccept, szUserAgent))
+  objReq.sendRequest
+  szMPISuccess = objReq.getMPISuccess
+  szMPIMsg = objReq.getMPIMessage
+
+  If szMPISuccess = "true" Then
+    If szMPIMsg = "Y" Then
+      nRet = 1
+      ' Creates popup window on customer's machine.
+      CreateVBVPopup objReq.getMPIInlineForm
+    ElseIf szMPIMsg = "U" Then
+      ' Send a normal transaction - crypt_type = 7
+      nRet = 0
+    ElseIf szMPIMsg = "N" Then
+      ' Send a normal transaction - crypt_type = 6
+      nRet = 0
+    Else
+      ' Must be cancelled
+      nRet = -1
+      szStatusMsg = szMPIMsg
+    End If
+  Else
+    nRet = -1
+    szStatusMsg = szMPIMsg
+  End If
+
+  WriteLogFile "c:\\customers\\vbv\\log", Now() & vbTab & "Response(" & nRet & ")" & vbTab & Session("StoreID") & vbTab & szOrderID & vbTab & szMPISuccess & vbTab & szMPIMsg & vbTab & objReq.dumpXMLResponse
+  CheckVBV = nRet
+End Function
+
+'============================================================
+' Creates VBV popup window - ADDED BY Derek Yu on 20060713
+'============================================================
+Function CreateVBVPopup(szData)
+  Response.Write "<form name=""frmVBV"" method=""post"">" & vbCrLf
+  Response.Write "<textarea id=""ap_vbv"" style=""display:none;"" cols=""0"" rows=""0"">" & vbCrLf
+  Response.Write szData & vbCrLf
+  Response.Write "</textarea>" & vbCrLf
+  Response.Write "</form>" & vbCrLf
+  Response.Write "<sc" & "ript language=""javascript"">" & vbCrLf
+
+	Response.Write "var g_objVBV = null;" & vbCrLf
+	Response.Write "function showVBV() {" & vbCrLf
+	Response.Write "var nHeight = 400;" & vbCrLf
+	Response.Write "var nWidth = 400;" & vbCrLf
+	Response.Write "var nTop = (screen.height) ? (screen.height - nHeight) / 2 : 0;" & vbCrLf
+  Response.Write "var nLeft = (screen.width) ? (screen.width - nWidth) / 2 : 0;" & vbCrLf
+
+  Response.Write "if (g_objVBV == null || g_objVBV.closed) {" & vbCrLf
+	Response.Write "g_objVBV = window.open("""", ""wndVBV"", " & vbCrLf
+	Response.Write "	""scrollbars=no,toolbar=no,location=no,directories=no,status=yes,"" +" & vbCrLf
+	Response.Write "	""resizable=no,copyhistory=no,width="" + nWidth + "",height="" + nHeight + "",top="" + nTop + "",left="" + nLeft);" & vbCrLf
+	Response.Write "g_objVBV.document.close();" & vbCrLf
+	Response.Write "g_objVBV.focus();" & vbCrLf
+
+	Response.Write "g_objVBV.document.write(document.getElementById('ap_vbv').value);" & vbCrLf
+	Response.Write "g_objVBV.document.close();" & vbCrLf
+  Response.Write "} else {" & vbCrLf
+	Response.Write "g_objVBV.focus();" & vbCrLf
+	Response.Write "}" & vbCrLf
+	Response.Write "}" & vbCrLf
+	Response.Write "document.getElementById(""lyrVBV"").style.display = ""block"";" & vbCrLf
+	Response.Write "showVBV();" & vbCrLf
+  Response.Write "</sc" & "ript>" & vbCrLf
+ 	Response.Flush()
+End Function
+
+'============================================================
+' MONERIS With VBV - ADDED BY Derek Yu on 20060710
+'============================================================
+Function ChargeCreditCard_MonerisVBV(ByRef szOrderID, ByRef dChargeTotal, _
+							ByRef szCardNum, ByRef szExpiryDate, ByRef szCAVV, _
+							ByRef szValidationNum, ByRef szRefNum, ByRef szStatus, ByRef szStatusMsg)
+
+	Set objFile = Server.CreateObject("Scripting.FileSystemObject")
+	Set objStream = objFile.OpenTextFile("C:\customers\moneris\" & Session("StoreID") & ".ini",1,FALSE, FALSE)
+	szToken = Trim(objStream.ReadLine)
+	szStoreID = Trim(objStream.ReadLine)
+	szSaleFlag = Trim(objStream.ReadLine)
+	szTestFlag = Trim(objStream.ReadLine)
+	szVBVFlag = "0"
+	If (Not objStream.AtEndOfLine) Then szVBVFlag = Trim(objStream.ReadLine)
+	objStream.Close
+
+  szLog = "order_id=" & szOrderID & "&monaris_store_id=" & szStoreID & "&monaris_token_id=" & szToken & "&charge_total=" & dChargeTotal & "&card_num=" & Right(szCardNum, 4) & "&expiry_date=" & szExpiryDate & "&cavv=" & szCAVV
+  WriteLogFile "c:\\customers\\moneris\\log", Now() & vbTab & "Request" & vbTab & Session("StoreID") & vbTab & szOrderID & vbTab & szLog
+
+	Set objReq = Server.CreateObject("Moneris.Request")
+	If szTestFlag = "1" Then
+	  szPostUrl = "https://esqa.moneris.com:43924/gateway2/servlet/MpgRequest"
+	Else
+	  szPostUrl = "https://www3.moneris.com:43924/gateway2/servlet/MpgRequest"
+  End If	
+	objReq.initRequest szStoreID, szToken, szPostUrl
+
+	If szSaleFlag = "1" Then
+    Set objMPIReq = Server.CreateObject("Moneris.cavvpurchase")
+	Else
+		Set objMPIReq = Server.CreateObject("Moneris.cavvpreauth")
+	End If
+
+	objReq.setRequest objMPIReq.formatRequest(szOrderID, dChargeTotal, szCardNum, szExpiryDate, szCAVV)
+	objReq.sendRequest
+
+  ' objReq.getReceiptID
+  ' objReq.getReferenceNum
+  ' objReq.getResponseCode
+  ' objReq.getISO
+  ' objReq.getAuthCode
+  ' objReq.getTransTime
+  ' objReq.getTransDate
+  ' objReq.getTransType
+  ' objReq.getCompleteStatus
+  ' objReq.getMessage
+  ' objReq.getTransAmount
+  ' objReq.getCardType
+  ' objReq.getTransID
+  ' objReq.getTimedOutStatus
+  ' objReq.getBankTotals
+
+  szResponseCode = objReq.getResponseCode
+
+	szLog = "Failure"
+	If isNumeric(szResponseCode) Then
+		If szResponseCode < 50 Then
+			' Transaction Approved
+			szValidationNum = objReq.getAuthCode
+			szRefNum = objReq.getReferenceNum
+			szStatus = objReq.getResponseCode & ":" & objReq.getISO
+
+			ChargeCreditCard_MonerisVBV = true
+			szLog = "Success"
+		Else
+			' Transaction Declined
+			szStatusMsg = objReq.getMessage & "(" & objReq.getResponseCode & ":" & objReq.getISO & ")"
+
+			ChargeCreditCard_MonerisVBV = false
+		End If
+
+	Else
+		szStatusMsg = objReq.getMessage & "(" & objReq.getResponseCode & ":" & objReq.getISO & ")"
+
+		ChargeCreditCard_MonerisVBV = false
+	End If
+
+  WriteLogFile "c:\\customers\\moneris\\log", Now() & vbTab & "Response(" & szLog & ")" & vbTab & Session("StoreID") & vbTab & szOrderID & vbTab & objReq.dumpXMLResponse
+	
+End function
+
+</Script>

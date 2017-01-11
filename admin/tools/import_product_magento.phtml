@@ -3,12 +3,14 @@
 	Const adSaveCreateOverWrite = 2
 	Const adSaveCreateNotExist = 1 
 				
-	g_storeid = "hubutu"
+	g_storeid = "hisandher"
 	
 	Server.ScriptTimeout=2000
-	mysqlsvr = "DRIVER={MySQL ODBC 5.2 ANSI Driver};Server=104.207.233.67;Database=hubutuco_mage4;Uid=hubutuco_magento;Pwd=uI39bGS0Gvio;"
+	mysqlsvr = "DRIVER={MySQL ODBC 5.2 ANSI Driver};Server=207.32.182.87;Database=hisandhe_hisandher4;Uid=hisandhe_root;Pwd=apple1132U;"
+	'mysqlsvr = "DRIVER={MySQL ODBC 5.2a Driver};Server=207.32.182.87;Database=hisandhe_hisandher4;Uid=hisandhe_root;Pwd=apple1132U;"
 	Set conn = Server.CreateObject("ADODB.connection")
 	conn.open mysqlsvr
+	
 	
 	g_connection_string = "Provider=SQLOLEDB;Data Source=localhost;Database=GSHOP;uid=dinamall_hanta_user;pwd=hanta_pw0105;"
 	Set dbconn = Server.CreateObject("ADODB.Connection")
@@ -23,8 +25,8 @@
 	'dbconn.Execute(sql)
 	
 	'INITIAL UPLOAD
-	sql = "SELECT * FROM catalog_product_flat_1 ORDER BY entity_id LIMIT 10"
-	sql = "SELECT * FROM catalog_product_flat_1 WHERE entity_id > 4224 ORDER BY entity_id LIMIT 60"
+	sql = "SELECT * FROM catalog_product_flat_1 WHERE type_id='configurable' ORDER BY entity_id LIMIT 1"
+	sql = "SELECT * FROM catalog_product_flat_1 WHERE  type_id='configurable' AND entity_id > 38474 ORDER BY entity_id LIMIT 60"
 	
 	set rs = conn.Execute(sql)
 	do while not rs.EOF
@@ -40,9 +42,10 @@
 		Else
 			objFSO.CreateFolder(strRootFolder & "/media/catalog/product/" & pf_id)
 		End If
+		
 		'-----------------------------------------------------------------------
 		if Len(thumbnail) > 4 then
-			sourcePath = "http://www.hubutu.com/media/catalog/product" & thumbnail
+			sourcePath = "http://www.hisandher.com/media/catalog/product" & thumbnail
 			ar_thumbnail = Split(thumbnail, "/")
 			destPath = strRootFolder & "/media/catalog/product/" & pf_id & "/" & ar_thumbnail(UBound(ar_thumbnail))
 			pf_productimage = ar_thumbnail(UBound(ar_thumbnail))
@@ -70,11 +73,14 @@
 				
 				dim xmlRecv2
 				set xmlRecv2 = Server.CreateObject("Msxml2.ServerXMLHTTP")
-				xmlRecv2.open "POST", "http://app.internetreports.com/api/upload?FileURL=" & sourcePath, False
+				xmlRecv2.open "POST", "http://app.olivecommerce.com/Api/Upload?FileURL=" & sourcePath & "&CloudName=" & g_cloudinary_cloud_name & "&APIKey=" & g_cloudinary_api_key & "&APISecret=" & g_cloudinary_api_secret & "&ProductID=1&MaxSize=" & g_cloudinary_max_size, False
+				
+				
 				xmlRecv2.setRequestHeader "Content-Type", "application/x-www-form-urlencoded; charset=UTF-8"
 				xmlRecv2.setTimeouts 5000, 5000, 15000, 15000
 				xmlRecv2.send ""
 				pResult = xmlRecv2.responseText
+				
 				
 				if Len(pResult) > 0 then
 					pResult = Replace(pResult, "[""", "")

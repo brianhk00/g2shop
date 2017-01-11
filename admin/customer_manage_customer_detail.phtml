@@ -33,6 +33,8 @@
 		shopper_billing_state = rsShopper("State")
 		shopper_billing_zip = rsShopper("ZipCode")
 		shopper_billing_country = rsShopper("Country")
+		shopper_billing_prefix = rsShopper("prefix")
+		shopper_billing_company = rsShopper("company")
 		
 		if shopper_billing_country = "USA" OR shopper_billing_country = "" OR shopper_billing_country = "--" then
 			shopper_billing_country = "US"
@@ -84,6 +86,8 @@
 		shopper_shipping_state = rsShopper("shipping_State")
 		shopper_shipping_zip = rsShopper("shipping_ZipCode")
 		shopper_shipping_country = rsShopper("shipping_Country")
+		shopper_shipping_prefix = rsShopper("shipping_prefix")
+		shopper_shipping_company = rsShopper("shipping_company")
 		
 		if shopper_shipping_country = "USA" OR shopper_shipping_country = "" OR shopper_shipping_country = "--" then
 			shopper_shipping_country = "US"
@@ -455,7 +459,7 @@
 																					</div>
 																					<div class="portlet-body">
 																						<address>
-																						<%=shopper_billing_firstname%>&nbsp;<%=shopper_billing_lastname%><br/>
+																						<%=shopper_billing_prefix%>&nbsp;<%=shopper_billing_firstname%>&nbsp;<%=shopper_billing_lastname%><br/>
 																						<%=shopper_billing_address%><br />
 																						<%=shopper_billing_city%>, <%=shopper_billing_state%> <%=shopper_billing_zip%><br/>
 																						<%=shopper_billing_country%><br/>
@@ -571,6 +575,14 @@
 																					</div>
 																				</div>
 																				<div class="form-group">
+																					<label class="col-sm-2 control-label" for="shopper_billing_prefix">
+																						Prefix
+																					</label>
+																					<div class="col-sm-9">
+																						<input type="text" placeholder="" id="shopper_billing_prefix" name="shopper_billing_prefix" class="form-control input-sm" value="<%=shopper_billing_prefix%>">
+																					</div>
+																				</div>
+																				<div class="form-group">
 																					<label class="col-sm-2 control-label" for="shopper_billing_firstname">
 																						First Name 
 																					</label>
@@ -584,6 +596,14 @@
 																					</label>
 																					<div class="col-sm-9">
 																						<input type="text" placeholder="" id="shopper_billing_lastname" name="shopper_billing_lastname" class="form-control input-sm" value="<%=shopper_billing_lastname%>">
+																					</div>
+																				</div>
+																				<div class="form-group">
+																					<label class="col-sm-2 control-label" for="shopper_billing_company">
+																						Company
+																					</label>
+																					<div class="col-sm-9">
+																						<input type="text" placeholder="" id="shopper_billing_company" name="shopper_billing_company" class="form-control input-sm" value="<%=shopper_billing_company%>">
 																					</div>
 																				</div>
 																				<div class="form-group">
@@ -669,7 +689,7 @@
 																					</div>
 																					<div class="portlet-body">
 																						<address>
-																						<%=shopper_shipping_firstname%>&nbsp;<%=shopper_shipping_lastname%><br/>
+																						<%=shopper_shipping_prefix%>&nbsp;<%=shopper_shipping_firstname%>&nbsp;<%=shopper_shipping_lastname%><br/>
 																						<%=shopper_shipping_address%><br />
 																						<%=shopper_shipping_city%>, <%=shopper_shipping_state%> <%=shopper_shipping_zip%><br/>
 																						<%=shopper_shipping_country%><br/>
@@ -800,6 +820,14 @@
 																					</label>
 																					<div class="col-sm-9">
 																						<input type="text" placeholder="" id="shopper_shipping_lastname" name="shopper_shipping_lastname" class="form-control input-sm" value="<%=shopper_shipping_lastname%>">
+																					</div>
+																				</div>
+																				<div class="form-group">
+																					<label class="col-sm-2 control-label" for="shopper_shipping_company">
+																						Company
+																					</label>
+																					<div class="col-sm-9">
+																						<input type="text" placeholder="" id="shopper_shipping_company" name="shopper_shipping_company" class="form-control input-sm" value="<%=shopper_shipping_company%>">
 																					</div>
 																				</div>
 																				<div class="form-group">

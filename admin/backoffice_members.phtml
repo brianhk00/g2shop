@@ -41,13 +41,15 @@
 											<div class="portlet-title">
 												<div class="caption">
 													<i class="icon-settings font-dark"></i>
-													<span class="caption-subject font-dark sbold uppercase">Customer List</span>
+													<span class="caption-subject font-dark sbold uppercase">Member List</span>
 												</div>
 												<div class="actions">
+													<!--
 													<a class="btn green btn-circle" href="customer_manage_customer_detail.phtml?shopper_id=0"> 
 														<i class="fa fa-plus"></i>
 														Create New Customer
 													</a>
+													-->
 													<div class="btn-group">
 														<!--
 														<a class="btn red btn-outline btn-circle" href="javascript:;" data-toggle="dropdown">
@@ -77,6 +79,7 @@
 											<div class="portlet-body">
 												<div class="table-container">
 													<div class="table-actions-wrapper">
+														<!--
 														<span> </span>
 														<select class="table-group-action-input form-control input-inline input-small input-sm">
 															<option value="">Select...</option>
@@ -95,6 +98,7 @@
 														</select>
 														<button class="btn btn-sm green table-group-action-submit">
 															<i class="fa fa-check"></i> Submit</button>
+														-->
 													</div>
 													<table class="table table-striped table-bordered table-hover table-checkable" id="datatable_customer_manage_customer">
 														<thead>
@@ -105,56 +109,63 @@
 																		<span></span>
 																	</label>
 																</th>
-																<th width="8%"> ID&nbsp;# </th>
-																<th width="120"> Name </th>
-																<th width="120"> Email </th>
-																<th width="20"> Group </th>
-																<th width="10%"> Telephone </th>
+																<th width="8%"> No&nbsp;# </th>
+																<th width="8%"> My ID&nbsp;# </th>
+																<th width="8%"> Direct</th>
+																<th width="8%"> Binary</th>
+																<th width="100"> Name </th>
+																<th width="80"> Email <br> Phone</th>
+																<th width="20"> Jumin No. <br> DOB </th>
 																<th width="5%"> Country </th>
-																<th width="10%"> State </th>
-																<th width="15%"> Customer Since </th>
-																<th width="5%"> Actions </th>
+																<th width="60"> Status </th>
+																<th width="12%"> Reg.Date <br> Prime Order</th>
+																<th width="10%"> Actions </th>
 															</tr>
 															<tr role="row" class="filter">
 																<td> </td>
 																<td>
-																	<input type="text" class="form-control form-filter input-sm" name="shopper_id"> 
+																	<input type="text" class="form-control form-filter input-sm" name="D_NO"> 
 																</td>
 																<td>
-																	<input type="text" class="form-control form-filter input-sm" name="shopper_name"> 
+																	<input type="text" class="form-control form-filter input-sm" name="D_UID"> 
 																</td>
 																<td>
-																	<input type="text" class="form-control form-filter input-sm" name="shopper_email"> 
+																	<input type="text" class="form-control form-filter input-sm" name="P_NAME_H"> 
 																</td>
 																<td>
-																	<select name="shopper_group" class="form-control form-filter input-sm">
-																		<option value="">Select...</option>
-																		<option value="A">A</option>
-																		<option value="B">B</option>
-																		<option value="C">C</option>
-																		<option value="D">D</option>
+																	<input type="text" class="form-control form-filter input-sm" name="S_NAME_H"> 
+																</td>
+																<td>
+																	<input type="text" class="form-control form-filter input-sm" name="D_NAME"> 
+																</td>
+																<td>
+																	<input type="text" class="form-control form-filter input-sm" name="D_EMAIL_PHONE"> 
+																</td>
+																<td>
+																	<input type="text" class="form-control form-filter input-sm" name="D_IDNO"> 
+																	
+																</td>
+																<td>
+																	
+																</td>
+																<td>
+																	<select name="D_DELETE" class="form-control form-filter input-sm">
+																		<option value="">All</option>
+																		<option value="N">Active</option>
+																		<option value="S">Inactive</option>
 																	</select>
 																</td>
 																<td>
-																	<input type="text" class="form-control form-filter input-sm" name="shopper_phone"> 
-																</td>
-																<td>
-																	<input type="text" class="form-control form-filter input-sm" name="shopper_country"> 
-																</td>
-																<td>
-																	<input type="text" class="form-control form-filter input-sm" name="shopper_state"> 
-																</td>
-																<td>
-																	<div class="input-group date date-picker margin-bottom-5" data-date-format="mm/dd/yyyy">
-																		<input type="text" class="form-control form-filter input-sm" readonly name="shopper_date_from" placeholder="From">
+																	<div class="input-group date date-picker margin-bottom-5" data-date-format="yyyymmdd">
+																		<input type="text" class="form-control form-filter input-sm" readonly name="D_DATE_from" placeholder="From">
 																		<span class="input-group-btn">
 																			<button class="btn btn-sm default" type="button">
 																				<i class="fa fa-calendar"></i>
 																			</button>
 																		</span>
 																	</div>
-																	<div class="input-group date date-picker" data-date-format="mm/dd/yyyy">
-																		<input type="text" class="form-control form-filter input-sm" readonly name="shopper_date_to" placeholder="To">
+																	<div class="input-group date date-picker" data-date-format="yyyymmdd">
+																		<input type="text" class="form-control form-filter input-sm" readonly name="D_DATE_to" placeholder="To">
 																		<span class="input-group-btn">
 																			<button class="btn btn-sm default" type="button">
 																				<i class="fa fa-calendar"></i>
@@ -223,7 +234,7 @@ var TableDatatablesAjax = function () {
         });
     }
 	
-	var grid;
+	var grid
 	
     var handleDemo1 = function () {
 
@@ -250,9 +261,7 @@ var TableDatatablesAjax = function () {
                 // So when dropdowns used the scrollable div should be removed. 
                 //"dom": "<'row'<'col-md-8 col-sm-12'pli><'col-md-4 col-sm-12'<'table-group-actions pull-right'>>r>t<'row'<'col-md-8 col-sm-12'pli><'col-md-4 col-sm-12'>>",
                 columnDefs: [ 
-					{ orderable: false, targets: [0,8,9] },
-					{ className: "text-center", targets: [6,7,8] },
-					{ className: "text-right", targets: [5] }
+					{ orderable: false, targets: [0,7,8,9] }
 				],
 					
                 "bStateSave": true, // save datatable state(pagination, sort, etc) in cookie.
@@ -263,10 +272,10 @@ var TableDatatablesAjax = function () {
                 ],
                 "pageLength": 20, // default record count per page
                 "ajax": {
-                    "url": "api/sp_customer_list_ex.phtml", // ajax source
+                    "url": "api/sp_backoffice_member_list.phtml", // ajax source
                 },
                 "order": [
-                    [1, "asc"]
+                    [1, "desc"]
                 ]// set first column as a default sort by asc
             }
         });
@@ -314,7 +323,7 @@ var TableDatatablesAjax = function () {
             handleDemo1();
         },
 		
-		submitFilter: function () {
+		 submitFilter: function () {
 
             grid.submitFilter();
         }
@@ -327,12 +336,11 @@ jQuery(document).ready(function() {
     TableDatatablesAjax.init();
 	
 	$('.form-filter').keypress(function (e) {
-		if (e.which == 13) {
-			TableDatatablesAjax.submitFilter();
-			return false; 
-		}
+	  if (e.which == 13) {
+		TableDatatablesAjax.submitFilter();
+		return false; 
+	  }
 	});
-	
 });	
 </script>
 <!-- END PAGE LEVEL SCRIPTS -->

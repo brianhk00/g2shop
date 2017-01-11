@@ -1,0 +1,112 @@
+<%
+	Const adTypeBinary = 1
+	Const adSaveCreateOverWrite = 2
+	Const adSaveCreateNotExist = 1 
+				
+	g_storeid = "hisandher"
+	
+	Server.ScriptTimeout=2000
+	mysqlsvr = "DRIVER={MySQL ODBC 5.2 ANSI Driver};Server=207.32.182.87;Database=hisandhe_hisandher4;Uid=hisandhe_root;Pwd=apple1132U;"
+	'mysqlsvr = "DRIVER={MySQL ODBC 5.2a Driver};Server=207.32.182.87;Database=hisandhe_hisandher4;Uid=hisandhe_root;Pwd=apple1132U;"
+	Set conn = Server.CreateObject("ADODB.connection")
+	conn.open mysqlsvr
+	
+	g_connection_string = "Provider=SQLOLEDB;Data Source=localhost;Database=TEMP;uid=dinamall_hanta_user;pwd=hanta_pw0105;"
+	Set dbconn = Server.CreateObject("ADODB.Connection")
+	dbconn.open g_connection_string
+	
+	'====================================================================================================
+	' INIT - 18067
+	'=====================================================================================================
+	'sql = "SELECT a.parent_id, a.product_id, b.sku FROM catalog_product_super_link AS a,catalog_product_entity AS b WHERE a.product_id = b.entity_id"
+	'set rs = conn.Execute(sql)
+	'do while not rs.EOF
+		'pf_id = CStr(1200000000 + rs(0))
+		
+		'sqlu = "INSERT INTO hh_config_data (parent_id, product_id, product_sku) VALUES (" & rs(0) & "," & rs(1) & ",'" & rs(2) & "')"
+		'dbconn.Execute(sqlu)
+		'Response.Write (pf_id & "<br>")
+		
+		'rs.MoveNext
+	'loop
+	'rs.Close
+	'set rs = nothing
+	
+	'====================================================================================================
+	' ADD LENGTH INFO
+	'=====================================================================================================
+	'sql = "SELECT * FROM hh_config_data ORDER BY product_id"
+	
+ 
+	'set rs = dbconn.Execute(sql)
+	'do while not rs.EOF
+	
+		'product_id = rs("product_id")
+		'Response.Write (product_id & "<br>")
+		
+		'sql = "SELECT c.value, b.sort_order FROM catalog_product_entity_int AS a, "
+		'sql = sql & "eav_attribute_option AS b, "
+		'sql = sql & "eav_attribute_option_value AS c "
+		'sql = sql & "WHERE  "
+		'sql = sql & "a.value = b.option_id AND "
+		'sql = sql & "b.option_id = c.option_id AND  c.store_id = 0 AND "
+		'sql = sql & "a.attribute_id = 143 AND entity_id = " & product_id
+		
+		'set rs1 = conn.Execute(sql)
+		
+		'if not rs1.EOF then
+		
+			'a = Trim(rs1("value"))
+			'b = rs1("sort_order")
+			
+			'sqlu = "UPDATE hh_config_data SET length = '" & a & "', length_sort = " & b & " WHERE product_id = " & product_id
+			'dbconn.Execute(sqlu)
+			
+		'end if
+		'rs1.Close
+		'set rs1 = nothing
+	
+		'rs.MoveNext
+	'loop
+	'rs.Close
+	'set rs = nothing
+	
+	'====================================================================================================
+	' ADD COLOR INFO
+	'=====================================================================================================
+	sql = "SELECT * FROM hh_config_data ORDER BY product_id"
+	
+ 
+	set rs = dbconn.Execute(sql)
+	do while not rs.EOF
+	
+		product_id = rs("product_id")
+		
+		
+		sql = "SELECT c.value, b.sort_order FROM catalog_product_entity_int AS a, "
+		sql = sql & "eav_attribute_option AS b, "
+		sql = sql & "eav_attribute_option_value AS c "
+		sql = sql & "WHERE  "
+		sql = sql & "a.value = b.option_id AND "
+		sql = sql & "b.option_id = c.option_id AND  c.store_id = 0 AND "
+		sql = sql & "a.attribute_id = 134 AND entity_id = " & product_id
+		
+		set rs1 = conn.Execute(sql)
+		
+		if not rs1.EOF then
+		
+			a = Trim(rs1("value"))
+			b = rs1("sort_order")
+			
+			sqlu = "UPDATE hh_config_data SET color = '" & a & "', color_sort = " & b & " WHERE product_id = " & product_id
+			Response.Write (sqlu & "<br>")
+			
+		end if
+		rs1.Close
+		set rs1 = nothing
+	
+		rs.MoveNext
+	loop
+	rs.Close
+	set rs = nothing
+%>
