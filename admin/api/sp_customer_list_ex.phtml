@@ -91,6 +91,11 @@
 		strWhere = strWhere &  " (Country like '%" & shopper_country & "%') AND"
 	end if
 	'----------------------------------------------------------------------------------------
+	shopper_state = Trim(Request("shopper_state"))
+	if Len(shopper_state) > 1 then
+		strWhere = strWhere &  " (State like '%" & shopper_state & "%') AND"
+	end if
+	'----------------------------------------------------------------------------------------
 	if Len(strWhere) > 0 then
 		strWhere = Left(strWhere, Len(strWhere) - 4)
 	else
@@ -105,17 +110,17 @@
 	CASE "1"
 		sOrder = "shopper_id " & Trim(Request("order[0][dir]"))
 	CASE "2"
-		sOrder = "Company " & Trim(Request("order[0][dir]"))
-	CASE "3"
 		sOrder = "FirstName + ' ' + LastName " & Trim(Request("order[0][dir]"))
-	CASE "4"
+	CASE "3"
 		sOrder = "Email " & Trim(Request("order[0][dir]"))
-	CASE "5"
+	CASE "4"
 		sOrder = "member_group " & Trim(Request("order[0][dir]"))
-	CASE "6"
+	CASE "5"
 		sOrder = "Phone " & Trim(Request("order[0][dir]"))
-	CASE "7"
+	CASE "6"
 		sOrder = "Country " & Trim(Request("order[0][dir]"))
+	CASE "7"
+		sOrder = "State " & Trim(Request("order[0][dir]"))
 	CASE "8"
 		sOrder = "DateEntered " & Trim(Request("order[0][dir]"))
 	CASE "9"
@@ -170,6 +175,7 @@
 			s_country = rs("Country")
 			s_salesrep_id = rs("salesrep_id")
 			s_phone = rs("Phone")
+			s_prefix = rs("prefix")
 			s_group = rs("member_group")
 			
 			s_date_created = rs("DateEntered")
@@ -194,12 +200,17 @@
 			aaData = aaData & "['"
 			aaData = aaData & "<label class=\'mt-checkbox mt-checkbox-single mt-checkbox-outline\'><input name=\'id[]\' type=\'checkbox\' class=\'checkboxes\' value=\'" &  s_shopper_id & "\'/><span></span></label> " & "','" 
 			aaData = aaData & s_shopper_id & "','"
-			aaData = aaData & s_company & "','"
-			aaData = aaData & s_lastname & ", " & s_firstname & "','" 
+			'aaData = aaData & s_company & "','"
+			if Len(s_prefix) > 0 then
+				aaData = aaData & s_prefix & " " & s_firstname & " " & s_lastname & "','"
+			else
+				aaData = aaData & s_firstname & " " & s_lastname & "','"
+			end if
 			aaData = aaData & s_email & "','"
 			aaData = aaData & s_group & "','"
 			aaData = aaData & s_phone & "','"
-			aaData = aaData & s_country & "','" 			
+			aaData = aaData & s_country & "','" 
+			aaData = aaData & s_state & "','"			
 			aaData = aaData & s_date_created & "','"
 			
 			'aaData = aaData & "<a class=\'btn btn-blue btn-xs btn-o\' href=\'api/tp_sales_quotation_detail.phtml?quote_id=0&shopper_id=" & s_shopper_id & "\'><i class=\'fa fa-plus\'></i></a>','"

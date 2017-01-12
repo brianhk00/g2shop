@@ -1,18 +1,8 @@
 <%
-'======================================================================================================
+	'=====================================================================================================
 	Set t_conn = Server.CreateObject("ADODB.Connection")
 	t_conn.open g_connection_string
-
-	sql = "SELECT setting_values FROM " &  g_storeid & "_setting WHERE setting_type='THEME_ENABLE'"
-	Set rsSetting = t_conn.Execute(sql)
-	if not rsSetting.EOF then
-		THEME_ENABLE = Trim(rsSetting(0))
-	else
-		THEME_ENABLE= "0"
-	end if
-	rsSetting.Close
-	set rsSetting = nothing
-
+	
 	sql = "SELECT setting_values FROM " &  g_storeid & "_setting WHERE setting_type='THEME_TEMPLATE'"
 	Set rsSetting = t_conn.Execute(sql)
 	if not rsSetting.EOF then
@@ -23,47 +13,7 @@
 	rsSetting.Close
 	set rsSetting = nothing
 
-	sql = "SELECT setting_values FROM " &  g_storeid & "_setting WHERE setting_type='THEME_SKIN'"
-	Set rsSetting = t_conn.Execute(sql)
-	if not rsSetting.EOF then
-		THEME_SKIN = Trim(rsSetting(0))
-	else
-		THEME_SKIN = ""
-	end if
-	rsSetting.Close
-	set rsSetting = nothing
-
-	sql = "SELECT setting_values FROM " &  g_storeid & "_setting WHERE setting_type='THEME_ALLOWED_IPS'"
-	Set rsSetting = t_conn.Execute(sql)
-	if not rsSetting.EOF then
-		THEME_ALLOWED_IPS = Trim(rsSetting(0))
-	else
-		THEME_ALLOWED_IPS = "0"
-	end if
-	rsSetting.Close
-	set rsSetting = nothing
-	t_conn.close
-	set t_conn = nothing
-
-	THEME_ALLOWED_IPS = "0"
-
-	If THEME_ENABLE = "1" Then
-	Else
-		THEME_TEMPLATE = ""
-		THEME_SKIN = ""
-		THEME_ALLOWED_IPS = ""
-	End If
 	
-	client_remote_address = Request.ServerVariables("REMOTE_ADDR")
-
-	If Len(THEME_ALLOWED_IPS) > 1 Then
-		pos1 = InStr(THEME_ALLOWED_IPS, client_remote_address)
-		If pos1 = 0 Then
-			THEME_TEMPLATE = ""
-			THEME_SKIN = ""
-		End if
-	End if
-
-	THEME_TEMPLATE = "marketshop1"
-	'======================================================================================================
+	'THEME_TEMPLATE = "marketshop1"
+	'=====================================================================================================
 %>

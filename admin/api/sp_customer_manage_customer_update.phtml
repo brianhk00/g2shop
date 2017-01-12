@@ -1,3 +1,11 @@
+<%@ Language=VBScript %>
+<%
+	Response.CodePage = 65001
+	Response.CharSet = "UTF-8"
+%>
+<%
+  Response.Expires = -1
+%>
 <!-- #INCLUDE File="../local/local.phtml" -->
 <!-- #INCLUDE File="../util/xt_func_util.phtml" -->
 <!-- #INCLUDE File="../util/xt_func_string.phtml" -->
@@ -18,6 +26,8 @@
 	shopper_billing_state = Trim(Request("shopper_billing_state"))
 	shopper_billing_zip = Trim(Request("shopper_billing_zip"))
 	shopper_billing_phone = Trim(Request("shopper_billing_phone"))
+	shopper_billing_prefix = Trim(Request("shopper_billing_prefix"))
+	shopper_billing_company = Trim(Request("shopper_billing_company"))
 	
 	same_as_billing = Trim(Request("same_as_billing"))
 	shopper_shipping_firstname = Trim(Request("shopper_shipping_firstname"))
@@ -28,6 +38,8 @@
 	shopper_shipping_state = Trim(Request("shopper_shipping_state"))
 	shopper_shipping_zip = Trim(Request("shopper_shipping_zip"))
 	shopper_shipping_phone = Trim(Request("shopper_shipping_phone"))
+	shopper_shipping_prefix = Trim(Request("shopper_shipping_prefix"))
+	shopper_shipping_company = Trim(Request("shopper_shipping_company"))
 	
 	billing_address_id = Trim(Request("billing_address_id")) 'Current Edit Window Billing ID
 	shipping_address_id = Trim(Request("shipping_address_id"))
@@ -98,6 +110,8 @@
 		rsUpdate("State") = shopper_billing_state
 		rsUpdate("ZipCode") = shopper_billing_zip
 		rsUpdate("Phone") = shopper_billing_phone
+		rsUpdate("prefix") = shopper_billing_prefix
+		rsUpdate("company") = shopper_billing_company
 	end if
 	
 	if shipping_address_id = "0" then
@@ -109,6 +123,8 @@
 		rsUpdate("shipping_State") = shopper_shipping_state
 		rsUpdate("shipping_ZipCode") = shopper_shipping_zip
 		rsUpdate("shipping_Phone") = shopper_shipping_phone
+		rsUpdate("shipping_prefix") = shopper_shipping_prefix
+		rsUpdate("shipping_company") = shopper_shipping_company
 	end if
 	
 	rsUpdate("member_group") = member_group
@@ -145,6 +161,8 @@
 			'alt_billing_set_default = Trim(Request("alt_billing_set_default_" & billing_id))
 			alt_billing_state = Trim(Request("alt_billing_state_" & billing_id))
 			alt_billing_zip = Trim(Request("alt_billing_zip_" & billing_id))
+			alt_billing_prefix = Trim(Request("alt_billing_prefix_" & billing_id))
+			alt_billing_company = Trim(Request("alt_billing_company_" & billing_id))
 			
 			if billing_id = "0" then
 			else
@@ -184,6 +202,8 @@
 				rsUpdate("billing_zip") = alt_billing_zip
 				rsUpdate("billing_country") = alt_billing_country
 				rsUpdate("billing_phone") = alt_billing_phone
+				rsUpdate("billing_prefix") = alt_billing_prefix
+				rsUpdate("bill_company") = alt_billing_company
 				'rsUpdate("billing_set_default") = "0" 'TODO alt_billing_set_default
 				
 				If dbconn.Errors.Count > 0 Then
@@ -230,7 +250,7 @@
 			rsUpdate("billing_address_id") = billing_address_id
 		end if
 		
-		rsUpdate("billing_address_name") = alt_billing_address_name
+		rsUpdate("billing_address_name") = Left(shopper_billing_address, 50)' alt_billing_address_name
 		rsUpdate("billing_firstname") = shopper_billing_firstname
 		rsUpdate("billing_lastname") = shopper_billing_lastname
 		rsUpdate("billing_address") = shopper_billing_address
@@ -239,6 +259,7 @@
 		rsUpdate("billing_zip") = shopper_billing_zip
 		rsUpdate("billing_country") = shopper_billing_country
 		rsUpdate("billing_phone") = shopper_billing_phone
+		rsUpdate("billing_prefix") = shopper_billing_prefix
 		
 		If dbconn.Errors.Count > 0 Then
 			dbconn.Errors.Clear
@@ -289,6 +310,8 @@
 			'alt_shipping_set_default = Trim(Request("alt_shipping_set_default_" & shipping_id))
 			alt_shipping_state = Trim(Request("alt_shipping_state_" & shipping_id))
 			alt_shipping_zip = Trim(Request("alt_shipping_zip_" & shipping_id))
+			alt_shipping_prefix = Trim(Request("alt_shipping_prefix_" & shipping_id))
+			alt_shipping_company = Trim(Request("alt_shipping_company_" & shipping_id))
 			
 			if shipping_id = "0" then
 			else
@@ -319,7 +342,7 @@
 					rsUpdate("address_id") = shipping_id
 				end if
 				
-				rsUpdate("address_name") = alt_shipping_address_name
+				rsUpdate("address_name") = Left(alt_shipping_address, 50)'alt_shipping_address_name
 				rsUpdate("firstname") = alt_shipping_firstname
 				rsUpdate("lastname") = alt_shipping_lastname
 				rsUpdate("address") = alt_shipping_address
@@ -328,6 +351,8 @@
 				rsUpdate("zip") = alt_shipping_zip
 				rsUpdate("country") = alt_shipping_country
 				rsUpdate("phone") = alt_shipping_phone
+				rsUpdate("prefix") = alt_shipping_prefix
+				rsUpdate("company") = alt_shipping_company
 				'rsUpdate("set_default") = "0" 'TODO alt_shipping_set_default
 				
 				If dbconn.Errors.Count > 0 Then

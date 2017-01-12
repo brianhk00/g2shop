@@ -14,7 +14,7 @@ function GetSystemFlatModel(ByRef str_db, ByRef str_config_id, ByRef markup, ByR
 	sql = sql & "ORDER BY dept_id, row_id"
 	sql = Replace(sql, ":9", g_storeid)
 
-	set rs1 = dbconn.Execute(sql)
+	set rs1 = dbdbconn.Execute(sql)
 
 	temp_dept = ""
 	system_price = 0
@@ -52,7 +52,7 @@ end function
 	config_id = Request("config_id")
 	config_id = FilterStringEX(config_id, "^0-9a-zA-Z _/-")
 	
-	if (Session("LOGINGROUP") = "") then
+	if(Session("LOGINGROUP")="")then
 		member_group = "D"
 	else
 		member_group = Session("LOGINGROUP")
@@ -67,12 +67,10 @@ end function
 		sys_desc = rsSystem("description")
 		sys_desc2 = rsSystem("description2")
 		sys_details = rsSystem("details")
-		sys_image_file = rsSystem("image_file")
 		sys_image = Trim(rsSystem("thumb_image"))
 		sys_image2 = Trim(rsSystem("thumb_image2"))
 		sys_image3 = Trim(rsSystem("thumb_image3"))
 		sys_image4 = Trim(rsSystem("thumb_image4"))
-		sys_mm_type = rsSystem("mm_type")
 		base_price = rsSystem("price_"& member_group)
 		pricing_model = rsSystem("pricing_model")
 		option_mode = rsSystem("option_mode")
@@ -83,13 +81,14 @@ end function
 		'Else
 		  'sys_image = "sys_img/" & sys_image
 		'End If
+    
 		if pricing_model = 1 then
 			if GetSystemFlatModel(Session("ConnectionString"), config_id, u_markup_value, system_price) then
 				base_price = system_price
 			end if
 		end if
 	  
-		sys_enable_upload = rsSystem("sys_enable_upload")
+	  sys_enable_upload = rsSystem("sys_enable_upload")
     
 	else
 		system_name = "..."
@@ -103,44 +102,29 @@ end function
 	end if	
 	rsSystem.Close
 	
+	'==================================================================
+	'DISPLAY
+	'http://a4.res.cloudinary.com/dd3llssvr/image/fetch/w_200,h_200,c_pad,c_fill/http://www.nlesystems.com/prod_img/7070-03150-01_1410995331.JPG
+	'==================================================================
 	
-	'====================================================================================================
-	'Images
-	'====================================================================================================
-	ssThumbSize = "upload/w_" & EC_thumbWidth & ",h_" & EC_thumbHeight & ",c_pad/"
-	ssImgSize = "upload/w_" & EC_imageWidth & ",h_" & EC_imageHeight & ",c_pad/"
-	ssZoomSize = "upload/w_" & EC_zoomWidth & ",h_" & EC_zoomHeight & ",c_pad/"
+	'ssThumbSize = "upload/w_" & EC_thumbWidth & ",h_" & EC_thumbHeight & ",c_pad/"
+	'ssImgSize = "upload/w_" & EC_imageWidth & ",h_" & EC_imageHeight & ",c_pad/"
+	'ssZoomSize = "upload/w_" & EC_zoomWidth & ",h_" & EC_zoomHeight & ",c_pad/"
 	
-	if sys_image_file = "--" then
-		cloudImg = g_noimage_url
-		ssImg = Replace(cloudImg, "upload/", ssImgSize)
-		ssImg1 = Replace(cloudImg, "upload/", ssThumbSize)
-		ssImg2 = Replace(cloudImg, "upload/", ssZoomSize)
-	else
-		if sys_mm_type = 1 then
-			sql = "SELECT * FROM " & g_storeid & "_product_image WHERE image_name = '" & sys_image_file & "'"
-			Set rsCloudImage2 = dbconn.Execute(sql)
-			If Not rsCloudImage2.EOF Then
-				cloudImg = Trim(rsCloudImage2("cloud_url"))
-			Else
-				cloudImg = g_noimage_url
-			End If
-			rsCloudImage2.Close
-			Set rsCloudImage2 = Nothing
-			ssImg = Replace(cloudImg, "upload/", ssImgSize)
-			ssImg1 = Replace(cloudImg, "upload/", ssThumbSize)
-			ssImg2 = Replace(cloudImg, "upload/", ssZoomSize)
-		else
-			ssImg = "http://a4.res.cloudinary.com/dd3llssvr/image/fetch/" & "w_" & EC_imageWidth & ",h_" & EC_imageHeight & ",c_pad/" & g_store_url & "assets/pmedia/prod_img/" & Server.URLEncode(prod_image_file)
-			ssImg1 = "http://a4.res.cloudinary.com/dd3llssvr/image/fetch/" & "w_" & EC_thumbWidth & ",h_" & EC_thumbHeight & ",c_pad/" & g_store_url & "assets/pmedia/prod_img/" & Server.URLEncode(prod_image_file)
-			ssImg2 = "http://a4.res.cloudinary.com/dd3llssvr/image/fetch/" & "w_" & EC_zoomWidth & ",h_" & EC_zoomHeight & ",c_pad/" & g_store_url & "assets/pmedia/prod_img/" & Server.URLEncode(prod_image_file)
-		end if
+	'Response.Write(sys_image2 & "<br>")
+	'Response.Write(sys_image3 & "<br>")
+	'Response.Write(sys_image4 & "<br>")
+	
+	ssThumbSize = "w_" & EC_thumbWidth & ",h_" & EC_thumbHeight & ",c_pad/"
+	ssImgSize = "w_" & EC_imageWidth & ",h_" & EC_imageHeight & ",c_pad/"
+	ssZoomSize = "w_" & EC_zoomWidth & ",h_" & EC_zoomHeight & ",c_pad/"
+	
+	if Len(sys_image) > 2 then
+		ssImg = g_cloudinary_url & ssImgSize & g_store_url & "media/catalog/system/" & sys_image
+		ssImg2 = g_cloudinary_url & ssZoomSize & g_store_url & "media/catalog/system/" & sys_image
+		ssImg1 = g_cloudinary_url & ssThumbSize & g_store_url & "media/catalog/system/" & sys_image
+		
 	end if
-	
-	image_display_src = ssImg
-	image_display_src_zoom = ssImg2
-	image_display_src_thumb = ssImg1
-	
 	
 	'==================================================================
 	'DISPLAY
@@ -173,14 +157,12 @@ end function
 	x_prod_group_price = base_price
 	x_prod_retail_price = 0
 	
-	x_prod_image = image_display_src
-	x_prod_zoom_image = image_display_src_zoom
-	x_prod_thumb_image = image_display_src_thumb
-	x_prod_mm_type = sys_mm_type
-	x_prod_image_file = sys_image_file
-	
+	x_prod_image = ssImg
+	x_prod_zoom_image = ssImg2
+	x_prod_thumb_image= ssImg1
+	x_prod_mm_type = prod_mm_type
 	x_prod_espec_sku = ""
 	x_prod_use_icecat_images = 0
-	'x_prod_image_file = ssImg
+	x_prod_image_file = ssImg
 	
 %>

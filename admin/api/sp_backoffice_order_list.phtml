@@ -1,0 +1,509 @@
+<%@ Language=VBScript %>
+<%
+	Response.CodePage = 65001
+	Response.CharSet = "UTF-8"
+%>
+<%
+  Response.Expires = -1
+%>
+<!-- #INCLUDE File="../local/local.phtml" -->
+<!-- #INCLUDE File="../util/xt_func_util.phtml" -->
+<!-- #INCLUDE File="../util/xt_func_string.phtml" -->
+<%
+	Function myDateFormat(myDate)
+		d = WhatEver(Day(myDate))
+		m = WhatEver(Month(myDate))    
+		y = Year(myDate)
+		myDateFormat= y & "-" & m & "-" & d & " " & Hour(myDate) & ":00:00"
+	End Function
+
+	Function WhatEver(num)
+		If(Len(num)=1) Then
+			WhatEver="0"&num
+		Else
+			WhatEver=num
+		End If
+	End Function
+	
+	
+	Function myString(input, phrase)
+		Occurrences = (len(input) - len(replace(input, phrase, ""))) / Len(phrase)
+		myString = Occurrences
+	End Function
+
+%>
+<%
+	sEcho = Trim(Request("draw"))
+	iDisplayLength = Trim(Request("length"))
+	iDisplayStart = Trim(Request("start"))
+	
+	if iDisplayLength = "-1" then
+		iDisplayLength = "200"
+	end if
+
+	sEcho = FilterStringEx(sEcho, "[^0-9]")
+	iDisplayLength = FilterStringEx(iDisplayLength, "[^0-9]")
+	iDisplayStart = FilterStringEx(iDisplayStart, "[^0-9]")
+
+	sEcho = Cint(sEcho)
+	iDisplayLength = Cint(iDisplayLength)
+	iDisplayStart = Cint(iDisplayStart)
+	sSearch = Trim(Request("sSearch"))
+	v1 = Trim(Request("v1"))
+
+	'=======================================================================================
+	strWhere = ""
+	
+	increment_id = Trim(Request("increment_id"))
+	Session("DT_BACKOFFICE_ORDERS_1_increment_id") = increment_id
+	if Len(increment_id) > 0 then
+		strWhere = strWhere &  " (increment_id like '%" & increment_id & "%') AND"
+	end if
+	
+	'------------------------------------------------------------------------------
+	D_UID = Trim(Request("D_UID"))
+	if Len(D_UID) > 0 then
+		'strWhere = strWhere &  " ((prefix like '%" & D_UID & "%')) AND"
+		strWhere = strWhere &  " ((prefix like '%" & D_UID & "%') OR (CONCAT(firstname,' ', lastname) like '%" & D_UID & "%') OR (a.customer_id IN (SELECT customer_id FROM mw_affiliate_customers WHERE referral_code = '" & D_UID & "')) OR (customer_email like '%" & D_UID & "%') ) AND "
+	end if
+	
+	D_SID = Trim(Request("D_SID"))
+	if Len(D_SID) > 0 then
+		strWhere = strWhere &  " ((prefix like '%" & D_SID & "%') OR (CONCAT(firstname,' ', lastname) like '%" & D_SID & "%')) AND "
+	end if
+	
+	D_TICKET = Trim(Request("D_TICKET"))
+	if Len(D_TICKET) > 0 then
+		strWhere = strWhere & " a.entity_id IN (SELECT order_id FROM sales_flat_order_item where product_options like '%" & D_TICKET & "%') AND "
+	end if
+	
+	D_ADDRESS = Trim(Request("D_ADDRESS"))
+	if Len(D_ADDRESS) > 0 then
+		strWhere = strWhere &  " (street like '%" & D_ADDRESS & "%') AND "
+	end if
+	
+	'------------------------------------------------------------------------------
+	D_ITEM = Trim(Request("D_ITEM"))
+	SELECT CASE D_ITEM
+	CASE "1" 'Prime Only
+		strWhere = strWhere & " a.entity_id IN (SELECT order_id FROM sales_flat_order_item where (sku like 'PRIME_%') OR (sku like 'PRIME %') ) AND "
+	CASE "2" 'H-Zone Only
+		strWhere = strWhere & " a.entity_id IN (SELECT order_id FROM sales_flat_order_item where sku like 'H_ZONE_%') AND "
+	CASE "3" 'PS Only
+		strWhere = strWhere & " a.entity_id IN (SELECT order_id FROM sales_flat_order_item where sku like 'PURCHASE_%') AND "
+	END SELECT
+	'------------------------------------------------------------------------------
+	sMin = Trim(Request("created_at_from"))
+	sMax = Trim(Request("created_at_to"))
+	Session("DT_BACKOFFICE_ORDERS_1_created_at_from") = sMin
+	Session("DT_BACKOFFICE_ORDERS_1_created_at_to") = sMax
+	
+	sDateRange = ""
+	if IsDate(sMin) then
+		if IsDate(sMax) then
+			dMax = CDate(sMax)
+			dMax = DateAdd("d", 1, dMax)
+			''dMax = DateAdd("h", 8, dMax) 'Adjustment
+			dMax = DateAdd("h", 1, dMax) 'Adjustment
+			'sMax = FormatDateTime(dMax,0)
+			sMax = myDateFormat(dMax)
+			
+			dMin = CDate(sMin)
+			''dMin = DateAdd("h", 8, dMin) 'Adjustment
+			dMin = DateAdd("h", -3, dMin) 'Adjustment
+			'sMin = FormatDateTime(sMin,0)
+			sMin = myDateFormat(dMin)
+			
+			sDateRange = "(created_at between '" & sMin & "' AND '" & sMax & "')"
+		else
+			'dMin = CDate(sMin)
+			dMax = Date()
+			dMax = DateAdd("d", 1, dMax)
+			''dMax = DateAdd("h", 8, dMax) 'Adjustment
+			dMax = DateAdd("h", 1, dMax) 'Adjustment
+			'sMax = FormatDateTime(dMax,0)
+			sMax = myDateFormat(dMax)
+			
+			dMin = CDate(sMin)
+			''dMin = DateAdd("h", 8, dMin) 'Adjustment
+			dMin = DateAdd("h", -3, dMin) 'Adjustment
+			'sMin = FormatDateTime(sMin,0)
+			sMin = myDateFormat(dMin)
+			
+			sDateRange = "(created_at between '" & sMin & "' AND '" & sMax & "')"
+		end if
+	else
+		if IsDate(sMax) then
+			dMax = CDate(sMax)
+			dMax = DateAdd("d", 1, dMax)
+			'sMax = FormatDateTime(dMax,0)
+			sMax = myDateFormat(dMax,0)
+			sDateRange = "(created_at between '1970-01-01' AND '" & sMax & "')"
+		end if
+	end if
+	
+	if Len(sDateRange) > 0 then
+		strWhere = strWhere &  " " & sDateRange & " AND"
+	end if
+	
+	if Len(strWhere) > 0 then
+		strWhere = Left(strWhere, Len(strWhere) - 4)
+	else
+		strWhere = " increment_id LIKE '%%'"
+	end if
+  
+	'=======================================================================================
+	'ORDERING
+	SELECT CASE Trim(Request("order[0][column]"))
+	CASE "0"
+		sOrder = "created_at DESC"
+	CASE "1"
+		sOrder = "created_at " & Trim(Request("order[0][dir]"))
+	CASE "2"
+		sOrder = "created_at " & Trim(Request("order[0][dir]"))
+	CASE "3"
+		sOrder = "created_at " & Trim(Request("order[0][dir]"))
+	CASE "4"
+		sOrder = "created_at " & Trim(Request("order[0][dir]"))
+	CASE "5"
+		sOrder = "created_at " & Trim(Request("order[0][dir]"))
+	CASE "6"
+		sOrder = "created_at " & Trim(Request("order[0][dir]"))
+	CASE "7"
+		sOrder = "created_at " & Trim(Request("order[0][dir]"))
+	CASE "8"
+		sOrder = "created_at " & Trim(Request("order[0][dir]"))
+	CASE "9"
+		sOrder = "created_at " & Trim(Request("order[0][dir]"))
+	CASE "10"
+		sOrder = "created_at " & Trim(Request("order[0][dir]"))
+	CASE ELSE
+		sOrder = "created_at DESC"
+	END SELECT 
+	'here we create the variable "strOrderBy" that will be used in the SQL querry
+	strOrderBy = "ORDER BY " & sOrder
+
+	'======================================================================================
+	
+	'strWhere = " shopper_id LIKE '%%'"
+	'strOrderBy = "ORDER BY shopper_id DESC"
+	
+	'sql = "SELECT * FROM sales_flat_order WHERE " & strWhere & " " & strOrderBy
+	
+	sql = "SELECT * FROM sales_flat_order AS a, sales_flat_order_address AS b "
+	sql = sql & " WHERE a.created_at > '2016-01-01' AND a.shipping_address_id = b.entity_id AND " & strWhere & " " & strOrderBy
+	
+	'Response.Write(sql)
+	
+	'Response.Write(sql)
+	'sqlx = "SELECT COUNT(increment_id) FROM sales_flat_order WHERE " & strWhere 
+	sqlx = "SELECT COUNT(increment_id) FROM sales_flat_order AS a, sales_flat_order_address AS b "
+	sqlx = sqlx & " WHERE  a.created_at > '2016-01-01' AND a.shipping_address_id = b.entity_id AND " & strWhere 
+	
+	set rs = dbconnExt.Execute(sql)
+	
+	set rs2 = dbconnExt.Execute(sql)
+	
+	iTotalDisplayRecords = 0
+	iTotalRecords = 50
+	set rs1 = dbconnExt.Execute(sqlx)
+	if not rs1.EOF then
+	  iTotalDisplayRecords = rs1(0)
+	  iTotalRecords = rs1(0)
+	else
+	end if
+	rs1.Close
+	set rs1 = nothing
+	
+	'iTotalDisplayRecords = 50
+	
+	'iTotalRecords = 50
+	
+	'Response.Write(iDisplayLength)
+	
+	x_koreanname = ""
+	
+%>
+{"draw": <%=sEcho%>, "recordsTotal": <%=iTotalRecords%>, "recordsFiltered": <%=iTotalDisplayRecords%>, "data": [ 
+<%
+	i = 0
+  
+	if rs.eof = false then
+	
+		'rs2.move(iDisplayStart)
+		
+		'do while i < iDisplayLength and not rs2.eof
+			'x_koreanname = x_koreanname + rs2("prefix") + "|"
+			'i=i+1
+			'rs2.MoveNext
+		'loop
+		
+		i = 0
+		
+		rs.move(iDisplayStart)
+		
+		do while i < iDisplayLength and not rs.eof
+			
+			order_id = rs("parent_id")
+			customer_id = rs("customer_id")
+			order_status = rs("status")
+			
+			s_increment_id = rs("increment_id")
+			s_email = rs("customer_email")
+			s_created_at = rs("created_at")
+			s_created_at = DateAdd("h", -8, s_created_at)
+			s_customer_group_id = rs("customer_group_id")
+			O_AMOUNT = rs("grand_total")
+			O_AMOUNT = FormatNumber(O_AMOUNT,2,,,0)
+			
+			SELECT CASE s_customer_group_id
+			CASE 1
+				s_customer_group = "Prime"
+			CASE 4
+				s_customer_group = "Guest"
+			CASE Else
+				s_customer_group = ""
+			END SELECT
+			
+			shipping_address_id = rs("shipping_address_id")
+			
+			s_firstname = ""
+			s_lastname = ""
+			s_koreanname = ""
+			s_phone = ""
+			
+			sql = "SELECT * FROM customer_entity_varchar WHERE entity_id = " & customer_id & " AND attribute_id IN (4,5,7,15)"
+			set rsx = dbconnExt.Execute(sql)
+			do while not rsx.EOF
+				SELECT CASE rsx("attribute_id")
+				CASE 4
+					s_koreanname = rsx("value")
+				CASE 5
+					s_firstname = rsx("value")
+				CASE 7
+					s_lastname = rsx("value")
+				CASE 15
+					s_phone = rsx("value")
+				END SELECT
+				rsx.MoveNext
+			loop
+			rsx.Close
+			set rsx = nothing
+			'=======================================================
+			sql = "SELECT D_DELETE, D_UID, P_NAME_H FROM DISTRIBU_DM WHERE magento_customer_id = " & customer_id
+			set rsx = dbconn_backoffice.Execute(sql)
+			if not rsx.EOF then
+				s_D_UID = rsx("D_UID")
+				s_P_NAME_H = rsx("P_NAME_H")
+				s_D_DELETE = rsx("D_DELETE")
+			else
+				s_D_UID = ""
+				s_P_NAME_H = ""
+				s_D_DELETE = ""
+			end if
+			rsx.Close
+			set rsx = nothing
+			If s_d_delete = "N" then
+				msg_active ="A"
+			Else
+				msg_active ="Inactive"
+			End If
+			'=======================================================
+			s_prefix = ""
+			'sql = "SELECT * FROM sales_flat_order_address WHERE entity_id = " & shipping_address_id
+			'set rsx = dbconnExt.Execute(sql)
+			'if not rsx.EOF then
+			sh_prefix = rs("prefix")
+			sh_firstname = rs("firstname")
+			sh_lastname = rs("lastname")
+			sh_telephone = rs("telephone")
+			sh_company = rs("company")
+			sh_region = rs("region")
+			sh_city = rs("city")
+			sh_postcode = rs("postcode")
+			sh_street = rs("street")
+			sh_telephone = rs("telephone")
+			
+			if Len(sh_city) > 0 then
+				sh_city = Replace(sh_city, VbCrLf, " ")
+			end if
+			if Len(sh_street) > 0 then
+				sh_street = Replace(sh_street, VbCrLf, " ")
+			end if
+			'end if
+			'rsx.Close
+			'set rsx = nothing
+			'=======================================================
+			last_ship_date = ""
+			if iDisplayLength > 100 then
+			else
+			sql = "SELECT DATE(created_at), COMMENT FROM sales_flat_order_status_history WHERE parent_id IN ( "
+			sql = sql & "SELECT parent_id FROM sales_flat_order_address WHERE address_type='shipping' AND prefix = '" & sh_prefix & "') "
+			sql = sql & "AND COMMENT LIKE '%(tracking)%' "
+			sql = sql & "ORDER BY created_at DESC "
+			sql = sql & "LIMIT 1 "
+			set rsx = dbconnExt.Execute(sql)
+			if not rsx.EOF then
+				last_ship_date = rsx(0)
+				last_ship_date = DateAdd("d", -1, last_ship_date)
+			else
+				last_ship_date = ""
+			end if
+			rsx.Close
+			set rsx = nothing
+			end if
+			'=======================================================
+			s_order_items = ""
+			sql = "SELECT a.sku, a.qty_ordered, b.name, a.product_options FROM sales_flat_order_item AS a, catalog_product_flat_1 AS b WHERE  a.product_id = b.entity_id AND a.order_id =" & order_id 
+			set rsx = dbconnExt.Execute(sql)
+			do while not rsx.EOF
+				item_sku = rsx("sku")
+				item_name = Trim(rsx("name"))
+				
+				item_name = JsonEscape(item_name)
+				
+				If Len(item_name) > 0 Then
+					item_name = Replace(item_name, "'", "&#39")
+				End if
+				if Len(item_name) > 0 then
+					item_name = Replace(item_name, VbCrLf, " ")
+				end if
+				if Len(item_name) > 0 then
+					item_name = Replace(item_name, """", " ")
+				end if
+				
+				item_type = 0
+				If InStr(1, item_sku, "PRIME_") = 1 Then
+					item_type = 1
+				End If
+				If InStr(1, item_sku, "PRIME ") = 1 Then
+					item_type = 1
+				End If
+				If InStr(1, item_sku, "H_ZONE_") = 1 Then
+					item_type = 2
+				End If
+				If InStr(1, item_sku, "PURCHASE_") = 1 Then
+					item_type = 3
+				End If
+				
+				product_options = ""
+				x_product_options = ""
+				SELECT CASE item_type
+				CASE 0
+					s_order_items = s_order_items & item_name & " x " & rsx("qty_ordered")  & "<br>"
+				CASE 1
+					s_order_items = s_order_items & "<div class=cv>" & item_name & " x " & rsx("qty_ordered")  & "</div><br>"
+				CASE 2
+					s_order_items = s_order_items & "<div class=hzone>" & item_name & " x " & rsx("qty_ordered")  & "</div><br>"
+				CASE 3
+					product_options = rsx("product_options")
+					x = InStr(product_options, "Ticket Number")
+					if x > 0 then
+						product_options = Mid(product_options, x + 24)
+						y = InStr(product_options, ":""")
+						if y > 0 then
+							x_product_options = Mid(product_options, y+2, 8)
+						end if
+						
+					end if
+					
+					if Len(x_product_options) = 8 then
+						sql = "SELECT id FROM aw_hdu3_ticket WHERE uid='" & Left(x_product_options,3) & "-" & Mid(x_product_options,4) & "'"
+						set rsx2 = dbconnExt.Execute(sql)
+						if not rsx2.EOF then
+							ticket_id = rsx2(0)
+						end if
+						rsx2.Close
+						set rsx2 = nothing
+						s_order_items = s_order_items & "<div class=ps>" & item_name & " x " & rsx("qty_ordered")  & "<br>" & "<a href=\'https://www.hubutu.com/index.php/helpdesk_admin/adminhtml_ticket/edit/id/" & ticket_id & "\' target=\'_blank\'>" & x_product_options & "</a></div><br>"
+						's_order_items = s_order_items & "<div class=ps>" & rsx("name") & " x " & rsx("qty_ordered") & "<br>" & "<a href=\'https://www.hubutu.com/index.php/helpdesk_admin/adminhtml_ticket/edit/id/1111/\' target=\'_blank\'>" & "</a></div><br>"
+					else
+						s_order_items = s_order_items & "<div class=ps>" & item_name & " x " & rsx("qty_ordered")  & "</div><br>"
+					end if
+					's_order_items = s_order_items & product_options & "<br>"
+				END SELECT
+				
+				rsx.MoveNext
+			loop
+			rsx.Close
+			set rsx = nothing
+			
+			cv_amount = ""
+			sql = "SELECT * FROM SSOMT_DM WHERE magento_order_no = '" & s_increment_id & "'"
+			set rsx = dbconn_backoffice.Execute(sql)
+			if not rsx.EOF then
+				cv_amount = Trim(rsx("O_PV"))
+				cv_amount = FormatNumber(cv_amount,1)
+			end if
+			rsx.Close
+			set rsx = nothing
+			
+			If Len(s_order_items) > 0 Then
+				's_order_items = Replace(s_order_items, "'", "&#39")
+			End if
+			'=======================================================
+      
+			If Len(s_lastname) > 0 Then
+				s_lastname = Replace(s_lastname, "'", "&#39")
+			End if
+			If Len(s_firstname) > 0 Then
+				s_firstname = Replace(s_firstname, "'", "&#39")
+			End if
+			If Len(s_company) > 0 Then
+				s_company = Replace(s_company, "'", "&#39")
+			End if
+			
+			s_customerinfo = "<a href=\'https://www.hubutu.com/index.php/hubutuco_admin/customer/edit/id/" & customer_id & "\' target=\'_blank\'>" & s_firstname & " " & s_lastname & "</a>(" & s_koreanname & ") " & msg_active & "<br>" & s_D_UID & "(" & s_P_NAME_H & ")<br>" & s_email & "<br>" & s_phone
+			s_shippinginfo = sh_firstname & " " & sh_lastname & "<br>(" & sh_prefix & ")<br>" & sh_company & "<br>" & sh_telephone
+      
+			aaData = aaData & "['"
+			aaData = aaData & "<label class=\'mt-checkbox mt-checkbox-single mt-checkbox-outline\'><input name=\'id[]\' type=\'checkbox\' class=\'checkboxes\' value=\'" &  s_increment_id & "\'/><span></span></label> " & "','" 
+			'if myString(x_koreanname, sh_prefix) > 1 then
+				'aaData = aaData & "<i class=\'fa fa-warning font-red-thunderbird font-lg\'></i>" & "<a href=\'https://www.hubutu.com/index.php/hubutuco_admin/sales_order/view/order_id/" & order_id & "\' target=\'_blank\'>" & s_increment_id & "</a><br>" & s_created_at
+			'else
+				aaData = aaData & "<a href=\'https://www.hubutu.com/index.php/hubutuco_admin/sales_order/view/order_id/" & order_id & "\' target=\'_blank\'>" & s_increment_id & "</a><br>" & s_created_at
+			'end if
+			
+			if order_status = "closed" then
+				aaData = aaData & "<i class=\'fa fa-close font-red-thunderbird font-lg\'></i>"
+			end if
+			
+			if Len(last_ship_date) > 0 then
+				aaData = aaData & "<br><b>(" & last_ship_date & ")</b>"
+			end if
+			aaData = aaData & "','"
+			
+			aaData = aaData & s_customerinfo & "','"
+			aaData = aaData & s_shippinginfo & "','"
+			
+			aaData = aaData & JsonEscape(Trim(sh_region)) & "','"
+			'aaData = aaData & "" & "','"
+			aaData = aaData & Trim(sh_city) & "','"
+			aaData = aaData & sh_postcode & "','"
+			aaData = aaData & "<a href=\'http://www.juso.go.kr/support/AddressMainSearch.do?searchKeyword=" & Server.URLEncode(sh_street) & "\' target=\'_blank\'>" & sh_street & "</a>','"
+			aaData = aaData & s_order_items & "','"
+			'aaData = aaData & s_customer_group & "','" 			
+			'aaData = aaData & s_created_at & "','"
+			'aaData = aaData & "<a href=\'backoffice_members_detail.phtml?d_id=" & s_d_no & "\' class=\'btn btn-sm btn-outline grey-salsa\'><i class=\'fa fa-search\'><\/i> View<\/a>" & "'],"
+			aaData = aaData & O_AMOUNT & "<br>(" & cv_amount & ")"
+			if order_status = "pending" then
+				aaData = aaData & "<br><b>" & order_status & "</b>"
+			end if
+			aaData = aaData & "'],"
+			aaData = Replace(aaData,"'",chr(34))
+			rs.MoveNext
+			i=i+1
+      
+		loop
+		'rs.Close
+		aaData = Left(aaData, Len(aaData)-1)
+  else
+    aaData = ""
+  end if
+  response.write aaData & "] }"
+  
+  rs.Close
+  rs2.Close
+  set rs = nothing
+  set rs2 = nothing
+%>

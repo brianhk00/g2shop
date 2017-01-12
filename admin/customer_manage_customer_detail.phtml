@@ -5,6 +5,7 @@
 %>
 <!-- #INCLUDE File="local/local.phtml" -->
 <!-- #INCLUDE File="../util/xt_func_util.phtml" -->
+<!-- #INCLUDE File="../util/xt_func_string.phtml" -->
 <!-- #INCLUDE File="../util/xt_func_misc_option.phtml" -->
 <!-- #INCLUDE File="../util/xt_func_rc4.phtml" -->
 <!-- #INCLUDE File="include/i_login.phtml" -->
@@ -459,9 +460,15 @@
 																					</div>
 																					<div class="portlet-body">
 																						<address>
-																						<%=shopper_billing_prefix%>&nbsp;<%=shopper_billing_firstname%>&nbsp;<%=shopper_billing_lastname%><br/>
+																						<% if Len(shopper_billing_prefix) > 0 then %>
+																						<%=shopper_billing_prefix%>&nbsp;
+																						<% end if %>
+																						<%=shopper_billing_firstname%>&nbsp;<%=shopper_billing_lastname%><br/>
+																						<% if Len(shopper_billing_company) > 0 then %>
+																						<%=shopper_billing_company%><br/>
+																						<% end if %>
 																						<%=shopper_billing_address%><br />
-																						<%=shopper_billing_city%>, <%=shopper_billing_state%> <%=shopper_billing_zip%><br/>
+																						<%=shopper_billing_city%>,&nbsp;<%=shopper_billing_state%>&nbsp;<%=shopper_billing_zip%><br/>
 																						<%=shopper_billing_country%><br/>
 																						TEL: <%=shopper_billing_phone%>
 																						</address>
@@ -476,15 +483,16 @@
 																					</div>
 																				</div>
 																				<input type="hidden" id="alt_billing_address_id_0" name="alt_billing_address_id" value="0">
-																				<input type="hidden" id="alt_billing_address_name_0" name="alt_billing_address_name_0" value="">
 																				<input type="hidden" id="alt_billing_firstname_0" name="alt_billing_firstname_0" value="<%=shopper_billing_firstname%>">
-																				<input type="hidden" id="alt_billing_lastname_0" name="alt_billing_lastname_0" value=""<%=shopper_billing_lastname%>>
+																				<input type="hidden" id="alt_billing_lastname_0" name="alt_billing_lastname_0" value="<%=shopper_billing_lastname%>">
 																				<input type="hidden" id="alt_billing_address_0" name="alt_billing_address_0" value="<%=shopper_billing_address%>">
 																				<input type="hidden" id="alt_billing_city_0" name="alt_billing_city_0" value="<%=shopper_billing_city%>">
 																				<input type="hidden" id="alt_billing_state_0" name="alt_billing_state_0" value="<%=shopper_billing_state%>">
 																				<input type="hidden" id="alt_billing_zip_0" name="alt_billing_zip_0" value="<%=shopper_billing_zip%>">
 																				<input type="hidden" id="alt_billing_country_0" name="alt_billing_country_0" value="<%=shopper_billing_country%>">
 																				<input type="hidden" id="alt_billing_phone_0" name="alt_billing_phone_0" value="<%=shopper_billing_phone%>">
+																				<input type="hidden" id="alt_billing_prefix_0" name="alt_billing_prefix_0" value="<%=shopper_billing_prefix%>">
+																				<input type="hidden" id="alt_billing_company_0" name="alt_billing_compnay_0" value="<%=shopper_billing_company%>">
 																		
 																				<%
 																					sql = "SELECT * FROM " & g_storeid & "_shopper_billing_address WHERE billing_shopper_id = '" & shopper_id & "'"
@@ -492,7 +500,7 @@
 																					do while not rs.EOF
 																						alt_address_id = rs("billing_address_id")
 																						alt_shopper_id = rs("billing_shopper_id")
-																						alt_address_name = rs("billing_address_name")
+																						'alt_address_name = rs("billing_address_name")
 																						alt_firstname = rs("billing_firstname")
 																						alt_lastname = rs("billing_lastname")
 																						alt_address = rs("billing_address")
@@ -502,6 +510,8 @@
 																						alt_country= rs("billing_country")
 																						alt_phone = rs("billing_phone")
 																						alt_set_default = rs("billing_set_default")
+																						alt_prefix = rs("billing_prefix")
+																						alt_company = rs("bill_company")
 																				%>
 																				<div class="portlet box yellow" id="BillingAddress<%=alt_address_id%>"  style="margin-bottom:0px">
 																					<div class="portlet-title">
@@ -518,9 +528,15 @@
 																					</div>
 																					<div class="portlet-body">
 																						<address>
+																						<% if Len(alt_prefix) > 0 then %>
+																						<%=alt_prefix%>&nbsp;
+																						<% end if %>
 																						<%=alt_firstname%>&nbsp;<%=alt_lastname%><br/>
+																						<% if Len(alt_company) > 0 then %>
+																						<%=alt_company%><br>
+																						<% end if %>
 																						<%=alt_address%><br />
-																						<%=alt_city%>, <%=alt_state%> <%=alt_zip%><br/>
+																						<%=alt_city%>,&nbsp;<%=alt_state%>&nbsp;<%=alt_zip%><br/>
 																						<%=alt_country%><br/>
 																						TEL: <%=alt_phone%>
 																						</address>
@@ -535,7 +551,6 @@
 																					</div>
 																				</div>
 																				<input type="hidden" id="alt_billing_address_id_<%=alt_address_id%>" name="alt_billing_address_id" value="<%=alt_address_id%>">
-																				<input type="hidden" id="alt_billing_address_name_<%=alt_address_id%>" name="alt_billing_address_name_<%=alt_address_id%>" value="<%=alt_address_name%>">
 																				<input type="hidden" id="alt_billing_firstname_<%=alt_address_id%>" name="alt_billing_firstname_<%=alt_address_id%>" value="<%=alt_firstname%>">
 																				<input type="hidden" id="alt_billing_lastname_<%=alt_address_id%>" name="alt_billing_lastname_<%=alt_address_id%>" value="<%=alt_lastname%>">
 																				<input type="hidden" id="alt_billing_address_<%=alt_address_id%>" name="alt_billing_address_<%=alt_address_id%>" value="<%=alt_address%>">
@@ -544,6 +559,8 @@
 																				<input type="hidden" id="alt_billing_zip_<%=alt_address_id%>" name="alt_billing_zip_<%=alt_address_id%>" value="<%=alt_zip%>">
 																				<input type="hidden" id="alt_billing_country_<%=alt_address_id%>" name="alt_billing_country_<%=alt_address_id%>" value="<%=alt_country%>">
 																				<input type="hidden" id="alt_billing_phone_<%=alt_address_id%>" name="alt_billing_phone_<%=alt_address_id%>" value="<%=alt_phone%>">
+																				<input type="hidden" id="alt_billing_prefix_<%=alt_address_id%>" name="alt_billing_prefix_<%=alt_address_id%>" value="<%=alt_prefix%>">
+																				<input type="hidden" id="alt_billing_company_<%=alt_address_id%>" name="alt_billing_company_<%=alt_address_id%>" value="<%=alt_company%>">
 																				<%
 																						rs.MoveNext
 																					loop
@@ -566,14 +583,7 @@
 																			</div>
 																			<input type="hidden" id="billing_address_id" name="billing_address_id" value="0">
 																			<div class="portlet-body">
-																				<div class="form-group">
-																					<label class="col-sm-2 control-label" for="alt_billing_address_name">
-																						Address Nickname
-																					</label>
-																					<div class="col-sm-9">
-																						<input type="text" placeholder="" id="alt_billing_address_name" name="alt_billing_address_name" class="form-control input-sm" value="<%=alt_billing_address_name%>">
-																					</div>
-																				</div>
+																				
 																				<div class="form-group">
 																					<label class="col-sm-2 control-label" for="shopper_billing_prefix">
 																						Prefix
@@ -687,9 +697,16 @@
 																							</button>
 																						</div>
 																					</div>
+																					
 																					<div class="portlet-body">
 																						<address>
-																						<%=shopper_shipping_prefix%>&nbsp;<%=shopper_shipping_firstname%>&nbsp;<%=shopper_shipping_lastname%><br/>
+																						<% if Len(shopper_shipping_prefix) > 0 then %>
+																						<%=shopper_shipping_prefix%>&nbsp;
+																						<% end if %>
+																						<%=shopper_shipping_firstname%>&nbsp;<%=shopper_shipping_lastname%><br/>
+																						<% if Len(shopper_shipping_company) > 0 then %>
+																						<%=shopper_shipping_company%><br/>
+																						<% end if %>
 																						<%=shopper_shipping_address%><br />
 																						<%=shopper_shipping_city%>, <%=shopper_shipping_state%> <%=shopper_shipping_zip%><br/>
 																						<%=shopper_shipping_country%><br/>
@@ -706,7 +723,6 @@
 																					</div>
 																				</div>
 																				<input type="hidden" id="alt_shipping_address_id_0" name="alt_shipping_address_id" value="0">
-																				<input type="hidden" id="alt_shipping_address_name_0" name="alt_shipping_address_name_0" value="">
 																				<input type="hidden" id="alt_shipping_firstname_0" name="alt_shipping_firstname_0" value="<%=shopper_shipping_firstname%>">
 																				<input type="hidden" id="alt_shipping_lastname_0" name="alt_shipping_lastname_0" value=""<%=shopper_shipping_lastname%>>
 																				<input type="hidden" id="alt_shipping_address_0" name="alt_shipping_address_0" value="<%=shopper_shipping_address%>">
@@ -715,6 +731,8 @@
 																				<input type="hidden" id="alt_shipping_zip_0" name="alt_shipping_zip_0" value="<%=shopper_shipping_zip%>">
 																				<input type="hidden" id="alt_shipping_country_0" name="alt_shipping_country_0" value="<%=shopper_shipping_country%>">
 																				<input type="hidden" id="alt_shipping_phone_0" name="alt_shipping_phone_0" value="<%=shopper_shipping_phone%>">
+																				<input type="hidden" id="alt_shipping_prefix_0" name="alt_shipping_prefix_0" value="<%=shopper_shipping_prefix%>">
+																				<input type="hidden" id="alt_shipping_company_0" name="alt_shipping_company_0" value="<%=shopper_shipping_company%>">
 																		
 																				<%
 																					sql = "SELECT * FROM " & g_storeid & "_shopper_shipping_address WHERE shopper_id = '" & shopper_id & "'"
@@ -722,7 +740,7 @@
 																					do while not rs.EOF
 																						alt_address_id = rs("address_id")
 																						alt_shopper_id = rs("shopper_id")
-																						alt_address_name = rs("address_name")
+																						'alt_address_name = rs("address_name")
 																						alt_firstname = rs("firstname")
 																						alt_lastname = rs("lastname")
 																						alt_address = rs("address")
@@ -734,6 +752,7 @@
 																						alt_set_default = rs("set_default")
 																						alt_company = rs("company")
 																						alt_address_type = rs("address_type")
+																						alt_prefix = rs("prefix")
 																				%>
 																				<div class="portlet box yellow" id="ShippingAddress<%=alt_address_id%>"  style="margin-bottom:0px">
 																					<div class="portlet-title">
@@ -748,9 +767,16 @@
 																							</button>
 																						</div>
 																					</div>
+																					
 																					<div class="portlet-body">
 																						<address>
+																						<% if Len(alt_prefix) > 0 then %>
+																						<%=alt_prefix%>&nbsp;
+																						<% end if %>
 																						<%=alt_firstname%>&nbsp;<%=alt_lastname%><br/>
+																						<% if Len(alt_company) > 0 then %>
+																						<%=alt_company%><br>
+																						<% end if %>
 																						<%=alt_address%><br />
 																						<%=alt_city%>, <%=alt_state%> <%=alt_zip%><br/>
 																						<%=alt_country%><br/>
@@ -767,7 +793,6 @@
 																					</div>
 																				</div>
 																				<input type="hidden" id="alt_shipping_address_id_<%=alt_address_id%>" name="alt_shipping_address_id" value="<%=alt_address_id%>">
-																				<input type="hidden" id="alt_shipping_address_name_<%=alt_address_id%>" name="alt_shipping_address_name_<%=alt_address_id%>" value="<%=alt_address_name%>">
 																				<input type="hidden" id="alt_shipping_firstname_<%=alt_address_id%>" name="alt_shipping_firstname_<%=alt_address_id%>" value="<%=alt_firstname%>">
 																				<input type="hidden" id="alt_shipping_lastname_<%=alt_address_id%>" name="alt_shipping_lastname_<%=alt_address_id%>" value="<%=alt_lastname%>">
 																				<input type="hidden" id="alt_shipping_address_<%=alt_address_id%>" name="alt_shipping_address_<%=alt_address_id%>" value="<%=alt_address%>">
@@ -776,6 +801,8 @@
 																				<input type="hidden" id="alt_shipping_zip_<%=alt_address_id%>" name="alt_shipping_zip_<%=alt_address_id%>" value="<%=alt_zip%>">
 																				<input type="hidden" id="alt_shipping_country_<%=alt_address_id%>" name="alt_shipping_country_<%=alt_address_id%>" value="<%=alt_country%>">
 																				<input type="hidden" id="alt_shipping_phone_<%=alt_address_id%>" name="alt_shipping_phone_<%=alt_address_id%>" value="<%=alt_phone%>">
+																				<input type="hidden" id="alt_shipping_prefix_<%=alt_address_id%>" name="alt_shipping_prefix_<%=alt_address_id%>" value="<%=alt_prefix%>">
+																				<input type="hidden" id="alt_shipping_company_<%=alt_address_id%>" name="alt_shipping_company_<%=alt_address_id%>" value="<%=alt_company%>">
 																				<%
 																						rs.MoveNext
 																					loop
@@ -799,11 +826,11 @@
 																			<div class="portlet-body">
 																				<input type="hidden" id="shipping_address_id" name="shipping_address_id" value="0">
 																				<div class="form-group">
-																					<label class="col-sm-2 control-label" for="alt_shipping_address_name">
-																						Address Nickname
+																					<label class="col-sm-2 control-label" for="shopper_shipping_prefix">
+																						Prefix
 																					</label>
 																					<div class="col-sm-9">
-																						<input type="text" placeholder="" id="alt_shipping_address_name" name="alt_shipping_address_name" class="form-control input-sm" value="<%=alt_shipping_address_name%>">
+																						<input type="text" placeholder="" id="shopper_shipping_prefix" name="shopper_shipping_prefix" class="form-control input-sm" value="<%=shopper_shipping_prefix%>">
 																					</div>
 																				</div>
 																				<div class="form-group">
@@ -901,7 +928,7 @@
 																					<label class="col-sm-2 control-label" for="form-field-1">
 																						Pricing Group <span class="symbol required"></span> 
 																					</label>
-																					<div class="col-sm-9">
+																					<div class="col-sm-5">
 																						<select id="member_group" name="member_group" class="form-control input-sm">
 																							<option value="A" <% if shopper_member_group = "A" then %>selected<% end if %>>Group A</option>
 																							<option value="B" <% if shopper_member_group = "B" then %>selected<% end if %>>Group B</option>
@@ -946,7 +973,7 @@
 																					<label class="col-sm-2 control-label" for="shopper_tax">
 																						Tax Rate <span class="symbol required"></span> 
 																					</label>
-																					<div class="col-sm-9">
+																					<div class="col-sm-2">
 																						<input type="text" placeholder="" id="shopper_tax" name="shopper_tax" class="form-control input-sm" value="<%=shopper_tax%>">
 																					</div>
 																				</div>
@@ -1034,6 +1061,9 @@
 <!-- END PAGE LEVEL PLUGINS -->
 
 <!-- BEGIN PAGE LEVEL SCRIPTS -->
+<script language="javascript">
+var savebutton = "1";
+</script>
 <script language="javascript">
 var FormValidator = function () {
 	
@@ -1126,9 +1156,13 @@ var FormValidator = function () {
 						success: function() {
 							window.scrollTo(0,0);
 							success1.show();
+							if (savebutton == "1")
+							{
 							setTimeout(function () {
-								window.location.replace("customer_manage_customer.phtml");
-							}, 1000);
+									window.location.replace("customer_manage_customer.phtml");
+								}, 500);
+							}
+							
 						},
 						error: function() {
 							warning1.show();
@@ -1439,7 +1473,7 @@ var FormValidator = function () {
 			s1 = s1 + '</div>';
 			s1 = s1 + '</div>';
 			s1 = s1 + '<input type="hidden" id="alt_billing_address_id_' + milliseconds + '" name="alt_billing_address_id" value="' + milliseconds + '">';
-			s1 = s1 + '<input type="hidden" id="alt_billing_address_name_' + milliseconds + '" name="alt_billing_address_name_' + milliseconds + '" value="">';
+			//s1 = s1 + '<input type="hidden" id="alt_billing_address_name_' + milliseconds + '" name="alt_billing_address_name_' + milliseconds + '" value="">';
 			s1 = s1 + '<input type="hidden" id="alt_billing_firstname_' + milliseconds + '" name="alt_billing_firstname_' + milliseconds + '" value="">';
 			s1 = s1 + '<input type="hidden" id="alt_billing_lastname_' + milliseconds + '" name="alt_billing_lastname_' + milliseconds + '" value="">';
 			s1 = s1 + '<input type="hidden" id="alt_billing_address_' + milliseconds + '" name="alt_billing_address_' + milliseconds + '" value="">';
@@ -1448,6 +1482,8 @@ var FormValidator = function () {
 			s1 = s1 + '<input type="hidden" id="alt_billing_zip_' + milliseconds + '" name="alt_billing_zip_' + milliseconds + '" value="">';
 			s1 = s1 + '<input type="hidden" id="alt_billing_country_' + milliseconds + '" name="alt_billing_country_' + milliseconds + '" value="US">';
 			s1 = s1 + '<input type="hidden" id="alt_billing_phone_' + milliseconds + '" name="alt_billing_phone_' + milliseconds + '" value="">';
+			s1 = s1 + '<input type="hidden" id="alt_billing_prefix_' + milliseconds + '" name="alt_billing_prefix_' + milliseconds + '" value="">';
+			s1 = s1 + '<input type="hidden" id="alt_billing_company_' + milliseconds + '" name="alt_billing_company_' + milliseconds + '" value="">';
 													
 			
 			$('#BillingAddressList').html($('#BillingAddressList').html() + s1);
@@ -1462,6 +1498,8 @@ var FormValidator = function () {
 			$('#shopper_billing_zip').val(''); 
 			$('#shopper_billing_country').val('US'); 
 			$('#shopper_billing_phone').val('');
+			$('#shopper_billing_prefix').val('');
+			$('#shopper_billing_company').val('');
 		});
 		
 		$( ".btn-shipping-address-add" ).click(function(event) {
@@ -1502,7 +1540,7 @@ var FormValidator = function () {
 			s1 = s1 + '</div>';
 			s1 = s1 + '</div>';
 			s1 = s1 + '<input type="hidden" id="alt_shipping_address_id_' + milliseconds + '" name="alt_shipping_address_id" value="' + milliseconds + '">';
-			s1 = s1 + '<input type="hidden" id="alt_shipping_address_name_' + milliseconds + '" name="alt_shipping_address_name_' + milliseconds + '" value="">';
+			//s1 = s1 + '<input type="hidden" id="alt_shipping_address_name_' + milliseconds + '" name="alt_shipping_address_name_' + milliseconds + '" value="">';
 			s1 = s1 + '<input type="hidden" id="alt_shipping_firstname_' + milliseconds + '" name="alt_shipping_firstname_' + milliseconds + '" value="">';
 			s1 = s1 + '<input type="hidden" id="alt_shipping_lastname_' + milliseconds + '" name="alt_shipping_lastname_' + milliseconds + '" value="">';
 			s1 = s1 + '<input type="hidden" id="alt_shipping_address_' + milliseconds + '" name="alt_shipping_address_' + milliseconds + '" value="">';
@@ -1511,6 +1549,8 @@ var FormValidator = function () {
 			s1 = s1 + '<input type="hidden" id="alt_shipping_zip_' + milliseconds + '" name="alt_shipping_zip_' + milliseconds + '" value="">';
 			s1 = s1 + '<input type="hidden" id="alt_shipping_country_' + milliseconds + '" name="alt_shipping_country_' + milliseconds + '" value="US">';
 			s1 = s1 + '<input type="hidden" id="alt_shipping_phone_' + milliseconds + '" name="alt_shipping_phone_' + milliseconds + '" value="">';
+			s1 = s1 + '<input type="hidden" id="alt_shipping_prefix_' + milliseconds + '" name="alt_shipping_prefix_' + milliseconds + '" value="">';
+			s1 = s1 + '<input type="hidden" id="alt_shipping_company_' + milliseconds + '" name="alt_shipping_company_' + milliseconds + '" value="">';
 			
 			/*
 			s1 = s1 + '<div class="col-md-12 no-padding" id="ShippingAddress' + milliseconds + '">'
@@ -1574,6 +1614,8 @@ var FormValidator = function () {
 			$('#shopper_shipping_zip').val(''); 
 			$('#shopper_shipping_country').val('US'); 
 			$('#shopper_shipping_phone').val('');
+			$('#shopper_shipping_prefix').val('');
+			$('#shopper_shipping_company').val('');
 		});
 		
 		$('#DeleteCust').on('click', function () {
@@ -1601,9 +1643,10 @@ function InitBillingAddressButton()
 {
 	$( ".btn-address-edit" ).click(function(event) {
 		event.preventDefault(event);
+		
 		if ($('#billing_address_id').val() != $(this).data('id'))
 		{
-			$('#alt_billing_address_name_' + $('#billing_address_id').val()).val($('#alt_billing_address_name').val());
+			//$('#alt_billing_address_name_' + $('#billing_address_id').val()).val($('#alt_billing_address_name').val());
 			$('#alt_billing_firstname_' + $('#billing_address_id').val()).val($('#shopper_billing_firstname').val());
 			$('#alt_billing_lastname_' + $('#billing_address_id').val()).val($('#shopper_billing_lastname').val());
 			$('#alt_billing_address_' + $('#billing_address_id').val()).val($('#shopper_billing_address').val());
@@ -1612,6 +1655,8 @@ function InitBillingAddressButton()
 			$('#alt_billing_zip_' + $('#billing_address_id').val()).val($('#shopper_billing_zip').val());
 			$('#alt_billing_country_' + $('#billing_address_id').val()).val($('#shopper_billing_country').val());
 			$('#alt_billing_phone_' + $('#billing_address_id').val()).val($('#shopper_billing_phone').val());
+			$('#alt_billing_prefix_' + $('#billing_address_id').val()).val($('#shopper_billing_prefix').val());
+			$('#alt_billing_company_' + $('#billing_address_id').val()).val($('#shopper_billing_company').val());
 			
 			var s1 = "";
 			
@@ -1637,7 +1682,9 @@ function InitBillingAddressButton()
 			s1 = s1 + '</div>';
 			s1 = s1 + '<div class="portlet-body">';
 			s1 = s1 + '<address>';
+			s1 = s1 + $('#shopper_billing_prefix').val() + '&nbsp;';
 			s1 = s1 + $('#shopper_billing_firstname').val() + '&nbsp;' + $('#shopper_billing_lastname').val() + '<br/>';
+			s1 = s1 + $('#shopper_billing_company').val() + '<br />';
 			s1 = s1 + $('#shopper_billing_address').val() + '<br />';
 			s1 = s1 + $('#shopper_billing_city').val() + ', ' + $('#shopper_billing_state').val() + ' ' +  $('#shopper_billing_zip').val() + '<br/>';
 			s1 = s1 + $('#shopper_billing_country').val() + '<br/>';
@@ -1695,17 +1742,19 @@ function InitBillingAddressButton()
 			InitBillingAddressButton();	
 		  
 		}
-	  
-	  $('#billing_address_id').val($(this).data('id')); 
-	  $('#alt_billing_address_name').val($('#alt_billing_address_name_' + $(this).data('id')).val()); 
-	  $('#shopper_billing_firstname').val($('#alt_billing_firstname_' + $(this).data('id')).val()); 
-	  $('#shopper_billing_lastname').val($('#alt_billing_lastname_' + $(this).data('id')).val()); 
-	  $('#shopper_billing_address').val($('#alt_billing_address_' + $(this).data('id')).val()); 
-	  $('#shopper_billing_city').val($('#alt_billing_city_' + $(this).data('id')).val()); 
-	  $('#shopper_billing_state').val($('#alt_billing_state_' + $(this).data('id')).val()); 
-	  $('#shopper_billing_zip').val($('#alt_billing_zip_' + $(this).data('id')).val()); 
-	  $('#shopper_billing_country').val($('#alt_billing_country_' + $(this).data('id')).val()); 
-	  $('#shopper_billing_phone').val($('#alt_billing_phone_' + $(this).data('id')).val());
+		
+		$('#billing_address_id').val($(this).data('id')); 
+		//$('#alt_billing_address_name').val($('#alt_billing_address_name_' + $(this).data('id')).val()); 
+		$('#shopper_billing_firstname').val($('#alt_billing_firstname_' + $(this).data('id')).val()); 
+		$('#shopper_billing_lastname').val($('#alt_billing_lastname_' + $(this).data('id')).val()); 
+		$('#shopper_billing_address').val($('#alt_billing_address_' + $(this).data('id')).val()); 
+		$('#shopper_billing_city').val($('#alt_billing_city_' + $(this).data('id')).val()); 
+		$('#shopper_billing_state').val($('#alt_billing_state_' + $(this).data('id')).val()); 
+		$('#shopper_billing_zip').val($('#alt_billing_zip_' + $(this).data('id')).val()); 
+		$('#shopper_billing_country').val($('#alt_billing_country_' + $(this).data('id')).val()); 
+		$('#shopper_billing_phone').val($('#alt_billing_phone_' + $(this).data('id')).val());
+		$('#shopper_billing_prefix').val($('#alt_billing_prefix_' + $(this).data('id')).val());
+		$('#shopper_billing_company').val($('#alt_billing_company_' + $(this).data('id')).val());
 	  
 	  
 	   return false;
@@ -1728,7 +1777,7 @@ function InitShippingAddressButton()
 		event.preventDefault(event);
 		if ($('#billing_shipping_id').val() != $(this).data('id'))
 		{
-			$('#alt_shipping_address_name_' + $('#shipping_address_id').val()).val($('#alt_shipping_address_name').val());
+			//$('#alt_shipping_address_name_' + $('#shipping_address_id').val()).val($('#alt_shipping_address_name').val());
 			$('#alt_shipping_firstname_' + $('#shipping_address_id').val()).val($('#shopper_shipping_firstname').val());
 			$('#alt_shipping_lastname_' + $('#shipping_address_id').val()).val($('#shopper_shipping_lastname').val());
 			$('#alt_shipping_address_' + $('#shipping_address_id').val()).val($('#shopper_shipping_address').val());
@@ -1737,6 +1786,8 @@ function InitShippingAddressButton()
 			$('#alt_shipping_zip_' + $('#shipping_address_id').val()).val($('#shopper_shipping_zip').val());
 			$('#alt_shipping_country_' + $('#shipping_address_id').val()).val($('#shopper_shipping_country').val());
 			$('#alt_shipping_phone_' + $('#shipping_address_id').val()).val($('#shopper_shipping_phone').val());
+			$('#alt_shipping_prefix_' + $('#shipping_address_id').val()).val($('#shopper_shipping_prefix').val());
+			$('#alt_shipping_company_' + $('#shipping_address_id').val()).val($('#shopper_shipping_company').val());
 			
 			var s1 = "";
 			
@@ -1762,7 +1813,9 @@ function InitShippingAddressButton()
 			s1 = s1 + '</div>';
 			s1 = s1 + '<div class="portlet-body">';
 			s1 = s1 + '<address>';
+			s1 = s1 + $('#shopper_shipping_prefix').val() + '&nbsp;';
 			s1 = s1 + $('#shopper_shipping_firstname').val() + '&nbsp;' + $('#shopper_shipping_lastname').val() + '<br/>';
+			s1 = s1 + $('#shopper_billing_company').val() + '<br />';
 			s1 = s1 + $('#shopper_shipping_address').val() + '<br />';
 			s1 = s1 + $('#shopper_shipping_city').val() + ', ' + $('#shopper_shipping_state').val() + ' ' +  $('#shopper_shipping_zip').val() + '<br/>';
 			s1 = s1 + $('#shopper_shipping_country').val() + '<br/>';
@@ -1820,7 +1873,7 @@ function InitShippingAddressButton()
 		}
 	  
 		$('#shipping_address_id').val($(this).data('id')); 
-		$('#alt_shipping_address_name').val($('#alt_shipping_address_name_' + $(this).data('id')).val()); 
+		//$('#alt_shipping_address_name').val($('#alt_shipping_address_name_' + $(this).data('id')).val()); 
 		$('#shopper_shipping_firstname').val($('#alt_shipping_firstname_' + $(this).data('id')).val()); 
 		$('#shopper_shipping_lastname').val($('#alt_shipping_lastname_' + $(this).data('id')).val()); 
 		$('#shopper_shipping_address').val($('#alt_shipping_address_' + $(this).data('id')).val()); 
@@ -1829,6 +1882,8 @@ function InitShippingAddressButton()
 		$('#shopper_shipping_zip').val($('#alt_shipping_zip_' + $(this).data('id')).val()); 
 		$('#shopper_shipping_country').val($('#alt_shipping_country_' + $(this).data('id')).val()); 
 		$('#shopper_shipping_phone').val($('#alt_shipping_phone_' + $(this).data('id')).val());
+		$('#shopper_shipping_prefix').val($('#alt_shipping_prefix_' + $(this).data('id')).val());
+		$('#shopper_shipping_company').val($('#alt_shipping_company_' + $(this).data('id')).val());
 	  
 		return false;
 	});

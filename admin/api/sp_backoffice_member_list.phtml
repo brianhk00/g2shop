@@ -1,0 +1,251 @@
+<%@ Language=VBScript %>
+<%
+	Response.CodePage = 65001
+	Response.CharSet = "UTF-8"
+%>
+<%
+  Response.Expires = -1
+%>
+<!-- #INCLUDE File="../local/local.phtml" -->
+<!-- #INCLUDE File="../util/xt_func_util.phtml" -->
+<!-- #INCLUDE File="../util/xt_func_string.phtml" -->
+<%
+	sEcho = Trim(Request("draw"))
+	iDisplayLength = Trim(Request("length"))
+	iDisplayStart = Trim(Request("start"))
+
+	sEcho = FilterStringEx(sEcho, "[^0-9]")
+	iDisplayLength = FilterStringEx(iDisplayLength, "[^0-9]")
+	iDisplayStart = FilterStringEx(iDisplayStart, "[^0-9]")
+
+	sEcho = Cint(sEcho)
+	iDisplayLength = Cint(iDisplayLength)
+	iDisplayStart = Cint(iDisplayStart)
+	sSearch = Trim(Request("sSearch"))
+	v1 = Trim(Request("v1"))
+
+	'=======================================================================================
+	strWhere = ""
+	
+	D_NO = Trim(Request("D_NO"))
+	Session("DT_BACKOFFICE_MEMBERS_1_D_NO") = D_NO
+	if Len(D_NO) > 0 then
+		strWhere = strWhere &  " (D_NO like '%" & D_NO & "%') AND"
+	end if
+	
+	D_UID = Trim(Request("D_UID"))
+	Session("DT_BACKOFFICE_MEMBERS_1_D_UID") = D_UID
+	if Len(D_UID) > 0 then
+		strWhere = strWhere &  " (D_UID like '%" & D_UID & "%') AND"
+	end if
+	
+	P_NAME_H = Trim(Request("P_NAME_H"))
+	Session("DT_BACKOFFICE_MEMBERS_1_P_NAME_H") = P_NAME_H
+	if Len(P_NAME_H) > 0 then
+		strWhere = strWhere &  " (P_NAME_H like '%" & P_NAME_H & "%') AND"
+	end if
+	
+	
+	S_NAME_H = Trim(Request("S_NAME_H"))
+	Session("DT_BACKOFFICE_MEMBERS_1_S_NAME_H") = S_NAME_H
+	if Len(S_NAME_H) > 0 then
+		strWhere = strWhere &  " (S_NAME_H like '%" & S_NAME_H & "%') AND"
+	end if
+	
+	D_NAME = Trim(Request("D_NAME"))
+	Session("DT_BACKOFFICE_MEMBERS_1_D_NAME") = D_NAME
+	if Len(D_NAME) > 0 then
+		strWhere = strWhere &  " (D_FIRSTNAME + ' ' + D_LASTNAME + ' ' + D_KRNAME like '%" & D_NAME & "%') AND"
+	end if
+	
+	D_EMAIL_PHONE = Trim(Request("D_EMAIL_PHONE"))
+	Session("DT_BACKOFFICE_MEMBERS_1_D_EMAIL_PHONE") = D_EMAIL_PHONE
+	if Len(D_EMAIL_PHONE) > 0 then
+		strWhere = strWhere &  " (D_EMAIL + ' ' + D_TEL like '%" & D_EMAIL_PHONE & "%') AND"
+	end if
+	
+	D_IDNO = Trim(Request("D_IDNO"))
+	Session("DT_BACKOFFICE_MEMBERS_1_D_IDNO") = D_IDNO
+	if Len(D_IDNO) > 0 then
+		strWhere = strWhere &  " (D_IDNO like '%" & D_IDNO & "%') AND"
+	end if
+	
+	D_DELETE = Trim(Request("D_DELETE"))
+	Session("DT_BACKOFFICE_MEMBERS_1_D_DELETE") = D_DELETE
+	if Len(D_DELETE) > 0 then
+		strWhere = strWhere &  " (D_DELETE ='" & D_DELETE & "') AND"
+	end if
+	
+	'------------------------------------------------------------------------------
+	sMin = Trim(Request("D_DATE_from"))
+	sMax = Trim(Request("D_DATE_to"))
+	Session("DT_CATALOG_PRODUCT_1_D_DATE_FROM") = sMin
+	Session("DT_CATALOG_PRODUCT_1_D_DATE_TO") = sMax
+	sTotalRange = ""
+	if IsNumeric(sMin) then
+		if IsNumeric(sMax) then
+			sTotalRange = "(D_DATE between " & sMin & " AND " & sMax & ")"
+		else
+			sMax = "1000000"
+			sTotalRange = "(D_DATE between " & sMin & " AND " & sMax & ")"
+		end if
+	else
+		if IsNumeric(sMax) then
+			sTotalRange = "(D_DATE between 0 AND " & sMax & ")"
+		end if
+	end if
+	
+	if Len(sTotalRange) > 0 then
+		strWhere = strWhere &  " " & sTotalRange & " AND"
+	end if
+	
+	if Len(strWhere) > 0 then
+		strWhere = Left(strWhere, Len(strWhere) - 4)
+	else
+		strWhere = " D_NO LIKE '%%'"
+	end if
+  
+	'=======================================================================================
+	'ORDERING
+	SELECT CASE Trim(Request("order[0][column]"))
+	CASE "0"
+		sOrder = "D_NO DESC"
+	CASE "1"
+		sOrder = "D_NO " & Trim(Request("order[0][dir]"))
+	CASE "2"
+		sOrder = "D_UID " & Trim(Request("order[0][dir]"))
+	CASE "3"
+		sOrder = "P_NAME_H " & Trim(Request("order[0][dir]"))
+	CASE "4"
+		sOrder = "S_NAME_H " & Trim(Request("order[0][dir]"))
+	CASE "5"
+		sOrder = "D_FIRSTNAME + ' ' + D_LASTNAME " & Trim(Request("order[0][dir]"))
+	CASE "6"
+		sOrder = "D_EMAIL " & Trim(Request("order[0][dir]"))
+	CASE "7"
+		sOrder = "D_IDNO " & Trim(Request("order[0][dir]"))
+	CASE "8"
+		'sOrder = "DateEntered " & Trim(Request("order[0][dir]"))
+	CASE "9"
+		sOrder = "D_DELETE " & Trim(Request("order[0][dir]"))
+	CASE "10"
+		sOrder = "D_DATE " & Trim(Request("order[0][dir]"))
+	CASE ELSE
+		sOrder = "D_NO DESC"
+	END SELECT 
+	'here we create the variable "strOrderBy" that will be used in the SQL querry
+	strOrderBy = "ORDER BY " & sOrder
+
+	'======================================================================================
+	
+	'strWhere = " shopper_id LIKE '%%'"
+	'strOrderBy = "ORDER BY shopper_id DESC"
+	
+	sql = "SELECT * FROM DISTRIBU_DM WHERE " & strWhere & " " & strOrderBy
+	sqlx = "SELECT COUNT(D_NO) FROM DISTRIBU_DM WHERE " & strWhere 
+	
+	set rs = dbconn_backoffice.Execute(sql)
+	
+	iTotalDisplayRecords = 0
+	iTotalRecords = 50
+	set rs1 = dbconn_backoffice.Execute(sqlx)
+	if not rs1.EOF then
+	  iTotalDisplayRecords = rs1(0)
+	  iTotalRecords = rs1(0)
+	else
+	end if
+	rs1.Close
+	
+	'iTotalDisplayRecords = 50
+	
+	'iTotalRecords = 50
+	
+%>
+{"draw": <%=sEcho%>, "recordsTotal": <%=iTotalRecords%>, "recordsFiltered": <%=iTotalDisplayRecords%>, "data": [ 
+<%
+	i = 0
+  
+	if rs.eof = false then
+		rs.move(iDisplayStart)
+		do while i < iDisplayLength and not rs.eof
+    
+			s_d_no = rs("D_NO")
+			s_d_uid = rs("D_UID")
+			s_d_pass = rs("D_PASS")
+			
+			s_d_ab = rs("D_AB")
+			
+			if s_d_ab = "1" then
+				s_ab = "Left"
+			else
+				s_ab = "Right"
+			end if
+			
+			s_s_name_h = rs("S_NAME_H")
+			s_p_name_h = rs("P_NAME_H")
+			s_lastname = rs("D_LASTNAME")
+			s_firstname = rs("D_FIRSTNAME")
+			s_d_krname = rs("D_KRNAME")
+			s_email = rs("D_EMAIL")
+			s_d_idno= rs("D_IDNO")
+			s_d_birth= rs("D_BIRTH")
+			s_d_country = rs("D_CONTRY")
+			
+			sql = " SELECT Q_CODE,Q_KNAME FROM TETCCOD WHERE Q_GCODE = '71' and Q_CODE ='" & s_d_country &"' ORDER BY Q_KNAME " 
+			set rs1 = dbconn_backoffice.Execute(sql)
+			If Not rs1.Eof Then 
+				s_country = rs1(1)
+			End If 
+			Set rs1 = Nothing 
+	
+			s_d_delete = rs("D_DELETE")
+			If s_d_delete = "N" then
+				msg_active ="Active"
+			Else
+				msg_active ="Inactive"
+			End If
+		   
+			s_d_date = rs("D_DATE")
+   
+			s_phone = rs("D_TEL")
+			
+			s_date_created = rs("D_NO")
+      
+			If Len(s_lastname) > 0 Then
+				s_lastname = Replace(s_lastname, "'", "&#39")
+			End if
+			If Len(s_firstname) > 0 Then
+				s_firstname = Replace(s_firstname, "'", "&#39")
+			End if
+			If Len(s_company) > 0 Then
+				s_company = Replace(s_company, "'", "&#39")
+			End if
+      
+			aaData = aaData & "['"
+			aaData = aaData & "<label class=\'mt-checkbox mt-checkbox-single mt-checkbox-outline\'><input name=\'id[]\' type=\'checkbox\' class=\'checkboxes\' value=\'" &  s_shopper_id & "\'/><span></span></label> " & "','" 
+			aaData = aaData & s_d_no & "','"
+			aaData = aaData & s_d_uid & "','"
+			aaData = aaData & s_p_name_h & "','"
+			aaData = aaData & s_s_name_h & "(" & s_ab & ")" & "','"
+			aaData = aaData & s_lastname & ", " & s_firstname & "<br>" & s_d_krname & "','"
+			aaData = aaData & s_email & "<br>" & s_phone & "','"
+			aaData = aaData & s_d_idno & "<br>" & s_d_birth & "','"
+			aaData = aaData & s_country & "','"
+			aaData = aaData & msg_active & "','" 			
+			aaData = aaData & s_d_date & "','"
+			aaData = aaData & "<a href=\'backoffice_members_detail.phtml?d_id=" & s_d_no & "\' class=\'btn btn-sm btn-outline grey-salsa\'>View<\/a>" & " "
+			aaData = aaData & "<a href=\'http://backoffice.hubutu.com/process_login.asp?q_mode=login&D_UID=" & s_d_uid & "&D_PASS=" & s_d_pass & "\' class=\'btn btn-sm btn-outline grey-salsa\' target=\'_blank\'>Login As<\/a>" & "'],"
+			
+			aaData = Replace(aaData,"'",chr(34))
+			rs.MoveNext
+			i=i+1
+      
+		loop
+		rs.Close
+		aaData = Left(aaData, Len(aaData)-1)
+  else
+    aaData = ""
+  end if
+  response.write aaData & "] }"
+  
+%>

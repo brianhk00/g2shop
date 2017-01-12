@@ -1,0 +1,80 @@
+<%response.Expires=-1%>
+<%
+	Response.CodePage = 65001
+	Response.CharSet = "UTF-8"
+%>
+<!-- #INCLUDE File="../local/local.phtml" -->
+<!-- #INCLUDE File="../util/xt_func_util.phtml" -->
+<!-- #INCLUDE File="../util/xt_func_string.phtml" -->
+<%
+	faq_id = Trim(Request("faq_id"))
+	
+	question_ko = Trim(Request("question_ko"))
+	question_en = Trim(Request("question_en"))
+	question_ja = Trim(Request("question_ja"))
+	answer_ko = Trim(Request("answer_ko"))
+	answer_en = Trim(Request("answer_en"))
+	answer_ja = Trim(Request("answer_ja"))
+	faq_position = Trim(Request("faq_position"))
+	category = Trim(Request("category"))
+	status = Trim(Request("status"))
+	created_at = Trim(Request("created_at"))
+	updated_at = Trim(Request("updated_at"))
+	question_zh = Trim(Request("question_zh"))
+	question_es = Trim(Request("question_es"))
+	answer_zh = Trim(Request("answer_zh"))
+	answer_es = Trim(Request("answer_es"))
+	show_at_magento = Trim(Request("show_at_magento"))
+	
+	if faq_id = "0" then
+		Set rsUpdate = Server.CreateObject("ADODB.Recordset")
+		with rsUpdate
+			.ActiveConnection = dbconn_backoffice
+			.CursorLocation = 3
+			.CursorType = 1
+			.LockType = 3
+			.Source = "faqs WHERE page_id=0"
+			.Open
+			.AddNew
+		end with
+		rsUpdate("page_date_created") = Now()
+	else
+		Set rsUpdate = Server.CreateObject("ADODB.Recordset")
+		with rsUpdate
+			.ActiveConnection = dbconn_backoffice
+			.CursorLocation = 3
+			.CursorType = 1
+			.LockType = 3
+			.Source = "faqs WHERE id=" & faq_id
+			.Open
+		end with
+	end if
+	
+	rsUpdate("question_ko") = question_ko
+	rsUpdate("question_en") = question_en
+	rsUpdate("question_ja") = question_ja
+	rsUpdate("answer_ko") = answer_ko
+	rsUpdate("answer_en") = answer_en
+	rsUpdate("answer_ja") = answer_ja
+	rsUpdate("position") = faq_position
+	rsUpdate("category") = category
+	rsUpdate("status") = status
+	rsUpdate("updated_at") = date()
+	rsUpdate("question_zh") = question_zh
+	rsUpdate("question_es") = question_es
+	rsUpdate("answer_zh") = answer_zh
+	rsUpdate("answer_es") = answer_es
+	rsUpdate("show_at_magento") = show_at_magento
+	
+	If dbconn.Errors.Count > 0 Then
+		dbconn.Errors.Clear
+		rsUpdate.CancelUpdate
+	else
+		rsUpdate.Update
+	End If
+	
+	rsUpdate.Close
+	set rsUpdate = nothing
+	
+
+%>

@@ -1,0 +1,181 @@
+<%@ Language=VBScript %>
+<%
+	Response.CodePage = 65001
+	Response.CharSet = "UTF-8"
+%>
+<%
+  Response.Expires = -1
+%>
+<!-- #INCLUDE File="../local/local.phtml" -->
+<!-- #INCLUDE File="../util/xt_func_util.phtml" -->
+<!-- #INCLUDE File="../util/xt_func_string.phtml" -->
+<%
+	sEcho = Trim(Request("draw"))
+	iDisplayLength = Trim(Request("length"))
+	iDisplayStart = Trim(Request("start"))
+
+	sEcho = FilterStringEx(sEcho, "[^0-9]")
+	iDisplayLength = FilterStringEx(iDisplayLength, "[^0-9]")
+	iDisplayStart = FilterStringEx(iDisplayStart, "[^0-9]")
+
+	sEcho = Cint(sEcho)
+	iDisplayLength = Cint(iDisplayLength)
+	iDisplayStart = Cint(iDisplayStart)
+	sSearch = Trim(Request("sSearch"))
+	v1 = Trim(Request("v1"))
+
+	'=======================================================================================
+	strWhere = ""
+	
+	if Len(strWhere) > 0 then
+		strWhere = Left(strWhere, Len(strWhere) - 4)
+	else
+		strWhere = " question_en LIKE '%%'"
+	end if
+  
+	'=======================================================================================
+	'ORDERING
+	SELECT CASE Trim(Request("order[0][column]"))
+	CASE "0"
+		sOrder = "D_NO DESC"
+	CASE "1"
+		sOrder = "D_NO " & Trim(Request("order[0][dir]"))
+	CASE "2"
+		sOrder = "D_UID " & Trim(Request("order[0][dir]"))
+	CASE "3"
+		sOrder = "P_NAME_H " & Trim(Request("order[0][dir]"))
+	CASE "4"
+		sOrder = "S_NAME_H " & Trim(Request("order[0][dir]"))
+	CASE "5"
+		sOrder = "D_FIRSTNAME + ' ' + D_LASTNAME " & Trim(Request("order[0][dir]"))
+	CASE "6"
+		sOrder = "D_EMAIL " & Trim(Request("order[0][dir]"))
+	CASE "7"
+		sOrder = "D_IDNO " & Trim(Request("order[0][dir]"))
+	CASE "8"
+		'sOrder = "DateEntered " & Trim(Request("order[0][dir]"))
+	CASE "9"
+		sOrder = "D_DELETE " & Trim(Request("order[0][dir]"))
+	CASE "10"
+		sOrder = "D_DATE " & Trim(Request("order[0][dir]"))
+	CASE ELSE
+		sOrder = "D_NO DESC"
+	END SELECT 
+	'here we create the variable "strOrderBy" that will be used in the SQL querry
+	strOrderBy = "ORDER BY " & sOrder
+
+	'======================================================================================
+	
+	'strWhere = " shopper_id LIKE '%%'"
+	strOrderBy = "ORDER BY category, position"
+	
+	sql = "SELECT * FROM faqs WHERE " & strWhere & " " & strOrderBy
+	sqlx = "SELECT COUNT(id) FROM faqs WHERE " & strWhere 
+	
+	set rs = dbconn_backoffice.Execute(sql)
+	
+	iTotalDisplayRecords = 0
+	iTotalRecords = 50
+	set rs1 = dbconn_backoffice.Execute(sqlx)
+	if not rs1.EOF then
+	  iTotalDisplayRecords = rs1(0)
+	  iTotalRecords = rs1(0)
+	else
+	end if
+	rs1.Close
+	
+	'iTotalDisplayRecords = 50
+	
+	'iTotalRecords = 50
+	
+%>
+{"draw": <%=sEcho%>, "recordsTotal": <%=iTotalRecords%>, "recordsFiltered": <%=iTotalDisplayRecords%>, "data": [ 
+<%
+	i = 0
+  
+	if rs.eof = false then
+		rs.move(iDisplayStart)
+		do while i < iDisplayLength and not rs.eof
+    
+			s_id = rs("id")
+			i_category = rs("category")
+			SELECT CASE i_category
+			CASE 0
+				s_category = "My Account"
+			CASE 1 
+				s_category = "Compensation Plan"
+			CASE 2
+				s_category = "Shopping on the Mall"
+			CASE 3
+				s_category = "Shipping and Returns"
+			CASE 4
+				s_category = "Prime Membership"
+			CASE 5
+				s_category = "International"
+			CASE ELSE 
+				s_category = ""
+			END SELECT
+			
+			SELECT CASE rs("status")
+			CASE 0
+				s_status = "draft"
+			CASE 1 
+				s_status = "published"
+			END SELECT
+			
+			SELECT CASE rs("show_at_magento")
+			CASE 1
+				s_magento = "Yes"
+			CASE ELSE 
+				s_magento = "No"
+			END SELECT
+			
+			s_position = rs("position")
+			
+			question_ko = JsonEscape(rs("question_ko"))
+			question_ja = JsonEscape(rs("question_ja"))
+			question_zh = JsonEscape(rs("question_zh"))
+			question_es = JsonEscape(rs("question_es"))
+			question_en = JsonEscape(rs("question_en"))
+			
+			question = ""
+			if Len(question_en) > 0 then
+				question = question & question_en & "<br>"
+			end if
+			if Len(question_ko) > 0 then
+				question = question & question_ko & "<br>"
+			end if
+			if Len(question_ja) > 0 then
+				question = question & question_ja & "<br>"
+			end if
+			if Len(question_zh) > 0 then
+				question = question & question_zh & "<br>"
+			end if
+			if Len(question_es) > 0 then
+				question = question & question_es & "<br>"
+			end if
+			
+      
+			aaData = aaData & "['"
+			aaData = aaData & "<label class=\'mt-checkbox mt-checkbox-single mt-checkbox-outline\'><input name=\'id[]\' type=\'checkbox\' class=\'checkboxes\' value=\'" &  s_id & "\'/><span></span></label> " & "','" 
+			aaData = aaData & s_id & "','"
+			aaData = aaData & s_category & "','"
+			aaData = aaData & question & "','"
+			aaData = aaData & s_status & "','"
+			aaData = aaData & s_magento & "','"
+			aaData = aaData & s_position & "','"
+			aaData = aaData & "<a href=\'backoffice_faq_detail.phtml?id=" & s_id & "\' class=\'btn btn-sm btn-outline grey-salsa\'>View<\/a>" & "'],"
+			
+			aaData = Replace(aaData,"'",chr(34))
+			rs.MoveNext
+			i=i+1
+      
+		loop
+		rs.Close
+		aaData = Left(aaData, Len(aaData)-1)
+  else
+    aaData = ""
+  end if
+  response.write aaData & "] }"
+  
+%>

@@ -9,7 +9,12 @@
 <!--#INCLUDE FILE="../util/xt_func_shopper.phtml"-->
 <!--#INCLUDE FILE="../util/xt_func_shoppingcart.phtml"-->
 <%	
-
+	
+	'-------------------------------------------------------------------
+	config_general_default_page_title = GetSettingValue("config_general_default_page_title", "")
+	g_page_title = config_general_default_page_title
+	'-------------------------------------------------------------------
+	
 	if Len(Request("DEBUGMODE")) > 0 then
 		Session("DEBUGMODE") = Request("DEBUGMODE")
 		if Session("DEBUGMODE") <> "1" then

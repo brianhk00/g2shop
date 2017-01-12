@@ -328,16 +328,16 @@ End Function
 
 function JsonEscape(val)
 	dim strValue
-	strValue = val
+	strValue = Trim(val)
 	
 	if Len(val) > 0 then
 		for ww = 0 to 31
 			strValue = Replace(strValue, Chr(ww), "")
 		next
+		strValue = Replace(strValue, "'", "&#39")
 	else
 		strValue = ""
 	end if
-	
 	JsonEscape = strValue
 end function
 

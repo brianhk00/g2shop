@@ -1,0 +1,135 @@
+<%@ Language=VBScript %>
+<%
+	'Response.CodePage = 65001
+	'Response.CharSet = "UTF-8"
+	
+	Response.CodePage = 949
+	Response.CharSet = "euc-kr"
+%>
+<%
+  Response.Expires = -1
+%>
+<!-- #INCLUDE File="../local/local.phtml" -->
+<!-- #INCLUDE File="../util/xt_func_util.phtml" -->
+<!-- #INCLUDE File="../util/xt_func_string.phtml" -->
+<%
+	sEcho = Trim(Request("draw"))
+	iDisplayLength = Trim(Request("length"))
+	iDisplayStart = Trim(Request("start"))
+
+	sEcho = FilterStringEx(sEcho, "[^0-9]")
+	iDisplayLength = FilterStringEx(iDisplayLength, "[^0-9]")
+	iDisplayStart = FilterStringEx(iDisplayStart, "[^0-9]")
+
+	sEcho = Cint(sEcho)
+	iDisplayLength = Cint(iDisplayLength)
+	iDisplayStart = Cint(iDisplayStart)
+	sSearch = Trim(Request("sSearch"))
+	v1 = Trim(Request("v1"))
+
+	'=======================================================================================
+	strWhere = ""
+	
+	
+	if Len(strWhere) > 0 then
+		strWhere = Left(strWhere, Len(strWhere) - 4)
+	else
+		strWhere = " D_RequestID LIKE '%%'"
+	end if
+  
+	'=======================================================================================
+	'ORDERING
+	SELECT CASE Trim(Request("order[0][column]"))
+	CASE "0"
+		sOrder = "nIndex DESC"
+	CASE "1"
+		sOrder = "nIndex DESC"
+	CASE "2"
+		sOrder = "nIndex DESC"
+	CASE "3"
+		sOrder = "nIndex DESC"
+	CASE "4"
+		sOrder = "nIndex DESC"
+	CASE "5"
+		sOrder = "nIndex DESC"
+	CASE "6"
+		sOrder = "nIndex DESC"
+	CASE "7"
+		sOrder = "nIndex DESC"
+	CASE "8"
+		sOrder = "nIndex DESC"
+	CASE "9"
+		ssOrder = "nIndex DESC"
+	CASE "10"
+		sOrder = "nIndex DESC"
+	CASE ELSE
+		sOrder = "nIndex DESC"
+	END SELECT 
+	'here we create the variable "strOrderBy" that will be used in the SQL querry
+	strOrderBy = "ORDER BY " & sOrder
+
+	'======================================================================================
+	
+	'strWhere = " shopper_id LIKE '%%'"
+	'strOrderBy = "ORDER BY shopper_id DESC"
+	
+	sql = "SELECT * FROM DebitApplyRequestList_2 WHERE " & strWhere & " " & strOrderBy
+	sqlx = "SELECT COUNT(nIndex) FROM DebitApplyRequestList_2 WHERE " & strWhere 
+	
+	set rs = dbconn_backoffice.Execute(sql)
+	
+	iTotalDisplayRecords = 0
+	iTotalRecords = 50
+	set rs1 = dbconn_backoffice.Execute(sqlx)
+	if not rs1.EOF then
+	  iTotalDisplayRecords = rs1(0)
+	  iTotalRecords = rs1(0)
+	else
+	end if
+	rs1.Close
+	
+	'iTotalDisplayRecords = 50
+	
+	'iTotalRecords = 50
+	
+%>
+{"draw": <%=sEcho%>, "recordsTotal": <%=iTotalRecords%>, "recordsFiltered": <%=iTotalDisplayRecords%>, "data": [ 
+<%
+	i = 0
+  
+	if rs.eof = false then
+		rs.move(iDisplayStart)
+		do while i < iDisplayLength and not rs.eof
+    
+			s_nIndex = rs("nIndex")
+			s_D_LNAME = rs("D_LNAME")
+			s_D_ADDR = rs("D_ADDR")
+			
+      
+			aaData = aaData & "['"
+			aaData = aaData & "<label class=\'mt-checkbox mt-checkbox-single mt-checkbox-outline\'><input name=\'id[]\' type=\'checkbox\' class=\'checkboxes\' value=\'" &  s_nIndex & "\'/><span></span></label> " & "','" 
+			aaData = aaData & s_nIndex & "','"
+			aaData = aaData & s_D_ADDR & "','"
+			aaData = aaData & s_nIndex & "','"
+			aaData = aaData & s_nIndex & "','"
+			aaData = aaData & s_nIndex & "','"
+			aaData = aaData & s_nIndex & "','"
+			aaData = aaData & s_nIndex & "','"
+			aaData = aaData & s_nIndex & "','"
+			aaData = aaData & s_nIndex & "','"			
+			aaData = aaData & s_nIndex & "','"
+			aaData = aaData & "<a href=\'backoffice_members_detail.phtml?d_id=" & s_nIndex & "\' class=\'btn btn-sm btn-outline grey-salsa\'><i class=\'fa fa-search\'><\/i> View<\/a>" & "'],"
+			
+			aaData = Replace(aaData,"'",chr(34))
+			rs.MoveNext
+			i=i+1
+      
+		loop
+		rs.Close
+		aaData = Left(aaData, Len(aaData)-1)
+  else
+    aaData = ""
+  end if
+  response.write aaData & "] }"
+  
+%>

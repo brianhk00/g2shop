@@ -1,0 +1,504 @@
+<%
+	Response.CodePage = 65001
+	Response.CharSet = "UTF-8"
+%>
+<!-- #INCLUDE File="local/local.phtml" -->
+<!-- #INCLUDE File="util/xt_func_util.phtml" -->
+<!-- #INCLUDE File="util/xt_func_string.phtml" -->
+<!-- #INCLUDE File="include/i_login.phtml" -->
+<%
+	faq_id = Trim(Request("id"))
+	
+	sql = "SELECT * FROM faqs WHERE id='" & faq_id & "'"
+	set rsPages = dbconn_backoffice.Execute(sql)
+	if not rsPages.EOF Then
+		question_ko = rsPages("question_ko")
+		question_en = rsPages("question_en")
+		question_ja = rsPages("question_ja")
+		answer_ko = rsPages("answer_ko")
+		answer_en = rsPages("answer_en")
+		answer_ja = rsPages("answer_ja")
+		faq_position = rsPages("position")
+		category = rsPages("category")
+		status = rsPages("status")
+		created_at = rsPages("created_at")
+		updated_at = rsPages("updated_at")
+		question_zh = rsPages("question_zh")
+		question_es = rsPages("question_es")
+		answer_zh = rsPages("answer_zh")
+		answer_es = rsPages("answer_es")
+		show_at_magento = rsPages("show_at_magento")
+	end If
+	
+	rsPages.Close
+	set rsPages = nothing
+	
+%>
+<!--#INCLUDE FILE="include/doctype.phtml"-->
+<head>
+<!--#INCLUDE FILE="include/head.phtml"-->
+<!-- BEGIN PAGE LEVEL PLUGINS -->
+<link rel="stylesheet" href="assets/plugins/jquery-ui/jquery-ui-1.10.4.custom.min.css" />
+<link href="../assets/global/plugins/bootstrap-modal/css/bootstrap-modal.css" rel="stylesheet" type="text/css" />
+<link href="../assets/global/plugins/bootstrap-markdown/css/bootstrap-markdown.min.css" rel="stylesheet" type="text/css" />
+<link href="../assets/global/plugins/bootstrap-summernote/summernote.css" rel="stylesheet" type="text/css" />
+<!-- END PAGE LEVEL PLUGINS -->
+<!--#INCLUDE FILE="include/head_bottom.phtml"-->
+</head>
+<body class="page-container-bg-solid">
+<div class="page-wrapper">
+	<div class="page-wrapper-row">
+		<div class="page-wrapper-top">
+			<!--#INCLUDE FILE="include/header.phtml"-->
+		</div>
+	</div>
+	<div class="page-wrapper-row full-height">
+		<div class="page-wrapper-middle">
+			<!-- BEGIN CONTAINER -->
+			<div class="page-container">
+				<!-- BEGIN CONTENT -->
+				<div class="page-content-wrapper">
+					<!-- BEGIN CONTENT BODY -->
+					<!-- BEGIN PAGE HEAD-->
+					<!-- END PAGE HEAD-->
+					<!-- BEGIN PAGE CONTENT BODY -->
+					<div class="page-content">
+						<div class="container-fluid">
+							<!-- BEGIN PAGE CONTENT INNER -->
+							<div class="page-content-inner">
+								<div class="row">
+									<div class="col-md-12">
+										<form id="form_edit_1" class="form-horizontal form-row-seperated" action="#">
+										<input type="hidden" id="faq_id" name="faq_id" value="<%=faq_id%>" />
+											<div class="portlet">
+												<div class="portlet-title">
+													<div class="caption">
+													<i class="fa fa-shopping-cart"></i>
+													FAQ
+													</div>
+													<div class="actions btn-set">
+														<button type="button" onclick="location.href='backoffice_faq.phtml';" name="back" class="btn btn-default">
+															<i class="fa fa-angle-left"></i> Back
+														</button>
+														<button class="btn btn-success" onclick="savebutton='1';">
+															<i class="fa fa-check"></i> Save
+														</button>
+														<button class="btn btn-success" onclick="savebutton='0';">
+															<i class="fa fa-check-circle"></i> Save & Continue Edit
+														</button>
+														<div class="btn-group">
+															<a class="btn btn-success dropdown-toggle" href="javascript:;" data-toggle="dropdown">
+																<i class="fa fa-share"></i> More
+																<i class="fa fa-angle-down"></i>
+															</a>
+															<div class="dropdown-menu pull-right">
+																<!--
+																<li>
+																	<a href="javascript:;" id="DuplicateEntry"> Duplicate </a>
+																</li>
+																-->
+																<li>
+																	<a href="#" id="DeleteEntry"> Delete </a>
+																</li>
+															</div>
+														</div>
+													</div>
+												</div>
+												<div class="alert alert-danger display-hide">
+												<button class="close" data-close="alert"></button> You have some form errors. Please check below. 
+												</div>
+												<div class="alert alert-success display-hide">
+												<button class="close" data-close="alert"></button> The information has been saved.
+												</div>
+												<div class="alert alert-warning display-hide">
+												<button class="close" data-close="alert"></button> The information has not been saved properly. Please contact system administrator.
+												</div>
+												<div class="portlet-body">
+													<div class="panel panel-primary">
+														<div class="panel-heading">
+															<h3 class="panel-title">General</h3>
+														</div>
+														<div class="panel-body">
+															<div class="form-group">
+																<label class="col-sm-2 control-label" for="category">
+																	Category<span class="symbol required"></span>
+																</label>
+																<div class="col-sm-5">
+																	<select id="category"  name="category" class="form-control input-sm">
+																		<option value="0" <%if category = 0 then%>selected<%end if%>>My Account</option>
+																		<option value="1" <%if category = 1 then%>selected<%end if%>>Compensation Plan</option>
+																		<option value="2" <%if category = 2 then%>selected<%end if%>>Shopping on the Mall</option>
+																		<option value="3" <%if category = 3 then%>selected<%end if%>>Shipping and Returns</option>
+																		<option value="4" <%if category = 4 then%>selected<%end if%>>Prime Membership</option>
+																		<option value="5" <%if category = 5 then%>selected<%end if%>>International</option>
+																	</select>
+																</div>
+															</div>
+															<div class="form-group">
+																<label class="col-sm-2 control-label" for="status">
+																	Status<span class="symbol required"></span>
+																</label>
+																<div class="col-sm-3">
+																	<select id="status"  name="status" class="form-control input-sm">
+																		<option value="0" <%if status = 0 then%>selected<%end if%>>Draft</option>
+																		<option value="1" <%if status = 1 then%>selected<%end if%>>Published</option>
+																	</select>
+																</div>
+															</div>
+															<div class="form-group">
+																<label class="col-sm-2 control-label" for="faq_position">
+																	Position<span class="symbol required"></span>
+																</label>
+																<div class="col-sm-2">
+																	<input type="text" class="form-control input-sm" id="faq_position" name="faq_position" value="<%=faq_position%>">
+																</div>
+															</div>
+															<div class="form-group">
+																<label class="col-sm-2 control-label" for="show_at_magento">
+																	Show at Magento<span class="symbol required"></span>
+																</label>
+																<div class="col-sm-2">
+																	<select id="show_at_magento"  name="show_at_magento" class="form-control input-sm">
+																		<option value="0" <%if show_at_magento = 0 then%>selected<%end if%>>No</option>
+																		<option value="1" <%if show_at_magento = 1 then%>selected<%end if%>>Yes</option>
+																	</select>
+																</div>
+															</div>
+														</div>
+													</div>
+													<div class="panel panel-primary">
+														<div class="panel-heading">
+															<h3 class="panel-title">English</h3>
+														</div>
+														<div class="panel-body">
+															<div class="form-group">
+																<label class="col-sm-2 control-label" for="question_en">
+																	Question<span class="symbol required"></span>
+																</label>
+																<div class="col-sm-9">
+																	<input type="text" class="form-control input-sm" id="question_en" name="question_en" value="<%=question_en%>">
+																</div>
+															</div>
+															<div class="form-group">
+																<label class="control-label col-md-2">Default Markdown</label>
+																<div class="col-md-10">
+																	<textarea name="answer_en" id="answer_en"><%=answer_en%></textarea>
+																</div>
+															</div>
+														</div>
+													</div>
+													<div class="panel panel-primary">
+														<div class="panel-heading">
+															<h3 class="panel-title">Korean</h3>
+														</div>
+														<div class="panel-body">
+															<div class="form-group">
+																<label class="col-sm-2 control-label" for="question_ko">
+																	Question<span class="symbol required"></span>
+																</label>
+																<div class="col-sm-9">
+																	<input type="text" class="form-control input-sm" id="question_ko" name="question_ko" value="<%=question_ko%>">
+																</div>
+															</div>
+															<div class="form-group">
+																<label class="col-sm-2 control-label" for="answer_ko">
+																	Answer <span class="symbol required"></span>
+																</label>
+																<div class="col-sm-9">
+																	<textarea id="answer_ko" name="answer_ko" class="form-control input-sm" style="height:200px;"><%=answer_ko%></textarea>
+																	
+																</div>
+															</div>
+														</div>
+													</div>
+													<div class="panel panel-primary">
+														<div class="panel-heading">
+															<h3 class="panel-title">Japanese</h3>
+														</div>
+														<div class="panel-body">
+															<div class="form-group">
+																<label class="col-sm-2 control-label" for="question_ja">
+																	Question<span class="symbol required"></span>
+																</label>
+																<div class="col-sm-9">
+																	<input type="text" class="form-control input-sm" id="question_ja" name="question_ja" value="<%=question_ja%>">
+																</div>
+															</div>
+															<div class="form-group">
+																<label class="col-sm-2 control-label" for="answer_ja">
+																	Answer <span class="symbol required"></span>
+																</label>
+																<div class="col-sm-9">
+																	<textarea id="answer_ja" name="answer_ja" class="form-control input-sm" style="height:200px;"><%=answer_ja%></textarea>
+																	
+																</div>
+															</div>
+														</div>
+													</div>
+													<div class="panel panel-primary">
+														<div class="panel-heading">
+															<h3 class="panel-title">Chinese</h3>
+														</div>
+														<div class="panel-body">
+															<div class="form-group">
+																<label class="col-sm-2 control-label" for="question_zh">
+																	Question<span class="symbol required"></span>
+																</label>
+																<div class="col-sm-9">
+																	<input type="text" class="form-control input-sm" id="question_zh" name="question_zh" value="<%=question_zh%>">
+																</div>
+															</div>
+															<div class="form-group">
+																<label class="col-sm-2 control-label" for="answer_zh">
+																	Answer <span class="symbol required"></span>
+																</label>
+																<div class="col-sm-9">
+																	<textarea id="answer_zh" name="answer_zh" class="form-control input-sm" style="height:200px;"><%=answer_zh%></textarea>
+																	
+																</div>
+															</div>
+														</div>
+													</div>
+													<div class="panel panel-primary">
+														<div class="panel-heading">
+															<h3 class="panel-title">Spanish</h3>
+														</div>
+														<div class="panel-body"> 
+															<div class="form-group">
+																<label class="col-sm-2 control-label" for="question_es">
+																	Question<span class="symbol required"></span>
+																</label>
+																<div class="col-sm-9">
+																	<input type="text" class="form-control input-sm" id="question_es" name="question_es" value="<%=question_es%>">
+																</div>
+															</div>
+															<div class="form-group">
+																<label class="col-sm-2 control-label" for="answer_es">
+																	Answer <span class="symbol required"></span>
+																</label>
+																<div class="col-sm-9">
+																	<textarea id="answer_es" name="answer_es" class="form-control input-sm" style="height:200px;"><%=answer_es%></textarea>
+																	
+																</div>
+															</div>
+														</div>
+													</div>
+												</div>
+											</div>
+										</div>
+									</div>
+								</div>
+							</div>
+							<!-- END PAGE CONTENT INNER -->
+						</div>
+					</div>
+					<!-- END PAGE CONTENT BODY -->
+					<!-- END CONTENT BODY -->
+				</div>
+				<!-- END CONTENT -->
+			</div>
+			<!-- END CONTAINER -->
+		</div>
+	</div>
+	<div class="page-wrapper-row">
+		<div class="page-wrapper-bottom">
+			<!--#INCLUDE FILE="include/footer.phtml"-->
+		</div>
+	</div>
+</div>
+<div id="ajax-modal" class="modal container fade" tabindex="-1" style="display: none;"></div>
+<div id="dialog-confirm" title="Delete Confirmation" style="display: none;">
+<p><span class="ui-icon ui-icon-alert" style="float:left; margin:0 7px 20px 0;"></span>You are about to permanently delete this page. Are you sure?</p>
+</div>
+<!--#INCLUDE FILE="include/js.phtml"-->
+<!-- BEGIN PAGE LEVEL PLUGINS -->
+<script src="../assets/global/plugins/jquery-validation/js/jquery.validate.min.js" type="text/javascript"></script>
+<script src="../assets/global/plugins/jquery-validation/js/additional-methods.min.js" type="text/javascript"></script>
+<script src="assets/plugins/jquery-ui/jquery-ui-1.10.1.custom.min.js" type="text/javascript"></script>
+<script src="../assets/global/plugins/bootstrap-modal/js/bootstrap-modalmanager.js" type="text/javascript"></script>
+<script src="../assets/global/plugins/bootstrap-modal/js/bootstrap-modal.js" type="text/javascript"></script>
+<script src="../assets/global/plugins/bootstrap-markdown/lib/markdown.js" type="text/javascript"></script>
+<script src="./../assets/global/plugins/bootstrap-markdown/js/bootstrap-markdown.js" type="text/javascript"></script>
+<script src="../assets/global/plugins/bootstrap-summernote/summernote.min.js" type="text/javascript"></script>
+<!-- END PAGE LEVEL PLUGINS -->
+
+<!-- BEGIN PAGE LEVEL SCRIPTS -->
+<script language="javascript">
+var savebutton = "1";
+</script>
+<script>
+//MODAL
+var UIModals = function () {
+	//function to initiate bootstrap extended modals
+	var initModals = function () {
+		$.fn.modalmanager.defaults.resize = true;
+		$.fn.modal.defaults.spinner = $.fn.modalmanager.defaults.spinner =
+			'<div class="loading-spinner" style="width: 200px; margin-left: -100px;">' +
+			'<div class="progress progress-striped active">' +
+			'<div class="progress-bar" style="width: 100%;"></div>' +
+			'</div>' +
+			'</div>';
+			
+		var $modal = $('#ajax-modal');
+		$('#wysiwyg_description').on('click', function () {
+			$('body').modalmanager('loading');
+			setTimeout(function () {
+				$modal.load('api/modal_ajax_wysiwyg_editor.phtml?id=page_text&fid=1', '', function () {
+					$modal.modal();
+				});
+			}, 100);
+		});
+		$modal.on('click', '.update_1', function () {
+			editor_1.updateElement();
+			$('#page_text').val($('#wysiwig_text_1_1').val());
+			$modal.modal('hide');
+		});
+		
+	};
+	return {
+		init: function () {
+			initModals();
+		}
+	};
+}();
+</script>	
+<script language="javascript">
+var savebutton = "1";
+var FormValidator = function () {
+	var runValidator1 = function() {
+		// for more info visit the official plugin documentation: 
+		// http://docs.jquery.com/Plugins/Validation
+
+		var form1 = $('#form_edit_1');
+		var error1 = $('.alert-danger', form1);
+		var success1 = $('.alert-success', form1);
+		var warning1 = $('.alert-warning', form1);
+
+		form1.validate({
+			errorElement: 'span', //default input error message container
+			errorClass: 'help-block help-block-error', // default input error message class
+			focusInvalid: false, // do not focus the last invalid input
+			ignore: "",  // validate all fields including form hidden input
+			//RULES
+			rules: {
+				page_title: {
+					minlength: 3,
+					required: true
+				},
+				page_status: {
+					required: true
+				},
+				page_text: {
+					required: true
+				},
+				url_key: {
+					minlength: 5,
+					"remote":
+					{
+					  url: 'api/sp_product_check_url_key.phtml?pf_id=<%=page_id%>',
+					  type: "post"
+					}
+				}
+			},
+			messages: {
+				url_key:
+				{
+					minlength: "The URL Key must be greater than 5 chracter length.",
+					remote: "The specified URL Key is not unique."
+				}
+			},
+
+			invalidHandler: function (event, validator) { //display error alert on form submit              
+				success1.hide();
+				error1.show();
+				App.scrollTo(error1, -200);
+			},
+
+			errorPlacement: function (error, element) { // render error placement for each input type
+				var cont = $(element).parent('.input-group');
+				if (cont) {
+					cont.after(error);
+				} else {
+					element.after(error);
+				}
+			},
+
+			highlight: function (element) { // hightlight error inputs
+
+				$(element)
+					.closest('.form-group').addClass('has-error'); // set error class to the control group
+			},
+
+			unhighlight: function (element) { // revert the change done by hightlight
+				$(element)
+					.closest('.form-group').removeClass('has-error'); // set error class to the control group
+			},
+
+			success: function (label) {
+				label
+					.closest('.form-group').removeClass('has-error'); // set success class to the control group
+			},
+
+			submitHandler: function (form) {
+				success1.hide();
+				error1.hide();
+				warning1.hide();
+				
+				$.ajax({
+					type: "POST",
+					url: "api/sp_backoffice_faq_update.phtml",
+					data: form1.serialize(),
+					success: function() {
+						success1.show();
+						if (savebutton == "1")
+						{
+						setTimeout(function () {
+								window.location.replace("backoffice_faq.phtml");
+							}, 500);
+						}
+					},
+					error: function() {
+						warning1.show();
+					}
+				});
+			}
+		});
+
+	};
+	return {
+		//main function to initiate template pages
+		init: function () {
+			runValidator1();
+		}
+	};
+}();
+
+var ComponentsEditors = function () {
+    
+    var handleSummernote = function () {
+        $('#answer_en').summernote({height: 300});
+		$('#answer_ko').summernote({height: 300});
+		$('#answer_ja').summernote({height: 300});
+		$('#answer_zh').summernote({height: 300});
+		$('#answer_es').summernote({height: 300});
+    }
+
+    return {
+        //main function to initiate the module
+        init: function () {
+            handleSummernote();
+        }
+    };
+
+}();
+
+</script>
+<script type="text/javascript">
+jQuery(document).ready(function() {
+	FormValidator.init();
+	ComponentsEditors.init(); 
+});	
+</script>
+<!-- END PAGE LEVEL SCRIPTS -->
+</body>
+</html>

@@ -1,0 +1,67 @@
+<%response.Expires=-1%>
+<%
+	Response.CodePage = 65001
+	Response.CharSet = "UTF-8"
+%>
+<!-- #INCLUDE File="../local/local.phtml" -->
+<!-- #INCLUDE File="../util/xt_func_util.phtml" -->
+<!-- #INCLUDE File="../util/xt_func_string.phtml" -->
+<%
+	'--POST DATA------------------------------------------
+	D_BIRTH	= Trim(Request("D_BIRTH"))
+	D_CONTRY	= Trim(Request("D_CONTRY"))	
+	D_EMAIL	= Trim(Request("D_EMAIL"))	
+	D_FIRSTNAME		= Trim(Request("D_FIRSTNAME"))
+	D_GCCNUM	= Trim(Request("D_GCCNUM"))	
+	D_IDNO	= Trim(Request("D_IDNO"))
+	D_KRNAME	= Trim(Request("D_KRNAME"))	
+	D_LASTNAME	= Trim(Request("D_LASTNAME"))	
+	D_NO	= Trim(Request("D_NO"))	
+	D_PASS	= Trim(Request("D_PASS"))	
+	D_PASS2	= Trim(Request("D_PASS2"))	
+	D_PASSPIN	= Trim(Request("D_PASSPIN"))	
+	D_TEL	= Trim(Request("D_TEL"))	
+	D_UID	= Trim(Request("D_UID"))
+	'--END OF POST DATA-----------------------------------
+	
+	if Len(D_NO) > 0 then
+		Set rsUpdate = Server.CreateObject("ADODB.Recordset")
+		with rsUpdate
+			.ActiveConnection = dbconn_backoffice
+			.CursorLocation = 3
+			.CursorType = 1
+			.LockType = 3
+			.Source = "DISTRIBU_DM WHERE D_NO = '" & D_NO & "'"
+			.Open
+		end with
+		
+		rsUpdate("D_BIRTH") = D_BIRTH
+		rsUpdate("D_CONTRY") = D_CONTRY
+		rsUpdate("D_EMAIL") = D_EMAIL
+		rsUpdate("D_FIRSTNAME") = D_FIRSTNAME
+		if Len(D_GCCNUM) > 0 then
+			rsUpdate("D_GCCNUM") = D_GCCNUM
+		else
+			rsUpdate("D_GCCNUM") = NULL
+		end if
+		rsUpdate("D_IDNO") = D_IDNO
+		rsUpdate("D_KRNAME") = D_KRNAME
+		rsUpdate("D_LASTNAME") = D_LASTNAME
+		rsUpdate("D_PASS") = D_PASS
+		rsUpdate("D_PASS2") = D_PASS2
+		rsUpdate("D_PASSPIN") = D_PASSPIN
+		rsUpdate("D_TEL") = D_TEL
+		'rsUpdate("D_UID") = D_UID
+	
+		If dbconn.Errors.Count > 0 Then
+			dbconn.Errors.Clear
+			rsUpdate.CancelUpdate
+		else
+			rsUpdate.Update
+		End If
+		
+		rsUpdate.Close
+		set rsUpdate = nothing
+	
+	end if
+%>

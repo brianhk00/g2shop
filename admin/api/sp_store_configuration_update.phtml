@@ -1,0 +1,57 @@
+<%response.Expires=-1%>
+<%
+	Response.CodePage = 65001
+	Response.CharSet = "UTF-8"
+%>
+<!-- #INCLUDE File="../local/local.phtml" -->
+<!-- #INCLUDE File="../util/xt_func_util.phtml" -->
+<!-- #INCLUDE File="../util/xt_func_string.phtml" -->
+<%
+	en = Request.Form.count
+	el = Request.Form
+
+	elArray = split(el, "&")
+
+	for i = 0 to UBound(elArray)
+
+		pos = InStr(elArray(i), "=")
+
+		if (pos > 0 ) then     
+			elArray(i) = Left(elArray(i), pos-1)
+			elArray(i) = Replace(elArray(i), "+", " ")
+			elArray(i) = Replace(elArray(i), "%2F", "/")
+
+			if elArray(i) = tmp_elarray then
+				'duplicate...
+				elArray(i) = ""
+			else
+				tmp_elarray = elArray(i)
+			end if
+			
+		end if
+
+		pos=0
+	next
+	
+	'Recreate string and split again..
+	new_el = ""
+	for i = 0 to UBound(elArray)
+		if elArray(i) = "" then
+		else
+			new_el = new_el & elArray(i) & "|*|"
+		end if
+	next
+
+	if Len(new_el) > 3 then
+		new_el = Left(new_el, Len(new_el)-3)
+	end if
+
+	elArray = split(new_el, "|*|")
+
+	for i = 0 to en-1
+		Response.Write(elArray(i) & "..." & Trim(Request(elArray(i))) & "<br>")
+		if SetSettingValue(elArray(i), Trim(Request(elArray(i)))) then
+		end if
+	next
+	
+%>
