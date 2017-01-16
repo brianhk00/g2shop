@@ -1,4 +1,8 @@
 <%response.Expires=-1%>
+<%
+	Response.CodePage = 65001
+	Response.CharSet = "UTF-8"
+%>
 <!-- #INCLUDE File="../local/local.phtml" -->
 <!-- #INCLUDE File="../util/xt_func_util.phtml" -->
 <!-- #INCLUDE File="../util/xt_func_string.phtml" -->
@@ -7,81 +11,35 @@
 	quote_id=Trim(Request("quote_id"))
 	
 	if Len(order_id) > 0 then
-		sql = "SELECT * FROM " & g_storeid & "_order WHERE order_id='" & order_id & "'"
+		sql = "SELECT * FROM " & g_storeid & "_sales_order WHERE order_id='" & order_id & "'"
 		set rsOrder = dbconn.Execute(sql)
 		if not rsOrder.EOF then
 			
-			so_owner = Trim(rsOrder("salesrep_id"))
-			shopper_id = Trim(rsOrder("shopper_id"))
+			billing_address_id = rsOrder("billing_address_id")
+			order_billing_company = rsOrder("BillCompany")
+			order_billing_firstname = rsOrder("BillFirstName")
+			order_billing_lastname = rsOrder("BillLastName")
+			order_billing_address = rsOrder("BillAddress")
+			order_billing_city = rsOrder("BillCity")
+			order_billing_state = rsOrder("BillState")
+			order_billing_zip = rsOrder("BillZip")
+			order_billing_country = rsOrder("BillCountry")
+			order_billing_phone = rsOrder("BillPhone")
+			order_billing_prefix = rsOrder("BillPrefix")
 			
-			order_date = rsOrder("date_entered")
-			order_date = ConvertToTimeZone(order_date)
-			order_status = rsOrder("status")
-			order_ip = rsOrder("order_ip_addr")
+			order_billing_contact_firstname = order_billing_firstname
+			order_billing_contact_lastname = order_billing_lastname
 			
-			order_email = rsOrder("shopper_email")
-			order_customer_name = rsOrder("CardName")
-			
-			order_billing_company = rsOrder("bill_company")
-			order_billing_address = rsOrder("CardAddress")
-			order_billing_city = rsOrder("CardCity")
-			order_billing_state = rsOrder("CardState")
-			order_billing_zip = rsOrder("CardZip")
-			order_billing_country = rsOrder("CardCountry")
-			order_billing_phone = rsOrder("bill_phone")
-			order_billing_contact_firstname = Trim(rsOrder("bill_contact_firstname"))
-			order_billing_contact_lastname = Trim(rsOrder("bill_contact_lastname"))
-			
-			order_shipping_company = rsOrder("ship_company")
-			order_shipping_address = rsOrder("ShipAddress")
-			order_shipping_city = rsOrder("ShipCity")
-			order_shipping_state = rsOrder("ShipState")
-			order_shipping_zip = rsOrder("ShipZip")
-			order_shipping_country = rsOrder("ShipCountry")
-			order_shipping_phone = rsOrder("ShipPhone")
-			
-			order_payment_method = rsOrder("PaymentMethod")
-			order_payment_card_type = rsOrder("CardType")
-			order_payment_card_number = rsOrder("CardNumber")
-			order_customer_card_name = rsOrder("CardName")
-			order_customer_card_exp_month = rsOrder("CardExpirationMonth")
-			order_customer_card_exp_year = rsOrder("CardExpirationYear")
-			
-			order_shipping_sh_method = rsOrder("SH_method")
-			order_shipping_sh = rsOrder("SH")
-			order_shipping_sh = FormatNumber(order_shipping_sh)
-			
-			order_comment = rsOrder("Order_Comments")
-			order_notes = rsOrder("notes")
-			
-			order_tax = rsOrder("tax")
-			order_tax = FormatNumber(order_tax)
-			order_total = rsOrder("total")
-			order_total = FormatNumber(order_total)
-			
-			if Len(order_comment) > 0 then
-			else
-				order_comment = "..."
+			order_billing_name = ""
+			if Len(order_billing_prefix) > 0 then
+				order_billing_name = order_billing_prefix & "&nbsp;"
 			end if
-		
-			if Len(order_notes) > 0 then
-			else
-				order_notes = "..."
+			if Len(order_billing_firstname) > 0 then
+				order_billing_name = order_billing_name & order_billing_firstname & "&nbsp;"
 			end if
-			
-			'TODO...
-			SELECT CASE order_payment_method
-			CASE "visa"
-				order_payment_method = "Credit Card"
-			CASE "master"
-				order_payment_method = "Credit Card"
-			CASE "discover"
-				order_payment_method = "Credit Card"
-			CASE "amex"
-				order_payment_method = "Credit Card"
-			CASE "cod"
-				order_payment_method = "COD"
-			END SELECT
+			if Len(order_billing_lastname) > 0 then
+				order_billing_name = order_billing_name & order_billing_lastname
+			end if
 			
 		end if
 		rsOrder.Close
@@ -242,6 +200,15 @@
 		</label>
 		<div class="col-sm-9">
 			<input type="text" placeholder="" id="order_billing_company" name="order_billing_company" class="form-control input-sm" value="<%=order_billing_company%>">
+		</div>
+	</div>
+	<br><br>
+	<div class="form-group">
+		<label class="col-sm-3 control-label" for="order_billing_contact_firstname">
+			Prefix <span class="symbol required"></span> 
+		</label>
+		<div class="col-sm-9">
+			<input type="text" placeholder="" id="order_billing_prefix" name="order_billing_prefix" class="form-control input-sm" value="<%=order_billing_prefix%>">
 		</div>
 	</div>
 	<br><br>

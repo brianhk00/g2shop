@@ -15,7 +15,7 @@
 	discount_amount = 0
 	order_tax_rate = 0
 		
-	sql = "SELECT * FROM " & g_storeid & "_order WHERE order_id='" & order_id & "'"
+	sql = "SELECT * FROM " & g_storeid & "_sales_order WHERE order_id='" & order_id & "'"
 	set rsOrder = dbconn.Execute(sql)
 	if not rsOrder.EOF then
 		order_shipping_sh = rsOrder("SH")
@@ -59,7 +59,7 @@
 	
 	grandtotal = i_subtotal + order_shipping_sh + order_tax - discount_amount
 	
-	sql = "UPDATE " & g_storeid & "_order SET total = " & FormatNumber(grandtotal,2,,,0) & " WHERE order_id='" & order_id & "'"
+	sql = "UPDATE " & g_storeid & "_sales_order SET total = " & FormatNumber(grandtotal,2,,,0) & " WHERE order_id='" & order_id & "'"
 	dbconn.Execute(sql)
 	'Number(order_subtotal) + Number(newValue) + Number(order_tax) - Number(discount_amount);
 %>
@@ -72,11 +72,11 @@
 if x = "0" then
 	'Get template to print
 	Set fs = Server.CreateObject("Scripting.FileSystemObject")
-	Set Out = fs.OpenTextFile(Server.MapPath("sales_order_template_1.html"),1,FALSE, FALSE)
+	Set Out = fs.OpenTextFile(Server.MapPath("sales_sales_order_template_1.html"),1,FALSE, FALSE)
 	s1 = Out.ReadAll
 	Out.close
 	
-	sql = "SELECT * FROM " & g_storeid & "_order WHERE order_id='" & order_id & "'"
+	sql = "SELECT * FROM " & g_storeid & "_sales_order WHERE order_id='" & order_id & "'"
 	set rsOrder = dbconn.Execute(sql)
 	if not rsOrder.EOF then
 		
@@ -245,7 +245,7 @@ if x = "0" then
 	i_system = 1
 	data_empty_cell_height = 300
 	
-	sql = "SELECT * FROM " & g_storeid & "_order_item WHERE order_id='" & order_id & "' ORDER by row_id"
+	sql = "SELECT * FROM " & g_storeid & "_sales_order_item WHERE order_id='" & order_id & "' ORDER by row_id"
 	set rsOrderItems = dbconn.Execute(sql)
 	
 	trans_subtotal = 0

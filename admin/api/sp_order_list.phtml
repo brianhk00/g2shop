@@ -30,7 +30,7 @@
 	'---------------------------------------------------------------------------------------
 	order_id = Trim(Request("order_id"))
 	if Len(order_id) > 0 then
-		strWhere = strWhere &  " (order_id like '%" & order_id & "%') AND"
+		strWhere = strWhere &  " (increment_id like '%" & order_id & "%') AND"
 	end if
 	'----------------------------------------------------------------------------------------
 	sMin = Trim(Request("order_date_from"))
@@ -129,7 +129,7 @@
 	CASE "9"
 		sOrder = "order_id DESC"
 	CASE ELSE
-		sOrder = "order_id DESC"
+		sOrder = "date_entered DESC"
 	END SELECT 
 	'here we create the variable "strOrderBy" that will be used in the SQL querry
 	strOrderBy = "ORDER BY " & sOrder
@@ -170,6 +170,7 @@
 		do while i < iDisplayLength and not rs.eof
 			
 			s_order_id = rs("order_id")
+			s_increment_id = rs("increment_id")
 			s_order_owner = rs("salesrep_id")
 			s_order_amount = FormatNumber(rs("total"),2)
 			
@@ -231,7 +232,7 @@
 			aaData = aaData & "['"
 			aaData = aaData & "<label class=\'mt-checkbox mt-checkbox-single mt-checkbox-outline\'><input name=\'id[]\' type=\'checkbox\' class=\'checkboxes\' value=\'" &  s_order_id & "\'/><span></span></label> " & "','" 
 			'aaData = aaData & "<a href=\'sales_orders_detail.phtml?so_id=" & s_order_id & "\'>" & s_order_id & "</a>"
-			aaData = aaData  & s_order_id & ""
+			aaData = aaData  & s_increment_id & ""
 			aaData = aaData & "','" 
 			aaData = aaData & s_date_created & "','"
 			'aaData = aaData & s_company_name & "','" 
@@ -272,7 +273,7 @@
 			loop
 			rsPO.Close
 			'==================================================================================================
-			aaData = aaData & s_po_num & "','"
+			'aaData = aaData & s_po_num & "','"
 			
 			aaData = aaData & "<a href=\'sales_order_detail.phtml?so_id=" & s_order_id & "\' class=\'btn btn-sm btn-outline grey-salsa\'><i class=\'fa fa-search\'><\/i> View<\/a>" & "'],"
 			

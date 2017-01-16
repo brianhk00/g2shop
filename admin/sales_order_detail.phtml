@@ -10,110 +10,124 @@
 <%
 	order_id = Trim(Request("so_id"))
 	
-	sql = "SELECT * FROM " & g_storeid & "_order WHERE order_id='" & order_id & "'"
+	sql = "SELECT * FROM " & g_storeid & "_sales_order WHERE order_id='" & order_id & "'"
 	set rsOrder = dbconn.Execute(sql)
 	if not rsOrder.EOF then
 		
+		order_id = rsOrder("order_id")
+		increment_id = rsOrder("increment_id")
 		order_date = rsOrder("date_entered")
-		order_date = ConvertToTimeZone(order_date)
 		order_status = rsOrder("status")
 		order_ip = rsOrder("order_ip_addr")
 		order_po_number = rsOrder("po_number")
 		order_salesrep_id = rsOrder("salesrep_id")
 		
-		order_email = rsOrder("shopper_email")
-		order_customer_name = rsOrder("CardName")
+		shopper_email = rsOrder("shopper_email")
+		shopper_firstname = rsOrder("shopper_firstname")
+		shopper_lastname = rsOrder("shopper_lastname")
+		shopper_prefix = rsOrder("shopper_prefix")
+		
+		order_customer_name = ""
+		if Len(shopper_prefix) > 0 then
+			order_customer_name = shopper_prefix & "&nbsp;"
+		end if
+		if Len(shopper_firstname) > 0 then
+			order_customer_name = order_customer_name & shopper_firstname & "&nbsp;"
+		end if
+		if Len(shopper_lastname) > 0 then
+			order_customer_name = order_customer_name & shopper_lastname
+		end if
+		
 		order_taxable = rsOrder("order_taxable")
 		order_price_group = rsOrder("order_price_group")
 		if Len(order_price_group) > 0 then
 		else	
 			order_price_group = "D"
 		end if
-		order_billing_company = rsOrder("bill_company")
-		order_billing_address = rsOrder("CardAddress")
-		order_billing_city = rsOrder("CardCity")
-		order_billing_state = rsOrder("CardState")
-		order_billing_zip = rsOrder("CardZip")
-		order_billing_country = rsOrder("CardCountry")
-		order_billing_phone = rsOrder("bill_phone")
 		
+		'--------------------------------------------------------------------------------
+		billing_address_id = rsOrder("billing_address_id")
+		order_billing_company = rsOrder("BillCompany")
+		order_billing_firstname = rsOrder("BillFirstName")
+		order_billing_lastname = rsOrder("BillLastName")
+		order_billing_address = rsOrder("BillAddress")
+		order_billing_city = rsOrder("BillCity")
+		order_billing_state = rsOrder("BillState")
+		order_billing_zip = rsOrder("BillZip")
+		order_billing_country = rsOrder("BillCountry")
+		order_billing_phone = rsOrder("BillPhone")
+		order_billing_prefix = rsOrder("BillPrefix")
+		
+		order_billing_name = ""
+		if Len(order_billing_prefix) > 0 then
+			order_billing_name = order_billing_prefix & "&nbsp;"
+		end if
+		if Len(order_billing_firstname) > 0 then
+			order_billing_name = order_billing_name & order_billing_firstname & "&nbsp;"
+		end if
+		if Len(order_billing_lastname) > 0 then
+			order_billing_name = order_billing_name & order_billing_lastname
+		end if
+		
+		'--------------------------------------------------------------------------------
+		shipping_address_id = rsOrder("shipping_address_id")
+		order_shipping_company = rsOrder("ShipCompany")
 		order_shipping_firstname = rsOrder("ShipFirstName")
 		order_shipping_lastname = rsOrder("ShipLastName")
-		order_shipping_company = rsOrder("ship_company")
 		order_shipping_address = rsOrder("ShipAddress")
 		order_shipping_city = rsOrder("ShipCity")
 		order_shipping_state = rsOrder("ShipState")
-		order_shipping_zip = rsOrder("ShipZip")
-		order_shipping_country = rsOrder("ShipCountry")
 		order_shipping_phone = rsOrder("ShipPhone")
+		order_shipping_zip = rsOrder("ShipZIP")
+		order_shipping_country = rsOrder("ShipCountry")
+		order_shipping_prefix = rsOrder("ShipPrefix")
 		
-		'order_billing_name = rsOrder("bill_contact")
-		order_billing_contact_firstname = Trim(rsOrder("bill_contact_firstname"))
-		order_billing_contact_lastname = Trim(rsOrder("bill_contact_lastname"))
-		order_billing_name = order_billing_contact_firstname & " " & order_billing_contact_lastname
-		'order_shipping_name = rsOrder("ship_contact")
-		order_shipping_name = order_shipping_firstname & " " & order_shipping_lastname
+		order_shipping_name = ""
+		if Len(order_shipping_prefix) > 0 then
+			order_shipping_name = order_shipping_prefix & "&nbsp;"
+		end if
+		if Len(order_shipping_firstname) > 0 then
+			order_shipping_name = order_shipping_name & order_shipping_firstname & "&nbsp;"
+		end if
+		if Len(order_shipping_lastname) > 0 then
+			order_shipping_name = order_shipping_name & order_shipping_lastname
+		end if
 		
+		'--------------------------------------------------------------------------------
 		order_payment_method = rsOrder("PaymentMethod")
 		order_payment_card_type = rsOrder("CardType")
 		order_payment_card_number = rsOrder("CardNumber")
-		
-		order_payment_card_number = EnDeCrypt(order_payment_card_number, g_crypt_key)
-		if Len(order_payment_card_number) > 0 then
-			order_payment_card_number = Right(order_payment_card_number, 4)
-		end if
-		
 		order_customer_card_name = rsOrder("CardName")
 		order_customer_card_exp_month = rsOrder("CardExpirationMonth")
 		order_customer_card_exp_year = rsOrder("CardExpirationYear")
 		
+		AuthNumber = rsOrder("AuthNumber")
+		RefNumber = rsOrder("RefNumber")
+		
+		'--------------------------------------------------------------------------------
 		order_shipping_sh_method = rsOrder("SH_method")
 		order_shipping_sh = rsOrder("SH")
-		order_shipping_sh = FormatNumber(order_shipping_sh)
-		
-		order_comment = rsOrder("Order_Comments")
-		order_notes = rsOrder("notes")
-		
+		order_shipping_sh = FormatNumber(order_shipping_sh,2)
 		order_tax = rsOrder("tax")
 		order_tax = FormatNumber(order_tax)
 		order_total = rsOrder("total")
 		order_total = FormatNumber(order_total)
 		order_tax_rate = rsOrder("order_tax_rate")
 		order_tax_rate = FormatNumber(order_tax_rate,2)
+		'--------------------------------------------------------------------------------
 		discount_amount = rsOrder("discount_amount")
-		discount_amount = FormatNumber(discount_amount)
-		
+		discount_amount = FormatNumber(discount_amount,2)
+		coupon_id = rsOrder("coupon_id")
+		'--------------------------------------------------------------------------------
 		if Len(order_comment) > 0 then
 		else
-			order_comment = "..."
+			order_comment = ""
 		end if
 	
 		if Len(order_notes) > 0 then
 		else
-			order_notes = "..."
+			order_notes = ""
 		end if
-		
-		'TODO...
-		SELECT CASE order_payment_method
-		CASE "visa"
-			order_payment_method = "Credit Card"
-		CASE "master"
-			order_payment_method = "Credit Card"
-		CASE "discover"
-			order_payment_method = "Credit Card"
-		CASE "amex"
-			order_payment_method = "Credit Card"
-		CASE "cod"
-			order_payment_method = "COD"
-		END SELECT
-		
-		'FOR EMAIL ..
-		pf_email_to = order_email
-		pf_email_to_name = order_customer_name
-		pf_email_subject = "Order #" & order_id
-		
-		
-		AuthNumber =  rsOrder("AuthNumber")
 		
 	end if
 	rsOrder.Close
@@ -190,7 +204,7 @@
 											<div class="portlet-title">
 												<div class="caption">
 													<i class="icon-settings font-dark"></i>
-													<span class="caption-subject font-dark sbold uppercase"> Order #<%=order_id%>
+													<span class="caption-subject font-dark sbold uppercase"> Order #<%=increment_id%>
 														<span class="hidden-xs">| <%=order_date%> </span>
 													</span>
 												</div>
@@ -255,8 +269,10 @@
 																		<div class="portlet-body">
 																			<div class="row static-info">
 																				<div class="col-md-5 name"> Order #: </div>
-																				<div class="col-md-7 value"> <%=order_id%>
+																				<div class="col-md-7 value"> <%=increment_id%>
+																					<!--
 																					<span class="label label-info label-sm"> Email confirmation was sent </span>
+																					-->
 																				</div>
 																			</div>
 																			<div class="row static-info">
@@ -299,7 +315,7 @@
 																				<div class="col-md-5 name"> Email: </div>
 																				<div class="col-md-7 value"> 
 																					<a href="#" id="shopper_email" data-type="text" data-pk="<%=order_id%>" data-placeholder="Required" data-original-title="Enter Customer Email Adddress">
-																					<%=order_email%>
+																					<%=shopper_email%>
 																					</a>
 																				</div>
 																			</div>
@@ -419,37 +435,60 @@
 																			</div>
 																		</div>
 																		<div class="portlet-body">
-																			<div class="row static-info">
-																				<div class="col-md-5 name"> Payment: </div>
-																				<div class="col-md-7 value"> <%=order_payment_method%></div>
-																			</div>
-																			<div class="row static-info">
-																				<div class="col-md-5 name"> Credit Card Type: </div>
-																				<div class="col-md-7 value"> <%=order_payment_card_type%> </div>
-																			</div>
-																			<div class="row static-info">
-																				<div class="col-md-5 name"> Credit Card Number: </div>
-																				<div class="col-md-7 value">
-																					xxxx-<%=Right(order_payment_card_number,4)%>
+																			<% if order_payment_method = "PayPal Express Checkout" then %>
+																				<div class="row static-info">
+																					<div class="col-md-5 name"> Payment: </div>
+																					<div class="col-md-7 value"> <%=order_payment_method%></div>
 																				</div>
-																			</div>
-																			<div class="row static-info">
-																				<div class="col-md-5 name"> Name on the Card: </div>
-																				<div class="col-md-7 value"> <%=order_customer_card_exp_month%>/<%=order_customer_card_exp_year%></div>
-																			</div>
-																			<div class="row static-info">
-																				<div class="col-md-5 name"> Expiration Date: </div>
-																				<div class="col-md-7 value"> <%=order_ip%> </div>
-																			</div>
-																			<% if Len(AuthNumber) > 0 then %>
-																			<div class="row static-info">
-																				<div class="col-md-5 name">
-																					Payment ID
-																				</label>
-																				<div class="col-md-7 value">
-																					<%=AuthNumber%>
+																				<% if Len(AuthNumber) > 0 then %>
+																				<div class="row static-info">
+																					<div class="col-md-5 name"> Transaction ID: </div>
+																					<div class="col-md-7 value"> <%=AuthNumber%></div>
 																				</div>
-																			</div>
+																				<% end if %>
+																				<% if Len(RefNumber) > 0 then %>
+																				<div class="row static-info">
+																					<div class="col-md-5 name"> Payer Email: </div>
+																					<div class="col-md-7 value"> <%=RefNumber%></div>
+																				</div>
+																				<% end if %>
+																			<% else %>
+																				<div class="row static-info">
+																					<div class="col-md-5 name"> Payment: </div>
+																					<div class="col-md-7 value"> <%=order_payment_method%></div>
+																				</div>
+																				<div class="row static-info">
+																					<div class="col-md-5 name"> Credit Card Type: </div>
+																					<div class="col-md-7 value"> <%=order_payment_card_type%> </div>
+																				</div>
+																				<div class="row static-info">
+																					<div class="col-md-5 name"> Credit Card Number: </div>
+																					<div class="col-md-7 value">
+																						xxxx-<%=Right(order_payment_card_number,4)%>
+																					</div>
+																				</div>
+																				<!--
+																				<div class="row static-info">
+																					<div class="col-md-5 name"> Name on the Card: </div>
+																					<div class="col-md-7 value"> <%=order_card_name%></div>
+																				</div>
+																				-->
+																				<div class="row static-info">
+																					<div class="col-md-5 name"> Expiration Date: </div>
+																					<div class="col-md-7 value"> <%=order_customer_card_exp_month%>/<%=order_customer_card_exp_year%> </div>
+																				</div>
+																				<% if Len(AuthNumber) > 0 then %>
+																				<div class="row static-info">
+																					<div class="col-md-5 name"> Auth Number: </div>
+																					<div class="col-md-7 value"> <%=AuthNumber%></div>
+																				</div>
+																				<% end if %>
+																				<% if Len(RefNumber) > 0 then %>
+																				<div class="row static-info">
+																					<div class="col-md-5 name"> Ref Number: </div>
+																					<div class="col-md-7 value"> <%=RefNumber%></div>
+																				</div>
+																				<% end if %>
 																			<% end if %>
 																		</div>
 																	</div>
@@ -458,7 +497,7 @@
 																	<div class="portlet blue-hoki box">
 																		<div class="portlet-title">
 																			<div class="caption">
-																				<i class="fa fa-cogs"></i>Tax &amp; Shipping </div>
+																				<i class="fa fa-cogs"></i>Shipping &amp; Handling </div>
 																			<div class="actions">
 																			</div>
 																		</div>
@@ -475,6 +514,7 @@
 																				<div class="col-md-5 name"> Shipping Total: </div>
 																				<div class="col-md-7 value"> $<span id="sh_panel_shipping_total"><%=order_shipping_sh%></span> </div>
 																			</div>
+																			<!--
 																			<div class="row static-info">
 																				<div class="col-md-5 name"> Taxable: </div>
 																				<div class="col-md-7 value"> 
@@ -493,6 +533,7 @@
 																					<%=order_tax_rate%>%
 																				</div>
 																			</div>
+																			-->
 																		</div>
 																	</div>
 																</div>
@@ -605,7 +646,13 @@
 																			<div class="col-md-3 value"> $<a href="#" id="order_shipping_sh" data-type="text" data-pk="<%=order_id%>" data-placeholder="Required" data-original-title="Enter Shipping Charge"><%=order_shipping_sh%></a> </div>
 																		</div>
 																		<div class="row static-info align-reverse">
-																			<div class="col-md-8 name"> Discount: </div>
+																			<div class="col-md-8 name"> 
+																			Discount
+																			<% if Len(coupon_id) > 0 then %>
+																			(<%=coupon_id%>)
+																			<% end if %>
+																			: 
+																			</div>
 																			<div class="col-md-3 value"> $<a href="#" id="discount_amount" data-type="text" data-pk="<%=order_id%>" data-placeholder="Required" data-original-title="Enter Discount"><%=discount_amount%></a> </div>
 																		</div>
 																		<div class="row static-info align-reverse">
@@ -976,17 +1023,21 @@
 								<a href="#panel_tab4_example11" data-toggle="tab">
 									<i class="pink fa fa-cube"></i> Your Catalog
 								</a>
-							</li>
+							</li
+							<% if g_store_use_icecat_catalog = "1" then %>
 							<li class="">
 								<a href="#panel_tab4_example12" data-toggle="tab">
 									<i class="blue fa fa-cubes"></i> ICECAT Catalog
 								</a>
 							</li>
+							<% end if %>
+							<% if g_store_use_system = "1" then %>
 							<li class="">
 								<a href="#panel_tab4_example13" data-toggle="tab">
 									<i class="blue fa fa-laptop"></i> System
 								</a>
 							</li>
+							<% end if %>
 							<li class="">
 								<a href="#panel_tab4_example14" data-toggle="tab">
 									<i class="blue fa fa-pencil-square-o"></i> Manual Entry
@@ -1245,7 +1296,9 @@ var TableData = function () {
 		//main function to initiate template pages
 		init: function () {
 			runDataTable();
+			<% if g_store_use_icecat_catalog = "1" then %>
 			runDataTable2();
+			<% end if %>
 		}
 	};
 }();
@@ -1812,16 +1865,14 @@ var FormValidator = function () {
 
 		$('#order_status').editable({
 			source: [
-				{value: 'Pending', text: 'New'},
-				{value: 'Authorized', text: 'Authorized'},
-				{value: 'Onhold', text: 'On Hold'},
-				{value: 'Ready for Pickup', text: 'Ready for Pickup'},
-				{value: 'Shipped', text: 'Shipped'},
-				{value: 'Partial', text: 'Partially Shipped'},
-				{value: 'Incomplete', text: 'Incomplete'},
-				{value: 'Canceled', text: 'Canceled'}
+				{value: 'pending', text: 'Pending'},
+				{value: 'processing', text: 'Processing'},
+				{value: 'holded', text: 'On Hold'},
+				{value: 'complete', text: 'Complete'},
+				{value: 'closed', text: 'Closed'},
+				{value: 'canceled', text: 'Canceled'}
 			] 
-		});order_taxable
+		});
 		
 		$('#order_taxable').editable({
 			source: [

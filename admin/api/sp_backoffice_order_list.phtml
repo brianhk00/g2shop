@@ -93,6 +93,19 @@
 		strWhere = strWhere & " a.entity_id IN (SELECT order_id FROM sales_flat_order_item where sku like 'PURCHASE_%') AND "
 	END SELECT
 	'------------------------------------------------------------------------------
+	D_GROUP = Trim(Request("D_GROUP"))
+	
+	SELECT CASE D_GROUP
+	CASE "1" 'Prime Only
+		strWhere = strWhere & " (customer_group_id = 1) AND "
+	CASE "4" 'GUEST
+		strWhere = strWhere & " (customer_group_id = 4) AND " & " a.entity_id NOT IN (SELECT order_id FROM sales_flat_order_item where (sku like 'PRIME_%') OR (sku like 'PRIME %') ) AND "
+	END SELECT
+	
+	if Len(D_GROUP) > 0 then
+		strWhere = strWhere &  " (customer_group_id = " & D_GROUP & ") AND "
+	end if
+	'------------------------------------------------------------------------------
 	sMin = Trim(Request("created_at_from"))
 	sMax = Trim(Request("created_at_to"))
 	Session("DT_BACKOFFICE_ORDERS_1_created_at_from") = sMin
@@ -489,6 +502,7 @@
 			if order_status = "pending" then
 				aaData = aaData & "<br><b>" & order_status & "</b>"
 			end if
+			aaData = aaData & "<br><b>" & s_customer_group & "</b>"
 			aaData = aaData & "'],"
 			aaData = Replace(aaData,"'",chr(34))
 			rs.MoveNext

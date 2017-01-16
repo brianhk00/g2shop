@@ -1,4 +1,8 @@
 <%response.Expires=-1%>
+<%
+	Response.CodePage = 65001
+	Response.CharSet = "UTF-8"
+%>
 <!--#INCLUDE FILE="../../util/xt_func_carrier.phtml"-->
 <!--#INCLUDE FILE="../util/xt_func_string.phtml"-->	
 <!-- #INCLUDE File="../local/local.phtml" -->
@@ -11,43 +15,43 @@
 	
 	SELECT CASE name
 	CASE "order_status"
-		sql = "UPDATE " & g_storeid & "_order SET status='" & value & "' WHERE order_id='" & order_id & "'"
+		sql = "UPDATE " & g_storeid & "_sales_order SET status='" & value & "' WHERE order_id='" & order_id & "'"
 		if Len(sql) > 0 then
 			dbconn.Execute(sql)
 		end if
 	CASE "order_comments"
-		sql = "UPDATE " & g_storeid & "_order SET Order_Comments='" & value & "' WHERE order_id='" & order_id & "'"
+		sql = "UPDATE " & g_storeid & "_sales_order SET Order_Comments='" & value & "' WHERE order_id='" & order_id & "'"
 		if Len(sql) > 0 then
 			dbconn.Execute(sql)
 		end if
 		
 	CASE "discount_amount"
-		sql = "UPDATE " & g_storeid & "_order SET discount_amount='" & value & "' WHERE order_id='" & order_id & "'"
+		sql = "UPDATE " & g_storeid & "_sales_order SET discount_amount='" & value & "' WHERE order_id='" & order_id & "'"
 		if Len(sql) > 0 then
 			dbconn.Execute(sql)
 		end if
 	
 	CASE "order_shipping_sh"
-		sql = "UPDATE " & g_storeid & "_order SET SH='" & value & "' WHERE order_id='" & order_id & "'"
+		sql = "UPDATE " & g_storeid & "_sales_order SET SH='" & value & "' WHERE order_id='" & order_id & "'"
 		if Len(sql) > 0 then
 			dbconn.Execute(sql)
 		end if
 		
 	CASE "ship_via"
 		value = GetCarrierServiceName(value, "", "")
-		sql = "UPDATE " & g_storeid & "_order SET SH_method='" & value & "' WHERE order_id='" & order_id & "'"
+		sql = "UPDATE " & g_storeid & "_sales_order SET SH_method='" & value & "' WHERE order_id='" & order_id & "'"
 		if Len(sql) > 0 then
 			dbconn.Execute(sql)
 		end if
 		
 	CASE "order_taxable"
-		sql = "UPDATE " & g_storeid & "_order SET order_taxable=" & value & " WHERE order_id='" & order_id & "'"
+		sql = "UPDATE " & g_storeid & "_sales_order SET order_taxable=" & value & " WHERE order_id='" & order_id & "'"
 		if Len(sql) > 0 then
 			dbconn.Execute(sql)
 		end if
 		
 	CASE "order_notes"
-		sql = "UPDATE " & g_storeid & "_order SET notes='" & value & "' WHERE order_id='" & order_id & "'"
+		sql = "UPDATE " & g_storeid & "_sales_order SET notes='" & value & "' WHERE order_id='" & order_id & "'"
 		if Len(sql) > 0 then
 			dbconn.Execute(sql)
 		end if
@@ -61,7 +65,7 @@
 			Response.end
 		end if
 		'-----------------------------------------------------------------------------------------------------------
-		sql = "UPDATE " & g_storeid & "_order SET shopper_email='" & value & "' WHERE order_id='" & order_id & "'"
+		sql = "UPDATE " & g_storeid & "_sales_order SET shopper_email='" & value & "' WHERE order_id='" & order_id & "'"
 		
 		if Len(sql) > 0 then
 			dbconn.Execute(sql)
@@ -77,6 +81,7 @@
 		order_billing_company = Trim(Request("order_billing_company"))
 		order_billing_contact_firstname = Trim(Request("order_billing_contact_firstname"))
 		order_billing_contact_lastname = Trim(Request("order_billing_contact_lastname"))
+		order_billing_prefix = Trim(Request("order_billing_prefix"))
 		
 		Set rsUpdate = Server.CreateObject("ADODB.Recordset")
 		with rsUpdate
@@ -84,19 +89,20 @@
 			.CursorLocation = 3
 			.CursorType = 1
 			.LockType = 3
-			.Source = g_storeid & "_order WHERE order_id='" & order_id & "'"
+			.Source = g_storeid & "_sales_order WHERE order_id='" & order_id & "'"
 			.Open
 		end with
 		
-		rsUpdate("CardAddress") = order_billing_address
-		rsUpdate("CardCity") = order_billing_city
-		rsUpdate("CardCountry") = order_billing_country
-		rsUpdate("CardState") = order_billing_state
-		rsUpdate("CardZip") = order_billing_zip
-		rsUpdate("bill_phone") = order_billing_phone
-		rsUpdate("bill_company") = order_billing_company
-		rsUpdate("bill_contact_firstname") = order_billing_contact_firstname
-		rsUpdate("bill_contact_lastname") = order_billing_contact_lastname
+		rsUpdate("BillCompany") = order_billing_company
+		rsUpdate("BillFirstName") = order_billing_contact_firstname
+		rsUpdate("BillLastName") = order_billing_contact_lastname
+		rsUpdate("BillAddress") = order_billing_address
+		rsUpdate("BillCity") = order_billing_city
+		rsUpdate("BillState") = order_billing_state
+		rsUpdate("BillZip") = order_billing_zip
+		rsUpdate("BillCountry") = order_billing_country
+		rsUpdate("BillPhone") = order_billing_phone
+		rsUpdate("BillPrefix") = order_billing_prefix
 		
 		If dbconn.Errors.Count > 0 Then
 			dbconn.Errors.Clear
@@ -119,6 +125,7 @@
 		order_shipping_state = Trim(Request("order_shipping_state"))
 		order_shipping_zip = Trim(Request("order_shipping_zip"))
 		order_shipping_phone = Trim(Request("order_shipping_phone"))
+		order_shipping_prefix = Trim(Request("order_shipping_prefix"))
 		
 		Set rsUpdate = Server.CreateObject("ADODB.Recordset")
 		with rsUpdate
@@ -126,19 +133,20 @@
 			.CursorLocation = 3
 			.CursorType = 1
 			.LockType = 3
-			.Source = g_storeid & "_order WHERE order_id='" & order_id & "'"
+			.Source = g_storeid & "_sales_order WHERE order_id='" & order_id & "'"
 			.Open
 		end with
 		
-		rsUpdate("ShipFirstName") = order_shipping_firstname
+		rsUpdate("ShipCompany") = order_shipping_company
 		rsUpdate("ShipLastName") = order_shipping_lastname
-		rsUpdate("ship_company") = order_shipping_company
+		rsUpdate("ShipFirstName") = order_shipping_firstname
 		rsUpdate("ShipAddress") = order_shipping_address
 		rsUpdate("ShipCity") = order_shipping_city
-		rsUpdate("ShipCountry") = order_shipping_country
 		rsUpdate("ShipState") = order_shipping_state
-		rsUpdate("ShipZip") = order_shipping_zip
 		rsUpdate("ShipPhone") = order_shipping_phone
+		rsUpdate("ShipZIP") = order_shipping_zip
+		rsUpdate("ShipCountry") = order_shipping_country
+		rsUpdate("ShipPrefix") = order_shipping_prefix
 		
 		If dbconn.Errors.Count > 0 Then
 			dbconn.Errors.Clear
@@ -177,7 +185,7 @@
 		if row_id = "0" then
 			
 			new_row_id = 1
-			sql = "SELECT Max(row_id) FROM " & g_storeid & "_order_item WHERE order_id='" & order_id & "'"
+			sql = "SELECT Max(row_id) FROM " & g_storeid & "_sales_order_item WHERE order_id='" & order_id & "'"
 			set rsOrderCount = dbconn.Execute(sql)
 			if not rsOrderCount.EOF then
 				new_row_id = rsOrderCount(0) + 1
@@ -197,7 +205,7 @@
 				.CursorLocation = 3
 				.CursorType = 1
 				.LockType = 3
-				.Source = g_storeid & "_order_item WHERE order_id='" & order_id & "' AND row_id = '" & row_id & "'"
+				.Source = g_storeid & "_sales_order_item WHERE order_id='" & order_id & "' AND row_id = '" & row_id & "'"
 				.Open
 				.AddNew
 			end with
@@ -209,7 +217,7 @@
 			rsUpdate("s_qty") = 0
 			rsUpdate("b_qty") = 0
 			rsUpdate("item_po") = 0
-			rsUpdate("item_on_order") = 0
+			rsUpdate("item_on_sales_order") = 0
 			rsUpdate("item_weight") = order_item_weight
 			rsUpdate("item_taxable") = order_item_taxable
 			rsUpdate("item_cost") = order_item_adjusted_cost
@@ -231,7 +239,7 @@
 				.CursorLocation = 3
 				.CursorType = 1
 				.LockType = 3
-				.Source = g_storeid & "_order_item WHERE order_id='" & order_id & "' AND row_id = '" & row_id & "'"
+				.Source = g_storeid & "_sales_order_item WHERE order_id='" & order_id & "' AND row_id = '" & row_id & "'"
 				.Open
 			end with
 		
@@ -261,7 +269,7 @@
 		row_id = Trim(Request("row_id"))
 		
 		
-		sql = "DELETE FROM " & g_storeid & "_order_item WHERE order_id='" & order_id & "' AND row_id='" & row_id & "'"
+		sql = "DELETE FROM " & g_storeid & "_sales_order_item WHERE order_id='" & order_id & "' AND row_id='" & row_id & "'"
 		'Response.Write(sql)
 		dbconn.Execute(sql)
 		'Dummy Response (json)

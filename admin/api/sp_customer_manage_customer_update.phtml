@@ -477,5 +477,54 @@
 		dbconn.Execute(sql)
 	end if
 	
+	'===================================================================================================================================
+	'Credit
+	'===================================================================================================================================
+	beginning_transaction = 0
+	sql = "SELECT end_transaction FROM " & g_storeid & "_credit_history WHERE customer_id = '" & shopper_id & "' ORDER BY credit_history_id DESC"
+	Set rsCredit = dbconn.Execute(sql)
+	if not rsCredit.EOF then
+		beginning_transaction = rsCredit(0)
+	end if
+	rsCredit.Close
+	
+	amount_credit = Trim(Request("amount_credit"))
+	credit_comment = Trim(Request("credit_comment"))
+	
+	
+	if IsNumeric(amount_credit) then
+		Set rsUpdate = Server.CreateObject("ADODB.Recordset")
+		with rsUpdate
+			.ActiveConnection = dbconn
+			.CursorLocation = 3
+			.CursorType = 1
+			.LockType = 3
+			.Source = g_storeid & "_credit_history WHERE credit_history_id=0"
+			.Open
+			.AddNew
+		end with
+				
+		rsUpdate("customer_id") = shopper_id
+		rsUpdate("type_transaction") = 0
+		rsUpdate("transaction_detail") = credit_comment
+		rsUpdate("amount") = amount_credit
+		rsUpdate("beginning_transaction") = beginning_transaction
+		rsUpdate("end_transaction") = beginning_transaction + amount_credit
+		rsUpdate("created_time") = now()
+		rsUpdate("status") = 0
+		
+		If dbconn.Errors.Count > 0 Then
+			dbconn.Errors.Clear
+			rsUpdate.CancelUpdate
+		else
+			rsUpdate.Update
+		End If
+		
+		rsUpdate.Close
+		set rsUpdate = nothing
+
+		rs.Close
+		set rs = nothing
+	end if
 	
 %>

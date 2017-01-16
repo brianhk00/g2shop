@@ -1,0 +1,150 @@
+<%@ Language=VBScript %>
+<%
+	Response.CodePage = 65001
+	Response.CharSet = "UTF-8"
+%>
+<%
+  Response.Expires = -1
+%>
+<!-- #INCLUDE File="../local/local.phtml" -->
+<!-- #INCLUDE File="../util/xt_func_util.phtml" -->
+<!-- #INCLUDE File="../util/xt_func_string.phtml" -->
+<%
+	sEcho = Trim(Request("draw"))
+	iDisplayLength = Trim(Request("length"))
+	iDisplayStart = Trim(Request("start"))
+
+	sEcho = FilterStringEx(sEcho, "[^0-9]")
+	iDisplayLength = FilterStringEx(iDisplayLength, "[^0-9]")
+	iDisplayStart = FilterStringEx(iDisplayStart, "[^0-9]")
+
+	sEcho = Cint(sEcho)
+	iDisplayLength = Cint(iDisplayLength)
+	iDisplayStart = Cint(iDisplayStart)
+	sSearch = Trim(Request("sSearch"))
+	v1 = Trim(Request("v1"))
+
+	'=======================================================================================
+	strWhere = ""
+	'---------------------------------------------------------------------------------------
+	shopper_id = Trim(Request("shopper_id"))
+	
+	if Len(strWhere) > 0 then
+		strWhere = Left(strWhere, Len(strWhere) - 4)
+	else
+		strWhere = " customer_id = '" & shopper_id & "'"
+	end if
+  
+	'=======================================================================================
+	'ORDERING
+	SELECT CASE Trim(Request("order[0][column]"))
+	CASE "0"
+		sOrder = "shopper_id DESC"
+	CASE "1"
+		sOrder = "shopper_id " & Trim(Request("order[0][dir]"))
+	CASE "2"
+		sOrder = "FirstName + ' ' + LastName " & Trim(Request("order[0][dir]"))
+	CASE "3"
+		sOrder = "Email " & Trim(Request("order[0][dir]"))
+	CASE "4"
+		sOrder = "member_group " & Trim(Request("order[0][dir]"))
+	CASE "5"
+		sOrder = "Phone " & Trim(Request("order[0][dir]"))
+	CASE "6"
+		sOrder = "Country " & Trim(Request("order[0][dir]"))
+	CASE "7"
+		sOrder = "State " & Trim(Request("order[0][dir]"))
+	CASE "8"
+		sOrder = "DateEntered " & Trim(Request("order[0][dir]"))
+	CASE "9"
+		sOrder = "shopper_id DESC"
+	CASE ELSE
+		sOrder = "shopper_id DESC"
+	END SELECT 
+	'here we create the variable "strOrderBy" that will be used in the SQL querry
+	strOrderBy = "ORDER BY " & sOrder
+
+	'======================================================================================
+	
+	'strWhere = " shopper_id LIKE '%%'"
+	strOrderBy = "ORDER BY credit_history_id DESC"
+	
+	sql = "SELECT * FROM " & g_storeid & "_credit_history WHERE " & strWhere & " " & strOrderBy
+	sqlx = "SELECT COUNT(credit_history_id) FROM " & g_storeid & "_credit_history WHERE " & strWhere 
+	
+	set rs = dbconn.Execute(sql)
+	
+	iTotalDisplayRecords = 0
+	iTotalRecords = 50
+	set rs1 = dbconn.Execute(sqlx)
+	if not rs1.EOF then
+	  iTotalDisplayRecords = rs1(0)
+	  iTotalRecords = rs1(0)
+	else
+	end if
+	rs1.Close
+	
+	'iTotalDisplayRecords = 50
+	
+	'iTotalRecords = 50
+	
+%>
+{"draw": <%=sEcho%>, "recordsTotal": <%=iTotalRecords%>, "recordsFiltered": <%=iTotalDisplayRecords%>, "data": [ 
+<%
+	i = 0
+  
+	if rs.eof = false then
+		rs.move(iDisplayStart)
+		do while i < iDisplayLength and not rs.eof
+    
+			s_credit_history_id = rs("credit_history_id")
+			i_type_transaction = rs("type_transaction")
+			s_transaction_detail = JsonEscape(rs("transaction_detail"))
+			s_amount = FormatNumber(rs("amount"),2)
+			s_beginning_transaction = FormatNumber(rs("beginning_transaction"),2)
+			s_end_transaction = FormatNumber(rs("end_transaction"),2)
+			s_created_time = rs("created_time")
+			s_status = rs("status")
+			
+
+			SELECT CASE i_type_transaction
+			CASE 0
+				s_type_transaction = "Updated by Admin"
+			CASE 1
+				s_type_transaction = "Use Credit to Checkout"
+				s_transaction_detail = "You use credit to checkout order: #" & s_transaction_detail
+			CASE 2
+				s_type_transaction = "Refund"
+				s_transaction_detail = "Refund for order: #" & s_transaction_detail
+			CASE 3
+				s_type_transaction = "Expired"
+			CASE 4
+				s_type_transaction = "Canceled"
+			CASE 5
+				s_type_transaction = "Misc."
+			CASE ELSE
+				s_type_transaction = "Misc."
+			END SELECT
+			
+			aaData = aaData & "['"
+			'aaData = aaData & "<label class=\'mt-checkbox mt-checkbox-single mt-checkbox-outline\'><input name=\'id[]\' type=\'checkbox\' class=\'checkboxes\' value=\'" &  s_credit_history_id & "\'/><span></span></label> " & "','" 
+			aaData = aaData & s_credit_history_id & "','"
+			aaData = aaData & s_created_time & "','"
+			aaData = aaData & s_type_transaction & "','"
+			aaData = aaData & s_transaction_detail & "','"
+			aaData = aaData & s_amount & "','" 	
+			aaData = aaData & s_end_transaction & "'],"
+			
+			aaData = Replace(aaData,"'",chr(34))
+			rs.MoveNext
+			i=i+1
+      
+		loop
+		rs.Close
+		aaData = Left(aaData, Len(aaData)-1)
+  else
+    aaData = ""
+  end if
+  response.write aaData & "] }"
+  
+%>

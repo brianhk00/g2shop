@@ -140,6 +140,7 @@
 			
 			question = ""
 			if Len(question_en) > 0 then
+				question_en = Replace(question_en, "\", "")
 				question = question & question_en & "<br>"
 			end if
 			if Len(question_ko) > 0 then
