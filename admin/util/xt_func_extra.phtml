@@ -1,0 +1,128 @@
+<%
+	intCurrentPos = 1
+	extCurrentPos = 1
+	strSerializedSource = ""
+	dim ResultData
+	dim SerializedSourceArray(10)
+	SerializedSourceArray_index = 0
+	function UnserializeData(byval strSource, byref strType, ByRef xData)
+		
+		strType = ""
+		SerializedSourceArray_index = 0
+		extCurrentPos = 1
+		'strSerializedSource = "a:1:{s:15:""authorize_cards"";a:1:{s:32:""7c6bf9cb89cd572b9b48e5b5f63fabe7"";a:14:{s:2:""id"";s:32:""7c6bf9cb89cd572b9b48e5b5f63fabe7"";s:16:""requested_amount"";s:0:"""";s:15:""balance_on_card"";s:0:"""";s:13:""last_trans_id"";s:10:""8820039861"";s:16:""processed_amount"";s:6:""118.68"";s:7:""cc_type"";s:2:""VI"";s:8:""cc_owner"";N;s:8:""cc_last4"";s:4:""7274"";s:12:""cc_exp_month"";s:1:""4"";s:11:""cc_exp_year"";s:4:""2018"";s:11:""cc_ss_issue"";N;s:17:""cc_ss_start_month"";N;s:16:""cc_ss_start_year"";N;s:15:""captured_amount"";s:6:""118.68"";}}}"
+		strSerializedSource = strSource
+		intCurrentPos = 1
+		GetPair strKey,intSize
+		strType = strKey
+		select case strKey
+		  case "a"
+			Set ResultData = CreateObject("Scripting.Dictionary")
+			ExtractArray intSize, ResultData
+		  case "s"
+			ExtractString  intSize,ResultData
+		  case "i"  'inteer
+			ResultData = intSize
+		end select
+		
+		if extCurrentPos = 1 then
+			set SerializedSourceArray(0) = ResultData
+		end if
+		UnserializeData = SerializedSourceArray
+	end function
+	
+	Sub GetPair(byref strKey, byref intSize)
+		dim intThisPos
+		dim strFindChar
+		if mid(strSerializedSource,intCurrentPos,1) <> "N" then
+		  intThisPos = instr(intCurrentPos,strSerializedSource,":")
+		  strKey = mid(strSerializedSource,intCurrentPos,intThisPos-intCurrentPos)
+		  intCurrentPos = intThisPos + 1
+
+		  select case strKey
+			case "s"
+			  strFindChar = ":"
+			  intAddTo = 1
+			case "a"
+			  strFindChar = ":"
+			  intAddTo = 0
+			case "i"
+			  strFindChar = ";"
+			  intAddTo = 1
+		  end select
+		  
+		  intThisPos = cint(instr(intCurrentPos,strSerializedSource,strFindChar))
+		  intSize = mid(strSerializedSource,intCurrentPos,intThisPos-intCurrentPos)
+		  intCurrentPos = intThisPos + intAddTo
+		else
+			strKey = "N"
+			intSize = 0
+			intCurrentPos = intCurrentPos + 2
+
+		end if
+		
+	end sub
+	
+	sub ExtractArray(byval intArraySize, byref obDict)
+		dim intLp1
+		dim intLp2
+		dim strKey
+		dim intSize
+		dim obKey
+		dim obValue
+		dim dictSubValues
+
+		intCurrentPos = intCurrentPos + 2
+
+		for intLp1 = 1 to intArraySize
+
+			for intLp2 = 1 to 2
+
+				GetPair strKey,intSize
+       
+				select case strKey
+				case "a" 
+					Set dictSubValues = CreateObject("Scripting.Dictionary")
+					ExtractArray intSize,dictSubValues
+				case "s"  'string
+					ExtractString  intSize,obValue
+					obValue = ("" & obValue)
+				case "i" 
+					obValue = cint(intSize)
+				case "N"  'null value
+					obValue = ""
+				end select
+ 
+				if strKey = "a" then
+				  obDict.Add obKey, dictSubValues
+				  'Response.Write("2")
+				  'Response.WRite("+" & dictSubValues.count & "+<br>")
+				  set SerializedSourceArray(SerializedSourceArray_index) = dictSubValues
+				  SerializedSourceArray_index = SerializedSourceArray_index + 1
+				  extCurrentPos = extCurrentPos + 1
+				else
+					select case intLp2
+					case 1
+						obKey = obValue
+					case 2
+					  obDict.Add obKey, obValue
+					  'Response.Write(obKey & ":" & obValue & "<br>")
+					  'Response.Write("1")
+					end select
+				end if
+			next
+		next 
+		intCurrentPos = intCurrentPos + 1
+	end sub
+	
+	sub ExtractString(byval intSize,byref obValue)
+		obValue = mid(strSerializedSource,intCurrentPos+1,intSize)
+		intCurrentPos = intCurrentPos + intSize + 3
+	end sub
+	
+	'Usage'
+	'strDataType = ""
+	'sourcestring = "a:1:{s:15:""authorize_cards"";a:1:{s:32:""7c6bf9cb89cd572b9b48e5b5f63fabe7"";a:14:{s:2:""id"";s:32:""7c6bf9cb89cd572b9b48e5b5f63fabe7"";s:16:""requested_amount"";s:0:"""";s:15:""balance_on_card"";s:0:"""";s:13:""last_trans_id"";s:10:""8820039861"";s:16:""processed_amount"";s:6:""118.68"";s:7:""cc_type"";s:2:""VI"";s:8:""cc_owner"";N;s:8:""cc_last4"";s:4:""7274"";s:12:""cc_exp_month"";s:1:""4"";s:11:""cc_exp_year"";s:4:""2018"";s:11:""cc_ss_issue"";N;s:17:""cc_ss_start_month"";N;s:16:""cc_ss_start_year"";N;s:15:""captured_amount"";s:6:""118.68"";}}}"
+	'if UnserializeData(sourcestring, strDataType) then
+	'end if
+%>

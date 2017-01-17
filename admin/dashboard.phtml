@@ -48,7 +48,7 @@
 								<div class="row">
 									<%
 										order_lifetime_total = 0
-										sql = "SELECT SUM(total) FROM " & g_storeid & "_order"
+										sql = "SELECT SUM(total) FROM " & g_storeid & "_sales_order"
 										set rs = dbconn.Execute(sql)
 										if not rs.EOF then
 											order_lifetime_total = rs(0)
@@ -74,7 +74,7 @@
 									</div>
 									<%
 										order_lifetime_count = 0
-										sql = "SELECT COUNT(order_id) FROM " & g_storeid & "_order"
+										sql = "SELECT COUNT(order_id) FROM " & g_storeid & "_sales_order"
 										set rs = dbconn.Execute(sql)
 										if not rs.EOF then
 											order_lifetime_count = rs(0)
@@ -94,7 +94,7 @@
 												<i class="fa fa-shopping-cart"></i>
 											</div>
 											<div class="details">
-												<div class="number"> <%=order_lifetime_count%> </div>
+												<div class="number"> <%=FormatNumber(order_lifetime_count,2)%> </div>
 												<div class="desc"> Total Orders </div>
 											</div>
 										</div>
@@ -327,32 +327,32 @@
 																			set rs = dbconn.Execute(sql)
 																			do while not rs.EOF
 																				x_shopper_id = rs("shopper_id")
-																				x_order_number = 0
-																				sqlx = "SELECT COUNT(order_id) FROM " & g_storeid & "_order WHERE shopper_id='" & x_shopper_id & "'"
+																				x_sales_order_number = 0
+																				sqlx = "SELECT COUNT(order_id) FROM " & g_storeid & "_sales_order WHERE shopper_id='" & x_shopper_id & "'"
 																				set rsx = dbconn.Execute(sqlx)
 																				if not rsx.EOF then
-																					x_order_number = rsx(0)
+																					x_sales_order_number = rsx(0)
 																				end if
 																				rsx.Close
 																				set rsx = nothing
 																				
-																				x_order_total = 0
-																				sqlx = "SELECT SUM(total) FROM " & g_storeid & "_order WHERE shopper_id='" & x_shopper_id & "'"
+																				x_sales_order_total = 0
+																				sqlx = "SELECT SUM(total) FROM " & g_storeid & "_sales_order WHERE shopper_id='" & x_shopper_id & "'"
 																				set rsx = dbconn.Execute(sqlx)
 																				if not rsx.EOF then
-																					x_order_total = rsx(0)
+																					x_sales_order_total = rsx(0)
 																				end if
 																				rsx.Close
 																				set rsx = nothing
 																				
-																				if IsNumeric(x_order_number) then
+																				if IsNumeric(x_sales_order_number) then
 																				else
-																					x_order_number = 0
+																					x_sales_order_number = 0
 																				end if
 																				
-																				if IsNumeric(x_order_total) then
+																				if IsNumeric(x_sales_order_total) then
 																				else
-																					x_order_total = 0
+																					x_sales_order_total = 0
 																				end if
 																			
 																		%>
@@ -360,8 +360,8 @@
 																			<td>
 																				<a href="javascript:;"> <%=rs("firstname") & " "  & rs("lastname") %> </a>
 																			</td>
-																			<td> <%=x_order_number%> </td>
-																			<td> $<%=FormatNumber(x_order_total,2)%> </td>
+																			<td> <%=FormatNumber(x_sales_order_number,0)%> </td>
+																			<td> $<%=FormatNumber(x_sales_order_total,2)%> </td>
 																			<td>
 																				<a href="customer_manage_customer_detail.phtml?shopper_id=<%=x_shopper_id%>" class="btn btn-sm btn-default">
 																					<i class="fa fa-search"></i> View </a>
@@ -391,30 +391,30 @@
 																	</thead>
 																	<tbody>
 																		<%
-																			sql = "SELECT TOP 5 * FROM " & g_storeid & "_order ORDER BY date_entered DESC"
+																			sql = "SELECT TOP 5 * FROM " & g_storeid & "_sales_order ORDER BY date_entered DESC"
 																			set rs = dbconn.Execute(sql)
 																			do while not rs.EOF
-																				x_order_id = rs("order_id")
-																				x_order_item = 0
-																				sqlx = "SELECT SUM(quantity) FROM " & g_storeid & "_order_item WHERE order_id='" & x_order_id & "'"
+																				x_sales_order_id = rs("order_id")
+																				x_sales_order_item = 0
+																				sqlx = "SELECT SUM(quantity) FROM " & g_storeid & "_order_item WHERE order_id='" & x_sales_order_id & "'"
 																				set rsx = dbconn.Execute(sqlx)
 																				if not rsx.EOF then
-																					x_order_item = rsx(0)
+																					x_sales_order_item = rsx(0)
 																				end if
 																				rsx.Close
 																				set rsx = nothing
 																		%>
 																		<tr>
 																			<td>
-																				<a href="javascript:;"> <%=rs("bill_contact") %> </a>
+																				<a href="javascript:;"> <%=rs("shopper_firstname") %>&nbsp;<%=rs("shopper_lastname")%></a>
 																			</td>
-																			<td> <%=x_order_item%> </td>
+																			<td> <%=x_sales_order_item%> </td>
 																			<td> $<%=FormatNumber(rs("total"),2)%> </td>
 																			<td>
 																				 <%=rs("status")%> 
 																			</td>
 																			<td>
-																				<a href="sales_order_detail.phtml?so_id=<%=x_order_id%>" class="btn btn-sm btn-default">
+																				<a href="sales_order_detail.phtml?so_id=<%=x_sales_order_id%>" class="btn btn-sm btn-default">
 																					<i class="fa fa-search"></i> View </a>
 																			</td>
 																		</tr>
@@ -449,7 +449,7 @@
 														<a href="#portlet_ecommerce_tab_1" data-toggle="tab"> Amounts </a>
 													</li>
 													<li>
-														<a href="#portlet_ecommerce_tab_2" id="statistics_orders_tab" data-toggle="tab"> Orders </a>
+														<a href="#portlet_ecommerce_tab_2" id="statistics_sales_orders_tab" data-toggle="tab"> Orders </a>
 													</li>
 												</ul>
 											</div>
@@ -468,7 +468,7 @@
 													order_10_tax = 0
 													order_10_SH = 0
 													
-													sql = "SELECT SUM(total), SUM(TAX), SUM (SH) FROM " & g_storeid & "_order"
+													sql = "SELECT SUM(total), SUM(TAX), SUM (SH) FROM " & g_storeid & "_sales_order"
 													sql = sql & " WHERE (10 - DATEDIFF ( d , date_entered , GETDATE ( )))  > 0 "
 													set rs = dbconn.Execute(sql)
 													if not rs.EOF then
@@ -495,7 +495,7 @@
 													end if
 													
 													order_10_count = 0
-													sql = "SELECT COUNT(order_id) FROM " & g_storeid & "_order"
+													sql = "SELECT COUNT(order_id) FROM " & g_storeid & "_sales_order"
 													sql = sql & " WHERE (10 - DATEDIFF ( d , date_entered , GETDATE ( )))  > 0 "
 													set rs = dbconn.Execute(sql)
 													if not rs.EOF then
@@ -567,17 +567,17 @@
 <script src="../assets/global/plugins/jqvmap/jqvmap/data/jquery.vmap.sampledata.js" type="text/javascript"></script>
 <!-- END PAGE LEVEL PLUGINS -->
 <%
-	dim chart_order_count(30)
+	dim chart_sales_order_count(30)
 	for iii = 0 to 30
-		chart_order_count(iii) = "0"
+		chart_sales_order_count(iii) = "0"
 	next
-	sql = "SELECT TOP 30 30 - DATEDIFF ( d , date_entered , GETDATE ( )) as a, COUNT(order_id) FROM " & g_storeid & "_order "
+	sql = "SELECT TOP 30 30 - DATEDIFF ( d , date_entered , GETDATE ( )) as a, COUNT(order_id) FROM " & g_storeid & "_sales_order "
 	sql = sql & " WHERE (30 - DATEDIFF ( d , date_entered , GETDATE ( )))  > 0 "
 	sql = sql & " GROUP BY 30 - DATEDIFF ( d , date_entered , GETDATE ( )) ORDER BY a"
 	set rsChart = dbconn.execute(sql)
 	do while not rsChart.EOF
 		if (rsChart(0) > -1) then
-			chart_order_count(rsChart(0)) = FormatNumber(rsChart(1),0)
+			chart_sales_order_count(rsChart(0)) = FormatNumber(rsChart(1),0)
 		end if
 		rsChart.MoveNext
 	loop
@@ -587,17 +587,17 @@
 	'Response.Write(sql)
 	
 	'--------------------------------------------
-	dim chart_order_amount(30)
+	dim chart_sales_order_amount(30)
 	for iii = 0 to 30
-		chart_order_amount(iii) = "0.00"
+		chart_sales_order_amount(iii) = "0.00"
 	next
-	sql = "SELECT TOP 30 30 - DATEDIFF ( d , date_entered , GETDATE ( )) as a, SUM(total) FROM " & g_storeid & "_order "
+	sql = "SELECT TOP 30 30 - DATEDIFF ( d , date_entered , GETDATE ( )) as a, SUM(total) FROM " & g_storeid & "_sales_order "
 	sql = sql & " WHERE (30 - DATEDIFF ( d , date_entered , GETDATE ( )))  > 0 "
 	sql = sql & " GROUP BY 30 - DATEDIFF ( d , date_entered , GETDATE ( )) ORDER BY a"
 	set rsChart = dbconn.execute(sql)
 	do while not rsChart.EOF
 		if (rsChart(0) > -1) then
-		chart_order_amount(rsChart(0)) = FormatNumber(rsChart(1),2,,,0)
+		chart_sales_order_amount(rsChart(0)) = FormatNumber(rsChart(1),2,,,0)
 		end if
 		rsChart.MoveNext
 	loop
@@ -623,17 +623,17 @@
 		var initChart1 = function() {
 
 			var data = [
-				['<%=DateAdd("D", -10, date)%>', <%=chart_order_amount(20)%>],
-				['<%=DateAdd("D", -9, date)%>', <%=chart_order_amount(21)%>],
-				['<%=DateAdd("D", -8, date)%>', <%=chart_order_amount(22)%>],
-				['<%=DateAdd("D", -7, date)%>', <%=chart_order_amount(23)%>],
-				['<%=DateAdd("D", -6, date)%>', <%=chart_order_amount(24)%>],
-				['<%=DateAdd("D", -5, date)%>', <%=chart_order_amount(25)%>],
-				['<%=DateAdd("D", -4, date)%>', <%=chart_order_amount(26)%>],
-				['<%=DateAdd("D", -3, date)%>', <%=chart_order_amount(27)%>],
-				['<%=DateAdd("D", -2, date)%>', <%=chart_order_amount(28)%>],
-				['<%=DateAdd("D", -1, date)%>', <%=chart_order_amount(29)%>],
-				['<%=DateAdd("D", 0, date)%>', <%=chart_order_amount(30)%>]
+				['<%=DateAdd("D", -10, date)%>', <%=chart_sales_order_amount(20)%>],
+				['<%=DateAdd("D", -9, date)%>', <%=chart_sales_order_amount(21)%>],
+				['<%=DateAdd("D", -8, date)%>', <%=chart_sales_order_amount(22)%>],
+				['<%=DateAdd("D", -7, date)%>', <%=chart_sales_order_amount(23)%>],
+				['<%=DateAdd("D", -6, date)%>', <%=chart_sales_order_amount(24)%>],
+				['<%=DateAdd("D", -5, date)%>', <%=chart_sales_order_amount(25)%>],
+				['<%=DateAdd("D", -4, date)%>', <%=chart_sales_order_amount(26)%>],
+				['<%=DateAdd("D", -3, date)%>', <%=chart_sales_order_amount(27)%>],
+				['<%=DateAdd("D", -2, date)%>', <%=chart_sales_order_amount(28)%>],
+				['<%=DateAdd("D", -1, date)%>', <%=chart_sales_order_amount(29)%>],
+				['<%=DateAdd("D", 0, date)%>', <%=chart_sales_order_amount(30)%>]
 			];
 
 			var plot_statistics = $.plot(
@@ -725,17 +725,17 @@
 		var initChart2 = function() {
 
 			var data = [
-				['<%=DateAdd("D", -10, date)%>', <%=chart_order_count(20)%>],
-				['<%=DateAdd("D", -9, date)%>', <%=chart_order_count(21)%>],
-				['<%=DateAdd("D", -8, date)%>', <%=chart_order_count(22)%>],
-				['<%=DateAdd("D", -7, date)%>', <%=chart_order_count(23)%>],
-				['<%=DateAdd("D", -6, date)%>', <%=chart_order_count(24)%>],
-				['<%=DateAdd("D", -5, date)%>', <%=chart_order_count(25)%>],
-				['<%=DateAdd("D", -4, date)%>', <%=chart_order_count(26)%>],
-				['<%=DateAdd("D", -3, date)%>', <%=chart_order_count(27)%>],
-				['<%=DateAdd("D", -2, date)%>', <%=chart_order_count(28)%>],
-				['<%=DateAdd("D", -1, date)%>', <%=chart_order_count(29)%>],
-				['<%=DateAdd("D", 0, date)%>', <%=chart_order_count(30)%>]
+				['<%=DateAdd("D", -10, date)%>', <%=chart_sales_order_count(20)%>],
+				['<%=DateAdd("D", -9, date)%>', <%=chart_sales_order_count(21)%>],
+				['<%=DateAdd("D", -8, date)%>', <%=chart_sales_order_count(22)%>],
+				['<%=DateAdd("D", -7, date)%>', <%=chart_sales_order_count(23)%>],
+				['<%=DateAdd("D", -6, date)%>', <%=chart_sales_order_count(24)%>],
+				['<%=DateAdd("D", -5, date)%>', <%=chart_sales_order_count(25)%>],
+				['<%=DateAdd("D", -4, date)%>', <%=chart_sales_order_count(26)%>],
+				['<%=DateAdd("D", -3, date)%>', <%=chart_sales_order_count(27)%>],
+				['<%=DateAdd("D", -2, date)%>', <%=chart_sales_order_count(28)%>],
+				['<%=DateAdd("D", -1, date)%>', <%=chart_sales_order_count(29)%>],
+				['<%=DateAdd("D", 0, date)%>', <%=chart_sales_order_count(30)%>]
 			];
 
 			var plot_statistics = $.plot(
@@ -830,7 +830,7 @@
 			init: function() {
 				initChart1();
 
-				$('#statistics_orders_tab').on('shown.bs.tab', function(e) {
+				$('#statistics_sales_orders_tab').on('shown.bs.tab', function(e) {
 					initChart2();
 				});
 			}

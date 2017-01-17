@@ -208,10 +208,10 @@
 														<span class="hidden-xs">| <%=order_date%> </span>
 													</span>
 												</div>
-												<div class="actions">
-													<a href="sales_order.phtml" class="btn btn-default btn-sm" role="button">
-													<i class="fa fa-arrow-circle-left"></i> Back
-													</a>
+												<div class="actions btn-set">
+													<button type="button" onclick="location.href='sales_order.phtml';" name="back" class="btn btn-default">
+														<i class="fa fa-angle-left"></i> Back
+													</button>
 												</div>
 											</div>
 											<div class="portlet-body">
@@ -241,9 +241,11 @@
 																<span class="badge badge-success">4</span>
 															</a>
 														</li>
+														-->
 														<li>
-															<a href="#tab_3" data-toggle="tab"> Credit Memos </a>
+															<a href="#tab_4" data-toggle="tab"> Refund History </a>
 														</li>
+														<!--
 														<li>
 															<a href="#tab_4" data-toggle="tab"> Shipments
 																<span class="badge badge-danger"> 2 </span>
@@ -670,7 +672,7 @@
 														<div class="tab-pane" id="tab_2">
 															<div class="row">
 																<div class="col-md-12 col-sm-12">
-																	<div class="portlet grey-cascade box">
+																	<div class="portlet  green-meadow box">
 																		<div class="portlet-title">
 																			<div class="caption">
 																				<i class="fa fa-cogs"></i>Tracking List</div>
@@ -721,7 +723,7 @@
 															</div>
 															<div class="row">
 																<div class="col-md-12 col-sm-12">
-																	<div class="portlet grey-cascade box">
+																	<div class="portlet  green-meadow box">
 																		<div class="portlet-title">
 																			<div class="caption">
 																				<i class="fa fa-cogs"></i>New Tracking Information</div>
@@ -798,7 +800,7 @@
 														<div class="tab-pane" id="tab_3">
 															<div class="row">
 																<div class="col-md-12 col-sm-12">
-																	<div class="portlet grey-cascade box">
+																	<div class="portlet yellow-crusta box">
 																		<div class="portlet-title">
 																			<div class="caption">
 																				<i class="fa fa-cogs"></i>Email History</div>
@@ -859,7 +861,7 @@
 															</div>
 															<div class="row">
 																<div class="col-md-12 col-sm-12">
-																	<div class="portlet grey-cascade box">
+																	<div class="portlet yellow-crusta box">
 																		<div class="portlet-title">
 																			<div class="caption">
 																				<i class="fa fa-cogs"></i>New Tracking Information</div>
@@ -953,6 +955,9 @@
 																	</div>
 																</div>
 															</div>
+														</div>
+														<div class="tab-pane" id="tab_4">
+															Refund History
 														</div>
 													</div>
 												</div>
