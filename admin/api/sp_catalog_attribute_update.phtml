@@ -9,6 +9,8 @@
 <%
 	attribute_id = Trim(Request("attribute_id"))
 	frontend_label = Trim(Request("frontend_label"))
+	admin_label = Trim(Request("admin_label"))
+	configurable = Trim(Request("configurable"))
 	attribute_option_data = Trim(Request("attribute_option_data"))
 	
 	if attribute_id = "0" then
@@ -34,6 +36,9 @@
 			.Open
 		end with
 	end if
+	
+	rsUpdate("admin_label") = admin_label
+	rsUpdate("configurable") = configurable
 	
 	if Session("CURRENT_ADMIN_VIEW_ID") = "1" then
 		rsUpdate("frontend_label") = frontend_label
@@ -107,18 +112,29 @@
 				end with
 			end if
 			
-			if Session("CURRENT_ADMIN_VIEW_ID") = "1" then
-				rsUpdate("option_name") = ar_option_data(1)
+			option_name = ar_option_data(1)
+			option_display_name = ar_option_data(3)
+			sort_order = ar_option_data(2)
+			
+			if Len(option_display_name) > 0 then
 			else
-				x = rsUpdate("option_name")
+				option_display_name = option_name
+			end if
+			
+			rsUpdate("option_name") = ar_option_data(1)
+			
+			if Session("CURRENT_ADMIN_VIEW_ID") = "1" then
+				rsUpdate("display_name") = option_display_name
+			else
+				x = rsUpdate("display_name")
 				if x = ar_option_data(1) then
 					r = SaveX(rsUpdate("option_id"), 21, "varchar", 1, "")
 				else
-					r = SaveX(rsUpdate("option_id"), 21, "varchar", 1, ar_option_data(1))
+					r = SaveX(rsUpdate("option_id"), 21, "varchar", 1, display_name)
 				end if
 			end if
 			
-			rsUpdate("sort_order") = ar_option_data(2)
+			rsUpdate("sort_order") = sort_order
 			
 			If dbconn.Errors.Count > 0 Then
 				dbconn.Errors.Clear

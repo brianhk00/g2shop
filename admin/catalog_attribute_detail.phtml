@@ -17,7 +17,9 @@
 	sql = "SELECT * FROM " & g_storeid & "_eav_attribute WHERE attribute_id=" & attribute_id
 	set rs = dbconn.Execute(sql)
 	if not rs.EOF then
+		admin_label = rs("admin_label")
 		frontend_label = rs("frontend_label")
+		configurable = rs("configurable")
 	end if
 	rs.Close
 	set rs = nothing
@@ -38,7 +40,7 @@
 	sql = sql & "a.attribute_id =" & attribute_id
 	
 	if Session("CURRENT_ADMIN_VIEW_ID") = "1" then
-		sql = "SELECT option_id, option_name, sort_order FROM " & g_storeid & "_eav_attribute_option WHERE attribute_id =" & attribute_id & " ORDER BY sort_order, option_name"
+		sql = "SELECT option_id, option_name, sort_order, display_name FROM " & g_storeid & "_eav_attribute_option WHERE attribute_id =" & attribute_id & " ORDER BY sort_order, option_name"
 	else
 		'sql = "SELECT option_id, (CASE WHEN b.field_value IS NULL THEN a.option_name ELSE b.field_value END) as oname, a.sort_order FROM " & g_storeid & "_eav_attribute_option as a "
 		'sql = sql & "LEFT OUTER JOIN " & g_storeid & "_store_type_data_varchar as b "
@@ -60,11 +62,21 @@
 	attr_id = 1
 	do while not rsOptions.EOF
 		s_value = Trim(rsOptions(1))
+		s_display_name = Trim(rsOptions(3))
+		
+		if Len(s_value) > 0 then
+			s_value = Replace(Trim(rsOptions(1)), """", "\""")
+		end if
+		if Len(s_display_name) > 0 then
+			s_display_name = Replace(Trim(rsOptions(3)), """", "\""")
+		end if
 		'TODO : translate...
 		'if Session("CURRENT_ADMIN_VIEW_ID") <> "1" then
 			's_value = TranslateX(s_value, 21, rsOptions(0), 1)
 		'end if
-		s_data = s_data & "{ ""ID"": " & attr_id & ",  ""OptionID"": " & rsOptions(0) & ", ""Name"": """ & s_value & """, ""Position"": """ & Trim(rsOptions(2)) & """ },"
+		's_data = s_data & "{ ""ID"": " & attr_id & ",  ""OptionID"": " & rsOptions(0) & ", ""Name"": """ & s_value & """, ""Position"": """ & Trim(rsOptions(2)) & """ },"
+		
+		s_data = s_data & "{ ""ID"": " & attr_id & ",  ""OptionID"": " & rsOptions(0) & ", ""Name"": """ & s_value & """, ""Position"": """ & Trim(rsOptions(2)) & """,  ""DisplayName"": """ & s_display_name & """ },"
 		attr_id = attr_id + 1
 		rsOptions.MoveNext
 	loop
@@ -127,7 +139,7 @@
 													%>
 													</div>
 													<div class="actions btn-set">
-														<button type="button" onclick="location.href='catalog_product.phtml';" name="back" class="btn btn-default">
+														<button type="button" onclick="location.href='catalog_attribute.phtml';" name="back" class="btn btn-default">
 															<i class="fa fa-angle-left"></i> Back
 														</button>
 														<button class="btn btn-success" onclick="savebutton='1';">
@@ -142,9 +154,11 @@
 																<i class="fa fa-angle-down"></i>
 															</a>
 															<div class="dropdown-menu pull-right">
+																<!--
 																<li>
 																	<a href="javascript:;" id="DuplicateEntry"> Duplicate </a>
 																</li>
+																-->
 																<li>
 																	<a href="#" id="DeleteEntry"> Delete </a>
 																</li>
@@ -183,11 +197,30 @@
 																<div class="row">
 																	<div class="col-sm-6">
 																		<div class="form-group">
-																			<label class="col-sm-4 control-label" for="frontend_label">
+																			<label class="col-sm-4 control-label" for="admin_label">
 																				Name <span class="symbol required"></span> 
 																			</label>
 																			<div class="col-sm-8">
+																				<input type="text" placeholder="" id="admin_label" name="admin_label" class="form-control input-sm" value="<%=admin_label%>">
+																			</div>
+																		</div>
+																		<div class="form-group">
+																			<label class="col-sm-4 control-label" for="frontend_label">
+																				Display Name <span class="symbol required"></span> 
+																			</label>
+																			<div class="col-sm-8">
 																				<input type="text" placeholder="" id="frontend_label" name="frontend_label" class="form-control input-sm" value="<%=frontend_label%>">
+																			</div>
+																		</div>
+																		<div class="form-group">
+																			<label class="col-sm-4 control-label" for="configurable">
+																				Use for Configurable <span class="symbol required"></span> 
+																			</label>
+																			<div class="col-sm-8">
+																				<select class="form-control input-sm" name="configurable" id="configurable">
+																					<option value="0" <%if configurable=0 then%>selected<%end if%>>No</option>
+																					<option value="1" <%if configurable=1 then%>selected<%end if%>>Yes</option>
+																				</select>
 																			</div>
 																		</div>
 																	</div>
@@ -211,6 +244,10 @@
 																				<tr>
 																					<td style="padding:5px;"><label for="OptionName">Name:</label></td>
 																					<td style="padding:5px;"><input type="text" id="OptionName" style="width:300px;font-size:14px;"></td>
+																				</tr>
+																				<tr>
+																					<td style="padding:5px;"><label for="DisplayName">Display:</label></td>
+																					<td style="padding:5px;"><input type="text" id="DisplayName" style="width:300px;font-size:14px;"></td>
 																				</tr>
 																				<tr>
 																					<td style="padding:5px;"><label for="OptionPosition">Postition:</label></td>
@@ -327,7 +364,7 @@ var FormValidation = function () {
 				records = grid0.getAll();
 				pid = "";
 				$.each(records, function () {
-					 pid += this.record.OptionID + "||" + this.record.Name + "||" + this.record.Position + "%%";
+					 pid += this.record.OptionID + "||" + this.record.Name + "||" + this.record.Position + "||" + this.record.DisplayName + "%%";
 				});
 				$('#attribute_option_data').val(pid);
 				
@@ -383,6 +420,7 @@ jQuery(document).ready(function() {
 		$("#ID").val(e.data.id);
 		$("#OptionID").val(e.data.record.OptionID);
 		$("#OptionName").val(e.data.record.Name);
+		$("#DisplayName").val(e.data.record.DisplayName);
 		$("#OptionPosition").val(e.data.record.Position);
 		$("#dialog-option").dialog("open");
 	}
@@ -403,9 +441,9 @@ jQuery(document).ready(function() {
 		
 		if ($("#ID").val()) {
 			var id = parseInt($("#ID").val());
-			grid0.updateRow(id, { "ID": id, "OptionID": $("#OptionID").val(), "Name": $("#OptionName").val(), "Position": sPostion });
+			grid0.updateRow(id, { "ID": id, "OptionID": $("#OptionID").val(), "Name": $("#OptionName").val(), "Position": sPostion, "DisplayName": $("#DisplayName").val() });
 		} else {
-			grid0.addRow({ "ID": grid0.count() + 1, "OptionID": $("#OptionID").val(), "Name": $("#OptionName").val(), "Position": sPostion });
+			grid0.addRow({ "ID": grid0.count() + 1, "OptionID": $("#OptionID").val(), "Name": $("#OptionName").val(), "Position": sPostion, "DisplayName": $("#DisplayName").val() });
 		}
 		$(this).dialog("close");
 	}
@@ -422,6 +460,7 @@ jQuery(document).ready(function() {
 		uiLibrary: "bootstrap",
 		columns: [
 			{ field: "Name", title: "Option Name" },
+			{ field: "DisplayName", title: "Display Name" },
 			{ field: "Position", title: "Position", width: 80 },
 			{ title: "", width: 40, type: "icon", icon: "glyphicon-pencil", tooltip: "Edit", events: { "click": Edit0 } },
 			{ title: "", width: 40, type: "icon", icon: "glyphicon-remove", tooltip: "Delete", events: { "click": Delete0 } }
@@ -432,6 +471,7 @@ jQuery(document).ready(function() {
 		$("#ID").val("");
 		$("#OptionID").val("0");
 		$("#OptionName").val("");
+		$("#DisplayName").val("");
 		$("#OptionPosition").val("0");
 		$("#dialog-option").dialog("open");
 	});

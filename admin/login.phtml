@@ -355,8 +355,8 @@ end function
 	
 	if Ret = 1 then
 		if Len(Session("REFERER_URL")) > 0 Then
-			'response.redirect Session("REFERER_URL")
-			response.redirect "dashboard.phtml"
+			response.redirect Session("REFERER_URL")
+			'response.redirect "dashboard.phtml"
 		Else
 			response.redirect "dashboard.phtml"
 		End If

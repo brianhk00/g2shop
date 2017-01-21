@@ -59,24 +59,39 @@
 														<thead>
 															<tr>
 																<th class="center">#</th>
+																<th>Admin Name</th>
 																<th>Filter Name</th>
+																<th>Configurable</th>
+																<th>Sort Order</th>
 																<th></th>
 															</tr>
 														</thead>
 														<tbody>
 															<%
-																sql = "SELECT * FROM " & g_storeid & "_eav_attribute"
+																sql = "SELECT * FROM " & g_storeid & "_eav_attribute ORDER BY sort_order"
 																set rs = dbconn.Execute(sql)
 																do while not rs.EOF
 																	attribute_id = rs("attribute_id")
+																	admin_label = rs("admin_label")
 																	frontend_label = rs("frontend_label")
+																	sort_order = rs("sort_order")
 																	if Session("CURRENT_ADMIN_VIEW_ID") <> "1" then
 																		frontend_label = TranslateX(frontend_label, 20, attribute_id, 1)
 																	end if
+																	configurable = rs("configurable")
+																	SELECT CASE configurable
+																	CASE 1
+																		s_configurable = "Yes"
+																	CASE ELSE
+																		s_configurable = "No"
+																	END SELECT
 															%>
 															<tr>
 																<td class="center"><%=attribute_id%></td>
+																<td><%=admin_label%></td>
 																<td><%=frontend_label%></td>
+																<td><%=s_configurable%></td>
+																<td><%=sort_order%></td>
 																<td class="center">
 																<div class="visible-md visible-lg hidden-sm hidden-xs">
 																	<a href="catalog_attribute_detail.phtml?id=<%=attribute_id%>" class="btn btn-transparent btn-xs" tooltip-placement="top" tooltip="Edit"><i class="fa fa-pencil"></i></a>

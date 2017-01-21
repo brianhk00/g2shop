@@ -1,0 +1,742 @@
+<%
+	Response.CodePage = 65001
+	Response.CharSet = "UTF-8"
+	
+	storeviewid = Trim(Request("storeviewid"))
+	if Len(storeviewid) > 0 then
+		Session("CURRENT_ADMIN_VIEW_ID")  = storeviewid
+	end if
+%>
+<!-- #INCLUDE File="local/local.phtml" -->
+<!-- #INCLUDE File="util/xt_func_util.phtml" -->
+<!-- #INCLUDE File="util/xt_func_string.phtml" -->
+<!-- #INCLUDE File="../util/xt_func_product.phtml" -->
+<!-- #include file="aspuploader/include_aspuploader.asp" -->
+<!-- #INCLUDE File="include/i_login.phtml" -->
+<%
+	g_access_key = "02-b"
+%>
+<!-- #INCLUDE File="include/i_access.phtml" -->
+<%
+	pf_id = Trim(Request("pf_id"))
+	
+	'===============================================================================================
+	' Assign New pf_id
+	'===============================================================================================
+	if pf_id = "0" then
+		pf_id = GetUniqueLongIntegerID()
+		pf_op = "new"
+		did = Trim(Request("did"))
+		if Len(did) > 0 then
+			'===============================================================================================
+			' GET Information
+			'===============================================================================================
+		end if
+	else
+		pf_op = "edit"
+	end if
+	
+	'===============================================================================================
+	' GET Information
+	'===============================================================================================
+	sql = "SELECT * FROM " & g_storeid & "_product_inventory WHERE inventory_id='" & pf_id & "'"
+	set rsInventory = dbconn.Execute(sql)
+	if not rsInventory.EOF then
+		inventory_sku = Trim(rsInventory("inventory_sku"))
+		inventory_name = Trim(rsInventory("inventory_name"))
+		inventory_qty = Trim(rsInventory("inventory_qty"))
+		inventory_avail = Trim(rsInventory("inventory_avail"))
+		inventory_cost = Trim(rsInventory("inventory_cost"))
+		inventory_price_A = Trim(rsInventory("inventory_price_A"))
+		inventory_price_B = Trim(rsInventory("inventory_price_B"))
+		inventory_price_C = Trim(rsInventory("inventory_price_C"))
+		inventory_price_D = Trim(rsInventory("inventory_price_D"))
+		inventory_attribute_id_1 = Trim(rsInventory("inventory_attribute_id_1"))
+		inventory_attribute_option_id_1 = Trim(rsInventory("inventory_attribute_option_id_1"))
+		inventory_attribute_id_2 = Trim(rsInventory("inventory_attribute_id_2"))
+		inventory_attribute_option_id_2 = Trim(rsInventory("inventory_attribute_option_id_2"))
+		inventory_attribute_id_3 = Trim(rsInventory("inventory_attribute_id_3"))
+		inventory_attribute_option_id_3 = Trim(rsInventory("inventory_attribute_option_id_3"))
+	end if
+	rsInventory.Close
+	set rsInventory = nothing
+%>
+<!--#INCLUDE FILE="include/doctype.phtml"-->
+<head>
+<!--#INCLUDE FILE="include/head.phtml"-->
+<!-- BEGIN PAGE LEVEL PLUGINS -->
+<link href="../assets/global/plugins/select2/css/select2.min.css" rel="stylesheet" type="text/css" />
+<link href="../assets/global/plugins/select2/css/select2-bootstrap.min.css" rel="stylesheet" type="text/css" />
+<!-- END PAGE LEVEL PLUGINS -->
+<!--#INCLUDE FILE="include/head_bottom.phtml"-->
+</head>
+<body class="page-container-bg-solid">
+<div class="page-wrapper">
+	<div class="page-wrapper-row">
+		<div class="page-wrapper-top">
+			<!--#INCLUDE FILE="include/header.phtml"-->
+		</div>
+	</div>
+	<div class="page-wrapper-row full-height">
+		<div class="page-wrapper-middle">
+			<!-- BEGIN CONTAINER -->
+			<div class="page-container">
+				<!-- BEGIN CONTENT -->
+				<div class="page-content-wrapper">
+					<!-- BEGIN CONTENT BODY -->
+					
+					<!-- BEGIN PAGE CONTENT BODY -->
+					<div class="page-content">
+						<div class="container-fluid">
+							<!-- BEGIN PAGE CONTENT INNER -->
+							<div class="page-content-inner">
+								<div class="row">
+									<div class="col-md-12">
+										<form id="form_edit_1" class="form-horizontal form-row-seperated" action="#">
+										<input type="hidden" id="inventory_id" name="inventory_id" value="<%=pf_id%>">
+										<input type="hidden" id="pf_op" name="pf_op" value="<%=pf_op%>">
+											<div class="portlet">
+												<div class="portlet-title">
+													<div class="caption">
+													<i class="icon-cloud-upload"></i>
+													<%
+													if Len(pf_name) > 0 then
+														Response.Write(Left(pf_name, 50))
+													else
+														Response.Write("New Inventory Item")
+													end if
+													%>
+													</div>
+													<div class="actions btn-set">
+														<button type="button" onclick="location.href='catalog_inventory.phtml';" name="back" class="btn btn-default">
+															<i class="fa fa-angle-left"></i> Back
+														</button>
+														<button class="btn btn-success" onclick="savebutton='1';">
+															<i class="fa fa-check"></i> Save
+														</button>
+														<button class="btn btn-success" onclick="savebutton='0';">
+															<i class="fa fa-check-circle"></i> Save & Continue Edit
+														</button>
+														<div class="btn-group">
+															<a class="btn btn-success dropdown-toggle" href="javascript:;" data-toggle="dropdown">
+																<i class="fa fa-share"></i> More
+																<i class="fa fa-angle-down"></i>
+															</a>
+															<div class="dropdown-menu pull-right">
+																<li>
+																	<a href="javascript:;" id="DuplicateEntry"> Duplicate </a>
+																</li>
+																<li>
+																	<a href="#" id="DeleteEntry"> Delete </a>
+																</li>
+															</div>
+														</div>
+													</div>
+												</div>
+												<div class="alert alert-danger display-hide">
+												<button class="close" data-close="alert"></button> You have some form errors. Please check below. 
+												</div>
+												<div class="alert alert-success display-hide">
+												<button class="close" data-close="alert"></button> The information has been saved.
+												</div>
+												<div class="alert alert-warning display-hide">
+												<button class="close" data-close="alert"></button> The information has not been saved properly. Please contact system administrator.
+												</div>
+												<div class="portlet-body">
+													<div class="row">
+														<div class="col-sm-9">
+															<div class="panel panel-primary">
+																<div class="panel-heading">
+																	<h3 class="panel-title">General</h3>
+																</div>
+																<div class="panel-body"> 
+																	<div class="row">
+																		<div class="col-sm-6">
+																			<div class="form-group">
+																				<label class="col-sm-4 control-label" for="inventory_sku">
+																					SKU <span class="symbol required">*</span> 
+																				</label>
+																				<div class="col-sm-8">
+																					<input type="text" placeholder="" id="inventory_sku" name="inventory_sku" class="form-control input-sm" value="<%=inventory_sku%>">
+																				</div>
+																			</div>
+																		</div>
+																		
+																		<div class="col-sm-6">
+																			<div class="form-group">
+																				<label class="col-sm-4 control-label" for="inventory_status">
+																					Status
+																				</label>
+																				<div class="col-sm-8">
+																					<select class="form-control input-sm" name="inventory_status" id="inventory_status">
+																						<option value="0" <%if inventory_status=0 then%>selected<%end if%>>Active</option>
+																						<option value="2" <%if inventory_status=2 then%>selected<%end if%>>Inactive</option>
+																					</select>
+																				</div>
+																			</div>
+																		</div>
+																	</div>
+																	<div class="form-group">
+																		<label class="col-sm-2 control-label" for="inventory_name">
+																			Name <span class="symbol required">*</span> 
+																		</label>
+																		<div class="col-sm-10">
+																			<input type="text" placeholder="" id="inventory_name" name="inventory_name" class="form-control input-sm" value="<%=inventory_name%>" style="<%=sLangStyle%>">
+																		</div>
+																	</div>
+																</div>
+															</div>
+															<div class="panel panel-primary">
+																<div class="panel-heading">
+																	<h3 class="panel-title">Price & Inventory</h3>
+																</div>
+																<div class="panel-body">
+																	<div class="row">
+																		<div class="col-sm-6">
+																			<div class="form-group">
+																				<label class="col-sm-4 control-label" for="pf_use_price">
+																					Price Option 
+																				</label>
+																				<div class="col-sm-8">
+																					<select class="form-control input-sm" name="inventory_use_price" id="inventory_use_price">
+																						<option value="1" <% if inventory_use_price = 0 then %> selected <%end if%>>Use Manual Prices</option>
+																						<option value="0" <% if inventory_use_price = 1 then %> selected <%end if%>>Use Category Markup Prices</option>
+																					</select>
+																				</div>
+																			</div>
+																		</div>
+																		<div class="col-sm-6">
+																			<div class="form-group">
+																				<label class="col-sm-4 control-label" for="inventory_cost">
+																					Cost <span class="symbol required">*</span>
+																				</label>
+																				<div class="col-sm-8">
+																					<input type="text" placeholder="" id="inventory_cost" class="form-control input-sm text-right"  value="<%=FormatNumber(inventory_cost,2)%>" name="inventory_cost">
+																				</div>
+																			</div>
+																		</div>
+																	</div>
+																	<div class="row">
+																		<div class="col-sm-6">
+																			<div class="form-group">
+																				<label class="col-sm-4 control-label" for="inventory_price_A">
+																					Price A
+																				</label>
+																				<div class="col-sm-8">
+																					<input type="text" placeholder="0" id="inventory_price_A" name="inventory_price_A" class="form-control input-sm text-right" value="<%=FormatNumber(inventory_price_A,2)%>">
+																				</div>
+																			</div>
+																		</div>
+																		<div class="col-sm-6">
+																			<div class="form-group">
+																				<label class="col-sm-4 control-label" for="inventory_price_B">
+																					Price B
+																				</label>
+																				<div class="col-sm-8">
+																					<input type="text" placeholder="0" id="inventory_price_B" name="inventory_price_B" class="form-control input-sm text-right" value="<%=FormatNumber(inventory_price_B,2)%>">
+																				</div>
+																			</div>
+																		</div>
+																	</div>
+																	<div class="row">
+																		<div class="col-sm-6">
+																			<div class="form-group">
+																				<label class="col-sm-4 control-label" for="inventory_price_C">
+																					Price C
+																				</label>
+																				<div class="col-sm-8">
+																					<input type="text" placeholder="0" id="inventory_price_C" name="inventory_price_C" class="form-control input-sm text-right" value="<%=FormatNumber(inventory_price_C,2)%>">
+																				</div>
+																			</div>
+																		</div>
+																		<div class="col-sm-6">
+																			<div class="form-group">
+																				<label class="col-sm-4 control-label" for="inventory_price_D">
+																					Price D
+																				</label>
+																				<div class="col-sm-8">
+																					<input type="text" placeholder="0" id="inventory_price_D" name="inventory_price_D" class="form-control input-sm text-right" value="<%=FormatNumber(inventory_price_D,2)%>">
+																				</div>
+																			</div>
+																		</div>
+																	</div>
+																	<div class="row">
+																		<div class="col-sm-6">
+																			<div class="form-group">
+																				<div class="col-sm-offset-4 col-sm-12">
+																					<div class="checkbox clip-check check-primary">
+																						<input type="checkbox" id="inventory_on_sale" name="inventory_on_sale" value="1" <%if inventory_on_sale = 1 then%>checked<%end if%>>
+																						<label for="inventory_on_sale">
+																							Enable Special Price
+																						</label>
+																					</div>
+																				</div>
+																			</div>
+																		</div>
+																		<div class="col-sm-6">
+																			<div class="form-group">
+																				<label class="col-sm-4 control-label" for="inventory_sale_price">
+																					Special Price 
+																				</label>
+																				<div class="col-sm-8">
+																					<input type="text" placeholder="" id="inventory_sale_price" name="inventory_sale_price" class="form-control input-sm text-right"  value="<%=FormatNumber(inventory_sale_price,2)%>">
+																				</div>
+																				
+																			</div>
+																		</div>
+																	</div>
+																	
+																	<div class="row">
+																		<div class="col-sm-6">
+																			<div class="form-group">
+																				<label class="col-sm-4 control-label" for="inventory_qty">
+																					Qty.
+																				</label>
+																				<div class="col-sm-8">
+																					<input type="text" placeholder="0" id="inventory_qty" name="inventory_qty" class="form-control input-sm text-right" value="<%=inventory_qty%>">
+																				</div>
+																			</div>
+																		</div>
+																		<div class="col-sm-6">
+																			<div class="form-group">
+																				<label class="col-sm-4 control-label" for="inventory_avail">
+																					Stock Availability
+																				</label>
+																				<div class="col-sm-8">
+																					<select class="form-control input-sm" name="inventory_avail" id="inventory_avail">
+																						<option value="1" <%if inventory_avail=1 then%>selected<%end if%>>In Stock</option>
+																						<option value="0" <%if inventory_avail=0 then%>selected<%end if%>>Out of Stock</option>
+																					</select>
+																				</div>
+																			</div>
+																		</div>
+																	</div>
+																</div>
+															</div>
+															<div class="panel panel-primary">
+																<div class="panel-heading">
+																	<h3 class="panel-title">Configurable Attributes</h3>
+																</div>
+																<div class="panel-body">
+																	<div class="form-group">
+																		<div class="col-sm-4">
+																			<select class="form-control input-sm" name="inventory_attribute_id_1" id="inventory_attribute_id_1">
+																				<option value="0" <%if inventory_attribute_id_1=0 then%>selected<%end if%>>None</option>
+																				<%
+																					sql = "SELECT * FROM " & g_storeid & "_eav_attribute WHERE configurable=1 ORDER BY sort_order"
+																					set rs = dbconn.Execute(sql)
+																					do while not rs.EOF
+																						attribute_id = rs("attribute_id")
+																				%>
+																				<% if CStr(attribute_id) = CStr(inventory_attribute_id_1) then %>
+																				<option value="<%=attribute_id%>" selected><%=rs("admin_label")%></option>
+																				<% else %>
+																				<option value="<%=attribute_id%>"><%=rs("admin_label")%></option>
+																				<% end if %>
+																				<%
+																						rs.MoveNext
+																					loop
+																					rs.Close
+																					set rs = nothing
+																				%>
+																			</select>
+																		</div>
+																		<div class="col-sm-4">
+																			<select class="form-control input-sm" name="inventory_attribute_option_id_1" id="inventory_attribute_option_id_1">
+																				<option value='0'>Please Select</option>
+																				<% if inventory_attribute_id_1 = 0 then %>
+																				<% else %>
+																					<%
+																						sql = "SELECT * FROM " & g_storeid & "_eav_attribute_option WHERE attribute_id = " & inventory_attribute_id_1 & " ORDER BY sort_order"
+																						set rs = dbconn.Execute(sql)
+																						do while not rs.EOF
+																							option_id = rs("option_id")
+																							option_name = rs("option_name")
+																							if option_id = CInt(inventory_attribute_option_id_1) then
+																								s_selected = " selected "
+																							else
+																								s_selected = ""
+																							end if
+																					%>
+																					<option value="<%=option_id%>" <%=s_selected%>><%=option_name%></option>	
+																					<%
+																							rs.MoveNext
+																						loop
+																						rs.Close
+																						set rs = nothing
+																					%>
+																				<% end if%>
+																			</select>
+																		</div>
+																	</div>
+																	<div class="form-group">
+																		<div class="col-sm-4">
+																			<select class="form-control input-sm" name="inventory_attribute_id_2" id="inventory_attribute_id_2">
+																				<option value="0" <%if inventory_attribute_id_2=0 then%>selected<%end if%>>None</option>
+																				<%
+																					sql = "SELECT * FROM " & g_storeid & "_eav_attribute WHERE configurable=1 ORDER BY sort_order"
+																					set rs = dbconn.Execute(sql)
+																					do while not rs.EOF
+																						attribute_id = rs("attribute_id")
+																				%>
+																				<% if CStr(attribute_id) = CStr(inventory_attribute_id_2) then %>
+																				<option value="<%=attribute_id%>" selected><%=rs("admin_label")%></option>
+																				<% else %>
+																				<option value="<%=attribute_id%>"><%=rs("admin_label")%></option>
+																				<% end if %>
+																				<%
+																						rs.MoveNext
+																					loop
+																					rs.Close
+																					set rs = nothing
+																				%>
+																			</select>
+																		</div>
+																		<div class="col-sm-4">
+																			<select class="form-control input-sm" name="inventory_attribute_option_id_2" id="inventory_attribute_option_id_2">
+																				<option value='0'>Please Select</option>
+																				<% if inventory_attribute_id_2 = 0 then %>
+																				<% else %>
+																					<%
+																						sql = "SELECT * FROM " & g_storeid & "_eav_attribute_option WHERE attribute_id = " & inventory_attribute_id_2 & " ORDER BY sort_order"
+																						set rs = dbconn.Execute(sql)
+																						do while not rs.EOF
+																							option_id = rs("option_id")
+																							option_name = rs("option_name")
+																							if option_id = CInt(inventory_attribute_option_id_2) then
+																								s_selected = " selected "
+																							else
+																								s_selected = ""
+																							end if
+																					%>
+																					<option value="<%=option_id%>" <%=s_selected%>><%=option_name%></option>	
+																					<%
+																							rs.MoveNext
+																						loop
+																						rs.Close
+																						set rs = nothing
+																					%>
+																				<% end if%>
+																			</select>
+																		</div>
+																	</div>
+																	<div class="form-group">
+																		<div class="col-sm-4">
+																			<select class="form-control input-sm" name="inventory_attribute_id_3" id="inventory_attribute_id_3">
+																				<option value="0" <%if inventory_attribute_id_3=0 then%>selected<%end if%>>None</option>
+																				<%
+																					sql = "SELECT * FROM " & g_storeid & "_eav_attribute WHERE configurable=1 ORDER BY sort_order"
+																					set rs = dbconn.Execute(sql)
+																					do while not rs.EOF
+																						attribute_id = rs("attribute_id")
+																				%>
+																				<% if CStr(attribute_id) = CStr(inventory_attribute_id_3) then %>
+																				<option value="<%=attribute_id%>" selected><%=rs("admin_label")%></option>
+																				<% else %>
+																				<option value="<%=attribute_id%>"><%=rs("admin_label")%></option>
+																				<% end if %>
+																				<%
+																						rs.MoveNext
+																					loop
+																					rs.Close
+																					set rs = nothing
+																				%>
+																			</select>
+																		</div>
+																		<div class="col-sm-4">
+																			<select class="form-control input-sm" name="inventory_attribute_option_id_3" id="inventory_attribute_option_id_3">
+																				<option value='0'>Please Select</option>
+																				<% if inventory_attribute_id_3 = 0 then %>
+																				<% else %>
+																					<%
+																						sql = "SELECT * FROM " & g_storeid & "_eav_attribute_option WHERE attribute_id = " & inventory_attribute_id_3 & " ORDER BY sort_order"
+																						set rs = dbconn.Execute(sql)
+																						do while not rs.EOF
+																							option_id = rs("option_id")
+																							option_name = rs("option_name")
+																							if option_id = CInt(inventory_attribute_option_id_3) then
+																								s_selected = " selected "
+																							else
+																								s_selected = ""
+																							end if
+																					%>
+																					<option value="<%=option_id%>" <%=s_selected%>><%=option_name%></option>	
+																					<%
+																							rs.MoveNext
+																						loop
+																						rs.Close
+																						set rs = nothing
+																					%>
+																				<% end if%>
+																			</select>
+																		</div>
+																	</div>
+																</div>
+															</div>
+														</div>
+													</div>
+												</div>
+											</div>
+										</form>
+									</div>
+								</div>
+							</div>
+							<!-- END PAGE CONTENT INNER -->
+						</div>
+					</div>
+					<!-- END PAGE CONTENT BODY -->
+					<!-- END CONTENT BODY -->
+				</div>
+				<!-- END CONTENT -->
+			</div>
+			<!-- END CONTAINER -->
+		</div>
+	</div>
+	<div class="page-wrapper-row">
+		<div class="page-wrapper-bottom">
+			<!--#INCLUDE FILE="include/footer.phtml"-->
+		</div>
+	</div>
+</div>
+<!-- BEGIN MODAL -->
+
+<!-- END MODAL -->
+<!--#INCLUDE FILE="include/js.phtml"-->
+<!-- BEGIN PAGE LEVEL PLUGINS -->
+<script src="../assets/global/plugins/jquery-validation/js/jquery.validate.min.js" type="text/javascript"></script>
+<script src="../assets/global/plugins/jquery-validation/js/additional-methods.min.js" type="text/javascript"></script>
+<script src="../assets/global/plugins/select2/js/select2.full.min.js" type="text/javascript"></script>
+<!-- END PAGE LEVEL PLUGINS -->
+<!-- BEGIN PAGE LEVEL SCRIPTS -->
+<script language="javascript">
+var savebutton = "1";
+</script>
+<script language="javascript">
+var FormValidation = function () {
+	// basic validation
+	var handleValidation1 = function() {
+		var form1 = $('#form_edit_1');
+		var error1 = $('.alert-danger', form1);
+		var success1 = $('.alert-success', form1);
+		var warning1 = $('.alert-warning', form1);
+
+		form1.validate({
+			errorElement: 'span', //default input error message container
+			errorClass: 'help-block help-block-error', // default input error message class
+			focusInvalid: false, // do not focus the last invalid input
+			ignore: "",  // validate all fields including form hidden input
+			//RULES
+			rules: {
+				inventory_sku: {
+					minlength: 3,
+					required: true,
+					"remote":
+					{
+					  url: 'api/sp_product_check_sku.phtml?pf_id=<%=pf_id%>',
+					  type: "post"
+					}
+				},
+				inventory_name: {
+					minlength: 2,
+					required: true
+				},
+				inventory_cost: {
+					required: true,
+					number: true
+				},
+				inventory_price_A: {
+					required: true,
+					number: true
+				},
+				inventory_price_B: {
+					required: true,
+					number: true
+				},
+				inventory_price_C: {
+					required: true,
+					number: true
+				},
+				inventory_price_D: {
+					required: true,
+					number: true
+				}
+				
+			},
+			messages: {
+				inventory_sku:
+				{
+					required: "Please specify product SKU.",
+					minlength: "The SKU must be greater than 3 chracter length.",
+					remote: "The specified SKU is not unique."
+				}
+			},
+			invalidHandler: function (event, validator) { //display error alert on form submit              
+				success1.hide();
+				error1.show();
+				App.scrollTo(error1, -200);
+			},
+			
+			highlight: function (element) { // hightlight error inputs
+
+				$(element)
+					.closest('.form-group').addClass('has-error'); // set error class to the control group
+			},
+
+			unhighlight: function (element) { // revert the change done by hightlight
+				$(element)
+					.closest('.form-group').removeClass('has-error'); // set error class to the control group
+			},
+
+			success: function (label) {
+				label
+					.closest('.form-group').removeClass('has-error'); // set success class to the control group
+			},
+
+			submitHandler: function (form) {
+				success1.hide();
+				error1.hide
+				warning1.hide();
+				
+				window.scrollTo(0,0);
+					
+				$.ajax({
+					type: "POST",
+					url: "api/sp_catalog_inventory_update.phtml",
+					data: form1.serialize(),
+					success: function() {
+						success1.show();
+						if (savebutton == "1")
+						{
+						setTimeout(function () {
+								window.location.replace("catalog_inventory.phtml");
+							}, 500);
+						}
+					},
+					error: function() {
+						warning1.show();
+					}
+				});
+			}
+		});
+
+
+	}
+	return {
+		//main function to initiate the module
+		init: function () {
+			handleValidation1();
+		}
+	};
+
+}();
+</script>
+<script type="text/javascript">
+var ComponentsSelect2 = function() {
+
+    var handleDemo = function() {
+
+        $.fn.select2.defaults.set("theme", "bootstrap");
+
+        var placeholder = "Select a State";
+
+        $(".select2, .select2-multiple").select2({
+            width: null
+        });
+
+        // copy Bootstrap validation states to Select2 dropdown
+        //
+        // add .has-waring, .has-error, .has-succes to the Select2 dropdown
+        // (was #select2-drop in Select2 v3.x, in Select2 v4 can be selected via
+        // body > .select2-container) if _any_ of the opened Select2's parents
+        // has one of these forementioned classes (YUCK! ;-))
+        $(".select2, .select2-multiple, .select2-allow-clear, .js-data-example-ajax").on("select2:open", function() {
+            if ($(this).parents("[class*='has-']").length) {
+                var classNames = $(this).parents("[class*='has-']")[0].className.split(/\s+/);
+
+                for (var i = 0; i < classNames.length; ++i) {
+                    if (classNames[i].match("has-")) {
+                        $("body > .select2-container").addClass(classNames[i]);
+                    }
+                }
+            }
+        });
+
+        $(".js-btn-set-scaling-classes").on("click", function() {
+            $("#select2-multiple-input-sm, #select2-single-input-sm").next(".select2-container--bootstrap").addClass("input-sm");
+            $("#select2-multiple-input-lg, #select2-single-input-lg").next(".select2-container--bootstrap").addClass("input-lg");
+            $(this).removeClass("btn-primary btn-outline").prop("disabled", true);
+        });
+    }
+
+    return {
+        //main function to initiate the module
+        init: function() {
+            handleDemo();
+        }
+    };
+
+}();
+</script>
+<script type="text/javascript">
+jQuery(document).ready(function() { 
+	FormValidation.init();
+	//ComponentsSelect2.init();
+	jQuery( "#inventory_attribute_id_1" ).change(function() {
+	  jQuery.ajax({
+			type:"post",
+			url: "api/sp_get_attribute_options.phtml",
+			data: {attribute_id: jQuery('#inventory_attribute_id_1').val(), 'isAjax':true},
+			dataType: 'json',
+			success: function(data) {
+				var listItems= "<option value='0'>Please Select</option>";
+				for (var i = 0; i < data.Suboptions.length; i++){
+					listItems+= "<option value='" + data.Suboptions[i].id + "'>" + data.Suboptions[i].name + "</option>";
+				}
+				var select = jQuery("#inventory_attribute_option_id_1"), options = '';
+				select.empty(); 
+				select.append(listItems);
+			}
+		});
+	});
+	
+	jQuery( "#inventory_attribute_id_2" ).change(function() {
+	  jQuery.ajax({
+			type:"post",
+			url: "api/sp_get_attribute_options.phtml",
+			data: {attribute_id: jQuery('#inventory_attribute_id_2').val(), 'isAjax':true},
+			dataType: 'json',
+			success: function(data) {
+				var listItems= "<option value='0'>Please Select</option>";
+				for (var i = 0; i < data.Suboptions.length; i++){
+					listItems+= "<option value='" + data.Suboptions[i].id + "'>" + data.Suboptions[i].name + "</option>";
+				}
+				var select = jQuery("#inventory_attribute_option_id_2"), options = '';
+				select.empty(); 
+				select.append(listItems);
+			}
+		});
+	});
+	
+	jQuery( "#inventory_attribute_id_3" ).change(function() {
+	  jQuery.ajax({
+			type:"post",
+			url: "api/sp_get_attribute_options.phtml",
+			data: {attribute_id: jQuery('#inventory_attribute_id_3').val(), 'isAjax':true},
+			dataType: 'json',
+			success: function(data) {
+				var listItems= "<option value='0'>Please Select</option>";
+				for (var i = 0; i < data.Suboptions.length; i++){
+					listItems+= "<option value='" + data.Suboptions[i].id + "'>" + data.Suboptions[i].name + "</option>";
+				}
+				var select = jQuery("#inventory_attribute_option_id_3"), options = '';
+				select.empty(); 
+				select.append(listItems);
+			}
+		});
+	});
+});
+</script>
+
+<!-- END PAGE LEVEL SCRIPTS -->
+</body>
+</html>
