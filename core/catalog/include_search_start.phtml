@@ -1,6 +1,5 @@
 <!--#INCLUDE FILE="../../local/local.phtml"-->
 <!--#INCLUDE FILE="../i_adoopen.phtml"-->
-<!--#INCLUDE FILE="../../language_pack.phtml"-->
 <!--#INCLUDE FILE="../../util/xt_func_session.phtml"-->
 <!--#INCLUDE File="../../util/xt_func_util.phtml" -->
 <!--#INCLUDE FILE="../../util/xt_func_string.phtml"-->
@@ -154,8 +153,9 @@
 		end if
 
 		sql = Replace(sql,"a.pf_id", "pf_id")
-		sql = Replace(sql,"*Q1*", "(vendor_name + ' ' + name + ' ' + description)")
-		sql = sql & " AND (main_category IN (" & pd_list & "))"
+		'sql = Replace(sql,"*Q1*", "(vendor_name + ' ' + name + ' ' + description)")
+		'sql = sql & " AND (main_category IN (" & pd_list & "))"
+		sql = Replace(sql,"*Q1*", "(name + ' ' + description)")
 
 		Set rsDept = Server.CreateObject("ADODB.RecordSet")
 	    rsDept.Open sql, Session("ConnectionString"), 1, 1
@@ -198,7 +198,7 @@
 	'===================================================================================================================
 	' PRIVATE CATALOG - END
 	'===================================================================================================================
-
+	if g_store_use_icecat_catalog = "1" then
 	'===================================================================================================================
 	' ESPEC CATALOG - START
 	'===================================================================================================================
@@ -431,7 +431,7 @@
 	'===================================================================================================================
 	' ESPEC CATALOG - END
 	'===================================================================================================================
-
+	end if
 	
 %>
 

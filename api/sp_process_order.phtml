@@ -7,6 +7,7 @@
 <!-- #INCLUDE File="../core/i_adoopen.phtml" -->
 <!-- #INCLUDE File="../util/xt_func_util.phtml" -->
 <!-- #INCLUDE File="../util/xt_func_string.phtml" -->
+<!-- #INCLUDE File="../util/xt_func_client.phtml" -->
 <!-- #INCLUDE File="../util/xt_func_shoppingcart.phtml" -->
 <%
 	'--POST DATA------------------------------------------
@@ -244,7 +245,18 @@
 	order_ref_number = ""
 	order_trans_number = ""
 	
+	new_order_id = GetUniqueLongIntegerID()
+	sql = "SELECT CAST(CAST(MAX(increment_id) AS int) + 1 AS varchar(10)) FROM " & g_storeid & "_sales_order"
+	set rs1 = dbconn.Execute(sql)
+	if not rs1.EOF then
+		new_increment_id = rs1(0)
+	end if
+	rs1.Close
+	set rs1 = nothing
+	
 	'=============PROCESS PAYMENT ================================================================================
+	
+	bPaymentProcessed = false
 	
 	if Len(store_payment_cc_type) > 0 then
 		'Process CC
@@ -256,7 +268,79 @@
 		CASE "5"
 		
 		CASE "6"
-		
+			
+			'PROCESS AUTHORIZE.NET
+			sExp = ""
+			
+			if Len(payment_cc_exp_month) > 1 then
+				sExp = payment_cc_exp_month
+			else
+				sExp = "0" & payment_cc_exp_month
+			end if
+			
+			sExp = sExp & Right(payment_cc_exp_year,2)
+			
+			dim xmlRecv
+			set xmlRecv = Server.CreateObject("Msxml2.ServerXMLHTTP")
+			
+			'http://localhost:56062/api/Authorize/AuthCapture?env=sandbox&ApiLoginID=2yX22nKC&ApiTransactionKey=2887fhN352DPEAcG&amount=10&cc_number=4111111111111111&exp_date=0718&cc_code=123&invoice_number=400011124&b_first_name=John&b_last_name=Doe&b_address=123 My St&b_city=OurTown&b_state=CA&b_zip=98004&b_country=US&s_first_name=John&s_last_name=Doe&s_address=123 My St&s_city=OurTown&s_state=CA&s_zip=90010&s_country=US
+			pStr = "env=sandbox"
+			pStr = pStr & "&ApiLoginID=" & store_payment_authorizenet_api_login_id '2yX22nKC
+			pStr = pStr & "&ApiTransactionKey=" & store_payment_authorizenet_transaction_key '2887fhN352DPEAcG
+			pStr = pStr & "&amount=" & GetTotalAmountInCart() + GetTaxInCart() +  SH_price
+			pStr = pStr & "&cc_number=" & payement_method_cc_number
+			pStr = pStr & "&exp_date=" & sExp
+			pStr = pStr & "&cc_code=" & payment_method_cc_cid
+			pStr = pStr & "&invoice_number=" & new_increment_id
+			pStr = pStr & "&b_first_name=" & shopper_billing_firstname
+			pStr = pStr & "&b_last_name=" & shopper_billing_lastname
+			pStr = pStr & "&b_address=" & shopper_billing_address
+			pStr = pStr & "&b_city=" & shopper_billing_city
+			pStr = pStr & "&b_state=" & shopper_billing_state
+			pStr = pStr & "&b_zip=" & shopper_billing_zip
+			pStr = pStr & "&b_country=" & shopper_billing_country
+			pStr = pStr & "&s_first_name=" & shopper_shipping_firstname
+			pStr = pStr & "&s_last_name=" & shopper_shipping_lastname
+			pStr = pStr & "&s_address=" & shopper_shipping_address
+			pStr = pStr & "&s_city=" & shopper_shipping_city
+			pStr = pStr & "&s_state=" & shopper_shipping_state
+			pStr = pStr & "&s_zip=" & shopper_shipping_zip
+			pStr = pStr & "&s_country=" & shopper_shipping_country
+			
+			xmlRecv.open "POST", "http://app.olivecommerce.com/payment/api/Authorize/AuthCapture?" & pStr, false
+
+			xmlRecv.setRequestHeader "Content-Type", "application/x-www-form-urlencoded"
+			xmlRecv.setTimeouts 5000, 5000, 15000, 15000
+
+			xmlRecv.send
+			pResult = xmlRecv.responseText
+			
+			if Len(pResult) > 0 then
+			
+				ar_result = Split(pResult, "::")
+				
+				
+				if ar_result(0) = "S" then
+					'Success Transaction
+					transId = ar_result(1)
+					responseCode = ar_result(2)
+					message_code = ar_result(3)
+					message_description = ar_result(4)
+					authCode = ar_result(5)
+					
+					bPaymentProcessed = true
+					
+				end if
+				
+				if ar_result(0) = "F" then
+					'Failed Transaction
+					errorCode = ar_result(1)
+					errorText = ar_result(2)
+				end if
+				
+				
+			end if
+			
 		CASE "91"
 		
 		CASE ELSE
@@ -265,7 +349,7 @@
 	
 	end if
 	'=============ORDER================================================================================
-	new_order_id = GetUniqueLongIntegerID()
+	
 	str_purchasedate = Now()
 	
 	Set rsUpdate = Server.CreateObject("ADODB.Recordset")
@@ -280,6 +364,7 @@
 	end with
 	
 	rsUpdate("order_id") = new_order_id
+	rsUpdate("increment_id") = new_increment_id
 	rsUpdate("shopper_id") = Session("shopper_id")
 	rsUpdate("shopper_email") = shopper_email
 	rsUpdate("shopper_firstname") = shopper_firstname
@@ -297,11 +382,11 @@
 	rsUpdate("BillCompany") = shopper_billing_company
 	rsUpdate("BillFirstName") = shopper_billing_firstname
 	rsUpdate("BillLastName") = shopper_billing_lastname
-	rsUpdate("BillAddress") = shopper_billing_lastname
-	rsUpdate("BillCity") = shopper_billing_lastname
-	rsUpdate("BillState") = shopper_billing_lastname
-	rsUpdate("BillZip") = shopper_billing_lastname
-	rsUpdate("BillCountry") = shopper_billing_lastname
+	rsUpdate("BillAddress") = shopper_billing_address
+	rsUpdate("BillCity") = shopper_billing_city
+	rsUpdate("BillState") = shopper_billing_state
+	rsUpdate("BillZip") = shopper_billing_zip
+	rsUpdate("BillCountry") = shopper_billing_country
 	rsUpdate("BillPhone") = shopper_billing_phone
 	
 	rsUpdate("shipping_address_id") = shipping_address_id
@@ -323,19 +408,19 @@
 	  rsUpdate("CardName") = shopper_billing_firstname & " " & shopper_billing_lastname
 	end if
 	
-	rsUpdate("CardNumber") = "" '<------ TODO
+	rsUpdate("CardNumber") = Right(payement_method_cc_number,4) '<------ TODO
 	rsUpdate("CardExpirationMonth") = payment_cc_exp_month
 	rsUpdate("CardExpirationYear") = payment_cc_exp_year
 	rsUpdate("cvv_info") = "" '<------ TODO
-	rsUpdate("AuthNumber") = order_trans_number
-	rsUpdate("RefNumber") = order_ref_number
+	rsUpdate("AuthNumber") = authCode
+	rsUpdate("RefNumber") = transId
 	rsUpdate("CVV2_flag") = 0 '<------ TODO
 	rsUpdate("AVS_flag") = 0 '<------ TODO
-	rsUpdate("CybercashResponse") = "" '<------ TODO
+	rsUpdate("CybercashResponse") = message_code '<------ TODO
 	
 	rsUpdate("order_price_group") = "D" '<------ TODO
 	
-	rsUpdate("order_taxable") = 0 '<------ TODO
+	rsUpdate("order_taxable") = 1 '<------ TODO
 	rsUpdate("order_tax_rate") = 0 '<------ TODO
 	rsUpdate("Tax") = GetTaxInCart()
 	

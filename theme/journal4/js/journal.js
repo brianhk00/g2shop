@@ -608,7 +608,16 @@ Journal.enableSelectOptionAsButtonsList = function () {
                 var $this = $(this);
                 var $input = $this.find('input');
                 var $img = Journal.isOC2 ? ($this.find('img').clone().wrap('<p />').parent()) : $this.find('label');
-                html += '<li class="hint--top" data-hint="' + $this.find('img').attr('alt') + '" data-value="' + $input.val() + '"><span>' + $img.html() + '</span></li>';
+                //html += '<li class="hint--top" data-hint="' + $this.find('img').attr('title') + '" data-value="' + $input.val() + '"><span>' + $img.html() + '</span><br><span style="font-size:11px;text-align:center">' + $this.find('img').attr('alt') + '</span></li>';
+				//html += '<li class="hint--top3" data-hint="' + $this.find('img').attr('title') + '" data-value="' + $input.val() + '"><span><a class="tooltip2">' + $img.html() + '<span>...</span></a></span><br><span style="font-size:11px;text-align:center">' + $this.find('img').attr('alt') + '</span>';
+				html += '<li class="hint--top3" data-hint="' + $this.find('img').attr('title') + '" data-value="' + $input.val() + '"><span><a class="tooltip2">' + $img.html();
+				html +='<div>';
+				html +='<table border=0><tr><td><img src="' + $this.find('img').attr('src') + '" width="200"></td></tr><tr><td>' + $this.find('img').attr('title') + '</td></tr></table>';
+				html +='</div>';
+				html +='</a></span>';
+				html +='<br><span style="font-size:11px;text-align:center">' + $this.find('img').attr('alt') + '</span>'
+				//html += '<span>.....</span>';
+				html += '</li>'
             });
         }
         html += '</ul>';
@@ -646,10 +655,12 @@ Journal.enableSelectOptionAsButtonsList = function () {
                 }
             });
         }
-
+		
+		/*
         if (Journal.updatePrice) {
             Journal.updateProductPrice();
         }
+		*/
     });
 };
 

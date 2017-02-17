@@ -1,0 +1,491 @@
+<style>
+.oc2 fieldset label {
+    width: 100%;
+}
+.oc2 fieldset label + div, .oc2 fieldset label + input.form-control {
+    width: 100%;
+}
+</style>
+<div class="container">
+<div class="row">
+	<!--Middle Part Start-->
+	<div id="content" class="col-sm-12">
+		<h1 class="title">Checkout</h1>
+		<form  id="checkout-form" method="post">
+		<div class="row">
+			<div class="col-sm-4">
+				<div class="panel panel-default">
+					<div class="panel-heading">
+						<h4 class="panel-title"><i class="fa fa-book"></i> Billing Information</h4>
+					</div>
+					<div class="panel-body">
+						<div class="form-group required">
+							<select class="form-control input-sm" id="billing_address_id" name="billing_address_id">
+							<%
+								sql = "SELECT * FROM " & g_storeid & "_shopper WHERE shopper_id = '" & Session("shopper_id") & "'"
+								set rsShopper = dbconn.Execute(sql)
+								if not rsShopper.EOF then
+									shopper_billing_firstname = rsShopper("billing_firstname")
+									shopper_billing_lastname = rsShopper("billing_lastname")
+									shopper_billing_address = rsShopper("Address")
+									shopper_billing_city = rsShopper("City")
+									shopper_billing_state = rsShopper("State")
+									shopper_billing_zip = rsShopper("ZipCode")
+									shopper_billing_country = rsShopper("Country")
+									shopper_billing_phone = rsShopper("Phone")
+							%>
+							<option value="0"><%=shopper_billing_firstname%>&nbsp;<%=shopper_billing_lastname%>&nbsp;<%=shopper_billing_address%>&nbsp;<%=shopper_billing_city%>,&nbsp;<%=shopper_billing_state%>&nbsp;<%=shopper_billing_zip%>&nbsp;<%=shopper_billing_country%></option>
+							<%
+								end if
+							%>
+							<%
+								sql = "SELECT * FROM " & g_storeid & "_shopper_billing_address WHERE billing_shopper_id = '" & Session("shopper_id") & "'"
+								set rs = dbconn.Execute(sql)
+								do while not rs.EOF
+									alt_address_id = rs("billing_address_id")
+									alt_shopper_id = rs("billing_shopper_id")
+									alt_address_name = rs("billing_address_name")
+									alt_firstname = rs("billing_firstname")
+									alt_lastname = rs("billing_lastname")
+									alt_address = rs("billing_address")
+									alt_city = rs("billing_city")
+									alt_state = rs("billing_state")
+									alt_zip = rs("billing_zip")
+									alt_country= rs("billing_country")
+									alt_phone = rs("billing_phone")
+									alt_set_default = rs("billing_set_default")
+							%>
+							<option value="<%=alt_address_id%>" <% if alt_set_default = 1 then %>selected<%end if%>><%=alt_firstname%>&nbsp;<%=alt_lastname%>&nbsp;<%=alt_lastname%>&nbsp;<%=alt_address%>&nbsp;<%=alt_city%>,&nbsp;<%=alt_state%>&nbsp;<%=alt_zip%>&nbsp;<%=alt_country%></option>
+							<%
+									rs.MoveNext
+								loop
+								rs.Close
+								set rs = nothing
+							%>
+							<option value="new">New Address</option>
+							</select>
+						</div>
+						<fieldset id="billing_address" class="required display-hide">
+							<div class="form-group required">
+							<label for="new_billing_firstname" class="control-label">First Name</label>
+							<input type="text" class="form-control" id="new_billing_firstname" value="" name="new_billing_firstname">
+							</div>
+							<div class="form-group required">
+							<label for="new_billing_lastname" class="control-label">Last Name</label>
+							<input type="text" class="form-control" id="new_billing_lastname" value="" name="new_billing_lastname">
+							</div>
+							<div class="form-group">
+							<label for="new_billing_company" class="control-label">Company</label>
+							<input type="text" class="form-control" id="new_billing_company" value="" name="new_billing_company">
+							</div>
+							<div class="form-group required">
+							<label for="new_billing_address" class="control-label">Address </label>
+							<input type="text" class="form-control" id="new_billing_address" value="" name="new_billing_address">
+							</div>
+							<div class="form-group required">
+							<label for="new_billing_city" class="control-label">City</label>
+							<input type="text" class="form-control" id="new_billing_city" value="" name="new_billing_city">
+							</div>
+							<div class="form-group required">
+							<label for="new_billing_zip" class="control-label">Zip Code</label>
+							<input type="text" class="form-control" id="new_billing_zip" value="" name="new_billing_zip">
+							</div>
+							<div class="form-group required">
+                            <label for="new_billing_country_id" class="control-label">Country</label>
+                            <select class="form-control" id="new_billing_country_id" name="new_billing_country_id">
+							</select>
+							</div>
+							<div class="form-group required">
+                            <label for="new_billing_zone_id" class="control-label">Region / State</label>
+                            <select class="form-control" id="new_billing_zone_id" name="new_billing_zone_id">
+							</select>
+							</div>
+							<!--
+							<div class="checkbox">
+								<label>
+								<input type="checkbox" checked="checked" value="1" name="shipping_address">
+								My delivery and billing addresses are the same.</label>
+							</div>
+							-->
+						</fieldset>
+					</div>
+				</div>
+				<div class="panel panel-default">
+					<div class="panel-heading">
+						<h4 class="panel-title"><i class="fa fa-book"></i> Shipping Information</h4>
+					</div>
+					<div class="panel-body">
+						<div class="form-group required">
+							<select class="form-control input-sm" id="shipping_address_id" name="shipping_address_id">
+							<%
+								sql = "SELECT * FROM " & g_storeid & "_shopper WHERE shopper_id = '" & Session("shopper_id") & "'"
+								set rsShopper = dbconn.Execute(sql)
+								if not rsShopper.EOF then
+									
+									shopper_shipping_firstname = rsShopper("shipping_FirstName")
+									shopper_shipping_lastname = rsShopper("shipping_LastName")
+									shopper_shipping_address = rsShopper("shipping_Address")
+									shopper_shipping_city = rsShopper("shipping_City")
+									shopper_shipping_state = rsShopper("shipping_State")
+									shopper_shipping_zip = rsShopper("shipping_ZipCode")
+									shopper_shipping_country = rsShopper("shipping_Country")
+									shopper_shipping_phone = rsShopper("shipping_Phone")
+									shopper_shipping_company = rsShopper("shipping_company")
+									
+									z_shipping_country = shopper_shipping_country
+									z_shipping_state = shopper_shipping_state
+									z_shipping_postcode = shopper_shipping_zip 
+		
+							%>
+							<option value="0"><%=shopper_shipping_firstname%>&nbsp;<%=shopper_shipping_lastname%>&nbsp;<%=shopper_shipping_address%>&nbsp;<%=shopper_shipping_city%>,&nbsp;<%=shopper_shippingstate%>&nbsp;<%=shopper_shipping_zip%>&nbsp;<%=shopper_shipping_country%></option>
+							<%
+								end if
+							%>
+							<%
+								sql = "SELECT * FROM " & g_storeid & "_shopper_shipping_address WHERE shopper_id = '" & Session("shopper_id") & "'"
+								set rs = dbconn.Execute(sql)
+								do while not rs.EOF
+									alt_address_id = rs("address_id")
+									alt_shopper_id = rs("shopper_id")
+									alt_address_name = rs("address_name")
+									alt_firstname = rs("firstname")
+									alt_lastname = rs("lastname")
+									alt_address = rs("address")
+									alt_city = rs("city")
+									alt_state = rs("state")
+									alt_zip = rs("zip")
+									alt_country= rs("country")
+									alt_phone = rs("phone")
+									alt_set_default = rs("set_default")
+									alt_company = rs("company")
+									alt_address_type = rs("address_type")
+									
+									if alt_set_default = 1 then
+										z_shipping_country = alt_country
+										z_shipping_state = alt_state
+										z_shipping_postcode = alt_zip 
+									end if
+				
+							%>
+							<option value="<%=alt_address_id%>" <% if alt_set_default = 1 then %>selected<%end if%>><%=alt_firstname%>&nbsp;<%=alt_lastname%>&nbsp;<%=alt_lastname%>&nbsp;<%=alt_address%>&nbsp;<%=alt_city%>,&nbsp;<%=alt_state%>&nbsp;<%=alt_zip%>&nbsp;<%=alt_country%></option>
+							<%
+									rs.MoveNext
+								loop
+								rs.Close
+								set rs = nothing
+							%>
+							<option value="new">New Address</option>
+							</select>
+						</div>
+						<input type="hidden" id="z_country_id" value="<%=z_shipping_country%>">
+						<input type="hidden" id="z_zone_id" value="<%=z_shipping_state%>">
+						<input type="hidden" id="z_postcode" value="<%=z_shipping_postcode%>">
+						<fieldset id="shipping_address" class="required display-hide">
+							<div class="form-group required">
+							<label for="new_shipping_firstname" class="control-label">First Name</label>
+							<input type="text" class="form-control" id="new_shipping_firstname" value="" name="new_shipping_firstname">
+							</div>
+							<div class="form-group required">
+							<label for="new_shipping_lastname" class="control-label">Last Name</label>
+							<input type="text" class="form-control" id="new_shipping_lastname" value="" name="new_shipping_lastname">
+							</div>
+							<div class="form-group">
+							<label for="new_shipping_company" class="control-label">Company</label>
+							<input type="text" class="form-control" id="new_shipping_company" value="" name="new_shipping_company">
+							</div>
+							<div class="form-group required">
+							<label for="new_shipping_address" class="control-label">Address</label>
+							<input type="text" class="form-control" id="new_shipping_address" value="" name="new_shipping_address">
+							</div>
+							<div class="form-group required">
+							<label for="new_shipping_city" class="control-label">City</label>
+							<input type="text" class="form-control" id="inew_shipping_city" value="" name="new_shipping_city">
+							</div>
+							<div class="form-group required">
+							<label for="new_shipping_zip" class="control-label">Zip Code</label>
+							<input type="text" class="form-control" id="new_shipping_zip" value="" name="new_shipping_zip">
+							</div>
+							<div class="form-group required">
+                            <label for="new_shipping_country_id" class="control-label">Country</label>
+                            <select class="form-control" id="new_shipping_country_id" name="new_shipping_country_id">
+							</select>
+							</div>
+							<div class="form-group required">
+                            <label for="new_shipping_zone_id" class="control-label">Region / State</label>
+                            <select class="form-control" id="new_shipping_zone_id" name="v">
+							</select>
+							</div>
+							
+						</fieldset>
+					</div>
+				</div>
+			</div>
+			<div class="col-sm-8">
+				<div class="row">
+					<div class="col-sm-6">
+						<div class="panel panel-default">
+							<div class="panel-heading">
+								<h4 class="panel-title"><i class="fa fa-truck"></i> Shipping Method</h4>
+							</div>
+							<div class="panel-body">
+								<p>
+									Please select the preferred shipping method to use on this order.
+								</p>
+								<label for="SH" class="error" style="display:none"></label>
+								<div id = "sp_method">
+								</div>
+							</div>
+						</div>
+					</div>
+					<div class="col-sm-6">
+						<div class="panel panel-default">
+							<div class="panel-heading">
+								<h4 class="panel-title"><i class="fa fa-credit-card"></i> Payment Method</h4>
+							</div>
+							<div class="panel-body">
+								<p>
+									Please select the preferred payment method to use on this order.
+								</p>
+								<label for="payment_method" class="error" style="display:none"></label>
+								<% if Len(store_payment_cc_type) > 0 then %>
+								<div class="radio">
+									<label>
+									<input type="radio" name="payment_method" value="creditcard" id="payment_method_creditcard">
+									Credit Card</label>
+								</div>
+								<div class="row" id="payment_method_credicard_container" style="display:none;">
+									<div class="col-md-12">
+										<div class="form-group required">
+										<label for="payement_method_cc_type" class="control-label">Credit Card</label>
+										<select id="payement_method_cc_type" name="payement_method_cc_type" class="form-control" autocomplete="off">
+										<option value="">--Please Select--</option>
+										<option value="VI">Visa</option>
+										<option value="MC">MasterCard</option>
+										<option value="DI">Discover</option>
+										<option value="OT">JCB Card</option>
+										 </select>
+										</div>
+										<div class="form-group required">
+										<label for="payement_method_cc_number" class="control-label">Credit Card Number</label>
+										<input type="text" id="payement_method_cc_number" name="payement_method_cc_number" title="Credit Card Number" class="form-control" value="" autocomplete="off">
+										</div>
+										<div class="form-group required">
+										<label for="input-payment-company" class="control-label">Exp. Date</label>
+										<div style="display:block;margin-bottom: 45px;">
+											<select id="payment_cc_exp_month" style="width: 140px;float:left;margin-right:4%" name="payment_cc_exp_month" class="form-control">
+												<option value="" selected="selected">Month</option>
+												<option value="1">01 - January</option>
+												<option value="2">02 - February</option>
+												<option value="3">03 - March</option>
+												<option value="4">04 - April</option>
+												<option value="5">05 - May</option>
+												<option value="6">06 - June</option>
+												<option value="7">07 - July</option>
+												<option value="8">08 - August</option>
+												<option value="9">09 - September</option>
+												<option value="10">10 - October</option>
+												<option value="11">11 - November</option>
+												<option value="12">12 - December</option>
+											</select>
+											<select id="payment_cc_exp_year" style="width: 103px;float:left;margin-right:4%" name="payment_cc_exp_year" class="form-control">
+												<option value="" selected="selected">Year</option>
+												<option value="2011">2011</option>
+												<option value="2012">2012</option>
+												<option value="2013">2013</option>
+												<option value="2014">2014</option>
+												<option value="2015">2015</option>
+												<option value="2016">2016</option>
+												<option value="2017">2017</option>
+												<option value="2018">2018</option>
+												<option value="2019">2019</option>
+												<option value="2020">2020</option>
+												<option value="2021">2021</option>
+											</select>
+										</div>
+										</div>
+										<div class="form-group required">
+										<label for="input-payment-company" class="control-label">Card ID</label>
+										<input type="text" id="payment_method_cc_cid" name="payment_method_cc_cid" title="Credit Card Number" class="form-control" value="" autocomplete="off">
+										</div>
+									</div>
+								</div>
+								<% end if %>
+								<% if store_payment_check_enabled = "1" then %>
+								<div class="radio">
+									<label>
+									<input type="radio" name="payment_method" value="check" id="payment_method_check">
+									<%=store_payment_check_title%></label>
+								</div>
+								<% end if %>
+								<% if store_payment_purchase_order_enabled = "1" then %>
+								<div class="radio">
+									<label>
+									<input type="radio" name="payment_method" value="purchaseorder" id="payment_method_purchaseorder">
+									<%=store_payment_purchase_order_title%></label>
+								</div>
+								<div class="row" id="payment_method_purchaseorder_container" style="display:none;">
+									<div class="col-md-12">
+										<div class="form-group required">
+										<label for="input-payment-company" class="control-label">P.O. Number</label>
+										<input type="text" id="payment_method_purchaseorder_number" name="payment_method_purchaseorder_number" title="Purchase Order Number" class="form-control" value="" autocomplete="off">
+										</div>
+									</div>
+								</div>
+								<% end if %>
+								
+								
+								<div class="radio">
+									<label>
+									<input type="radio" name="payment_method" value="paypal" id="payment_method_paypal">
+									Paypal</label>
+								</div>
+								<%
+									credit_amount = 0
+									sql = "SELECT end_transaction FROM " & g_storeid & "_credit_history WHERE customer_id = '" & Session("shopper_id") & "' ORDER BY credit_history_id DESC"
+									Set rsCredit = dbconn.Execute(sql)
+									if not rsCredit.EOF then
+										credit_amount = rsCredit(0)
+									end if
+									rsCredit.Close
+								%>
+								<%
+									if credit_amount > 0 then
+								%>
+								<div class="checkbox">
+									<label>
+									<input type="checkbox" name="payment_method_store_credit" value="1" id="payment_method_store_credit" data-amount="<%=credit_amount%>">
+									Use Credit ($<%=FormatNumber(credit_amount,2)%> available)</label>
+								</div>
+								<%
+									end if
+								%>
+							</div>
+						</div>
+					</div>
+					<div class="col-sm-12">
+						<div class="panel panel-default">
+							<div class="panel-heading">
+								<h4 class="panel-title"><i class="fa fa-shopping-cart"></i> Shopping cart</h4>
+							</div>
+							<div class="panel-body">
+								<div class="table-responsive">
+									<table class="table table-bordered">
+									<thead>
+									<tr>
+										<td class="text-center">
+											Image
+										</td>
+										<td class="text-left">
+											Product Name
+										</td>
+										<td class="text-left">
+											Quantity
+										</td>
+										<td class="text-right">
+											Unit Price
+										</td>
+										<td class="text-right">
+											Total
+										</td>
+									</tr>
+									</thead>
+									<tbody>
+									<!--#INCLUDE FILE="../../../core/checkout/include_cart_loop_start.phtml"-->
+									<tr>
+										<td class="text-center">
+											<a href="product.html"><img class="img-thumbnail" src="<%=ssImgInCart%>" width="50"></a>
+										</td>
+										<td class="text-left">
+											<%=g_cartProductName%>
+											<% if Len(g_cartOptions) > 0 then %>
+											<br><%=g_cartOptions%>
+											<% end if %>
+										</td>
+										<td class="text-right">
+											<%=g_cartOrderQuantity%>
+										</td>
+										<td class="text-right">
+											$<%=g_cartProductUnitPrice%>
+										</td>
+										<td class="text-right">
+											$<%=g_cartProductUnitTotal%>
+										</td>
+									</tr>
+									<!--#INCLUDE FILE="../../../core/checkout/include_cart_loop_end.phtml"-->
+									</tbody>
+									<tfoot>
+									<tr>
+										<td class="text-right" colspan="4">
+											<strong>Sub-Total:</strong>
+										</td>
+										<td class="text-right" id="cart_total_sub_total_amount">
+											$<%=FormatNumber(GetTotalAmountInCart,2)%>
+										</td>
+									</tr>
+									<tr>
+										<td class="text-right" colspan="4">
+											<strong>Shipping & Handling:</strong>
+										</td>
+										<td class="text-right" id="cart_total_sh_total_amount">
+											$0.00
+										</td>
+									</tr>
+									<tr>
+										<td class="text-right" colspan="4">
+											<strong>Tax:</strong>
+										</td>
+										<td class="text-right" id="cart_total_tax_total_amount">
+											$<%=FormatNumber(GetTaxInCart(),2) %>
+										</td>
+									</tr>
+									<tr id="store_credit">
+										<td class="text-right" colspan="4">
+											<strong><%=a("Store Credit")%>:</strong>
+										</td>
+										<td class="text-right" id="cart_total_store_credit_amount">
+											$0.00
+										</td>
+									</tr>
+									<tr>
+										<td class="text-right" colspan="4">
+											<strong>Total:</strong>
+										</td>
+										<td class="text-right" id="cart_total_grand_total_amount">
+											$<%=FormatNumber(GetGrandTotalInCart(),2) %>
+										</td>
+									</tr>
+									</tfoot>
+									</table>
+								</div>
+							</div>
+						</div>
+					</div>
+					<div class="col-sm-12">
+						<div class="panel panel-default">
+							<div class="panel-heading">
+								<h4 class="panel-title"><i class="fa fa-pencil"></i> Add Comments About Your Order</h4>
+							</div>
+							<div class="panel-body">
+								<textarea rows="4" class="form-control" id="confirm_comment" name="comments"></textarea>
+								<br>
+								<!--
+								<label class="control-label" for="confirm_agree">
+								<input type="checkbox" checked="checked" value="1" required="" class="validate required" id="confirm_agree" name="confirm agree">
+								<span>I have read and agree to the <a class="agree" href="#"><b>Terms &amp; Conditions</b></a></span></label>
+								-->
+								<div class="buttons">
+									<div class="pull-right">
+										<input type="submit" class="btn btn-primary" data-loading-text="Processing Order..." id="button-confirm" value="Place Order">
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+		</form>
+	</div>
+	<!--Middle Part End -->
+</div>
+</div>

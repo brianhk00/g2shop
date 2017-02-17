@@ -1,0 +1,518 @@
+<%@ Language=VBScript %>
+<%
+	Response.CodePage = 65001
+	Response.CharSet = "UTF-8"
+%>
+<!-- #INCLUDE File="local/local.phtml" -->
+<!-- #INCLUDE File="../util/xt_func_util.phtml" -->
+<!-- #INCLUDE File="../util/xt_func_misc_option.phtml" -->
+<!-- #INCLUDE File="../util/xt_func_rc4.phtml" -->
+<!-- #INCLUDE File="include/i_login.phtml" -->
+<!-- #include file="aspuploader/include_aspuploader.asp" -->
+<%
+	option_id = Trim(Request("option_id"))
+	attribute_id = Trim(Request("attribute_id"))
+	
+	sql = "SELECT * FROM " & g_storeid & "_eav_attribute_option WHERE option_id = " & option_id
+
+	Set rsOption = dbconn.Execute(sql)
+
+	if not rsOption.EOF then
+		option_name = rsOption("option_name")
+		display_name = rsOption("display_name")
+		option_description = rsOption("option_description")
+		sort_order = rsOption("sort_order")
+		option_color_swatch = rsOption("option_color_swatch")
+		option_mfg_map = rsOption("option_mfg_map")
+	else
+		option_name = ""
+		display_name = ""
+		option_description = ""
+		sort_order = "0"
+		option_color_swatch = ""
+		option_mfg_map = ""
+		
+	end if
+
+	rsOption.Close
+	set rsOption = nothing
+	
+	if Len(Trim(Request("option_color_swatch"))) > 0 then
+		option_color_swatch = Trim(Request("option_color_swatch"))
+	end if
+	
+
+%>
+<!--#INCLUDE FILE="include/doctype.phtml"-->
+<head>
+<!--#INCLUDE FILE="include/head.phtml"-->
+<!-- BEGIN PAGE LEVEL PLUGINS -->
+<link rel="stylesheet" href="assets/plugins/jquery-ui/jquery-ui-1.10.4.custom.min.css" />
+<!-- END PAGE LEVEL PLUGINS -->
+<!--#INCLUDE FILE="include/head_bottom.phtml"-->
+</head>
+
+<body class="page-container-bg-solid">
+<div class="page-wrapper">
+	<div class="page-wrapper-row">
+		<div class="page-wrapper-top">
+			<!--#INCLUDE FILE="include/header.phtml"-->
+		</div>
+	</div>
+	<div class="page-wrapper-row full-height">
+		<div class="page-wrapper-middle">
+			<!-- BEGIN CONTAINER -->
+			<div class="page-container">
+				<!-- BEGIN CONTENT -->
+				<div class="page-content-wrapper">
+					<!-- BEGIN CONTENT BODY -->
+					<!-- BEGIN PAGE HEAD-->
+					<!-- END PAGE HEAD-->
+					<!-- BEGIN PAGE CONTENT BODY -->
+					<div class="page-content">
+						<div class="container-fluid">
+							<!-- BEGIN PAGE CONTENT INNER -->
+							<div class="page-content-inner">
+								<div class="row">
+									<div class="col-md-12">
+										<form id="form_edit_1" class="form-horizontal form-row-seperated" method="post">
+										<input type="hidden" name="option_id" id="option_id" value="<%=option_id%>">
+										<input type="hidden" name="attribute_id" id="attribute_id" value="<%=attribute_id%>">
+											<div class="portlet">
+												<div class="portlet-title">
+													<div class="caption">
+													<i class="fa fa-shopping-cart"></i>
+													<%
+													if option_id ="0" then
+														Response.Write("New Option")
+													else
+														Response.Write(option_name)
+													end if
+													%>
+													</div>
+													<div class="actions btn-set">
+													
+														<button type="button" onclick="location.href='catalog_attribute_detail.phtml?id=<%=attribute_id%>';" name="back" class="btn btn-default">
+															<i class="fa fa-angle-left"></i> Back
+														</button>
+														<button class="btn btn-success" onclick="savebutton='1';">
+															<i class="fa fa-check"></i> Save
+														</button>
+														<button class="btn btn-success" onclick="savebutton='0';">
+															<i class="fa fa-check-circle"></i> Save & Continue Edit
+														</button>
+														<div class="btn-group">
+															<a class="btn btn-success dropdown-toggle" href="javascript:;" data-toggle="dropdown">
+																<i class="fa fa-share"></i> More
+																<i class="fa fa-angle-down"></i>
+															</a>
+															<div class="dropdown-menu pull-right">
+																<li>
+																	<a href="#"> Delete </a>
+																</li>
+															</div>
+														</div> 
+													</div>
+												</div>
+												<div class="alert alert-danger display-hide">
+												<button class="close" data-close="alert"></button> You have some form errors. Please check below. 
+												</div>
+												<div class="alert alert-success display-hide">
+												<button class="close" data-close="alert"></button> The information has been saved.
+												</div>
+												<div class="alert alert-warning display-hide">
+												<button class="close" data-close="alert"></button> The information has not been saved properly. Please contact system administrator.
+												</div>
+												<div class="portlet-body">
+													<div class="tabbable-bordered">
+														<ul class="nav nav-tabs">
+															<li class="active">
+																<a href="#panel_tab4_example1" data-toggle="tab">
+																	General
+																</a>
+															</li>
+														</ul>
+														<div class="tab-content">
+															<div class="tab-pane active" id="panel_tab4_example1">
+																<div class="form-group">
+																	<label class="col-sm-2 control-label" for="option_name">
+																		Option Name <span class="symbol required">*</span> 
+																	</label>
+																	<div class="col-sm-5">
+																		<input type="text" placeholder="" id="option_name" name="option_name" class="form-control input-sm" value="<%=option_name%>">
+																	</div>
+																</div>
+																<div class="form-group">
+																	<label class="col-sm-2 control-label" for="display_name">
+																		Display Name <span class="symbol required">*</span> 
+																	</label>
+																	<div class="col-sm-5">
+																		<input type="text" placeholder="" id="display_name" name="display_name" class="form-control input-sm" value="<%=display_name%>">
+																	</div>
+																</div>
+																<div class="form-group">
+																	<label class="col-sm-2 control-label" for="option_description">
+																		Description <span class="symbol required">*</span> 
+																	</label>
+																	<div class="col-sm-5">
+																		<input type="text" placeholder="" id="option_description" name="option_description" class="form-control input-sm" value="<%=option_description%>">
+																	</div>
+																</div>
+																<div class="form-group">
+																	<label class="col-sm-2 control-label" for="sort_order">
+																		Sort Order <span class="symbol required">*</span> 
+																	</label>
+																	<div class="col-sm-2">
+																		<input type="text" placeholder="" id="sort_order" name="sort_order" class="form-control input-sm" value="<%=sort_order%>">
+																	</div>
+																</div>
+																<div class="form-group">
+																	<label class="col-sm-2 control-label" for="option_mfg_map">
+																		Manufacturer <span class="symbol required">*</span> 
+																	</label>
+																	<div class="col-sm-4">
+																		<select id="option_mfg_map" name="option_mfg_map" class="form-control form-filter input-sm">
+																			<option value="">Select...</option>
+																			<%
+																				sql = "SELECT * FROM " & g_storeid & "_mfg ORDER BY mfg_name"
+																				set rsM = dbconn.Execute(sql)
+																				do while not rsM.EOF
+																			%>
+																			<option value="<%=rsM("mfg_id")%>" <% if option_mfg_map =rsM("mfg_id") then%>selected<% end if %> ><%=rsM("mfg_name")%></option>
+																			<%
+																					rsM.MoveNext
+																				loop
+																				rsM.Close
+																				set rsM = nothing
+																			%>
+																		</select>
+																	</div>
+																</div>
+																<input type="hidden" name="option_color_swatch" id="option_color_swatch" value="<%=option_color_swatch%>">
+																<div class="form-group">
+																	<label class="col-sm-2 control-label" for="option_color_swatch">
+																		Image<span class="symbol required"></span>
+																	</label>
+																	<div class="col-sm-9">
+																		
+																		<%
+																			Dim uploader
+																			Set uploader=new AspUploader
+																			uploader.Name="myuploader"
+																			
+																			uploader.MaxSizeKB=5
+																			uploader.InsertText="Upload File (Max 5M)"
+																			uploader.AllowedFileExtensions="*.jpg,*.png,*.gif"
+																			uploader.MultipleFilesUpload=false
+																			
+																			uploader.SaveDirectory="../media/colorswatch"
+																			
+																			uploader.render()
+																		%>
+																		<br><br>
+																		<% if Len(option_color_swatch) > 0 then %>
+																		<img src="/media/colorswatch/<%=option_color_swatch%>">
+																		<% end if %>
+																	</div>
+																</div>
+															</div>
+														</div>
+													</div>
+												</div>
+											</div>
+										</form>
+									</div>
+								</div>
+							</div>
+							<!-- END PAGE CONTENT INNER -->
+						</div>
+					</div>
+					<!-- END PAGE CONTENT BODY -->
+					<!-- END CONTENT BODY -->
+				</div>
+				<!-- END CONTENT -->
+			</div>
+			<!-- END CONTAINER -->
+		</div>
+	</div>
+	<div class="page-wrapper-row">
+		<div class="page-wrapper-bottom">
+			<!--#INCLUDE FILE="include/footer.phtml"-->
+		</div>
+	</div>
+</div>
+<div id="dialog-confirm" title="Delete Customer?" style="display:none;">
+  <p><span class="ui-icon ui-icon-alert" style="float:left; margin:0 7px 20px 0;"></span>This customer will be permanently deleted and cannot be recovered. Are you sure?</p>
+</div>
+<div class="modal fade" id="stack2" tabindex="-1" data-width="960" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+<!--#INCLUDE FILE="include/js.phtml"-->
+<!-- BEGIN PAGE LEVEL PLUGINS -->
+<script src="assets/plugins/jquery-ui/jquery-ui-1.10.1.custom.min.js" type="text/javascript"></script>
+<script src="../assets/global/plugins/jquery-validation/js/jquery.validate.min.js" type="text/javascript"></script>
+<script src="../assets/global/plugins/jquery-validation/js/additional-methods.min.js" type="text/javascript"></script>
+<!-- END PAGE LEVEL PLUGINS -->
+
+<!-- BEGIN PAGE LEVEL SCRIPTS -->
+<script language="javascript">
+var savebutton = "1";
+</script>
+<script language="javascript">
+var FormValidator = function () {
+	
+	var runValidator1 = function() {
+		// for more info visit the official plugin documentation: 
+			// http://docs.jquery.com/Plugins/Validation
+
+			var form1 = $('#form_edit_1');
+			var error1 = $('.alert-danger', form1);
+			var success1 = $('.alert-success', form1);
+			var warning1 = $('.alert-warning', form1);
+
+			form1.validate({
+				errorElement: 'span', //default input error message container
+				errorClass: 'help-block help-block-error', // default input error message class
+				focusInvalid: false, // do not focus the last invalid input
+				ignore: "",  // validate all fields including form hidden input
+				//RULES
+				rules: {
+					new_email: {
+						required: true,
+						email: true,
+						remote:
+						{
+						  url: 'util/check_duplicate_email_address.phtml',
+						  type: "post"
+						}
+
+					},
+					shopper_firstname: {
+						minlength: 3,
+						required: true
+					},
+					shopper_lastname: {
+						minlength: 3,
+						required: true
+					},
+					shopper_password_new: {
+						minlength: 8
+					}
+				},
+				
+				messages: {
+					new_email: {
+						required: "Please enter a valid email address",
+						remote: "The specified email address is already registered."
+					}
+				},
+				
+				invalidHandler: function (event, validator) { //display error alert on form submit              
+					success1.hide();
+					error1.show();
+					App.scrollTo(error1, -200);
+				},
+
+				errorPlacement: function (error, element) { // render error placement for each input type
+					var cont = $(element).parent('.input-group');
+					if (cont) {
+						cont.after(error);
+					} else {
+						element.after(error);
+					}
+				},
+
+				highlight: function (element) { // hightlight error inputs
+
+					$(element)
+						.closest('.form-group').addClass('has-error'); // set error class to the control group
+				},
+
+				unhighlight: function (element) { // revert the change done by hightlight
+					$(element)
+						.closest('.form-group').removeClass('has-error'); // set error class to the control group
+				},
+
+				success: function (label) {
+					label
+						.closest('.form-group').removeClass('has-error'); // set success class to the control group
+				},
+
+				submitHandler: function (form) {
+					success1.hide();
+					error1.hide();
+					warning1.hide();
+					
+					$.ajax({
+						type: "POST",
+						url: "api/sp_backoffice_member_update.phtml",
+						data: $("#form_edit_1").serialize(),
+						success: function() {
+							window.scrollTo(0,0);
+							success1.show();
+							
+							if (savebutton == "1")
+							{
+								setTimeout(function () {
+										window.location.replace("backoffice_members.phtml");
+									}, 500);
+							}
+						},
+						error: function() {
+							warning1.show();
+						}
+					});
+				}
+			});
+
+
+	};
+	
+	/*
+	var runValidator1 = function () {
+		var form1 = $('#form');
+		var errorHandler1 = $('#errorHandler1', form1);
+		var errorHandler2 = $('#errorHandler2', form1);
+		var successHandler1 = $('.successHandler', form1);
+		$.validator.addMethod("FullDate", function () {
+			//if all values are selected
+			if ($("#dd").val() != "" && $("#mm").val() != "" && $("#yyyy").val() != "") {
+				return true;
+			} else {
+				return false;
+			}
+		}, 'Please select a day, month, and year');
+		$('#form').validate({
+			errorElement: "span", // contain the error msg in a span tag
+			errorClass: 'help-block',
+			errorPlacement: function (error, element) { // render error placement for each input type
+				if (element.attr("type") == "radio" || element.attr("type") == "checkbox") { // for chosen elements, need to insert the error after the chosen container
+					error.insertAfter($(element).closest('.form-group').children('div').children().last());
+				} else if (element.attr("name") == "dd" || element.attr("name") == "mm" || element.attr("name") == "yyyy") {
+					error.insertAfter($(element).closest('.form-group').children('div'));
+				} else {
+					error.insertAfter(element);
+					// for other inputs, just perform default behavior
+				}
+			},
+			ignore: "",
+			
+			//RULES
+			rules: {
+				new_email: {
+					required: true,
+					email: true,
+					remote:
+					{
+					  url: 'util/check_duplicate_email_address.phtml',
+					  type: "post"
+					}
+
+				},
+				shopper_firstname: {
+					minlength: 3,
+					required: true
+				},
+				shopper_lastname: {
+					minlength: 3,
+					required: true
+				},
+				shopper_password_new: {
+					minlength: 8
+				}
+			},
+			
+			messages: {
+				new_email: {
+					required: "Please enter a valid email address",
+					remote: "The specified email address is already registered."
+				}
+			},
+			//END OF RULES
+			
+			invalidHandler: function (event, validator) { //display error alert on form submit
+				successHandler1.hide();
+				errorHandler1.show();
+			},
+			highlight: function (element) {
+				$(element).closest('.help-block').removeClass('valid');
+				$(element).closest('.form-group').removeClass('has-success').addClass('has-error').find('.symbol').removeClass('ok').addClass('required');
+			},
+			unhighlight: function (element) { 
+				$(element).closest('.form-group').removeClass('has-error');
+			},
+			success: function (label, element) {
+				label.addClass('help-block valid');
+				$(element).closest('.form-group').removeClass('has-error').addClass('has-success').find('.symbol').removeClass('required').addClass('ok');
+			},
+			submitHandler: function (form) {
+				successHandler1.hide();
+				errorHandler1.hide();
+				errorHandler2.hide();
+				$.ajax({
+					type: "POST",
+					url: "api/sp_customer_manage_customer_update.phtml",
+					data: $("#form").serialize(),
+					success: function() {
+						window.scrollTo(0,0);
+						successHandler1.show();
+						setTimeout(function () {
+							window.location.replace("customer_manage_customer.phtml");
+						}, 1000);
+					},
+					error: function() {
+						errorHandler2.show();
+					}
+				});
+			}
+		});
+	};
+	*/
+	return {
+		//main function to initiate template pages
+		init: function () {
+			runValidator1();
+		}
+	};
+}();
+</script>
+<script>
+	jQuery(document).ready(function() {
+		//Main.init();
+		FormValidator.init();
+		
+		$('#DeleteCust').on('click', function () {
+			$( "#dialog-confirm" ).dialog({
+			  resizable: false,
+			  width:360,
+			  height:180,
+			  modal: true,
+			  buttons: {
+				"Delete item": function() {
+					$( this ).dialog( "close" );
+					location.replace('api/tp_customer_update.phtml?shopper_id=<%=shopper_id%>')
+				},
+				Cancel: function() {
+					$( this ).dialog( "close" );
+				}
+			  }
+			});
+		});
+		
+	});
+	
+	
+</script>
+
+<script type='text/javascript'>
+function CuteWebUI_AjaxUploader_OnTaskComplete(task)
+{
+	//alert(task.FileName + " is uploaded!");
+	jQuery("#option_color_swatch").val(task.FileName);
+	//alert(jQuery("#slider_image").val());
+	//event.preventDefault();
+	
+}
+</script>
+
+<!-- END PAGE LEVEL SCRIPTS -->
+</body>
+</html>

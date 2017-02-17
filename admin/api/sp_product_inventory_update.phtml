@@ -1,0 +1,40 @@
+%
+	Response.CodePage = 65001
+	Response.CharSet = "UTF-8"
+%>
+<%response.Expires=-1%>
+<!-- #INCLUDE File="../local/local.phtml" -->
+<!-- #INCLUDE File="../util/xt_func_util.phtml" -->
+<!-- #INCLUDE File="../util/xt_func_string.phtml" -->
+<%
+	'--POST DATA------------------------------------------
+	mode = Trim(Request("mode"))
+	inventory_id = Trim(Request("inventory_id"))
+	
+	if mode = "uq" then
+		qty = Trim(Request("qty"))
+		
+		if IsNumeric(qty) then
+		else
+			qty = "0"
+		end if
+		sql2 = "UPDATE " & g_storeid & "_product_inventory SET inventory_qty = " & qty & " WHERE inventory_id='" & inventory_id & "'"
+		dbconn.Execute(sql2)
+		
+		sql2 = "UPDATE " & g_storeid & "_product SET stock = " & qty & " WHERE pf_id='" & inventory_id & "'"
+		dbconn.Execute(sql2)
+		
+	end if
+	
+	if mode = "ua" then
+		avail = Trim(Request("avail"))
+		if avail = "1" then
+			sql2 = "UPDATE " & g_storeid & "_product_inventory SET inventory_avail = 1 WHERE inventory_id='" & inventory_id & "'"
+			dbconn.Execute(sql2)
+		else
+			sql2 = "UPDATE " & g_storeid & "_product_inventory SET inventory_avail = 0 WHERE inventory_id='" & inventory_id & "'"
+		dbconn.Execute(sql2)
+		end if
+	end if
+	
+%>

@@ -10,478 +10,102 @@
 <!--#INCLUDE File="../../util/xt_func_rc4.phtml" -->
 <!--#INCLUDE FILE="../../util/xt_func_shoppingcart.phtml"-->
 <%
-	sessionID = Request("sessionID")
-	sessionID = FilterSessionString(sessionID)
-
-	if Len(sessionID) > 0 then
-		Session("SESSIONKEY") = sessionID
-	else
-		if Len(Session("SESSIONKEY")) > 0 then
-			'session key exist
-		else
-			'no key information...
-			Response.Redirect Session("StoreURL") & "/index.phtml"
-		end if
-	end if
-%>
-<%
-	Session("shopper_id") = GetSession(Session("SESSIONKEY"), "sCID")
-	Session("Shopper_Name") = GetSession(Session("SESSIONKEY"), "sCName")
-	Session("PARTNER") = GetSession(Session("SESSIONKEY"), "sAffID")
-	Session("REFERER_URL") = GetSession(Session("SESSIONKEY"), "sREFERER")
-%>
-<%
-
-	useRecaptcha = false
-	USE_RECAPTCHA_AT_REGISTER = GetSettingValue("USE_RECAPTCHA_AT_REGISTER", "0")
-	if USE_RECAPTCHA_AT_REGISTER = "1" then
-		useRecaptcha = true
-	end if
-
-	recaptcha_challenge_field  = Request("recaptcha_challenge_field")
-	recaptcha_response_field   = Request("recaptcha_response_field")
-	recaptcha_public_key       = "6LcqTcESAAAAALNsL8u5FDY5u0YkVaa5xhtMlnOq" ' your public key
-	recaptcha_private_key      = "6LcqTcESAAAAAGwbbnGixZKuwTJig4lru90UQ6Sr" ' your private key
-
-	' returns the HTML for the widget
-	function recaptcha_challenge_writer()
-		recaptcha_challenge_writer = _
-		"<script type=""text/javascript"">" & _
-		"var RecaptchaOptions = {" & _
-		"   theme : 'red'," & _
-		"   tabindex : 0" & _
-		"};" & _
-		"</script>" & _
-		"<script type=""text/javascript"" src=""http://www.google.com/recaptcha/api/challenge?k=" & recaptcha_public_key & """></script>" & _
-		"<noscript>" & _
-		"<iframe src=""http://www.google.com/recaptcha/api/noscript?k=" & recaptcha_public_key & """ frameborder=""1""></iframe><>" & _
-		"<textarea name=""recaptcha_challenge_field"" rows=""3"" cols=""40""></textarea>" & _
-		"<input type=""hidden"" name=""recaptcha_response_field""value=""manual_challenge"">" & _
-		"</noscript>"
-	end function
-
-	' returns "" if correct, otherwise it returns the error response
-	function recaptcha_confirm(rechallenge,reresponse)
-		Dim VarString
-		VarString = _
-		"privatekey=" & recaptcha_private_key & _
-		"&remoteip=" & Request.ServerVariables("REMOTE_ADDR") & _
-		"&challenge=" & rechallenge & _
-		"&response=" & reresponse
-
-		Dim objXmlHttp
-		Set objXmlHttp = Server.CreateObject("Msxml2.ServerXMLHTTP")
-		objXmlHttp.open "POST", "http://www.google.com/recaptcha/api/verify", False
-		objXmlHttp.setRequestHeader "Content-Type", "application/x-www-form-urlencoded"
-		objXmlHttp.send VarString
-		Dim ResponseString
-		ResponseString = split(objXmlHttp.responseText, vblf)
-		Set objXmlHttp = Nothing
-
-		if ResponseString(0) = "true" then
-		'They answered correctly
-			recaptcha_confirm = ""
-		else
-		'They answered incorrectly
-			recaptcha_confirm = ResponseString(1)
-		end if
-
-	end function
-
-	if useRecaptcha then
-		server_response = ""
-		newCaptcha = True
-		if (recaptcha_challenge_field <> "" or recaptcha_response_field <> "") then
-			server_response = recaptcha_confirm(recaptcha_challenge_field, recaptcha_response_field)
-			newCaptcha = False
-		else
-			server_response = "no data"
-		end if
-
-		if server_response <> "" then
-			bCorrect = false
-		else
-			bCorrect = true
-		end if
-	else
-		bCorrect = true
-	end if 
-%>
-
-<%
 	dim status_msg,bcont
 	op = Request("op")
 	returnPage = Trim(Request("returnPage"))
 	returnPage = FilterXSS(returnPage)
-
+	
 	sql = "SELECT setting_values FROM " & g_storeid & "_setting WHERE setting_type = 'M_NEW_CUSTOMER_REG_REQ_TO_FILL'"
 	set rsSetting = dbconn.Execute(sql)
 	if not rsSetting.EOF then
-		req_setting1 = rsSetting(0)
+	req_setting1 = rsSetting(0)
 	else
-		req_setting1 = "0"
+	req_setting1 = "0"
 	end if
 	rsSetting.Close
-
+  
 	if Len(req_setting1) = 1 then
 	else
-		req_setting1 = "0"
+	  req_setting1 = "0"
 	end if
-
-	Select case op
 		
+	Select case op
+	
 	case "NEW"
 		
 		bcont = true
 		new_email = Trim(Request.Form("new_email"))
 		new_email = FilterEmailString(new_email)
-		
+
 		new_password1 = Trim(Request.Form("new_password1"))
 		new_password1 = FilterPassword(new_password1)
 		new_password2 = Trim(Request.Form("new_password2"))
 		new_password2 = FilterPassword(new_password2)
 		
-		bill_firstname = Request("bill_firstname")
-		bill_lastname = Request("bill_lastname")
-		bill_company = Request("bill_company") 
-		bill_address = Request("bill_address")
-		bill_city = Request("bill_city") 
-		bill_state = Request("bill_state") 
-		bill_zip = Request("bill_zip")
-		bill_country = Request("bill_country")
-		bill_phone = Request("bill_phone")
-		
-		cc_type = Request("cc_type")
-		cc_number = Request("cc_number")
-		cc_exp_month = Request("cc_exp_month")
-		cc_exp_year = Request("cc_exp_year")
-		
-		if Len(cc_number) > 0 then
-			cc_number = TrimToDigits(cc_number)
-		end if
-		
-		ship_firstname = Request("ship_firstname")
-		ship_lastname = Request("ship_lastname")
-		ship_company = Request("ship_company")
-		ship_address = Request("ship_address")
-		ship_city =  Request("ship_city")
-		ship_state = Request("ship_state")
-		
-		ship_zip =  Request("ship_zip")
-		ship_country = Request("ship_country")
-		ship_phone =  Trim(Request("ship_phone"))
-		is_shipaddress =  Trim(Request("is_shipaddress"))
-		
-		address_type = Trim(Request("address_type"))
-		
-		if is_shipaddress = "1" then
-			ship_firstname = bill_firstname
-			ship_lastname = bill_lastname
-			ship_company = bill_company
-			ship_address = bill_address
-			ship_city =  bill_city
-			ship_state = bill_state
-			ship_zip =  bill_zip
-			ship_country = bill_country
-			ship_phone =  bill_phone
-		else
-			is_shipaddress = "0"
-		end if
-		
-		
+		firstname = Request("firstname")
+		lastname = Request("lastname")
+
 		agreeterms = Request.Form("agreeterms")
-		
+
 		if agreeterms = "1" then
 			bcont = true
 		else
 			bcont = false
 		end if
 		
-		'Recapcha
-		if bCorrect then
-		else
-			bcont = false
-		end if
-		
 		if bcont then
+			'Generate unique shopper id
+			g_shopper_id = GetUniqueLongIntegerID()
 			
-			if IsShopperInfoValid(new_email, new_password1,new_password2,status_msg) then
-				bcont = true
+			'ADD customer
+			Set rsUpdate = Server.CreateObject("ADODB.Recordset")
+			with rsUpdate
+				.ActiveConnection = dbconn
+				.CursorLocation = 3
+				.CursorType = 1
+				.LockType = 3
+				.Source = g_storeid & "_shopper WHERE shopper_id='0'"
+				.Open
+				.AddNew
+			end with
+			
+			rsUpdate("shopper_id") = g_shopper_id
+			rsUpdate("Email") = new_email
+			rsUpdate("Password") = ""
+			rsUpdate("FirstName") = firstname
+			rsUpdate("LastName") = lastname
+			
+			If dbconn.Errors.Count > 0 Then
+				dbconn.Errors.Clear
+				rsUpdate.CancelUpdate
 			else
-				bcont = false
-			end if
+				rsUpdate.Update
+				Session("shopper_id") = g_shopper_id
+			End If
 			
-			if req_setting1 = "1" then
+			rsUpdate.Close
+			set rsUpdate = nothing
+			
+			salt = getRandomString(5)
+			sql = "UPDATE " & g_storeid & "_shopper SET password = CONVERT(VARCHAR(32), HashBytes('MD5', '" & salt & new_password1 & "'), 2) + ':' + '" & salt & "' WHERE shopper_id='" & g_shopper_id & "'"
+			dbconn.Execute(sql)
+
+			Session("LOGINGROUP") = "D"
+			Session("Shopper_Name") = firstname & " " & lastname
+			Response.Redirect g_secure_url & "register_confirm.phtml?returnPage=" & returnPage
+		else
+
+		end if 'agree terms
+		
+		'==================================================================
+		' Clean up strings for xss
+		new_password1 = FilterXSS(new_password1)
+		new_password2 = FilterXSS(new_password2)
+		bill_firstname = FilterXSS(bill_firstname)
+		bill_lastname = FilterXSS(bill_lastname)
 				
-				if(IsBillToInfoValid(status_msg,bill_firstname,bill_lastname,bill_company,bill_address,bill_city,bill_state,bill_country,bill_zip,bill_phone)) then
-				if returnPage = "checkout" then
-					if(IsPaymentInfoValid(cc_type,cc_number,cc_exp_month,cc_exp_year,status_msg)) then
-					b_billing = true
-				else
-					b_billing = false
-					bcont = false
-				end if
-			else
-				b_billing = true
-			end if
-		else
-			b_billing = false
-			bcont = false
-		end if
-		
-		if (IsShipToInfoValid(status_msg,ship_firstname,ship_lastname,ship_address,_
-			ship_city,ship_state,ship_country,_
-			ship_zip,ship_phone,0, ship_company))then
-			b_shipping = true
-		else
-			b_shipping = false
-			bcont = false
-		end if
-
-	end if
-
-
-	if bcont then
-		b_next = false
-		'Generate unique shopper id
-		Session("shopper_id") = GetUniqueLongIntegerID()
-		if(AddNewShopperBasic(Session("ConnectionString"),Session("shopper_id"),status_msg,_
-			new_email,new_password1)=true) then
-			'customer added successfully
-			b_next = true
-		else
-			b_next = false
-		end if
-	end if
-
-	if b_next then	
-		'billing...
-		if(UpdateShopper(Session("ConnectionString"),Session("shopper_id"),status_msg,_
-			bill_firstname,bill_lastname,bill_company,bill_address,bill_city,bill_state,_
-			bill_zip,bill_country,bill_phone,0,cc_type,cc_number,cc_exp_month,cc_exp_year)=true) then
-			'customer updated successfully
-			b_next = true
-		else
-			b_next = false
-		end if
-	end if
-
-
-	if b_next then	
-	'shipping...
-		if(UpdateShopperShippingInfo(Session("ConnectionString"),Session("shopper_id"),status_msg,_
-			ship_firstname,ship_lastname, ship_company,_
-			ship_address,ship_city,ship_state,ship_zip,_
-			ship_country,ship_phone,0,address_type)) then
-
-			if len(Session("PARTNER")) > 0 then
-				Session("Expiration") = date()
-				sql = "UPDATE :9_shopper SET affiliate_id= '"&Session("PARTNER")&"', new_registrant=1, DateEntered= '"&Session("Expiration")&"' WHERE shopper_id='" & Session("shopper_id") & "'"
-				sql = Replace(sql, ":9", g_storeid)
-				dbconn.Execute sql
-			end if
-
-			b_next = true
-		else
-			b_next = false						
-		end if
-	end if
-
-	'if not need register confirm
-	if (Session("LoginOption") <> 2) then
-		'Send Welcome Email to new Customer...
-		if b_next then	
-			if(SendMailToNewRegistrant(Session("ConnectionString"),status_msg,new_email,new_password1)=true) then
-				b_next = true
-			else
-				b_next = false
-			end if
-		end if
-	end if
-
-	'#############################################################################################################
-	' Send Email to Site manager #################################################################################
-	if b_next then
-		str_sql = "SELECT * FROM " & g_storeid & "_profile"
-		set rs = dbconn.Execute(str_sql)
-
-		if not rs.EOF then
-			strDBAName = Trim(rs("Company"))
-			strAddress = Trim(rs("Email"))
-		end if
-		rs.Close
-
-		sql = "SELECT setting_values FROM " & g_storeid & "_setting WHERE setting_type='CUSTOMER_SEND_ADMIN_NEW_NOTIFICATION'"
-		set rs = dbconn.Execute(sql)
-		if not rs.EOF then
-			bSendNewNotification = Trim(rs(0))
-		else
-			bSendNewNotification = "1"
-		end if
-		rs.Close
-
-		'Send email to site manager
-
-		if bSendNewNotification then
-			content = "A new customer has registered on your web site.  Please check the customer list for new customer."
-			content = content & "<br>Email : " & new_email & "<br>Name : " & bill_firstname & " " & bill_lastname
-			title = "You have a New Customer on your web site."
-			if SystemSendMailEx(strAddress, strDBAName, strAddress, title, content, "") then
-			end If
-		end if
-
-	end if
-	'#############################################################################################################
-
-
-	if b_next then
-		Session("LOGINGROUP") = "D"
-		Session("Shopper_Name") = bill_firstname & " " & bill_lastname
-		
-		
-		if Session("LoginFilter") = 0 and Session("LoginOption") <> 2 then
-			UpdateSession Session("SESSIONKEY"), "sCID", Session("shopper_id")
-			UpdateSession Session("SESSIONKEY"), "sCName", Session("Shopper_Name")
-			UpdateSession Session("SESSIONKEY"), "sCGroup", Session("LOGINGROUP")
-			UpdateSession Session("SESSIONKEY"), "sCustomCatalog", ""
-		else
-			Session("SESSIONKEY") = ""
-		end if
-		
-		Response.Redirect Session("SecureURL") & "/register_confirm.phtml?returnPage=" & returnPage
-		
-	else
-		sql = "DELETE FROM :9_shopper WHERE shopper_id='" & Session("shopper_id") & "'"
-		sql = Replace(sql, ":9", g_storeid)
-		dbconn.Execute sql
-		
-	'Not complete data...
-		if is_shipaddress = "1" then
-			ship_firstname = ""
-			ship_lastname = ""
-			ship_company = ""
-			ship_address = ""
-			ship_city =  ""
-			ship_state = ""
-			ship_zip =  ""
-			ship_country = ""
-			ship_phone =  ""
-		else
-			is_shipaddress = "0"
-		end if
-		
-	end if
-
-	Session("Shopper_State") = ship_state
-	Session("Shopper_Zip") = ship_zip
-	Session("shopper_country") = ship_country
-
-	else
-
-	if bCorrect then
-		status_msg = "Please read and select checkbox to acknowledge privacy policy and user agreement."
-	else
-		status_msg = "Please enter the code correctly."
-	end if
-
-	end if 'agree terms
-
-	'==================================================================
-	' Clean up strings for xss
-	new_password1 = FilterXSS(new_password1)
-	new_password2 = FilterXSS(new_password2)
-	bill_firstname = FilterXSS(bill_firstname)
-	bill_lastname = FilterXSS(bill_lastname)
-	bill_company = FilterXSS(bill_company)
-	bill_address = FilterXSS(bill_address)
-	bill_city = FilterXSS(bill_city)
-	bill_zip = FilterXSS(bill_zip)
-	bill_phone = FilterXSS(bill_phone)
-
-	ship_firstname = FilterXSS(ship_firstname)
-	ship_lastname = FilterXSS(ship_lastname)
-	ship_company = FilterXSS(ship_company)
-	ship_address = FilterXSS(ship_address)
-	ship_city = FilterXSS(ship_city)
-	ship_zip = FilterXSS(ship_zip)
-	ship_phone = FilterXSS(ship_phone)
-
 	case else
-
+	
 	End Select
-
-	b_show_cc = false
-	b_show_others = false
-
-	'Get payment type information...
-	strSQL = "SELECT * FROM :9_profile"
-	strSQL = Replace(strSQL, ":9", g_storeid)
-	Set rsProfile = dbconn.Execute(strSQL)
-
-	pmt_visa = rsProfile("Visa")
-	pmt_master = rsProfile("MasterCard")
-	pmt_amex = rsProfile("AmericanExpress")
-	pmt_discover = rsProfile("Discover")
-	pmt_cod = rsProfile("COD")
-	pmt_billme = rsProfile("BillMe")
-	pmt_willcall = rsProfile("WillCall")
-
-	if pmt_visa then
-		b_show_cc = true
-	end if
-
-	if pmt_master then
-		b_show_cc = true
-	end if
-
-	if pmt_amex then
-		b_show_cc = true
-	end if
-
-	if pmt_discover then
-		b_show_cc = true
-	end if
-
-	if pmt_cod then
-		b_show_others = true
-	end if
-
-	if pmt_billme then
-		b_show_others = true
-	end if
-
-	if pmt_willcall then
-		b_show_others = true
-	end if
-
-	rsProfile.Close
-
-	sql = "SELECT setting_values FROM " & g_storeid & "_setting WHERE setting_type = 'M_NEW_CUSTOMER_REG_REQ'"
-	set rsSetting = dbconn.Execute(sql)
-	if not rsSetting.EOF then
-		req_setting = rsSetting(0)
-	else
-		req_setting = "1;1;0;1;1;1;1;1;1;1;1;0;1;1;1;1;1;1;"
-	end if
-	rsSetting.Close  
-
-	if Len(req_setting) = 36 then
-	else
-		req_setting = "1;1;0;1;1;1;1;1;1;1;1;0;1;1;1;1;1;1;"
-	end if
-
-	ar_req_setting = Split(req_setting, ";")
-
-
-	if (len(bill_country) = 0) then
-		bill_country = Session("shopper_country")
-	end if
-
-	if (len(ship_country) = 0) then
-		ship_country = Session("shopper_country")
-	end if
 	
-	
-	'--------------------------------------------------------------------------------
-	'DEFAULT COUNTRY ?
 %>

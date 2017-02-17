@@ -1,0 +1,160 @@
+<%@ Language=VBScript %>
+<%
+	Response.CodePage = 65001
+	Response.CharSet = "UTF-8"
+%>
+<%
+  Response.Expires = -1
+%>
+<!-- #INCLUDE File="../local/local.phtml" -->
+<!-- #INCLUDE File="../util/xt_func_util.phtml" -->
+<!-- #INCLUDE File="../util/xt_func_string.phtml" -->
+<%
+	attribute_id = Trim(Request("attribute_id"))
+	
+	sEcho = Trim(Request("draw"))
+	iDisplayLength = Trim(Request("length"))
+	iDisplayStart = Trim(Request("start"))
+
+	sEcho = FilterStringEx(sEcho, "[^0-9]")
+	iDisplayLength = FilterStringEx(iDisplayLength, "[^0-9]")
+	iDisplayStart = FilterStringEx(iDisplayStart, "[^0-9]")
+
+	sEcho = Cint(sEcho)
+	iDisplayLength = Cint(iDisplayLength)
+	iDisplayStart = Cint(iDisplayStart)
+  
+	'sEcho = Cint(Request("sEcho"))
+	'iDisplayLength = Cint(Request("iDisplayLength"))
+	'iDisplayStart = Cint(Request("iDisplayStart"))
+  
+	'=======================================================================================
+	strWhere = ""
+	
+	if Len(strWhere) > 0 then
+		strWhere = Left(strWhere, Len(strWhere) - 4)
+	else
+		strWhere = " option_name LIKE '%%'"
+	end if
+	
+	
+	'=======================================================================================
+	'ORDERING
+	SELECT CASE Trim(Request("order[0][column]"))
+	CASE "0"
+		sOrder = "pf_id DESC"
+	CASE "1"
+		sOrder = "pf_id " & Trim(Request("order[0][dir]"))
+	CASE "2"
+		sOrder = "pf_id " & Trim(Request("order[0][dir]"))
+	CASE "3"
+		sOrder = "name " & Trim(Request("order[0][dir]"))
+	CASE "4"
+		sOrder = "sku " & Trim(Request("order[0][dir]"))
+	CASE "5"
+		sOrder = "list_price " & Trim(Request("order[0][dir]"))
+	CASE "6"
+		sOrder = "price_D " & Trim(Request("order[0][dir]"))
+	CASE "7"
+		sOrder = "stock " & Trim(Request("order[0][dir]"))
+	CASE "8"
+		sOrder = "item_status " & Trim(Request("order[0][dir]"))
+	CASE "9"
+		sOrder = "pf_id DESC"
+	CASE ELSE
+		sOrder = "pf_id DESC"
+	END SELECT 
+	'here we create the variable "strOrderBy" that will be used in the SQL querry
+	strOrderBy = "ORDER BY " & sOrder
+	
+	strOrderBy = "ORDER BY sort_order"
+
+	'======================================================================================
+	
+
+	Set dbconn=server.CreateObject("ADODB.Connection")
+	dbconn.Open g_connection_string
+	
+	sql = "SELECT * FROM " & g_storeid & "_eav_attribute_option WHERE attribute_id = " & attribute_id & " AND " & strWhere & " " & strOrderBy
+	sqlx = "SELECT COUNT(option_id) FROM " & g_storeid & "_eav_attribute_option WHERE attribute_id = " & attribute_id &  " AND " & strWhere 
+	
+	set rs = dbconn.Execute(sql)
+	
+	iTotalDisplayRecords = 0
+	iTotalRecords = 50
+	set rs1 = dbconn.Execute(sqlx)
+	if not rs1.EOF then
+		iTotalDisplayRecords = rs1(0)
+		iTotalRecords = rs1(0)
+	else
+	end if
+	rs1.Close
+	
+%>
+{"draw": <%=sEcho%>, "recordsTotal": <%=iTotalRecords%>, "recordsFiltered": <%=iTotalDisplayRecords%>, "data": [ 
+<%
+	i = 0
+	if rs.eof = false then
+		rs.move(iDisplayStart)
+		do while i < iDisplayLength and not rs.eof
+
+			s_option_id = rs("option_id")
+			s_option_name = Trim(rs("option_name"))
+			If Len(s_option_name) > 0 Then
+				s_option_name = Replace(s_option_name, "'", "&#39")
+				s_option_name = Replace(s_option_name, """", "&#34;")
+			End if
+			s_display_name = Trim(rs("display_name"))
+			If Len(s_display_name) > 0 Then
+				s_display_name = Replace(s_display_name, "'", "&#39")
+				s_display_name = Replace(s_display_name, """", "&#34;")
+			End if
+			
+			s_option_description = Trim(rs("option_description"))
+			If Len(s_option_description) > 0 Then
+				s_option_description = Replace(s_option_description, "'", "&#39")
+				s_option_description = Replace(s_option_description, """", "&#34;")
+			else
+				s_option_description = ""
+			End if
+			
+			s_sort_order = rs("sort_order")
+			s_option_mfg_map = Trim(rs("option_mfg_map"))
+			If Len(s_option_mfg_map) > 0 Then
+				s_option_mfg_map = Replace(s_option_mfg_map, "'", "&#39")
+				s_option_mfg_map = Replace(s_option_mfg_map, """", "&#34;")
+			else
+				s_option_mfg_map = ""
+			End if
+			
+			s_option_color_swatch = rs("option_color_swatch")
+			
+			aaData = aaData & "['"
+			aaData = aaData & "<label class=\'mt-checkbox mt-checkbox-single mt-checkbox-outline\'><input name=\'id[]\' type=\'checkbox\' class=\'checkboxes\' value=\'" &  s_option_id & "\'/><span></span></label> " & "','" 
+			aaData = aaData & s_option_id & "','" 
+			'aaData = aaData & "<img src=\'" & g_secure_url & "thumb_img/" & s_thumb_image & "\' width=70>','" 
+			if Len(s_option_color_swatch) > 0 then
+				aaData = aaData & "<img src=\'" & g_secure_url & "media/colorswatch/" & s_option_color_swatch & "\' width=70>','" 
+			else
+				aaData = aaData & "" & "','" 
+			end if
+			'aaData = aaData & s_option_id & "','" 
+			aaData = aaData & s_option_name & "','" 
+			aaData = aaData & s_display_name & "','"
+			aaData = aaData & s_option_mfg_map & "','"
+			aaData = aaData & s_option_mfg_map & "','"
+			aaData = aaData & s_sort_order & "','"
+			aaData = aaData & "<a href=\'catalog_attribute_detail_option.phtml?attribute_id=" & attribute_id & "&option_id=" & s_option_id & "\' class=\'btn btn-sm btn-default btn-circle btn-editable\'><i class=\'fa fa-pencil\'></i> Edit</a>'],"
+		'	aaData = aaData & "<input type=\'checkbox\' class=\'checkbox\' name=\'prAction\' id=\'prAction\' value=\'" & s_pf_id & "\'>'],"
+		  
+		  aaData = Replace(aaData,"'",chr(34))
+		  rs.MoveNext
+		  i=i+1
+		loop
+		rs.Close
+		aaData = Left(aaData, Len(aaData)-1)
+	else
+		aaData = ""
+	end if
+	response.write aaData & "] }"
+%>

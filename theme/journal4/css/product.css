@@ -19,7 +19,7 @@ PRODUCT PAGE
   left: 7px; }
 
 .product-info {
-  overflow: hidden;
+  /*overflow: hidden; - BK*/
   margin-bottom: 20px;
   position: relative;
   width: 100%; }
@@ -72,7 +72,7 @@ PRODUCT PAGE
     padding-left: 20px; }
     .product-info .right .product-options {
       background-color: transparent;
-      overflow: hidden; }
+      /*overflow: hidden; -BK */}
     .product-info .right > div > div, .product-info .right > div > ul {
       position: relative;
       overflow: hidden; }

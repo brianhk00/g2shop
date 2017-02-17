@@ -57,7 +57,8 @@
 		end with
 		
 		'GET NEW SHOPPER_ID and SAVE EMAIL Address
-		rsUpdate("shopper_id") = GetUniqueLongIntegerID()
+		g_shopper_id = GetUniqueLongIntegerID()
+		rsUpdate("shopper_id") = g_shopper_id
 		rsUpdate("Email") = new_email
 		rsUpdate("Password") = shopper_password
 		
@@ -103,9 +104,21 @@
 		rsUpdate.CancelUpdate
 	else
 		rsUpdate.Update
+		Session("shopper_id") = g_shopper_id
+		Session("LOGINGROUP") = "D"
+		Session("Shopper_Name") = shopper_firstname & " " & shopper_lastname
 	End If
 	
 	rsUpdate.Close
 	set rsUpdate = nothing
+	
+	salt = getRandomString(5)
+	sql = "UPDATE " & g_storeid & "_shopper SET password = CONVERT(VARCHAR(32), HashBytes('MD5', '" & salt & shopper_password & "'), 2) + ':' + '" & salt & "' WHERE shopper_id='" & g_shopper_id & "'"
+	
+	dbconn.Execute(sql)
+	
+	
+
+	
 	
 %>

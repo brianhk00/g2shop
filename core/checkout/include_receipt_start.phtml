@@ -19,5 +19,15 @@
 			Response.Redirect g_secure_url
 		end if
 	end if
+	
+	'check dept_id dept_ID if blank...
+	sql = "SELECT * FROM " &  g_storeid & "_sales_order WHERE order_id='"& Session("OrderID") & "'"
+	Set rsOrder = dbconn.Execute(sql)
+	if not rsOrder.EOF then
+		g_increment_id = rsOrder("increment_id")
+	else
+		
+	end if
+	rsOrder.Close
 %>
 <!--#INCLUDE FILE="../i_login.phtml"-->

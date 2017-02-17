@@ -1,0 +1,113 @@
+<%
+	Response.CodePage = 1252 
+	Response.CharSet = "windows-1252" 
+%>
+<!--#INCLUDE FILE="../local/local.phtml"-->
+<!--#INCLUDE FILE="../core/i_adoopen.phtml"-->
+<!--#INCLUDE FILE="../util/xt_func_session.phtml"-->
+<!--#INCLUDE File="../util/xt_func_util.phtml" -->
+<!--#INCLUDE FILE="../util/xt_func_string.phtml"-->
+<!--#INCLUDE FILE="../util/xt_func_shoppingcart.phtml"-->
+<%
+	if basket_action = "" then
+        basket_action = Trim(Request("basket_action"))
+        basket_action = Left(basket_action, 3)
+    end if 
+	
+	For Each sItem In Request.Form
+		'Response.Write(sItem)
+		'Response.Write(" - [" & Request.Form(sItem) & "]" & strLineBreak)
+	Next
+	
+	'Response.end
+	
+	Select Case basket_action
+	CASE "U"
+		recordid = Trim(Request("recordid"))
+		quantity = Trim(Request("quantity"))
+		
+		if Len(recordid) > 0 then
+			ar_recordid = Split(recordid, ", ")
+			ar_quantity = Split(quantity, ", ")
+			
+			for i = 0 to UBound(ar_recordid)
+				
+				if IsNumeric(ar_recordid(i)) AND IsNumeric(ar_quantity(i)) then
+					sql = "UPDATE A_Shoppingcart SET cartOrderQuantity = " & ar_quantity(i) & " WHERE RecordID=" & ar_recordid(i)
+					dbconn.Execute(sql)
+				end if
+				
+			next
+			
+		end if
+		
+		'Response.Redirect (g_secure_url & "cart.phtml")
+	CASE "A"
+		pf_id = Trim(Request("pf_id"))
+		pf_id = FilterSKUString(pf_id)
+		product_mode = Trim(Request("product_mode"))
+		qty = Trim(Request("qty"))
+		
+		option_string = ""
+		'TODO " GET OPTION VALUE
+		For Each sItem In Request.Form
+			'Response.Write(sItem)
+			'Response.Write(" - [" & Request.Form(sItem) & "]" & strLineBreak)
+			
+			if InStr(sItem, "option_") then
+				ar_option_attribute = Split(sItem, "_")
+				option_attribute_id = ar_option_attribute(1)
+				option_attribute_value = Trim(Request.Form(sItem))
+				
+				'Get Attribute Name
+				sql = "SELECT * FROM " & g_storeid & "_eav_attribute WHERE attribute_id=" & option_attribute_id
+				set rs1 = dbconn.Execute(sql)
+				if not rs1.EOF then
+					x_attribute_name = rs1("frontend_label")
+				else
+					x_attribute_name = ""
+				end if
+				rs1.Close
+				set rs1 = nothing
+				
+				'Get Option Value
+				sql = "SELECT * FROM " & g_storeid & "_eav_attribute_option WHERE option_id=" & option_attribute_value
+				set rs1 = dbconn.Execute(sql)
+				if not rs1.EOF then
+					x_option_name = rs1("display_name")
+				else
+					x_option_name = ""
+				end if
+				rs1.Close
+				set rs1 = nothing
+				
+				option_string = option_string & x_attribute_name & ":" & x_option_name & ";"
+				
+			end if
+		Next
+		
+		if Len(option_string) > 0 then
+			option_string = Left(option_string, Len(option_string)-1)
+		end if
+		
+		SELECT CASE product_mode
+		CASE "0"
+			if AddItemToShoppingCart(pf_id, product_mode, 0, 0, 0, "", qty, pf_id, option_string) then
+				bRedirect = true
+			else
+				iCount = iCount - 1
+			end if
+		END SELECT
+		'Response.Redirect (g_secure_url & "cart.phtml")
+	CASE "D"
+		recordid = Trim(Request("recordid"))
+		if IsNumeric(recordid) then
+			sql = "DELETE FROM A_Shoppingcart WHERE RecordID=" & recordid
+			dbconn.Execute(sql)
+		end if
+		'Response.Redirect (g_secure_url & "cart.phtml")
+	CASE ELSE
+		'Response.Redirect (g_secure_url & "cart.phtml")
+	END SELECT
+
+%>

@@ -1,0 +1,238 @@
+<div id="container" class="container j-container">
+	<ul class="breadcrumb">
+		<li><a href="<%=g_store_url%>">Home</a></li>
+		<li><a href="<%=g_store_url%>cart.phtml">Shopping Cart</a></li>
+	</ul>
+	<div class="row">
+		<div id="content" class="col-sm-12 sc-page">
+			<h1 class="heading-title">Shopping Cart</h1>
+			<% if GetTotalItemsInCart() > 0 then %>
+			<form action="<%=g_secure_url%>tp_cart.phtml" method="post" name="basketform" id="basketform">
+				<div class="table-responsive cart-info">
+					<table class="table table-bordered">
+					<thead>
+					<tr>
+						<td class="text-center image">
+							Image
+						</td>
+						<td class="text-left name">
+							Product Name
+						</td>
+						<td class="text-left model">
+							SKU
+						</td>
+						<td class="text-left quantity">
+							Quantity
+						</td>
+						<td class="text-right price">
+							Unit Price
+						</td>
+						<td class="text-right total">
+							Total
+						</td>
+						<td>
+						</td>
+					</tr>
+					</thead>
+					<tbody>
+					<!--#INCLUDE FILE="../../../core/checkout/include_cart_loop_start.phtml"-->
+					<tr>
+						<td class="text-center image">
+							<a href="#"><img src="<%=ssImgInCart%>" class="img-thumbnail"/></a>
+						</td>
+						<td class="text-left name">
+							<a href="#"><%=g_cartProductName%></a>
+							<% if Len(g_cartOptions) > 0 then %>
+							<br><%=g_cartOptions%>
+							<% end if %>
+						</td>
+						<td class="text-left model">
+							<%=g_cartProductSKU%>
+						</td>
+						<td class="text-left quantity">
+							<div class="input-group btn-block" style="max-width: 200px;">
+								<input type="text" name="quantity" value="<%=g_cartOrderQuantity%>" size="2" class="form-control"/>
+								<input type="hidden" name="recordid" value="<%=g_cartRecordID%>" />
+							</div>
+						</td>
+						<td class="text-right price">
+							$<%=g_cartProductUnitPrice%>
+						</td>
+						<td class="text-right total">
+							$<%=g_cartProductUnitTotal%>
+						</td>
+						<td class="text-right total">
+							<span class="input-group-btn">
+								<a title="Remove" class="btn btn-danger" href="<%=g_basket_item_delete_link%>"><i class="fa fa-times-circle"></i></a>
+							</span>
+						</td>
+					</tr>
+					<!--#INCLUDE FILE="../../../core/checkout/include_cart_loop_end.phtml"-->
+					</tbody>
+					<tfoot>
+					<tr>
+						<td colspan="50" class="a-right">
+							<button type="button" title="Continue Shopping" class="btn-default button" onclick="setLocation('<%=g_store_url%>')"><span><span>Continue Shopping</span></span></button>
+							<button type="submit" name="update_cart_action" value="update_qty" title="Update Shopping Cart" class="button btn-primary"><span><span>Update Shopping Cart</span></span></button>
+						</td>
+					</tr>
+					</tfoot>
+					</table>
+				</div>
+			</form>
+			
+			<div class="row">
+				<div class="col-sm-6">
+					<div class="panel panel-default">
+						<div class="panel-heading">
+							<h4 class="panel-title">Use Coupon Code</h4>
+						</div>
+						<div id="collapse-coupon" class="panel-collapse collapse in">
+							<div class="panel-body">
+								<label class="col-sm-4 control-label" for="input-coupon">Enter your coupon here</label>
+								<div class="input-group">
+									<input type="text" name="coupon" value="" placeholder="Enter your coupon here" id="input-coupon" class="form-control"/>
+									<span class="input-group-btn">
+									<input type="button" value="Apply Coupon" id="button-coupon" data-loading-text="Loading..." class="button btn-primary"/>
+									</span>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+				<div class="col-sm-6">
+					<div class="panel panel-default">
+						<div class="panel-heading">
+							<h4 class="panel-title">Use Credit</h4>
+						</div>
+						<div id="collapse-credit" class="panel-collapse collapse in">
+							<div class="panel-body">
+								<label class="col-sm-4 control-label" for="input-voucher">Enter your credit here</label>
+								<span class="amount" style="font-size:13px;font-weight:bold"> Current Balance: <span id="your_balance" class="price" style="color: red">$50.00</span> </span>
+								<div class="input-group">
+									<input type="text" name="credit" value="" placeholder="Enter your credit here" id="input-credit" class="form-control"/>
+									<span class="input-group-btn">
+									<input type="submit" value="Apply credit" id="button-credit" data-loading-text="Loading..." class="button btn-primary"/>
+									</span>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+			<div class="panel panel-default">
+				<div class="panel-heading">
+					<h4 class="panel-title">Estimate Shipping &amp; Taxes</h4>
+				</div>
+				<div id="collapse-shipping" class="panel-collapse collapse in">
+					<div class="panel-body">
+						<p>
+							Enter your destination to get a shipping estimate.
+						</p>
+						<form class="form-horizontal" id="sh-form">
+							<div class="form-group required">
+								<label class="col-sm-2 control-label" for="input-country">Country</label>
+								<div class="col-sm-10">
+									<select name="country_id" id="country_id" class="form-control">
+									</select>
+								</div>
+							</div>
+							<div class="form-group required">
+								<label class="col-sm-2 control-label" for="input-zone">Region / State</label>
+								<div class="col-sm-10">
+									<select class="form-control" id="zone_id" name="zone_id">
+									</select>
+								</div>
+							</div>
+							<div class="form-group required">
+								<label class="col-sm-2 control-label" for="input-postcode">Post Code</label>
+								<div class="col-sm-10">
+									<input type="text" name="postcode" value="<%=Session("CartPostCode")%>" id="postcode" class="form-control"/>
+								</div>
+							</div>
+							<div class="row">
+								<div class="col-sm-2">
+								</div>
+								<div class="col-sm-10">
+									<input type="submit" value="Get Quotes" id="button-quote" data-loading-text="Loading..." class="button btn-primary"/>
+								</div>
+							</div>
+						</form>
+						<br>
+						<form class="form-horizontal" id="sh-method-form" style="display:none;">
+							<div class="form-group">
+								<label class="col-sm-2 control-label" for="zone_id">Shipping Rate</label>
+								<div class="col-sm-10" id="sp_method">
+									<i class="fa fa-spinner fa-spin" style="font-size:24px" id="sh_method_spinner"></i>
+								</div>
+							</div>
+							<div class="row">
+								<div class="col-sm-2">
+								</div>
+								<div class="col-sm-10">
+									<input type="button" value="Update Total" id="button-get-total" class="button btn-primary" style="display:none;"/>
+								</div>
+							</div>
+						</form>
+					</div>
+				</div>
+			</div>
+			<div class="row">
+				<div class="col-sm-4 col-sm-offset-8 cart-total">
+					<table class="table table-bordered" id="total">
+					<tr>
+						<td class="text-right right">
+							<strong>Sub-Total:</strong>
+						</td>
+						<td class="text-right right"  id="cart_total_sub_total_amount">
+							$<%=FormatNumber(GetTotalAmountInCart,2)%>
+						</td>
+					</tr>
+					<tr>
+						<td class="text-right right">
+							<strong>Tax:</strong>
+						</td>
+						<td class="text-right right"  id="cart_total_tax_total_amount">
+							$<%=FormatNumber(GetTaxInCart(),2) %>
+						</td>
+					</tr>
+					<tr>
+						<td class="text-right right">
+							<strong>Shipping & Handling:</strong>
+						</td>
+						<td class="text-right right" id="cart_total_sh_total_amount">
+							$0.00
+						</td>
+					</tr>
+					<tr>
+						<td class="text-right right">
+							<strong>Total:</strong>
+						</td>
+						<td class="text-right right"  id="cart_total_grand_total_amount">
+							$<%=FormatNumber(GetGrandTotalInCart(),2) %>
+						</td>
+					</tr>
+					</table>
+				</div>
+			</div>
+			<div class="buttons">
+				<div class="pull-left">
+					<a href="<%=g_store_url%>" class="btn-default button"><%=a("Continue Shopping")%></a>
+				</div>
+				<div class="pull-right">
+					<a href="checkout.phtml" class="button btn-primary"><%=a("Checkout")%></a>
+				</div>
+			</div>
+			<% else %>
+			<p><%=a("You have no items in your shopping cart.")%></a>
+			<div class="buttons">
+				<div class="pull-left">
+					<a href="<%=g_store_url%>" class="btn btn-primary"><%=a("Continue Shopping")%></a>
+				</div>
+				<div class="pull-right">
+				</div>
+			</div>	
+			<% end if %>
+		</div>
+	</div>
+</div>

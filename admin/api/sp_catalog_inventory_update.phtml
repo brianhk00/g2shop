@@ -1,0 +1,136 @@
+<%response.Expires=-1%>
+<%
+	Response.CodePage = 65001
+	Response.CharSet = "UTF-8"
+%>
+<!-- #INCLUDE File="../local/local.phtml" -->
+<!-- #INCLUDE File="../util/xt_func_util.phtml" -->
+<!-- #INCLUDE File="../util/xt_func_string.phtml" -->
+<%
+	'--POST DATA------------------------------------------
+	inventory_id = Trim(Request("inventory_id"))
+	pf_op = Trim(Request("pf_op"))
+	inventory_sku = Trim(Request("inventory_sku"))
+	inventory_name = Trim(Request("inventory_name"))
+	inventory_qty = Trim(Request("inventory_qty"))
+	inventory_avail = Trim(Request("inventory_avail"))
+	inventory_cost = Trim(Request("inventory_cost"))
+	inventory_price_A = Trim(Request("inventory_price_A"))
+	inventory_price_B = Trim(Request("inventory_price_B"))
+	inventory_price_C = Trim(Request("inventory_price_C"))
+	inventory_price_D = Trim(Request("inventory_price_D"))
+	inventory_attribute_id_1 = Trim(Request("inventory_attribute_id_1"))
+	inventory_attribute_option_id_1 = Trim(Request("inventory_attribute_option_id_1"))
+	inventory_attribute_id_2 = Trim(Request("inventory_attribute_id_2"))
+	inventory_attribute_option_id_2 = Trim(Request("inventory_attribute_option_id_2"))
+	inventory_attribute_id_3 = Trim(Request("inventory_attribute_id_3"))
+	inventory_attribute_option_id_3 = Trim(Request("inventory_attribute_option_id_3"))
+	
+	'====================================================================================================================
+	'UPDATE _product table....
+	'====================================================================================================================
+	
+	if pf_op = "new" then
+		Set rsUpdate = Server.CreateObject("ADODB.Recordset")
+		with rsUpdate
+			.ActiveConnection = dbconn
+			.CursorLocation = 3
+			.CursorType = 1
+			.LockType = 3
+			.Source = g_storeid & "_product_inventory WHERE inventory_id='0'"
+			.Open
+			.AddNew
+		end with
+		
+		rsUpdate("inventory_id") = inventory_id
+		
+	else
+		Set rsUpdate = Server.CreateObject("ADODB.Recordset")
+		with rsUpdate
+			.ActiveConnection = dbconn
+			.CursorLocation = 3
+			.CursorType = 1
+			.LockType = 3
+			.Source = g_storeid & "_product_inventory WHERE inventory_id='" & inventory_id & "'"
+			.Open
+		end with
+	end if
+	
+	rsUpdate("inventory_sku") = inventory_sku
+	rsUpdate("inventory_name") = inventory_name
+	rsUpdate("inventory_qty") = inventory_qty
+	rsUpdate("inventory_avail") = inventory_avail
+	rsUpdate("inventory_cost") = inventory_cost
+	rsUpdate("inventory_price_A") = inventory_price_A
+	rsUpdate("inventory_price_B") = inventory_price_B
+	rsUpdate("inventory_price_C") = inventory_price_C
+	rsUpdate("inventory_price_D") = inventory_price_D
+	rsUpdate("inventory_attribute_id_1") = inventory_attribute_id_1
+	rsUpdate("inventory_attribute_option_id_1") = inventory_attribute_option_id_1
+	rsUpdate("inventory_attribute_id_2") = inventory_attribute_id_2
+	rsUpdate("inventory_attribute_option_id_2") = inventory_attribute_option_id_2
+	rsUpdate("inventory_attribute_id_3") = inventory_attribute_id_3
+	rsUpdate("inventory_attribute_option_id_3") = inventory_attribute_option_id_3
+	
+	If dbconn.Errors.Count > 0 Then
+		dbconn.Errors.Clear
+		rsUpdate.CancelUpdate
+	else
+		rsUpdate.Update
+	End If
+	
+	rsUpdate.Close
+	set rsUpdate = nothing
+	
+	'====================================================================================================================
+	'UPDATE _product table....
+	'====================================================================================================================
+	
+	if pf_op = "new" then
+		
+	else
+		sql = "SELECT pf_id FROM " & g_storeid & "_product WHERE pf_id='" & inventory_id & "'"
+		set rs1 = dbconn.Execute(sql)
+		if not rs1.EOF then
+			pf_id = rs1("pf_id")
+		else
+			pf_id = "0"
+		end if
+		rs1.Close
+		set rs1 = nothing
+		
+		if pf_id = "0" then
+		else
+			Set rsUpdate = Server.CreateObject("ADODB.Recordset")
+			with rsUpdate
+				.ActiveConnection = dbconn
+				.CursorLocation = 3
+				.CursorType = 1
+				.LockType = 3
+				.Source = g_storeid & "_product WHERE pf_id='" & pf_id & "'"
+				.Open
+			end with
+		
+			rsUpdate("sku") = inventory_sku
+			rsUpdate("name") = inventory_name
+			rsUpdate("list_price") = inventory_cost
+			rsUpdate("stock") = inventory_qty
+			rsUpdate("stock_status") = inventory_avail
+			rsUpdate("price_A") = inventory_price_A
+			rsUpdate("price_B") = inventory_price_B
+			rsUpdate("price_C") = inventory_price_C
+			rsUpdate("price_D") = inventory_price_D
+			
+			If dbconn.Errors.Count > 0 Then
+				dbconn.Errors.Clear
+				rsUpdate.CancelUpdate
+			else
+				rsUpdate.Update
+			End If
+			
+			rsUpdate.Close
+			set rsUpdate = nothing
+		end if
+	
+	end if
+%>

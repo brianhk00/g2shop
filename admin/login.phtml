@@ -133,7 +133,7 @@ end function
 					Session("SalesMode") = "1"
 					Session("AdminName") = "System Admin"
 					Session("AdminID") = "SA"
-					Session("shopper_id") = "GUEST"
+					'Session("shopper_id") = "GUEST"
 					
 					UpdateSession Session("SESSIONKEY"), "sSaleMode", "1"
 					UpdateSession Session("SESSIONKEY"), "sCID", Session("shopper_id")
@@ -155,7 +155,7 @@ end function
 				Session("SalesMode") = "1"
 				Session("AdminName") = "System Admin"
 				Session("AdminID") = "SA"
-				Session("shopper_id") = "GUEST"
+				'Session("shopper_id") = "GUEST"
 
 				UpdateSession Session("SESSIONKEY"), "sSaleMode", "1"
 				UpdateSession Session("SESSIONKEY"), "sCID", Session("shopper_id")
@@ -178,7 +178,7 @@ end function
 				Session("SalesMode") = "1"
 				Session("AdminName") = ".."
 				Session("AdminID") = ".."
-				Session("shopper_id") = "GUEST"
+				'Session("shopper_id") = "GUEST"
 				
 				UpdateSession Session("SESSIONKEY"), "sSaleMode", "1"
 				UpdateSession Session("SESSIONKEY"), "sCID", Session("shopper_id")
@@ -213,7 +213,7 @@ end function
 						Session("SalesMode") = "1"
 						Session("AdminName") = rs("FirstName") & " " & rs("LastName")
 						Session("AdminID") = rs("user_id")
-						Session("shopper_id") = "GUEST"
+						'Session("shopper_id") = "GUEST"
 
 						UpdateSession Session("SESSIONKEY"), "sSaleMode", "1"
 						UpdateSession Session("SESSIONKEY"), "sCID", Session("shopper_id")
@@ -235,7 +235,7 @@ end function
 					Session("SalesMode") = "1"
 					Session("AdminName") = rs("FirstName") & " " & rs("LastName")
 					Session("AdminID") = rs("user_id")
-					Session("shopper_id") = "GUEST"
+					'Session("shopper_id") = "GUEST"
 					
 					UpdateSession Session("SESSIONKEY"), "sSaleMode", "1"
 					UpdateSession Session("SESSIONKEY"), "sCID", Session("shopper_id")
@@ -299,7 +299,7 @@ end function
 				Session("SalesMode") = "1"
 				Session("AdminName") = "System Admin"
 				Session("AdminID") = "SA"
-				Session("shopper_id") = "GUEST"
+				'Session("shopper_id") = "GUEST"
 				
 				UpdateSession c_ADMINSESSIONKEY, "sSaleMode", "1"
 				UpdateSession c_ADMINSESSIONKEY, "sCID", Session("shopper_id")
@@ -311,7 +311,7 @@ end function
 				Session("SalesMode") = "1"
 				Session("AdminName") = ".."
 				Session("AdminID") = ".."
-				Session("shopper_id") = "GUEST"
+				'Session("shopper_id") = "GUEST"
 				
 				UpdateSession c_ADMINSESSIONKEY, "sSaleMode", "1"
 				UpdateSession c_ADMINSESSIONKEY, "sCID", Session("shopper_id")
@@ -332,7 +332,7 @@ end function
 					Session("SalesMode") = "1"
 					Session("AdminName") = rs("FirstName") & " " & rs("LastName")
 					Session("AdminID") = rs("user_id")
-					Session("shopper_id") = "GUEST"
+					'Session("shopper_id") = "GUEST"
 					
 					UpdateSession c_ADMINSESSIONKEY, "sSaleMode", "1"
 					UpdateSession c_ADMINSESSIONKEY, "sCID", Session("shopper_id")

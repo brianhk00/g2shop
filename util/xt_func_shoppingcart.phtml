@@ -2,7 +2,7 @@
 'https://support.microsoft.com/en-us/kb/320375
 
 Function AddItemToShoppingCart(ByRef str_pf_id, ByRef str_op,_
- ByRef cart_price, ByRef part_cost, ByRef cart_index, ByRef warranty_index, ByRef cart_qty)
+ ByRef cart_price, ByRef part_cost, ByRef cart_index, ByRef warranty_index, ByRef cart_qty, ByRef cart_stock_id, ByRef cart_option)
  
 	'---------------------------------------------------------------------------------------
 	if IsNumeric(cart_qty) then
@@ -24,6 +24,12 @@ Function AddItemToShoppingCart(ByRef str_pf_id, ByRef str_op,_
 			prod_cost = rsCart("list_price")
 			prod_price = rsCart("price_" & Session("LOGINGROUP"))
 			prod_is_nontaxable = rsCart("is_nontaxable")
+			
+			if prod_is_nontaxable then
+				prod_taxable = 0
+			else
+				prod_taxable = 1
+			end if
 		end if
 		rsCart.Close
 		set rsCart = nothing
@@ -44,17 +50,17 @@ Function AddItemToShoppingCart(ByRef str_pf_id, ByRef str_op,_
 		rsUpdate("RowID") = cart_index
 		rsUpdate("cartProductID") = str_pf_id
 		rsUpdate("cartProductSKU") = prod_sku
-		rsUpdate("cartStockID") = str_pf_id
+		rsUpdate("cartStockID") = cart_stock_id
 		rsUpdate("cartProductName") = prod_name
 		rsUpdate("cartOrderQuantity") = cart_qty
 		rsUpdate("cartProductUnitPrice") = prod_price
 		rsUpdate("cartProductUnitWeight") = prod_weight
-		rsUpdate("cartTaxable") = prod_is_nontaxable
+		rsUpdate("cartTaxable") = prod_taxable
 		rsUpdate("cartProductMode") = 0
 		rsUpdate("cartProductUnitCost") = prod_cost
 		rsUpdate("cartProductWarranty") = ""
 		rsUpdate("cartProductWarrantySelection") = ""
-		rsUpdate("cartOptions") = ""
+		rsUpdate("cartOptions") = cart_option
 		
 		If dbconn.Errors.Count > 0 Then
 			dbconn.Errors.Clear
@@ -149,9 +155,17 @@ Function GetTotalWeightInCart()
 End Function
 
 Function GetTaxInCart()
-	iCart = 0
+	iCartTaxRate = 0
+	iCartTax = 0
 	
-	GetTaxInCart = iCart
+	if GetClientSalesTaxRate(g_connection_string, Session("CartZone"), Session("CartPostCode"), iCartTaxRate, Session("shopper_id"), 0) then
+	
+	end if
+	if (iCartTaxRate) > 0 then
+		iCartTax = GetTotalTaxableAmountInCart() * (iCartTaxRate/100)
+	end if
+	
+	GetTaxInCart = iCartTax
 	
 End Function
 

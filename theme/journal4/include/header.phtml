@@ -31,10 +31,10 @@
 			<% else %>
 			<a href="<%=g_secure_url%>tp_login.phtml?sessionID=<%=Session("SESSIONKEY")%>&op=logout"><span class="top-menu-link"><%=a("Log Out")%></span></a>
 			<span class="no-link">&bull;</span>
-			<a href="#" class="wishlist-total"><span class="top-menu-link"><%=a("My Account")%></span></a>
+			<a href="<%=g_secure_url%>account_profile.phtml?sessionID=<%=Session("SESSIONKEY")%>" class="wishlist-total"><span class="top-menu-link"><%=a("My Account")%></span></a>
 			<% end if %>
 			<span class="no-link">&bull;</span>
-			<a href="<%=g_secure_url%>account_profile.phtml?sessionID=<%=Session("SESSIONKEY")%>"><span class="top-menu-link">Checkout</span></a>
+			<a href="<%=g_secure_url%>checkout.phtml?sessionID=<%=Session("SESSIONKEY")%>"><span class="top-menu-link">Checkout</span></a>
 		</div>
 	</div>
 	<div class="journal-search j-min xs-100 sm-50 md-30 lg-25 xl-25">
@@ -65,6 +65,38 @@
 			<div class="content">
 				<ul class="cart-wrapper">
 					<% if GetTotalItemsInCart() > 0 then %>
+					<li class="mini-cart-info">
+					<table class="table table-striped" style="border: solid 0px; background-color: rgb(68, 67, 73)">
+					<!--#INCLUDE FILE="../../../core/checkout/include_cart_loop_start.phtml"-->
+					<tr  style="background-color: rgb(68, 67, 73)">
+						<td class="text-center image">
+							<a href="#"><img src="<%=ssImgInMiniCart%>" class="img-thumbnail"/></a>
+						</td>
+						<td class="text-left name">
+							<a href="#"><%=g_cartProductName%></a>
+							<div>
+							</div>
+						</td>
+						<td class="text-right quantity">
+							x <%=g_cartOrderQuantity%>
+						</td>
+						<td class="text-right total">
+							$<%=g_cartProductUnitPrice%>
+						</td>
+						<td class="text-center remove">
+							<button type="button" onclick="setLocation('<%=g_basket_item_delete_link%>');" title="Remove" class=""><i class=""></i></button>
+						</td>
+					</tr>
+					<!--#INCLUDE FILE="../../../core/checkout/include_cart_loop_end.phtml"-->
+					</table>
+					</li>
+					<li>
+					<div class="mini-cart-total">
+						<p class="text-right checkout">
+							<a class="button" href="<%=g_secure_url%>cart.phtml">View Cart</a>&nbsp;<a class="button" href="<%=g_secure_url%>checkout.phtml">Checkout</a>
+						</p>
+					</div>
+					</li>
 					<% else %>
 					<li>
 					<p class="text-center empty">

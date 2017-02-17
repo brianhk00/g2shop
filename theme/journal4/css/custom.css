@@ -1060,7 +1060,7 @@ header .journal-login{
 
 
   footer .contacts{
-  text-align:center;
+  /*text-align:center;*/
   }
   footer .contacts-left{
     float: none;
@@ -1325,10 +1325,20 @@ margin-right:240px;
 }
 }
 
-
+/* Custom CSS */
 .option li.hint--top:before{
   border-top-color:;
 }
 
+label.error{
+	color:red;
+}
+.display-hide, .display-none {
+    display: none;
+}
 
+#sp_method label {
+    float: inherit;
+    display: inline;
+}
 /* Custom CSS */

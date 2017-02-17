@@ -1,0 +1,37 @@
+<%
+	Response.CodePage = 65001
+	Response.CharSet = "UTF-8"
+%>
+<%response.Expires=-1%>
+<!-- #INCLUDE File="../local/local.phtml" -->
+<!-- #INCLUDE File="../core/i_adoopen.phtml" -->
+<!-- #INCLUDE File="../util/xt_func_string.phtml" -->
+<!--#INCLUDE FILE="../util/xt_func_client.phtml"-->
+<!-- #INCLUDE File="../util/xt_func_shoppingcart.phtml" -->
+<%
+	apply_credit = Request("apply_credit")
+	
+	if apply_credit = "1" then
+		credit_amount = 0
+		sql = "SELECT end_transaction FROM " & g_storeid & "_credit_history WHERE customer_id = '" & Session("shopper_id") & "' ORDER BY credit_history_id DESC"
+		Set rsCredit = dbconn.Execute(sql)
+		if not rsCredit.EOF then
+			credit_amount = rsCredit(0)
+		end if
+		rsCredit.Close
+		
+		cart_grand_toal = GetGrandTotalInCart()
+		
+		if cart_grand_toal > credit_amount then
+			customer_credit_on_cart = credit_amount
+		else
+			customer_credit_on_cart = cart_grand_toal
+		end if
+		
+		Session("CUSTOMER_CREDIT_ON_CART") = customer_credit_on_cart
+		
+	else
+		Session("CUSTOMER_CREDIT_ON_CART") = 0
+	end if
+
+%>

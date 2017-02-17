@@ -1,0 +1,139 @@
+<h1 class="title">My Dashboard</h1>
+<p><strong>Hello, <%=FirstName%>&nbsp;<%=LastName%>!</strong></p>
+<p>From your My Account Dashboard you have the ability to view a snapshot of your recent account activity and update your account information. Select a link below to view or edit information.</p>
+<div class="row">
+	<div class="col-md-12">
+		<div class="panel panel-default">
+			<div class="panel-heading clearfix">
+				<h4 class="panel-title">Recent Orders</h4>
+			</div>
+			<div class="panel-body">
+				<div class="table-responsive">
+					<table class="table table-bordered">
+						<thead>
+							<tr>
+								<th>Order #</th>
+								<th>Date</th>
+								<th>Ship To</th>
+								<th><span class="nobr">Order Total</span></th>
+								<th>Status</th>
+								<th>&nbsp;</th>
+							</tr>
+						</thead>
+						<tbody>
+							<%
+								sql = "SELECT TOP 5 * FROM " & g_storeid & "_order WHERE shopper_id = '" & Session("shopper_id") & "' ORDER BY date_entered DESC"
+
+								set rsOrderList = dbconn.Execute(sql)
+
+								Do While Not rsOrderList.EOF
+
+									s_order_id = Trim(rsOrderList("order_id"))
+									s_date_created = rsOrderList("date_entered")
+									s_date_created = ConvertToTimeZone(s_date_created)
+									s_shopper = rsOrderList("CardName")
+									s_shopper_firstname = rsOrderList("bill_contact_firstname")
+									s_shopper_lastname = rsOrderList("bill_contact_lastname")
+									if Len(s_shopper) > 0 then
+									else
+									s_shopper = s_shopper_lastname & ", " & s_shopper_firstname
+									end If
+									s_order_amount = FormatNumber(rsOrderList("total"),2)
+									s_order_status = rsOrderList("status")
+
+							%>
+							<tr>
+								<td><%=s_order_id%></td>
+								<td><span class="nobr"><%=s_date_created%></span></td>
+								<td><%=s_shopper%></td>
+								<td><span class="price"><%=s_order_amount%></span></td>
+								<td><em><%=s_order_status%></em></td>
+								<td class="a-center">
+								<span class="nobr">
+								<a href="<%=g_secure_url%>order_status_detail.phtml?orderid=<%=s_order_id%>&shopper_id=<%=Session("shopper_id")%>">View Order</a>
+								</span>
+								</td>
+							</tr>
+							<%
+									rsOrderList.MoveNext
+								Loop
+								rsOrderList.Close
+							%>
+						</tbody>
+					</table>
+					<a href="<%=g_secure_url%>order_status_list.phtml?ss_order_filter=all_orders">View All</a>
+				</div>
+			</div>
+		</div>
+	</div>
+</div>
+<h3 class="title">Account Information</h3>
+<div class="row">
+	<div class="col-md-6">
+		<div class="panel panel-default">
+			<div class="panel-heading clearfix">
+				<h4 class="panel-title pull-left" style="padding-top: 7.5px;">Contact Information</h4>
+				<div class="btn-group pull-right">
+					<a href="<%=g_secure_url%>chgpwd.phtml" class="btn-primary button btn-sm"><i class="fa fa-pencil"></i> Edit</a>
+				</div>
+			</div>
+			<div class="panel-body">
+				<p>
+				<%=FirstName%>&nbsp;<%=LastName%><br />
+				<%=Email%><br />
+				<a href="<%=g_secure_url%>chgpwd.phtml">Change Password</a>
+				</p>
+			</div>
+		</div>
+	</div>
+	<div class="col-md-6">
+	</div>
+</div>
+<br>
+<h3 class="title">Address Book</h3>
+<div class="row">
+	<div class="col-md-6">
+		<div class="panel panel-default">
+			<div class="panel-heading clearfix">
+				<h4 class="panel-title pull-left" style="padding-top: 7.5px;">Default Billing Address</h4>
+				<div class="btn-group pull-right">
+					<a href="<%=g_secure_url%>billing_list.phtml" class="btn-primary button btn-sm"><i class="fa fa-pencil"></i> Edit</a>
+				</div>
+			</div>
+			<div class="panel-body">
+				<address>
+				<%=s_shopper%><br/>
+				<%=billing_Company%><br />
+				<%=billing_Address%><br />
+				<%=billing_City%>,  <%=billing_State%>, <%=billing_ZipCode%><br/>
+				<%=billing_country%><br/>
+				T: <%=billing_phone%>
+				<br />
+				<a href="<%=g_secure_url%>billing_list.phtml">Edit Address</a>
+				</address>
+			</div>
+		</div>
+	</div>
+	<div class="col-md-6">
+		<div class="panel panel-default">
+			<div class="panel-heading clearfix">
+				<h4 class="panel-title pull-left" style="padding-top: 7.5px;">Default Shipping Address</h4>
+				<div class="btn-group pull-right">
+					<a href="<%=g_secure_url%>shipping_list.phtml" class="btn-primary button btn-sm"><i class="fa fa-pencil"></i> Edit</a>
+				</div>
+			</div>
+			<div class="panel-body">
+				<address>
+				<%=shipping_FirstName%>&nbsp;<%=shipping_LastName%><br/>
+				<%=billing_Company%><br />
+				<%=shipping_address%><br />
+				<%=shipping_city%>,  <%=shipping_state%>, <%=shipping_zip%><br/>
+				<%=shipping_country%><br/>
+				T: <%=shipping_phone%>
+				<br />
+				<a href="<%=g_secure_url%>shipping_list.phtml">Edit Address</a>
+				</address>
+			</div>
+		</div>
+	</div>
+</div>

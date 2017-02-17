@@ -141,6 +141,12 @@
 	rsUpdate.Close
 	set rsUpdate = nothing
 	
+	if Len(shopper_password) > 0 then
+		salt = getRandomString(5)
+		sql = "UPDATE " & g_storeid & "_shopper SET password = CONVERT(VARCHAR(32), HashBytes('MD5', '" & salt & shopper_password & "'), 2) + ':' + '" & salt & "' WHERE shopper_id='" & shopper_id & "'"
+		dbconn.Execute(sql)
+	end if
+	
 	'=================================================================================================
 	'ALT Billing
 	'=================================================================================================
@@ -523,8 +529,6 @@
 		rsUpdate.Close
 		set rsUpdate = nothing
 
-		rs.Close
-		set rs = nothing
 	end if
 	
 %>

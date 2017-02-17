@@ -5,6 +5,7 @@
 <!--#INCLUDE FILE="../../util/xt_func_util.phtml"-->
 <!--#INCLUDE File="../../util/xt_func_shopper.phtml" -->
 <!-- #INCLUDE File="../../util/xt_func_payment.phtml" -->
+<!-- #INCLUDE File="../../util/xt_func_client.phtml" -->
 <!--#INCLUDE FILE="../../util/xt_func_shoppingcart.phtml"-->
 <%
 	sessionID = Request("sessionID")
@@ -22,9 +23,15 @@
 %>
 <!--#INCLUDE FILE="../i_login.phtml"-->
 <%
+	
+	if Len(Session("shopper_id")) > 0 then
+	else
+		Session("REFERER_URL2") = g_secure_url & "checkout.phtml"
+		Response.Redirect g_secure_url & "login.phtml"
+	end if
 	iCount = GetTotalItemsInCart()
 	if( iCount < 1 )then
-		Response.Redirect g_secure_url & "basket.phtml"
+		Response.Redirect g_secure_url & "cart.phtml"
 	end if
 
 	store_payment_gateway_enabled = GetSettingValue("store_payment_gateway_enabled", "0")

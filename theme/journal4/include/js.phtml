@@ -11,7 +11,7 @@
 <script>
 $(document).ready(function () {
 	
-	Journal.enableStickyHeader();
+	//Journal.enableStickyHeader();
 });
 </script>
 <% end if %>
@@ -19,14 +19,92 @@ $(document).ready(function () {
 <script>
 $(document).ready(function () {
 	
-	Journal.enableStickyHeader();
+	//Journal.enableStickyHeader();
 });
 </script>
 <% end if %>
 <% if g_route_page_id = "product" then %>
+<script language="javascript">
+var FormValidation = function () {
+	var productValidation = function() {
+		var form1 = $('#buyform');
+		form1.validate({
+			
+			highlight: function (element) { // hightlight error inputs
+
+				$(element)
+					.closest('.form-group').addClass('has-error'); // set error class to the control group
+			},
+
+			unhighlight: function (element) { // revert the change done by hightlight
+				$(element)
+					.closest('.form-group').removeClass('has-error'); // set error class to the control group
+			},
+			submitHandler: function (form) {
+				
+				xxyz = true;
+				<%
+					sql = "SELECT * FROM " & g_storeid & "_eav_attribute WHERE attribute_id IN (" & s_config_att_id & ") ORDER BY sort_order"
+					set rsAvailOptions = dbconn.Execute(sql)
+					do while not rsAvailOptions.EOF
+						option_attribute_id = rsAvailOptions("attribute_id")
+						frontend_label = rsAvailOptions("frontend_label")
+						if option_attribute_id = 134 then
+				%>
+				xyz = $("input[name='option_<%=option_attribute_id%>']:checked").val();
+				if (typeof xyz == "undefined")
+				{
+					alert("Please select <%=frontend_label%>");
+					xxyz = false;
+				}
+				
+				<%
+					else
+				%>
+				if ($("#input_option<%=option_attribute_id%>").val() == "")
+				{
+					alert("Please select <%=frontend_label%>");
+					xxyz = false;
+				}
+				<%
+						end if
+						rsAvailOptions.MoveNext
+					loop
+					rsAvailOptions.Close
+					set rsAvailOptions = nothing
+				%>
+				
+				if (xxyz) 
+				{
+					$.ajax({
+						type: "POST",
+						url: "api/sp_cart.phtml",
+						data: form1.serialize(),
+						success: function() {
+							location.href = "<%=g_secure_url%>cart.phtml";
+						},
+						error: function() {
+							//warning1.show();
+						}
+					});
+				}
+			}
+			
+		});
+
+	}
+	return {
+		//main function to initiate the module
+		init: function () {
+			productValidation();
+		}
+	};
+
+}();
+</script>
 <script>
 $(document).ready(function () {
-	
+	FormValidation.init();
 	$('.product-info .image-additional a').click(function (e) {
         e.preventDefault();
         var thumb = $(this).find('img').attr('src');
@@ -37,7 +115,7 @@ $(document).ready(function () {
 	
 	$('.product-tabs').insertAfter('.product-info');
 	
-	Journal.enableStickyHeader();
+	//Journal.enableStickyHeader();
 
 	if ($('html').hasClass('product-page') || $('html').hasClass('quickview')) {
 		//Journal.enableCloudZoom('inner');
@@ -72,6 +150,55 @@ $(document).ready(function () {
         });
     }
 	
+	
+	jQuery( "#input_option143" ).change(function() {
+		//$('#loading-mask').show();
+		jQuery.ajax({
+			type:"get",
+			url: "api/sp_get_option_group.phtml",
+			data: {'pf_id' : "<%=pf_id%>", 'filter_option': "143", 'filter_option_value': $(this).val(), 'isAjax':true},
+			dataType: 'html',
+			success: function(data) {
+				jQuery("#option_group_134").html(data);
+			},
+			complete: function(){
+				//$('#loading-mask').hide();
+				$('.option-image li').click(function () {
+					var $this = $(this);
+					var $option = $this.closest('.option');
+					var $input = $option.find('[value="' + $this.attr('data-value') + '"]');
+					
+					
+					if ($option.hasClass('option-select')) {
+						var $select = $input.parent();
+						var val = $select.val() == $this.attr('data-value') ? '' : $this.attr('data-value');
+						$select.val(val);
+						$select.trigger('change');
+					} else {
+						$input.trigger('click');
+					}
+					
+					
+					if ($option.hasClass('option-select')) {
+						$option.find('[data-value]').removeClass('selected');
+						$option.find('[data-value="' + $option.find('select').val() + '"]').addClass('selected');
+					} else {
+						$option.find('input').each(function() {
+							var $el = $(this);
+							var val = $(this).val();
+							if ($el.is(':checked')) {
+								$option.find('[data-value="' + val + '"]').addClass('selected');
+							} else {
+								$option.find('[data-value="' + val + '"]').removeClass('selected');
+							}
+						});
+					}
+					
+				});
+				
+			}
+		});
+	});
 	//Journal.productPageGallery();
 });
 </script>
@@ -79,8 +206,326 @@ $(document).ready(function () {
 <% if g_route_page_id = "sproduct" then %>
 
 <% end if %>
-<% if g_route_page_id = "cart" then %>
 
+<% if g_route_page_id = "cart" then %>
+<script language="javascript">
+var FormValidation = function () {
+	var shValidation1 = function() {
+		var form1 = $('#sh-form');
+		form1.validate({
+			//RULES
+			rules: {
+				country_id: {
+					required: true
+				},
+				zone_id: {
+					required: true
+				},
+				postcode: {
+					required: true
+				}
+			},
+			messages: {
+				login_email: {
+					required: "Please enter your email address.",
+					email : "Please enter a valid email address."
+				},
+				login_password: {
+					required: "Please enter your password."
+				}
+			},
+			highlight: function (element) { // hightlight error inputs
+
+				$(element)
+					.closest('.form-group').addClass('has-error'); // set error class to the control group
+			},
+
+			unhighlight: function (element) { // revert the change done by hightlight
+				$(element)
+					.closest('.form-group').removeClass('has-error'); // set error class to the control group
+			},
+			submitHandler: function (form) {
+				$("#sp_method").html('<i class="fa fa-spinner fa-spin" style="font-size:24px" id="sh_method_spinner"></i>');
+				$("#button-get-total").hide();
+				$("#sh-method-form").show();
+				
+				$.ajax({
+					type: "POST",
+					url: "api/sp_set_shipping_est_data.phtml",
+					data: form1.serialize(),
+					success: function() {
+						jQuery.ajax({
+							type: "get",
+						
+							url: "api/sp_get_shipping_rate.phtml",
+							data: { 'dest_country': $('#country_id').val(), 'dest_state': $('#zone_id').val(), 'dest_postal': $('#postcode').val(), isAjax: true },
+							dataType: 'json',
+							success: function (data) {
+								listItems = "";
+								x = -1;
+								for (var i = 0; i < data.Rates.length; i++){
+									if (data.Rates[i].name == '<%=Session("DefaultShippingName")%>')
+									{
+										listItems+= "<li><input type='radio' id='sh_" + i + "' name='SH' value='" + data.Rates[i].name + "|" + data.Rates[i].rate + "'> <label>" + data.Rates[i].name +  " ($" +  data.Rates[i].rate + ") </label></li>";
+										x = i;
+									}
+									else
+									{
+										listItems+= "<li><input type='radio' id='sh_" + i + "' name='SH' value='" + data.Rates[i].name  + "|" + data.Rates[i].rate + "'> <label>" + data.Rates[i].name +  " ($" +  data.Rates[i].rate + ") </label></li>";
+									}
+									
+								}
+								
+								$('#sp_method').html(listItems);
+								
+								if (x == -1)
+								{
+									
+								}
+								else
+								{
+									$("#sh_" + x).prop("checked", true);
+								}
+								$("#button-get-total").show();
+								
+							}
+						});
+					},
+					error: function() {
+						//warning1.show();
+					}
+				});
+			}
+			
+		});
+
+	}
+	return {
+		//main function to initiate the module
+		init: function () {
+			shValidation1();
+		}
+	};
+
+}();
+</script>
+<script type="text/javascript">
+<% if GetTotalItemsInCart() > 0 then %>
+<%
+	if Session("CartCountry") = "" then
+		Session("CartCountry") = "US"
+	end if
+%>
+jQuery(document).ready(function() { 
+	FormValidation.init();
+	jQuery.ajax({
+		type:"get",
+		url: "api/sp_get_country_list.phtml",
+		data: {country_id: 'US', 'isAjax':true},
+		dataType: 'json',
+		success: function(data) {
+			var listItems= "<option value=''>--- Please Select ---</option>";
+			for (var i = 0; i < data.Country.length; i++){
+				if (data.Country[i].id == '<%=Session("CartCountry")%>')
+				{
+					listItems+= "<option value='" + data.Country[i].id + "' selected>" + data.Country[i].name + "</option>";
+				}
+				else
+				{
+					listItems+= "<option value='" + data.Country[i].id + "'>" + data.Country[i].name + "</option>";
+				}
+				
+			}
+			var select = jQuery("#country_id");
+			select.empty(); 
+			select.append(listItems);
+		}
+	});
+	
+   jQuery.ajax({
+		type:"get",
+		url: "api/sp_get_zone_list.phtml",
+		data: {country_id: 'US', 'isAjax':true},
+		dataType: 'json',
+		success: function(data) {
+			var listItems= "<option value=''>--- Please Select ---</option>";
+			for (var i = 0; i < data.Zone.length; i++){
+				if (data.Zone[i].id == '<%=Session("CartZone")%>')
+				{
+					listItems+= "<option value='" + data.Zone[i].id + "' selected>" + data.Zone[i].name + "</option>";
+				}
+				else
+				{
+					listItems+= "<option value='" + data.Zone[i].id + "'>" + data.Zone[i].name + "</option>";
+				}
+			}
+			var select = jQuery("#zone_id");
+			select.empty(); 
+			select.append(listItems);
+		}
+	});
+	jQuery( "#country_id" ).change(function() {
+		var sCountry = jQuery("#country_id").val();
+		jQuery.ajax({
+			type:"get",
+			url: "api/sp_get_zone_list.phtml",
+			data: {country_id: sCountry, 'isAjax':true},
+			dataType: 'json',
+			success: function(data) {
+				var listItems= "<option value=''>--- Please Select ---</option>";
+				for (var i = 0; i < data.Zone.length; i++){
+					if (data.Zone[i].id == '<%=Session("CartZone")%>')
+					{
+						listItems+= "<option value='" + data.Zone[i].id + "' selected>" + data.Zone[i].name + "</option>";
+					}
+					else
+					{
+						listItems+= "<option value='" + data.Zone[i].id + "'>" + data.Zone[i].name + "</option>";
+					}
+				}
+				var select = jQuery("#zone_id");
+				select.empty(); 
+				select.append(listItems);
+			}
+		});
+	});
+	
+	jQuery( "#button-get-total" ).click(function() {
+		
+		jQuery.ajax({
+			type:"get",
+			url: "api/sp_get_cart_total.phtml",
+			data: {'sh_data' : $("input[name=SH]:checked").val(), 'isAjax':true},
+			dataType: 'json',
+			success: function(data) {
+				for (var i = 0; i < data.CartTotal.length; i++){
+					
+					if (data.CartTotal[i].id == 'subtotal')
+					{
+						
+					}
+					
+					if (data.CartTotal[i].id == 'tax')
+					{
+						
+					}
+					
+					if (data.CartTotal[i].id == 'shipping')
+					{
+						if (data.CartTotal[i].amount == "-1")
+						{
+							jQuery("#cart_total_sh_total_container").hide();
+							jQuery("#cart_total_sh_total_amount").html("$0.00");
+						}
+						else
+						{
+							jQuery("#cart_total_sh_total_container").show();
+							jQuery("#cart_total_sh_total_amount").html("$" + data.CartTotal[i].amount);
+						}
+					}
+					
+					if (data.CartTotal[i].id == 'grandtotal')
+					{
+						jQuery("#cart_total_grand_total_amount").html("$" + data.CartTotal[i].amount);
+					}
+				}
+			}
+		});
+	});
+				
+	<% if Len(Session("CartCountry")) > 1 AND Len(Session("CartZone")) > 1 AND Len(Session("CartPostCode")) > 1 then %>
+	$("#sp_method").html('<i class="fa fa-spinner fa-spin" style="font-size:24px" id="sh_method_spinner"></i>');
+	$("#button-get-total").hide();
+	$("#sh-method-form").show();
+				
+	jQuery.ajax({
+		type: "get",
+	
+		url: "api/sp_get_shipping_rate.phtml",
+		data: { 'dest_country': '<%=Session("CartCountry")%>', 'dest_state': '<%=Session("CartZone")%>', 'dest_postal': '<%=Session("CartPostCode")%>', isAjax: true },
+		dataType: 'json',
+		success: function (data) {
+			listItems = "";
+			x = -1;
+			for (var i = 0; i < data.Rates.length; i++){
+				if (data.Rates[i].name == '<%=Session("DefaultShippingName")%>')
+				{
+					listItems+= "<li><input type='radio' id='sh_" + i + "' name='SH' value='" + data.Rates[i].name + "|" + data.Rates[i].rate + "'> <label>" + data.Rates[i].name +  " ($" +  data.Rates[i].rate + ") </label></li>";
+					x = i;
+				}
+				else
+				{
+					listItems+= "<li><input type='radio' id='sh_" + i + "' name='SH' value='" + data.Rates[i].name  + "|" + data.Rates[i].rate + "'> <label>" + data.Rates[i].name +  " ($" +  data.Rates[i].rate + ") </label></li>";
+				}
+				
+			}
+			
+			$('#sp_method').html(listItems);
+			
+			if (x == -1)
+			{
+				
+			}
+			else
+			{
+				$("#sh_" + x).prop("checked", true);
+			}
+			
+			$("#button-get-total").show();
+			
+			jQuery.ajax({
+				type:"get",
+				url: "api/sp_get_cart_total.phtml",
+				data: {'sh_data' : $("input[name=SH]:checked").val(), 'isAjax':true},
+				dataType: 'json',
+				success: function(data) {
+					for (var i = 0; i < data.CartTotal.length; i++){
+						
+						if (data.CartTotal[i].id == 'subtotal')
+						{
+							
+						}
+						
+						if (data.CartTotal[i].id == 'tax')
+						{
+							
+						}
+						
+						if (data.CartTotal[i].id == 'shipping')
+						{
+							if (data.CartTotal[i].amount == "-1")
+							{
+								jQuery("#cart_total_sh_total_container").hide();
+								jQuery("#cart_total_sh_total_amount").html("$0.00");
+							}
+							else
+							{
+								jQuery("#cart_total_sh_total_container").show();
+								jQuery("#cart_total_sh_total_amount").html("$" + data.CartTotal[i].amount);
+							}
+						}
+						
+						if (data.CartTotal[i].id == 'grandtotal')
+						{
+							jQuery("#cart_total_grand_total_amount").html("$" + data.CartTotal[i].amount);
+						}
+					}
+				}
+			});
+			
+		}
+	});
+	<% end if %>
+	
+	
+});
+<% end if %>
+</script>
+<style>
+#sp_method li{
+	list-style: none;
+}
+</style>
 <% end if %>
 <% if g_route_page_id = "login" then %>
 <script language="javascript">
@@ -143,7 +588,180 @@ jQuery(document).ready(function() {
 <% end if %>
 
 <% if g_route_page_id = "register" then %>
+<script language="javascript">
+var FormValidation = function () {
+	var registerValidation1 = function() {
+		var form1 = $('#register-form');
+		var error1 = $('.alert-danger', form1);
+		var success1 = $('.alert-success', form1);
+		var warning1 = $('.alert-warning', form1);
 
+		form1.validate({
+			
+			//RULES
+			rules: {
+				new_email: {
+					required: true,
+					email: true,
+					remote:
+					{
+					  url: 'api/check_duplicate_email_address.phtml',
+					  type: "post"
+					}
+				},
+				new_password1 : {
+					required: true,
+                    minlength : 5
+                },
+                new_password2 : {
+					required: true,
+                    minlength : 5,
+                    equalTo : "#new_password1"
+                },
+				firstname: {
+					required: true
+				},
+				lastname: {
+					required: true
+				},
+				telephone: {
+					required: true
+				},
+				address: {
+					required: true
+				},
+				city: {
+					required: true
+				},
+				postcode: {
+					required: true
+				},
+				country: {
+					required: true
+				},
+				state: {
+					required: true
+				}
+				
+			},
+			messages: {
+				new_email: {
+					required: "Please enter your email address.",
+					email : "Please enter a valid email address.",
+					remote: "The specified email address is already registered."
+				},
+				new_password1: {
+					required: "Please enter your password.",
+					minlength: "Please enter your password with 5 characters or more."
+				},
+				new_password2: {
+					required: "Please confirm your password.",
+					minlength: "Please enter your password with 5 characters or more.",
+					equalTo: "Please enter same password."
+				}
+			},
+			
+			invalidHandler: function (event, validator) { //display error alert on form submit              
+				success1.hide();
+				error1.show();
+			},
+			/*
+			errorPlacement: function (error, element) { // render error placement for each input type
+				var cont = $(element).parent('.input-group');
+				if (cont) {
+					cont.after(error);
+				} else {
+					element.after(error);
+				}
+			},
+			*/
+			highlight: function (element) { // hightlight error inputs
+
+				$(element)
+					.closest('.form-group').addClass('has-error'); // set error class to the control group
+			},
+
+			unhighlight: function (element) { // revert the change done by hightlight
+				$(element)
+					.closest('.form-group').removeClass('has-error'); // set error class to the control group
+			},
+			
+			success: function (label) {
+				label
+					.closest('.form-group').removeClass('has-error'); // set success class to the control group
+			},
+
+			submitHandler: function (form) {
+				success1.hide();
+				error1.hide
+				warning1.hide();
+				window.scrollTo(0,0);
+				$.ajax({
+					type: "POST",
+					url: "api/sp_register_update.phtml",
+					data: form1.serialize(),
+					success: function() {
+						success1.show();
+						setTimeout(function () {
+							window.location.replace('<%=g_secure_url%>');
+						}, 500);
+					},
+					error: function() {
+						warning1.show();
+					}
+				});
+			}
+			
+		});
+
+	}
+	return {
+		//main function to initiate the module
+		init: function () {
+			registerValidation1();
+		}
+	};
+
+}();
+</script>
+<script type="text/javascript">
+jQuery(document).ready(function() { 
+   FormValidation.init();
+   jQuery.ajax({
+		type:"get",
+		url: "api/sp_get_zone_list.phtml",
+		data: {country_id: 'US', 'isAjax':true},
+		dataType: 'json',
+		success: function(data) {
+			var listItems= "<option value=''>--- Please Select ---</option>";
+			for (var i = 0; i < data.Zone.length; i++){
+				listItems+= "<option value='" + data.Zone[i].id + "'>" + data.Zone[i].name + "</option>";
+			}
+			var select = jQuery("#state");
+			select.empty(); 
+			select.append(listItems);
+		}
+	});
+	jQuery( "#country" ).change(function() {
+		var sCountry = jQuery("#country").val();
+		jQuery.ajax({
+			type:"get",
+			url: "api/sp_get_zone_list.phtml",
+			data: {country_id: sCountry, 'isAjax':true},
+			dataType: 'json',
+			success: function(data) {
+				var listItems= "<option value=''>--- Please Select ---</option>";
+				for (var i = 0; i < data.Zone.length; i++){
+					listItems+= "<option value='" + data.Zone[i].id + "'>" + data.Zone[i].name + "</option>";
+				}
+				var select = jQuery("#state");
+				select.empty(); 
+				select.append(listItems);
+			}
+		});
+	});
+});
+</script>
 <% end if %>
 <% if g_route_page_id = "billing_list" then %>
 <% if op = "edit" then %>
@@ -156,8 +774,719 @@ jQuery(document).ready(function() {
 <% end if %>
 <% end if %>
 <% if g_route_page_id = "checkout" then %>
+<script language="javascript">
+var FormValidation = function () {
+	var checkoutValidation1 = function() {
+		var form1 = $('#checkout-form');
+		var error1 = $('.alert-danger', form1);
+		var success1 = $('.alert-success', form1);
+		var warning1 = $('.alert-warning', form1);
 
+		form1.validate({
+			
+			//RULES
+			rules: {
+				"payment_method": {
+					required: true
+				},
+				"SH": {
+					required: true
+				},
+				new_billing_firstname: {
+					 required: function () {
+                                return $('#billing_address_id').val() === 'new';
+                            }
+				},
+				new_billing_lastname: {
+					 required: function () {
+                                return $('#billing_address_id').val() === 'new';
+                            }
+				},
+				new_billing_address: {
+					 required: function () {
+                                return $('#billing_address_id').val() === 'new';
+                            }
+				},
+				new_billing_city: {
+					 required: function () {
+                                return $('#billing_address_id').val() === 'new';
+                            }
+				},
+				new_billing_zip: {
+					 required: function () {
+                                return $('#billing_address_id').val() === 'new';
+                            }
+				},
+				new_billing_country_id: {
+					 required: function () {
+                                return $('#billing_address_id').val() === 'new';
+                            }
+				},
+				new_billing_zone_id: {
+					 required: function () {
+                                return $('#billing_address_id').val() === 'new';
+                            }
+				},
+				new_shipping_firstname: {
+					 required: function () {
+                                return $('#shipping_address_id').val() === 'new';
+                            }
+				},
+				new_shipping_lastname: {
+					 required: function () {
+                                return $('#shipping_address_id').val() === 'new';
+                            }
+				},
+				new_shipping_address: {
+					 required: function () {
+                                return $('#shipping_address_id').val() === 'new';
+                            }
+				},
+				new_shipping_city: {
+					 required: function () {
+                                return $('#shipping_address_id').val() === 'new';
+                            }
+				},
+				new_shipping_zip: {
+					 required: function () {
+                                return $('#shipping_address_id').val() === 'new';
+                            }
+				},
+				new_shipping_country_id: {
+					 required: function () {
+                                return $('#shipping_address_id').val() === 'new';
+                            }
+				},
+				new_shipping_zone_id: {
+					 required: function () {
+                                return $('#shipping_address_id').val() === 'new';
+                            }
+				},
+				shopper_shipping_address: {
+					required: true
+				},
+				shopper_shipping_city: {
+					required: true
+				},
+				shopper_shipping_country: {
+					required: true
+				},
+				shopper_shipping_state: {
+					required: true
+				},
+				shopper_billingshipping_zip: {
+					required: true
+				},
+				shopper_shipping_phone: {
+					required: true
+				}
+				
+			},
+			messages: {
+				"payment_method": {
+					required: "Please select your payment method."
+				},
+				"SH": {
+					required: "Please select your shipping method."
+				}
+			},
+			
+			
+			invalidHandler: function (event, validator) { //display error alert on form submit              
+				success1.hide();
+				warning1.hide();
+				error1.show();
+			},
+			/*
+			errorPlacement: function (error, element) { // render error placement for each input type
+				var cont = $(element).parent('.input-group');
+				if (cont) {
+					//cont.after(error);
+				} else {
+					//element.after(error);
+				}
+			},
+			*/
+			
+			highlight: function (element) { // hightlight error inputs
+
+				$(element)
+					.closest('.form-group').addClass('has-error'); // set error class to the control group
+			},
+
+			unhighlight: function (element) { // revert the change done by hightlight
+				$(element)
+					.closest('.form-group').removeClass('has-error'); // set error class to the control group
+			},
+			
+			success: function (label) {
+				label
+					.closest('.form-group').removeClass('has-error'); // set success class to the control group
+			},
+
+			submitHandler: function (form) {
+				$('#button-confirm').button('loading');
+				success1.hide();
+				error1.hide
+				warning1.hide();
+				$.ajax({
+					type: "POST",
+					url: "api/sp_process_order.phtml",
+					data: form1.serialize(),
+					success: function() {
+						/*
+						success1.show();
+						setTimeout(function () {
+							window.location.replace('<%=g_secure_url%>shipping_list.phtml');
+						}, 500);
+						*/
+						setTimeout(function () {
+							$('#button-confirm').button('reset');
+						}, 5000);
+						
+						window.location.replace("<%=g_secure_url%>receipt.phtml");
+					},
+					error: function() {
+						warning1.show();
+					}
+				});
+			}
+			
+		});
+
+	}
+	return {
+		//main function to initiate the module
+		init: function () {
+			checkoutValidation1();
+		}
+	};
+
+}();
+</script>
+<script type="text/javascript">
+jQuery(document).ready(function() { 
+   FormValidation.init();
+   
+   jQuery( "#payment_method_store_credit" ).change(function() {
+	   //alert($(this).is(':checked'));
+	   if ($(this).is(':checked'))
+	   {
+		   
+		   $.ajax({
+				type: "POST",
+				url: "api/sp_set_credit_on_cart.phtml",
+				data: {'apply_credit': '1', 'isAjax':true},
+				success: function() {
+					
+				}
+			});
+		   
+	   }
+	   else
+	   {
+		    $.ajax({
+				type: "POST",
+				url: "api/sp_set_credit_on_cart.phtml",
+				data: {'apply_credit': '0', 'isAjax':true},
+				success: function() {
+					
+				}
+			});
+	   }
+   });
+   
+   jQuery.ajax({
+		type:"get",
+		url: "api/sp_get_country_list.phtml",
+		data: {country_id: 'US', 'isAjax':true},
+		dataType: 'json',
+		success: function(data) {
+			var listItems= "<option value=''>--- Please Select ---</option>";
+			for (var i = 0; i < data.Country.length; i++){
+				if (data.Country[i].id == '<%=Session("CartCountry")%>')
+				{
+					listItems+= "<option value='" + data.Country[i].id + "' selected>" + data.Country[i].name + "</option>";
+				}
+				else
+				{
+					listItems+= "<option value='" + data.Country[i].id + "'>" + data.Country[i].name + "</option>";
+				}
+				
+			}
+			var select = jQuery("#new_billing_country_id");
+			select.empty(); 
+			select.append(listItems);
+		}
+	});
+	
+	jQuery.ajax({
+		type:"get",
+		url: "api/sp_get_zone_list.phtml",
+		data: {country_id: 'US', 'isAjax':true},
+		dataType: 'json',
+		success: function(data) {
+			var listItems= "<option value=''>--- Please Select ---</option>";
+			for (var i = 0; i < data.Zone.length; i++){
+				if (data.Zone[i].id == '<%=Session("CartZone")%>')
+				{
+					listItems+= "<option value='" + data.Zone[i].id + "' selected>" + data.Zone[i].name + "</option>";
+				}
+				else
+				{
+					listItems+= "<option value='" + data.Zone[i].id + "'>" + data.Zone[i].name + "</option>";
+				}
+			}
+			var select = jQuery("#new_billing_zone_id");
+			select.empty(); 
+			select.append(listItems);
+		}
+	});
+	
+	jQuery.ajax({
+		type:"get",
+		url: "api/sp_get_country_list.phtml",
+		data: {country_id: 'US', 'isAjax':true},
+		dataType: 'json',
+		success: function(data) {
+			var listItems= "<option value=''>--- Please Select ---</option>";
+			for (var i = 0; i < data.Country.length; i++){
+				if (data.Country[i].id == '<%=Session("CartCountry")%>')
+				{
+					listItems+= "<option value='" + data.Country[i].id + "' selected>" + data.Country[i].name + "</option>";
+				}
+				else
+				{
+					listItems+= "<option value='" + data.Country[i].id + "'>" + data.Country[i].name + "</option>";
+				}
+				
+			}
+			var select = jQuery("#new_shipping_country_id");
+			select.empty(); 
+			select.append(listItems);
+		}
+	});
+	
+	jQuery.ajax({
+		type:"get",
+		url: "api/sp_get_zone_list.phtml",
+		data: {country_id: 'US', 'isAjax':true},
+		dataType: 'json',
+		success: function(data) {
+			var listItems= "<option value=''>--- Please Select ---</option>";
+			for (var i = 0; i < data.Zone.length; i++){
+				if (data.Zone[i].id == '<%=Session("CartZone")%>')
+				{
+					listItems+= "<option value='" + data.Zone[i].id + "' selected>" + data.Zone[i].name + "</option>";
+				}
+				else
+				{
+					listItems+= "<option value='" + data.Zone[i].id + "'>" + data.Zone[i].name + "</option>";
+				}
+			}
+			var select = jQuery("#new_shipping_zone_id");
+			select.empty(); 
+			select.append(listItems);
+		}
+	});
+	
+	jQuery( "#new_billing_country_id" ).change(function() {
+		var sCountry = jQuery("#country_id").val();
+		jQuery.ajax({
+			type:"get",
+			url: "api/sp_get_zone_list.phtml",
+			data: {country_id: sCountry, 'isAjax':true},
+			dataType: 'json',
+			success: function(data) {
+				var listItems= "<option value=''>--- Please Select ---</option>";
+				for (var i = 0; i < data.Zone.length; i++){
+					if (data.Zone[i].id == '<%=Session("CartZone")%>')
+					{
+						listItems+= "<option value='" + data.Zone[i].id + "' selected>" + data.Zone[i].name + "</option>";
+					}
+					else
+					{
+						listItems+= "<option value='" + data.Zone[i].id + "'>" + data.Zone[i].name + "</option>";
+					}
+				}
+				var select = jQuery("#new_billing_zone_id");
+				select.empty(); 
+				select.append(listItems);
+			}
+		});
+	});
+	
+	jQuery( "#new_shipping_country_id" ).change(function() {
+		var sCountry = jQuery("#country_id").val();
+		jQuery.ajax({
+			type:"get",
+			url: "api/sp_get_zone_list.phtml",
+			data: {country_id: sCountry, 'isAjax':true},
+			dataType: 'json',
+			success: function(data) {
+				var listItems= "<option value=''>--- Please Select ---</option>";
+				for (var i = 0; i < data.Zone.length; i++){
+					if (data.Zone[i].id == '<%=Session("CartZone")%>')
+					{
+						listItems+= "<option value='" + data.Zone[i].id + "' selected>" + data.Zone[i].name + "</option>";
+					}
+					else
+					{
+						listItems+= "<option value='" + data.Zone[i].id + "'>" + data.Zone[i].name + "</option>";
+					}
+				}
+				var select = jQuery("#new_shipping_zone_id");
+				select.empty(); 
+				select.append(listItems);
+			}
+		});
+	});
+	
+   jQuery( "#billing_address_id" ).change(function() {
+	  
+	   if (jQuery("#billing_address_id").val() == "new")
+	   {
+			$('#billing_address').removeClass('display-hide');
+	   }
+	   else
+	   {
+		  $('#billing_address').addClass('display-hide');
+	   }
+   });
+   
+   jQuery( "#shipping_address_id" ).change(function() {
+	  
+	   if (jQuery("#shipping_address_id").val() == "new")
+	   {
+			$('#shipping_address').removeClass('display-hide');
+	   }
+	   else
+	   {
+		  $('#shipping_address').addClass('display-hide');
+		  
+		  jQuery.ajax({
+				type:"get",
+				url: "api/sp_get_shipping_address_detail.phtml",
+				data: {'address_id' : $("shipping_address_id").val(), 'isAjax':true},
+				dataType: 'json',
+				success: function(data) {
+					for (var i = 0; i < data.Address.length; i++){
+						
+						if (data.Address[i].id == 'country_id')
+						{
+							$('#country_id').val(data.Address[i].dvalue);
+						}
+						
+						if (data.Address[i].id == 'zone_id')
+						{
+							$('#zone_id').val(data.Address[i].dvalue);
+						}
+						
+						if (data.Address[i].id == 'postcode')
+						{
+							$('#postcode').val(data.Address[i].dvalue);
+						}
+					}
+					
+					//***************************************************
+					$("#sp_method").html('<i class="fa fa-spinner fa-spin" style="font-size:24px" id="sh_method_spinner"></i>');
+					jQuery.ajax({
+						type: "get",
+					
+						url: "api/sp_get_shipping_rate.phtml",
+						data: { 'dest_country': $('#z_country_id').val(), 'dest_state': $('#z_zone_id').val(), 'dest_postal': $('#z_postcode').val(), isAjax: true },
+						dataType: 'json',
+						success: function (data) {
+							listItems = "";
+							x = -1;
+							for (var i = 0; i < data.Rates.length; i++){
+								if (data.Rates[i].name == '<%=Session("DefaultShippingName")%>')
+								{
+									x = i;
+								}
+								listItems+= "<div class='radio'><label><input type='radio' id='sh_" + i + "' name='SH' value='" + data.Rates[i].name + "|" + data.Rates[i].rate + "'>" + data.Rates[i].name + " - $" + data.Rates[i].rate + "</label></div>";
+							}
+							
+							$('#sp_method').html(listItems);
+							
+							if (x == -1)
+							{
+								
+							}
+							else
+							{
+								$("#sh_" + x).prop("checked", true);
+							}
+							
+							
+							jQuery.ajax({
+								type:"get",
+								url: "api/sp_get_cart_total.phtml",
+								data: {'sh_data' : $("input[name=SH]:checked").val(), 'isAjax':true},
+								dataType: 'json',
+								success: function(data) {
+									for (var i = 0; i < data.CartTotal.length; i++){
+										
+										if (data.CartTotal[i].id == 'subtotal')
+										{
+											jQuery("#cart_total_sub_total_amount").html("$" + data.CartTotal[i].amount);
+										}
+										
+										if (data.CartTotal[i].id == 'tax')
+										{
+											jQuery("#cart_total_tax_total_amount").html("$" + data.CartTotal[i].amount);
+										}
+										
+										if (data.CartTotal[i].id == 'store_credit')
+										{
+											jQuery("#cart_total_store_credit_amount").html("$" + data.CartTotal[i].amount);
+										}
+										
+										if (data.CartTotal[i].id == 'shipping')
+										{
+											if (data.CartTotal[i].amount == "-1")
+											{
+												jQuery("#cart_total_sh_total_amount").html("$0.00");
+											}
+											else
+											{
+												jQuery("#cart_total_sh_total_amount").html("$" + data.CartTotal[i].amount);
+											}
+										}
+										
+										if (data.CartTotal[i].id == 'grandtotal')
+										{
+											jQuery("#cart_total_grand_total_amount").html("$" + data.CartTotal[i].amount);
+										}
+									}
+								}
+							});
+							
+							$("input[name='SH']:radio").change(function () {
+								jQuery.ajax({
+									type:"get",
+									url: "api/sp_get_cart_total.phtml",
+									data: {'sh_data' : $("input[name=SH]:checked").val(), 'isAjax':true},
+									dataType: 'json',
+									success: function(data) {
+										for (var i = 0; i < data.CartTotal.length; i++){
+											
+											if (data.CartTotal[i].id == 'subtotal')
+											{
+												jQuery("#cart_total_sub_total_amount").html("$" + data.CartTotal[i].amount);
+											}
+											
+											if (data.CartTotal[i].id == 'tax')
+											{
+												jQuery("#cart_total_tax_total_amount").html("$" + data.CartTotal[i].amount);
+											}
+											if (data.CartTotal[i].id == 'store_credit')
+											{
+												jQuery("#cart_total_store_credit_amount").html("$" + data.CartTotal[i].amount);
+											}
+											if (data.CartTotal[i].id == 'shipping')
+											{
+												if (data.CartTotal[i].amount == "-1")
+												{
+													jQuery("#cart_total_sh_total_amount").html("$0.00");
+												}
+												else
+												{
+													jQuery("#cart_total_sh_total_amount").html("$" + data.CartTotal[i].amount);
+												}
+											}
+											
+											if (data.CartTotal[i].id == 'grandtotal')
+											{
+												jQuery("#cart_total_grand_total_amount").html("$" + data.CartTotal[i].amount);
+											}
+										}
+									}
+								});
+							});
+							
+						}
+					});
+					
+					
+					//***************************************************
+					
+				}
+			});
+		  
+	   }
+   });
+   
+   $("#sp_method").html('<i class="fa fa-spinner fa-spin" style="font-size:24px" id="sh_method_spinner"></i>');
+   
+   jQuery.ajax({
+		type: "get",
+	
+		url: "api/sp_get_shipping_rate.phtml",
+		data: { 'dest_country': $('#z_country_id').val(), 'dest_state': $('#z_zone_id').val(), 'dest_postal': $('#z_postcode').val(), isAjax: true },
+		dataType: 'json',
+		success: function (data) {
+			listItems = "";
+			x = -1;
+			for (var i = 0; i < data.Rates.length; i++){
+				if (data.Rates[i].name == '<%=Session("DefaultShippingName")%>')
+				{
+					x = i;
+				}
+				listItems+= "<div class='radio'><label><input type='radio' id='sh_" + i + "' name='SH' value='" + data.Rates[i].name + "|" + data.Rates[i].rate + "'>" + data.Rates[i].name + " - $" + data.Rates[i].rate + "</label></div>";
+			}
+			
+			$('#sp_method').html(listItems);
+			
+			if (x == -1)
+			{
+				
+			}
+			else
+			{
+				$("#sh_" + x).prop("checked", true);
+			}
+			
+			
+			jQuery.ajax({
+				type:"get",
+				url: "api/sp_get_cart_total.phtml",
+				data: {'sh_data' : $("input[name=SH]:checked").val(), 'isAjax':true},
+				dataType: 'json',
+				success: function(data) {
+					for (var i = 0; i < data.CartTotal.length; i++){
+						
+						if (data.CartTotal[i].id == 'subtotal')
+						{
+							jQuery("#cart_total_sub_total_amount").html("$" + data.CartTotal[i].amount);
+						}
+						
+						if (data.CartTotal[i].id == 'tax')
+						{
+							jQuery("#cart_total_tax_total_amount").html("$" + data.CartTotal[i].amount);
+						}
+						
+						if (data.CartTotal[i].id == 'store_credit')
+						{
+							jQuery("#cart_total_store_credit_amount").html("$" + data.CartTotal[i].amount);
+						}
+										
+						if (data.CartTotal[i].id == 'shipping')
+						{
+							if (data.CartTotal[i].amount == "-1")
+							{
+								jQuery("#cart_total_sh_total_amount").html("$0.00");
+							}
+							else
+							{
+								jQuery("#cart_total_sh_total_amount").html("$" + data.CartTotal[i].amount);
+							}
+						}
+						
+						if (data.CartTotal[i].id == 'grandtotal')
+						{
+							jQuery("#cart_total_grand_total_amount").html("$" + data.CartTotal[i].amount);
+						}
+					}
+				}
+			});
+			
+			$("input[name='SH']:radio").change(function () {
+				jQuery.ajax({
+					type:"get",
+					url: "api/sp_get_cart_total.phtml",
+					data: {'sh_data' : $("input[name=SH]:checked").val(), 'isAjax':true},
+					dataType: 'json',
+					success: function(data) {
+						for (var i = 0; i < data.CartTotal.length; i++){
+							
+							if (data.CartTotal[i].id == 'subtotal')
+							{
+								jQuery("#cart_total_sub_total_amount").html("$" + data.CartTotal[i].amount);
+							}
+							
+							if (data.CartTotal[i].id == 'tax')
+							{
+								jQuery("#cart_total_tax_total_amount").html("$" + data.CartTotal[i].amount);
+							}
+							
+							if (data.CartTotal[i].id == 'store_credit')
+							{
+								jQuery("#cart_total_store_credit_amount").html("$" + data.CartTotal[i].amount);
+							}
+										
+							if (data.CartTotal[i].id == 'shipping')
+							{
+								if (data.CartTotal[i].amount == "-1")
+								{
+									jQuery("#cart_total_sh_total_amount").html("$0.00");
+								}
+								else
+								{
+									jQuery("#cart_total_sh_total_amount").html("$" + data.CartTotal[i].amount);
+								}
+							}
+							
+							if (data.CartTotal[i].id == 'grandtotal')
+							{
+								jQuery("#cart_total_grand_total_amount").html("$" + data.CartTotal[i].amount);
+							}
+						}
+					}
+				});
+			});
+			
+		}
+	});
+
+	if ($("input[name='payment_method']:checked").val() == "creditcard")
+	{
+		jQuery("#payment_method_credicard_container").show();
+	}
+	else
+	{
+		jQuery("#payment_method_credicard_container").hide();
+	}
+	
+	if ($("input[name='payment_method']:checked").val() == "purchaseorder")
+	{
+		jQuery("#payment_method_purchaseorder_container").show();
+	}
+	else
+	{
+		jQuery("#payment_method_purchaseorder_container").hide();
+	}
+	
+	$("input[name='payment_method']:radio").change(function () {
+		if ($("input[name='payment_method']:checked").val() == "creditcard")
+		{
+			jQuery("#payment_method_credicard_container").show();
+		}
+		else
+		{
+			jQuery("#payment_method_credicard_container").hide();
+		}
+		
+		if ($("input[name='payment_method']:checked").val() == "purchaseorder")
+		{
+			jQuery("#payment_method_purchaseorder_container").show();
+		}
+		else
+		{
+			jQuery("#payment_method_purchaseorder_container").hide();
+		}
+	});
+	
+	
+   
+});
+</script>
 <% end if %>
 <% if g_route_page_id = "config" then %>
 
 <% end if %>
+<script type="text/javascript">
+function setLocation(url){
+    window.location.href = url;
+}
+</script>

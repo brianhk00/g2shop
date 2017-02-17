@@ -264,6 +264,85 @@
 	s_data_related = s_data
 	
 	'===============================================================================================
+	'Super Link Data
+	'===============================================================================================
+	link_data = ""
+	sql = "SELECT * FROM " & g_storeid & "_product_inventory WHERE inventory_id IN (SELECT product_id FROM " & g_storeid & "_product_super_link WHERE parent_id='" & pf_id & "')"
+	set rsProductSuper = dbconn.Execute(sql)
+	attr_id = 1
+	do while not rsProductSuper.EOF
+	
+		inventory_name = Trim(rsProductSuper("inventory_name"))
+		If Len(inventory_name) > 0 Then
+			inventory_name = Replace(inventory_name, "'", "&#39")
+			inventory_name = Replace(inventory_name, """", "\""")
+		End if
+		
+		link_data = link_data & "{ ""ID"": " & attr_id 
+		link_data = link_data & ", ""PID"": """ & Trim(rsProductSuper("inventory_id")) 
+		link_data = link_data & """, ""SKU"": """ & Trim(rsProductSuper("inventory_sku")) 
+		link_data = link_data & """, ""NAME"": """ & inventory_name
+		link_data = link_data & """, ""PRICE"": """ & FormatNumber(rsProductSuper("inventory_price_D"),2) 
+		link_data = link_data & """, ""QTY"": """ & Trim(rsProductSuper("inventory_qty")) 
+		
+		inventory_attribute_id_1 = rsProductSuper("inventory_attribute_id_1")
+		inventory_attribute_option_id_1 = rsProductSuper("inventory_attribute_option_id_1")
+		inventory_attribute_id_2 = rsProductSuper("inventory_attribute_id_2")
+		inventory_attribute_option_id_2 = rsProductSuper("inventory_attribute_option_id_2")
+		inventory_attribute_id_3 = rsProductSuper("inventory_attribute_id_3")
+		inventory_attribute_option_id_3 = rsProductSuper("inventory_attribute_option_id_3")
+		
+		sql = "SELECT attribute_id, admin_label FROM " & g_storeid & "_eav_attribute WHERE configurable=1 ORDER BY sort_order"
+		set rs1 = dbconn.Execute(sql)
+		do while not rs1.EOF
+			
+			s_option_label = ""
+			qsql = ""
+			SELECT CASE CInt(rs1("attribute_id"))
+			CASE CInt(inventory_attribute_id_1)
+				qsql = "SELECT option_name FROM " & g_storeid & "_eav_attribute_option WHERE option_id = " & inventory_attribute_option_id_1
+			CASE CInt(inventory_attribute_id_2)
+				qsql = "SELECT option_name FROM " & g_storeid & "_eav_attribute_option WHERE option_id = " & inventory_attribute_option_id_2
+			CASE CInt(inventory_attribute_id_3)
+				qsql = "SELECT option_name FROM " & g_storeid & "_eav_attribute_option WHERE option_id = " & inventory_attribute_option_id_3
+			END SELECT
+			
+			if Len(qsql) > 0 then
+				set rsq = dbconn.Execute(qsql)
+				if not rsq.EOF then
+					s_option_label = rsq(0)
+				end if
+				rsq.Close
+				set rsq = nothing
+			end if
+			
+			If Len(s_option_label) > 0 Then
+				s_option_label = Replace(s_option_label, "'", "&#39")
+				s_option_label = Replace(s_option_label, """", "\""")
+			End if
+			
+			link_data = link_data & """, """ & rs1(1) & """: """ & s_option_label
+			rs1.MoveNext
+		loop
+		rs1.Close
+		set rs1 = nothing
+		
+				
+		link_data = link_data & """ },"
+		
+		attr_id = attr_id + 1
+		rsProductSuper.MoveNext
+	loop
+	rsProductSuper.Close
+	set rsProductSuper = nothing
+	
+	if Len(link_data) > 0 then
+		link_data = Left(link_data, Len(link_data) - 1)
+	end if
+	link_data = "[" & link_data & "]"
+	s_data_link = link_data
+	
+	'===============================================================================================
 	' TABS
 	' TODO : UPDATE pf_id with sku
 	'===============================================================================================
@@ -499,41 +578,8 @@
 <link href="../assets/global/plugins/bootstrap-modal/css/bootstrap-modal-bs3patch.css" rel="stylesheet" type="text/css" />
 <link href="../assets/global/plugins/bootstrap-modal/css/bootstrap-modal.css" rel="stylesheet" type="text/css" />
 <style>
-/* CSV Table Classes */
-TABLE.CSVTable {
-	font: 0.8em Verdana,Arial,Geneva,Helvetica,sans-serif;
-	border-collapse: collapse;
-	width: 450px;
-}
-
-/* Header */
-TABLE.CSVTable THEAD TR {
-	background: #E8EDFF;
-}
-TABLE.CSVTable TH {
-	font-family: "Lucida Sans Unicode","Lucida Grande",Sans-Serif;
-	font-size: 1.2em;
-}
-
-/* Table Cells */
-TABLE.CSVTable TD, TABLE.CSVTable TH {
-	padding: 8px;
-	text-align: left;
-	border-bottom: 1px solid #FFFFFF;
-	border-top: 1px solid transparent;
-}
-/* Default background color for rows */
-TABLE.CSVTable TR {
-	background: #F0F0F0;
-}
-/* Background color for odd rows */
-TABLE.CSVTable TR.odd {
-	background: #F9F9F9;
-}
-/* Hover color for all rows */
-TABLE.CSVTable TR:hover {
-	background: #E8EDFF;
-}
+#gridc td {font-size:12px;}
+#gridr td {font-size:12px;}
 </style>
 <!-- END PAGE LEVEL PLUGINS -->
 <!--#INCLUDE FILE="include/head_bottom.phtml"-->
@@ -633,7 +679,7 @@ TABLE.CSVTable TR:hover {
 																<a href="#tab_tabs" data-toggle="tab"> Tabs </a>
 															</li>
 															<li>
-																<a href="#tab_csv" data-toggle="tab"> Config Data </a>
+																<a href="#tab_config" data-toggle="tab"> Config Data </a>
 															</li>
 															<li>
 																<a href="#tab_filter" data-toggle="tab"> Filter Data </a>
@@ -1441,7 +1487,7 @@ TABLE.CSVTable TR:hover {
 															<div class="tab-pane" id="tab_related">
 																<div class="row">
 																	<div class="col-sm-12">
-																		<a class="btn btn-green btn-sm btn-o" data-toggle="modal" href="#stack2" id="pf_related_items_btn"><i class="fa fa-plus"></i> Add New Related Item </a>
+																		<a class="btn btn-primary btn-sm" data-toggle="modal" href="#stack2" id="pf_related_items_btn"><i class="fa fa-plus"></i> Add New Related Item </a>
 																	</div>
 																</div>
 																<br>
@@ -1452,23 +1498,18 @@ TABLE.CSVTable TR:hover {
 																	<input type="hidden" name="pf_related_items" id="pf_related_items" value="">
 																</div>
 															</div>
-															<div class="tab-pane" id="tab_csv">
+															<div class="tab-pane" id="tab_config">
 																<div class="row">
-																	<div class="col-sm-6">
-<textarea id="configdata"  rows="30" class="form-control input-sm">
-album|artist|price
-lateralus|tool|13.00
-aenima|tool|12.00
-10,000 days|tool|14.00
-down in it|nine inch nails|3.00
-broken|nine inch nails|6.00
-</textarea>
+																	<div class="col-sm-12">
+																		<a class="btn btn-primary btn-sm" data-toggle="modal" href="#stack3" id="pf_config_items_btn"><i class="fa fa-plus"></i> Add New Inventory Item </a>
 																	</div>
-																	<div class="col-sm-6">
-																		<div id="CSVTable">
-
-																		</div>
+																</div>
+																<br>
+																<div class="row">
+																	<div class="col-md-12">
+																		<table id="gridc"></table>
 																	</div>
+																	<input type="hidden" name="pf_config_items" id="pf_config_items" value="">
 																</div>
 															</div>
 														</div>
@@ -1619,6 +1660,50 @@ broken|nine inch nails|6.00
 		<button type="button" data-dismiss="modal" class="btn btn-outline dark">Close</button>
 	</div>
 </div>
+<div id="stack3" class="modal fade container" tabindex="-1" data-focus-on="input:first">
+	<div class="modal-header">
+		<button type="button" class="close" data-dismiss="modal" aria-hidden="true"></button>
+		<h4 class="modal-title">Inventory Item Search</h4>
+	</div>
+	<div class="modal-body">
+		<div class="table-container">
+			<div class="table-actions-wrapper">
+			</div>
+			<table class="table table-striped table-condensed table-bordered table-hover table-checkable" id="sample_3">
+				<thead>
+				<tr>
+					<th width="80">ID</th>
+					<th>Name</th>
+					<th>SKU</th>
+					<th>Price</th>
+					<th>Stock Qty.</th>
+					<%
+						sql = "SELECT attribute_id, admin_label FROM " & g_storeid & "_eav_attribute WHERE configurable=1 ORDER BY sort_order"
+						set rs1 = dbconn.Execute(sql)
+						do while not rs1.EOF
+					%>
+					<th><%=rs1(1)%></th>
+					<%
+							rs1.MoveNext
+						loop
+						rs1.Close
+						set rs1 = nothing
+					%>
+					<th>Action</th>
+				</tr>
+				</thead>
+				<tbody>
+					<tr>
+						<td colspan="20" class="dataTables_empty">Loading data from server</td>
+					</tr>
+				</tbody>
+			</table>
+		</div>
+	</div>
+	<div class="modal-footer">
+		<button type="button" data-dismiss="modal" class="btn btn-outline dark">Close</button>
+	</div>
+</div>
 <div id="dialog-confirm" title="Delete Confirmation" style="display: none;">
 <p><span class="ui-icon ui-icon-alert" style="float:left; margin:0 7px 20px 0;"></span>You are about to permanently delete this product. Are you sure?</p>
 </div>
@@ -1644,117 +1729,7 @@ broken|nine inch nails|6.00
 <script src="assets/plugins/grid/grid-0.5.6.min.js" type="text/javascript"></script>
 <script src="../assets/global/plugins/bootstrap-modal/js/bootstrap-modalmanager.js" type="text/javascript"></script>
 <script src="../assets/global/plugins/bootstrap-modal/js/bootstrap-modal.js" type="text/javascript"></script>
-<script>
-/**
- * CSV to Table plugin
- *
- * Copyright (c) 2010 Steve Sobel
- * http://honestbleeps.com/
- *
- * 
- *
- */
- 
- (function($){
 
-	/**
-	*
-	* CSV Parser credit goes to Brian Huisman, from his blog entry entitled "CSV String to Array in JavaScript":
-	* http://www.greywyvern.com/?post=258
-	*
-	*/
-	String.prototype.splitCSV = function(sep) {
-		for (var thisCSV = this.split(sep = sep || ","), x = thisCSV.length - 1, tl; x >= 0; x--) {
-			if (thisCSV[x].replace(/"\s+$/, '"').charAt(thisCSV[x].length - 1) == '"') {
-				if ((tl = thisCSV[x].replace(/^\s+"/, '"')).length > 1 && tl.charAt(0) == '"') {
-					thisCSV[x] = thisCSV[x].replace(/^\s*"|"\s*$/g, '').replace(/""/g, '"');
-				} else if (x) {
-					thisCSV.splice(x - 1, 2, [thisCSV[x - 1], thisCSV[x]].join(sep));
-				} else thisCSV = thisCSV.shift().split(sep).concat(thisCSV);
-			} else thisCSV[x].replace(/""/g, '"');
-		} return thisCSV;
-	};
-
-	$.fn.CSVToTable = function(csvsource, options) {
-		var defaults = {
-			tableClass: "CSVTable",
-			theadClass: "",
-			thClass: "",
-			tbodyClass: "",
-			trClass: "",
-			tdClass: "",
-			loadingImage: "",
-			loadingText: "Loading CSV data...",
-			separator: "|",
-			startLine: 0
-		};	
-		var options = $.extend(defaults, options);
-		return this.each(function() {
-			var obj = $(this);
-			var error = '';
-			(options.loadingImage) ? loading = '<div style="text-align: center"><img alt="' + options.loadingText + '" src="' + options.loadingImage + '" /><br>' + options.loadingText + '</div>' : loading = options.loadingText;
-			obj.html(loading);
-			
-			var tableHTML = '<table class="' + options.tableClass + '">';
-			data = $("#" + csvsource).val();
-			
-			
-			var lines = data.replace('\r','').split('\n');
-			var printedLines = 0;
-			var headerCount = 0;
-			var headers = new Array();
-			$.each(lines, function(lineCount, line) {
-				if ((lineCount == 0) && (typeof(options.headers) != 'undefined')) {
-					headers = options.headers;
-					headerCount = headers.length;
-					tableHTML += '<thead class="' + options.theadClass + '"><tr class="' + options.trClass + '">';
-					$.each(headers, function(headerCount, header) {
-						tableHTML += '<th class="' + options.thClass + '">' + header + '</th>';
-					});
-					tableHTML += '</tr></thead><tbody class="' + options.tbodyClass + '">';
-				}
-				if ((lineCount == options.startLine) && (typeof(options.headers) == 'undefined')) {
-					headers = line.splitCSV(options.separator);
-					headerCount = headers.length;
-					tableHTML += '<thead class="' + options.theadClass + '"><tr class="' + options.trClass + '">';
-					$.each(headers, function(headerCount, header) {
-						tableHTML += '<th class="' + options.thClass + '">' + header + '</th>';
-					});
-					tableHTML += '</tr></thead><tbody class="' + options.tbodyClass + '">';
-				} else if (lineCount >= options.startLine) {
-					var items = line.splitCSV(options.separator);
-					if (items.length > 1) {
-						printedLines++;
-						if (items.length != headerCount) {
-							error += 'error on line ' + lineCount + ': Item count (' + items.length + ') does not match header count (' + headerCount + ') \n';
-						}
-						(printedLines % 2) ? oddOrEven = 'odd' : oddOrEven = 'even';
-						tableHTML += '<tr class="' + options.trClass + ' ' + oddOrEven + '">';
-						$.each(items, function(itemCount, item) {
-							tableHTML += '<td class="' + options.tdClass + '">' + item + '</td>';
-						});
-						tableHTML += '</tr>';
-					}
-				}
-			});
-			tableHTML += '</tbody></table>';
-			if (error) {
-				obj.html(error);
-			} else {
-				obj.fadeOut(500, function() {
-					obj.html(tableHTML)
-				}).fadeIn(function() {
-					// trigger loadComplete
-					setTimeout(function() {
-						obj.trigger("loadComplete");	
-					},0);
-				});
-			}
-		});
-	};
-
-})(jQuery);
-</script>
 <!-- END PAGE LEVEL PLUGINS -->
 <!-- BEGIN PAGE LEVEL SCRIPTS -->
 <script language="javascript">
@@ -1770,6 +1745,7 @@ var data6, grid6, dialog6;
 
 var datar, gridr, dialogr;
 var datau, gridu, dialogu;
+var datac, gridc, dialogc;
 
 var itemAddType;
 var is_editor_init = 0;
@@ -1790,6 +1766,7 @@ var datax6, gridx6, dialogx6;
 var oTable;
 var oTable1;
 var oTable2;
+var oTable3;
 var v1 = "";
 var v2 = "";
 var v3 = "";
@@ -1897,6 +1874,59 @@ var TableData = function () {
 		$('#sample_2_wrapper .dataTables_filter input').addClass("form-control input-sm").attr("placeholder", "Search");
 	};
 	
+	var runDataTable3 = function () {
+		oTable3 = $('#sample_3').dataTable({
+			"bProcessing": true,
+			"bStateSave": false,
+			"bJQueryUI": false,
+			"iDisplayLength": 10,
+			"bServerSide": true,
+			"bAutoWidth": false,
+			"sAjaxSource": "api/sp_product_inventory_list_v1.phtml",
+			"aoColumns": [ 
+				/* ID */  { "sClass": "text-left" },
+				/* Name */  { "sClass": "text-left" },
+				/* sku */  { "sClass": "center" },
+				/* Price */  { "sClass": "text-right"},
+				/* Qty */ { "sClass": "text-right"},
+				<%
+					sql = "SELECT attribute_id, admin_label FROM " & g_storeid & "_eav_attribute WHERE configurable=1 ORDER BY sort_order"
+					set rs1 = dbconn.Execute(sql)
+					do while not rs1.EOF
+				%>
+				/* ATT*/  { "sClass": "center" ,"bSortable": false},
+				<%
+						rs1.MoveNext
+					loop
+					rs1.Close
+					set rs1 = nothing
+				%>
+				/* Action*/  { "sClass": "center" ,"bSortable": false}
+			  ],
+			  
+			"aaSorting": [[0, 'desc']],
+			
+			"aLengthMenu": [
+				[5, 10, 15, 20, 30, 40],
+				[5, 10, 15, 20, 30, 40] // change per page values here
+			],
+			
+			"searchDelay": 500,
+			
+			"oLanguage": {
+				"sLengthMenu": "Show _MENU_ Rows",
+				"sSearch": "",
+				"sProcessing": '<img src="assets/images/ajax-loader-primary.gif"/>',
+				"oPaginate": {
+					"sPrevious": "",
+					"sNext": ""
+				}
+			}
+		});
+		
+		$('#sample_3_wrapper .dataTables_filter input').addClass("form-control input-sm").attr("placeholder", "Search");
+	};
+	
 	return {
 		//main function to initiate template pages
 		init: function () {
@@ -1904,6 +1934,7 @@ var TableData = function () {
 			<% if g_store_use_icecat_catalog = "1" then %>
 			runDataTable2();
 			<% end if %>
+			runDataTable3();
 		}
 	};
 }();
@@ -2288,7 +2319,6 @@ jQuery(document).ready(function() {
    UITreeview.init();
    DoMyAjax("");
    TableData.init();
-   $('#CSVTable').CSVToTable('configdata', { loadingImage: 'assets/images/ajax-loader.gif', startLine: 0 });
    
    jQuery.ajax({
 		type:"post",
@@ -2480,11 +2510,6 @@ jQuery(document).ready(function() {
 	});
 	
 	
-	
-	jQuery( "#configdata" ).change(function() {
-		$('#CSVTable').CSVToTable('configdata', { loadingImage: 'assets/images/ajax-loader.gif', startLine: 0 });
-	});
-   
 });
 </script>
 
@@ -2580,7 +2605,6 @@ jQuery(document).ready(function() {
 
 <script>
 datar = <%=s_data_related%>;
-
 function DeleteR(e) {
 	if (confirm("Are you sure?")) {
 		gridr.removeRow(e.data.id);
@@ -2605,6 +2629,45 @@ $( "#pf_related_items_btn" ).click(function() {
 $( "#pf_upsell_items_btn" ).click(function() {
   itemAddType = "U";
 });
+</script>
+
+<script>
+datac = <%=s_data_link%>
+function DeleteC(e) {
+	if (confirm("Are you sure?")) {
+		gridc.removeRow(e.data.id);
+	}
+}
+
+gridr = $("#gridc").grid({
+	dataSource: datac,
+	uiLibrary: "bootstrap",
+	columns: [
+		{ field: "PID", title: "Product ID" },
+		{ field: "SKU", title: "SKU" },
+		{ field: "NAME", title: "Product Name" },
+		{ field: "PRICE", title: "Price" },
+		{ field: "QTY", title: "Inventory" },
+		<%
+		sql = "SELECT attribute_id, admin_label FROM " & g_storeid & "_eav_attribute WHERE configurable=1 ORDER BY sort_order"
+		set rs1 = dbconn.Execute(sql)
+		do while not rs1.EOF
+		%>
+		{ field: "<%=rs1(1)%>", title: "<%=rs1(1)%>" },	
+		<%
+			rs1.MoveNext
+		loop
+		rs1.Close
+		set rs1 = nothing
+		%>
+		{ title: "", width: 40, type: "icon", icon: "glyphicon-remove", tooltip: "Delete", events: { "click": DeleteR } }
+	]
+});
+
+$( "#pf_config_items_btn" ).click(function() {
+  itemAddType = "C";
+});
+
 </script>
 
 <% for kk = 1 to 5 %>
@@ -3011,6 +3074,34 @@ function getIcecatSearchResult(sku, descr, cost) {
 		});
 	}
 	
+}
+
+function getInventorySearchResult(sku, descr, cost) {
+	$("#stack3").modal("hide");
+	
+	/*
+	jQuery.ajax({
+		type:"get",
+		url: "api/sp_get_catalog_product_detail.phtml",
+		data: {'pf_id':sku, 'isAjax':true},
+		dataType: 'json',
+		success: function(data) {
+			for (var i = 0; i < data.PRODUCT.length; i++){
+				if (itemAddType == "R")
+				{
+					gridr.addRow({ "ID": gridr.count() + 1, "PID": data.PRODUCT[i].id, "SKU": data.PRODUCT[i].sku, "NAME": data.PRODUCT[i].name });
+				}
+				
+				if (itemAddType == "U")
+				{
+					gridu.addRow({ "ID": gridr.count() + 1, "PID": data.PRODUCT[i].id, "SKU": data.PRODUCT[i].sku, "NAME": data.PRODUCT[i].name });
+				}
+				
+				itemAddType == "";
+			}
+		}
+	});
+	*/
 }
 </script>
 <!-- END PAGE LEVEL SCRIPTS -->

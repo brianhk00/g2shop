@@ -1,5 +1,10 @@
+<%
+	Response.CodePage = 65001
+	Response.CharSet = "UTF-8"
+%>
 <%response.Expires=-1%>
 <!-- #INCLUDE File="../local/local.phtml" -->
+<!-- #INCLUDE File="../core/i_adoopen.phtml" -->
 <%
 	country_id = Trim(Request("country_id"))
 	CountryID = 0
@@ -34,3 +39,4 @@
 %>
 ]
 }
+<!-- #INCLUDE File="../core/i_adoclosed.phtml" -->

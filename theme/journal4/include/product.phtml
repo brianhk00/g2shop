@@ -7,7 +7,7 @@
 		<div class="row product-info split-50-50">
 			<div class="left">
 				<div class="image">
-					<a href="<%=x_prod_zoom_image%>" title="Beige Ruffle Dress"><img src="<%=x_prod_image%>" title="<%=x_prod_name%>" alt="<%=x_prod_name%>" id="image" data-largeimg="<%=x_prod_zoom_image%>" itemprop="image"/></a>
+					<a href="<%=x_prod_zoom_image%>" title="<%=x_prod_name%>"><img src="<%=x_prod_image%>" title="<%=x_prod_name%>" alt="<%=x_prod_name%>" id="image" data-largeimg="<%=x_prod_zoom_image%>" itemprop="image"/></a>
 				</div>
 				<div class="gallery-text">
 					<span>Click Image for Gallery</span>
@@ -24,7 +24,7 @@
 							ssImg2 = Replace(cloudImg, "upload/", ssZoomSize)
 							
 					%>
-					<a href="<%=ssImg2%>" title="Beige Ruffle Dress"><img src="<%=ssImg1%>" title="<%=x_prod_name%>" alt="<%=x_prod_name%>"/></a>
+					<a href="<%=ssImg2%>" title="<%=x_prod_name%>"><img src="<%=ssImg1%>" title="<%=x_prod_name%>" alt="<%=x_prod_name%>"/></a>
 					<%
 							rs.MoveNext
 						loop
@@ -60,7 +60,7 @@
 					&nbsp;
 				</div>
 				<div class="image-gallery" style="display: none !important;">
-					<a href="<%=x_prod_zoom_image%>" title="Beige Ruffle Dress" class="swipebox"><img src="<%=x_prod_image%>" title="Beige Ruffle Dress" alt="Beige Ruffle Dress"/></a>
+					<a href="<%=x_prod_zoom_image%>" title="<%=x_prod_name%>" class="swipebox"><img src="<%=x_prod_image%>" title="<%=x_prod_name%>" alt="<%=x_prod_name%>"/></a>
 					<%
 						sql = "SELECT * FROM " & g_storeid & "_product_image WHERE pf_id = '" & pf_id & "' AND image_name <> '" & x_prod_image_file & "'"
 						set rs = dbconn.Execute(sql)
@@ -212,7 +212,45 @@
 				</div>
 			</div>
 			<div class="right">
+				<form id="buyform" name = "BuyForm" action="<%=Session("g_secure_url")%>tp_cart.phtml" method="post">
+				<input type="hidden" name="basket_action" value="A">
+				<input type="hidden" name="pf_id" value="<%=pf_id%>">
+				<input type="hidden" name="product_mode" value="<%=product_mode%>">
+				<input type="hidden" name="adjusted_price" value="<%=adjusted_price%>">
+				<input type="hidden" name="sessionID" value="<%=Session("SESSIONKEY")%>">
+				<input type="hidden" name="pf_ids" value="">
+				<input type="hidden" name="pf_qtys" value="">
 				<div id="product" class="product-options">
+					<style>
+						<style>
+						a.tooltip2 {outline:none; }
+						a.tooltip2 strong {line-height:30px;}
+						a.tooltip2:hover {text-decoration:none;} 
+						a.tooltip2 div {
+							z-index:10;display:none; padding:14px 20px;
+							margin-top:-30px; margin-left:28px;
+							width:240px; line-height:16px;
+						}
+						a.tooltip2:hover div{
+							display:inline; position:absolute; color:#111;
+							border:1px solid #DCA; background:#fffAF0;}
+						.callout {z-index:20000000;position:absolute;top:30px;border:0;left:-12px;}
+							
+						/*CSS3 extras*/
+						a.tooltip2 div
+						{
+							border-radius:4px;
+							box-shadow: 5px 5px 8px #CCC;
+						}
+						
+						
+						.oc2 .img-thumbnail {
+							max-width: 100%;
+							height: 60px;
+						}
+					</style>
+					</style>
+						
 					<ul class="list-unstyled description">
 						<!--
 						<li class="p-brand"><%=a("Brand")%>: <%=x_vendor_name%></a></li>
@@ -236,24 +274,148 @@
 						<li class="product-price">$<%=FormatNumber(x_prod_group_price,2)%></li>
 						<% end if %>
 					</ul>
+					<%
+						sql = "SELECT * FROM " & g_storeid & "_product_super_link WHERE parent_id = '" & pf_id & "'"
+						set rsConfig = dbconn.Execute(sql)
+						if not rsConfig.EOF then
+						
+							s_config_att_id = ""
+							sql = "SELECT DISTINCT inventory_attribute_id_1 FROM " & g_storeid & "_product_inventory WHERE inventory_id IN (SELECT product_id FROM " & g_storeid & "_product_super_link WHERE parent_id = '" & pf_id & "')"
+							set rsAttID = dbconn.Execute(sql)
+							do while not rsAttID.EOF
+								s_config_att_id = s_config_att_id & CStr(rsAttID(0)) & ","
+								rsAttID.MoveNext
+							loop
+							rsAttID.Close
+							set rsAttID = nothing
+							sql = "SELECT DISTINCT inventory_attribute_id_2 FROM " & g_storeid & "_product_inventory WHERE inventory_id IN (SELECT product_id FROM " & g_storeid & "_product_super_link WHERE parent_id = '" & pf_id & "')"
+							set rsAttID = dbconn.Execute(sql)
+							do while not rsAttID.EOF
+								s_config_att_id = s_config_att_id & CStr(rsAttID(0)) & ","
+								rsAttID.MoveNext
+							loop
+							rsAttID.Close
+							set rsAttID = nothing
+							sql = "SELECT DISTINCT inventory_attribute_id_3 FROM " & g_storeid & "_product_inventory WHERE inventory_id IN (SELECT product_id FROM " & g_storeid & "_product_super_link WHERE parent_id = '" & pf_id & "')"
+							set rsAttID = dbconn.Execute(sql)
+							do while not rsAttID.EOF
+								s_config_att_id = s_config_att_id & CStr(rsAttID(0)) & ","
+								rsAttID.MoveNext
+							loop
+							rsAttID.Close
+							set rsAttID = nothing
+							
+							if Len(s_config_att_id) > 0 then
+								s_config_att_id = Left(s_config_att_id, Len(s_config_att_id) - 1)
+							end if
+							
+					%>
 					<div class="options push-select push-image push-checkbox push-radio">
-						<%
-							sql = "SELECT * FROM Style WHERE StyleNo = '" & prod_sku & "'"
-						%>
-					
-					
-					
+						
 						<h3>Available Options</h3>
+						<%
+							sql = "SELECT * FROM " & g_storeid & "_eav_attribute WHERE attribute_id IN (" & s_config_att_id & ") ORDER BY sort_order"
+							set rsAvailOptions = dbconn.Execute(sql)
+							do while not rsAvailOptions.EOF
+								option_attribute_id = rsAvailOptions("attribute_id")
+								frontend_label = rsAvailOptions("frontend_label")
+								
+								s_config_option_id = ""
+								sql = "SELECT DISTINCT inventory_attribute_option_id_1 FROM " & g_storeid & "_product_inventory "
+								sql = sql & "WHERE inventory_id IN (SELECT product_id FROM " & g_storeid & "_product_super_link WHERE parent_id = '" & pf_id & "') "
+								sql = sql & " AND inventory_attribute_id_1 = " & option_attribute_id
+								set rsAttID = dbconn.Execute(sql)
+								do while not rsAttID.EOF
+									s_config_option_id = s_config_option_id & CStr(rsAttID(0)) & ","
+									rsAttID.MoveNext
+								loop
+								rsAttID.Close
+								
+								sql = "SELECT DISTINCT inventory_attribute_option_id_2 FROM " & g_storeid & "_product_inventory "
+								sql = sql & "WHERE inventory_id IN (SELECT product_id FROM " & g_storeid & "_product_super_link WHERE parent_id = '" & pf_id & "') "
+								sql = sql & " AND inventory_attribute_id_2 = " & option_attribute_id
+								set rsAttID = dbconn.Execute(sql)
+								do while not rsAttID.EOF
+									s_config_option_id = s_config_option_id & CStr(rsAttID(0)) & ","
+									rsAttID.MoveNext
+								loop
+								rsAttID.Close
+								
+								sql = "SELECT DISTINCT inventory_attribute_option_id_3 FROM " & g_storeid & "_product_inventory "
+								sql = sql & "WHERE inventory_id IN (SELECT product_id FROM " & g_storeid & "_product_super_link WHERE parent_id = '" & pf_id & "') "
+								sql = sql & " AND inventory_attribute_id_3 = " & option_attribute_id
+								set rsAttID = dbconn.Execute(sql)
+								do while not rsAttID.EOF
+									s_config_option_id = s_config_option_id & CStr(rsAttID(0)) & ","
+									rsAttID.MoveNext
+								loop
+								rsAttID.Close
+								
+								if Len(s_config_option_id) > 0 then
+									s_config_option_id = Left(s_config_option_id, Len(s_config_option_id) - 1)
+								end if
+								
+								if option_attribute_id = 134 then
+						%>
+						<div class="option form-group option-image" id="option_group_<%=option_attribute_id%>">
+							<label class="control-label"><%=frontend_label%><span class="required2">*</span></label>
+							<div id="input-option<%=option_attribute_id%>">
+								<%
+									sql = "SELECT * FROM " & g_storeid & "_eav_attribute_option WHERE attribute_id=" & option_attribute_id & " AND option_id IN (" & s_config_option_id & ") ORDER BY sort_order"
+									set rsAttOptions = dbconn.Execute(sql)
+									do while not rsAttOptions.EOF
+										option_color_swatch = rsAttOptions("option_color_swatch")
+										display_name = rsAttOptions("display_name")
+										option_description = rsAttOptions("option_description")
+										if Len(option_description) > 0 then
+										else
+											option_description = display_name
+										end if
+								%>
+								<div class="radio">
+									<label>
+									<input type="radio" name="option_<%=option_attribute_id%>" value="<%=rsAttOptions("option_id")%>"/>
+									<img src="/media/colorswatch/<%=option_color_swatch%>" title="<%=option_description%>" alt="<%=rsAttOptions("display_name")%>" class="img-thumbnail" width="60"/> <%=rsAttOptions("display_name")%> </label>
+								</div>
+								<%
+										rsAttOptions.MoveNext
+									loop
+									rsAttOptions.Close
+									set rsAttOptions = nothing
+								%>
+							</div>
+						</div>
+						<%
+								else
+						%>
 						<div class="option form-group option-select">
-							<label class="control-label" for="input-option235">Size</label>
-							<select name="option[235]" id="input-option235" class="form-control">
+							<label class="control-label" for="input-option<%=option_attribute_id%>"><%=frontend_label%><span class="required2">*</span></label>
+							<select name="option_<%=option_attribute_id%>" id="input_option<%=option_attribute_id%>" class="form-control">
 								<option value=""> --- Please Select --- </option>
-								<option value="37">XS </option>
-								<option value="35">S </option>
-								<option value="34">M </option>
-								<option value="33">L </option>
+								<%
+									sql = "SELECT * FROM " & g_storeid & "_eav_attribute_option WHERE attribute_id=" & option_attribute_id & " AND option_id IN (" & s_config_option_id & ") ORDER BY sort_order"
+									set rsAttOptions = dbconn.Execute(sql)
+									do while not rsAttOptions.EOF
+								%>
+								<option value="<%=rsAttOptions("option_id")%>"><%=rsAttOptions("display_name")%></option>
+								<%
+										rsAttOptions.MoveNext
+									loop
+									rsAttOptions.Close
+									set rsAttOptions = nothing
+								%>
 							</select>
 						</div>
+						
+						<%
+								end if
+								rsAvailOptions.MoveNext
+							loop
+							rsAvailOptions.Close
+							set rsAvailOptions = nothing
+						%>
+						
+						<!--
 						<div class="option form-group option-image">
 							<label class="control-label">Color</label>
 							<div id="input-option227">
@@ -269,10 +431,18 @@
 								</div>
 							</div>
 						</div>
+						-->
 					</div>
 					<script>Journal.enableSelectOptionAsButtonsList();</script>
+					<%
+						end if
+					%>
+					
+					
 					<div class="form-group cart ">
 						<div>
+							
+						
 							<span class="qty">
 							<label class="control-label text-qty" for="input-quantity">Qty</label>
 							<input type="text" name="quantity" value="1" size="2" data-min-value="1" id="input-quantity" class="form-control"/>
@@ -303,14 +473,19 @@
 								});
 							</script>
 							</span>
-							<button type="button" id="button-cart" data-loading-text="Loading..." class="button"><span class="button-cart-text">Add to Cart</span></button>
+							<button type="submit" id="button-cart" data-loading-text="Loading..." class="button"><span class="button-cart-text">Add to Cart</span></button>
+							<!--
+							<button type="button" id="button-cart" data-loading-text="Loading..." class="button" onclick="BuyForm.submit(this);"><span class="button-cart-text">Add to Cart</span></button>
+							-->
 						</div>
 					</div>
+					<!--
 					<div class="wishlist-compare">
 						<span class="links">
 						<a onclick="addToWishList('74');">Add to Wish List</a>
 						</span>
 					</div>
+					-->
 					<div class="rating">
 						<p>
 							<span class="fa fa-stack"><i class="fa fa-star-o fa-stack-1x"></i></span>
@@ -322,6 +497,7 @@
 						</p>
 					</div>
 				</div>
+				</form>
 			</div>
 		</div>
 	</div>

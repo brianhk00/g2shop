@@ -1,0 +1,44 @@
+<%
+	Response.CodePage = 65001
+	Response.CharSet = "UTF-8"
+	g_route_page_id = "billing_list"
+%>
+<!--#INCLUDE FILE="template_setting.phtml"-->
+<!--#INCLUDE FILE="../../core/account/include_billing_list_start.phtml"-->
+<!DOCTYPE html>
+<html dir="ltr" lang="en" class="webkit chrome chrome53 win journal-desktop is-guest skin-4 header-center product-grid-second-image product-list-second-image home-page layout-1 route-common-home oc2 one-column">
+<head>
+<!--#INCLUDE FILE="include/head.phtml"-->
+</head>
+<body>
+<!--#INCLUDE FILE="include/after_body_start.phtml"-->
+<header class="journal-header-center nolang-nocurr">
+<!--#INCLUDE FILE="include/header.phtml"-->
+</header>
+<div class="extended-container">
+	<div class="container">
+		<div class="row">
+			<!--Middle Part Start-->
+			<div class="col-sm-9" id="content">
+			<!--#INCLUDE FILE="include/billing_list.phtml"-->
+			</div>
+			<!--Middle Part End -->
+			<!--Right Part Start -->
+			<aside id="column-right" class="col-sm-3 hidden-xs">
+			<!--#INCLUDE FILE="include/myaccount_menu.phtml"-->
+			</aside>
+			<!--Right Part End -->
+		</div>
+	</div>
+</div>
+<footer class="boxed-footer">
+<!--#INCLUDE FILE="include/footer.phtml"-->
+</footer>
+<div class="scroll-top">
+</div>
+<!--#INCLUDE FILE="include/js.phtml"-->
+<!--#INCLUDE FILE="include/before_body_end.phtml"-->
+<!--#INCLUDE FILE="include/AbsoluteFooter.phtml"-->
+</body>
+</html>
+<!--#INCLUDE FILE="../../core/account/include_billing_list_end.phtml"-->

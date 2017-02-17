@@ -309,16 +309,21 @@ function FormatCurrencyEx(theBaseAmount)
 	
 end function
 
-function GetRandomString(NumChar)
-  dim strRdm
-  strRdm = ""
-  Do Until Count = NumChar
-	Count = Count + 1
-	intRdm = GetRdm
-	strRdm = strRdm & Chr(intRdm)
-  Loop
-  GetRandomString = strRdm
-end function
+Function getRandomString(ofLength)
+	If Not IsNumeric(ofLength) Or IsEmpty(ofLength) Or ofLength = "" Then
+		getRandomString = ""
+		Exit Function
+	End If
+	 
+	Randomize()
+	
+	Dim retval, i
+	retval = ""
+	For i = 1 To ofLength
+	retval = retval & Chr(Int(26*Rnd+97))
+	Next
+	getRandomString = retval
+End Function
 
 function GetRdm
   intRdm = Int((122 - 49) * Rnd + 48)

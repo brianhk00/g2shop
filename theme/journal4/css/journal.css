@@ -580,7 +580,7 @@ OC 2
   .oc2 .required label {
     font-weight: normal; }
     .oc2 .required label:before {
-      content: "* ";
+      /*content: "* "; */
       color: red;
       font-weight: bold;
       font-size: 16px;
@@ -702,3 +702,7 @@ OC 2
 
 .android:not(.chrome) .product-grid-item .name a {
   display: block; }
+
+
+
+

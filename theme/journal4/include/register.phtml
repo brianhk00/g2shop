@@ -1,0 +1,124 @@
+<div id="container" class="container j-container">
+	<ul class="breadcrumb">
+		<li><a href="<%=g_store_url%>">Home</a></li>
+		<li><a href="<%=g_secure_url%>register.phtml"><%=a("Register")%></a></li>
+	</ul>
+	<div class="row">
+		<div id="content" class="col-sm-12">
+			<h1 class="heading-title"><%=a("Register Account")%></h1>
+			<p class="account-text">
+				If you already have an account with us, please login at the <a href="<%=g_secure_url%>login.phtml">login page</a>.
+			</p>
+			<div class="content">
+				<form class="form-horizontal" id="register-form" method="post">
+					<input type="hidden" name="shopper_id" value="0" />
+					<fieldset id="account">
+						<h2 class="secondary-title"><%=a("Your Personal Details")%></h2>
+						<div class="form-group required">
+							<label class="col-sm-2 control-label" for="input-firstname"><%=a("First Name")%></label>
+							<div class="col-sm-10">
+								<input type="text" name="firstname" value="" placeholder="<%=a("First Name")%>" id="firstname" class="form-control"/>
+							</div>
+						</div>
+						<div class="form-group required">
+							<label class="col-sm-2 control-label" for="input-lastname"><%=a("Last Name")%></label>
+							<div class="col-sm-10">
+								<input type="text" name="lastname" value="" placeholder="<%=a("Last Name")%>" id="lastname" class="form-control"/>
+							</div>
+						</div>
+						<div class="form-group required">
+							<label class="col-sm-2 control-label" for="input-email"><%=a("E-Mail")%></label>
+							<div class="col-sm-10">
+								<input type="email" name="new_email" value="" placeholder="<%=a("E-Mail")%>" id="new_email" class="form-control"/>
+							</div>
+						</div>
+						<div class="form-group required">
+							<label class="col-sm-2 control-label" for="input-telephone">Telephone</label>
+							<div class="col-sm-10">
+								<input type="tel" name="telephone" value="" placeholder="Telephone" id="telephone" class="form-control"/>
+							</div>
+						</div>
+					</fieldset>
+					<br/>
+					<fieldset id="address">
+						<h2 class="secondary-title">Your Address</h2>
+						<div class="form-group">
+							<label class="col-sm-2 control-label" for="company">Company</label>
+							<div class="col-sm-10">
+								<input type="text" name="company" value="" placeholder="company" id="company" class="form-control"/>
+							</div>
+						</div>
+						<div class="form-group required">
+							<label class="col-sm-2 control-label" for="address">Address</label>
+							<div class="col-sm-10">
+								<input type="text" name="address" value="" placeholder="Address" id="address" class="form-control"/>
+							</div>
+						</div>
+						<div class="form-group required">
+							<label class="col-sm-2 control-label" for="city">City</label>
+							<div class="col-sm-10">
+								<input type="text" name="city" value="" placeholder="City" id="city" class="form-control"/>
+							</div>
+						</div>
+						<div class="form-group required">
+							<label class="col-sm-2 control-label" for="postcode">Post Code</label>
+							<div class="col-sm-10">
+								<input type="text" name="postcode" value="" placeholder="Post Code" id="postcode" class="form-control"/>
+							</div>
+						</div>
+						<div class="form-group required">
+							<label class="col-sm-2 control-label" for="country">Country</label>
+							<div class="col-sm-10">
+								<select class="form-control" id="country" name="country" style="float:left">
+									<option value=""> --- Please Select --- </option>
+									<%
+										sql = "SELECT CountryID, CountryName, ISOCode2 FROM A_GlobalCountries"
+										set rsCntry = dbconn.Execute(sql)
+										int i = 0
+
+										do while not rsCntry.Eof
+											country = rsCntry("CountryName")
+											country_id = Trim(rsCntry("ISOCode2"))
+											Response.Write("<option value=""" & country_id & """>" & country & "</option>")
+											rsCntry.MoveNext
+										i = i + 1
+										loop
+										rsCntry.Close
+									%>
+								</select>
+							</div>
+						</div>
+						<div class="form-group required">
+							<label class="col-sm-2 control-label" for="state">Region / State</label>
+							<div class="col-sm-10">
+								<select class="form-control" id="state" name="state" style="float:left">
+								</select>
+							</div>
+						</div>
+					</fieldset>
+					<br/>
+					<fieldset>
+						<h2 class="secondary-title"><%=a("Your Password")%></h2>
+						<div class="form-group required">
+							<label class="col-sm-2 control-label" for="input-password"><%=a("Password")%></label>
+							<div class="col-sm-10">
+								<input type="password" name="new_password1" value="" placeholder="<%=a("Password")%>" id="new_password1" class="form-control"/>
+							</div>
+						</div>
+						<div class="form-group required">
+							<label class="col-sm-2 control-label" for="input-confirm"><%=a("Password Confirm")%></label>
+							<div class="col-sm-10">
+								<input type="password" name="new_password2" value="" placeholder="<%=a("Password Confirm")%>" id="new_password2" class="form-control"/>
+							</div>
+						</div>
+					</fieldset>
+					<div class="buttons">
+						<div class="pull-right">
+							<input type="submit" value="<%=a("Continue")%>" class="btn btn-primary button"/>
+						</div>
+					</div>
+				</form>
+			</div>
+		</div>
+	</div>
+</div>

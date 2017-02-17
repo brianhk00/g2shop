@@ -6,6 +6,7 @@
 <!-- #INCLUDE File="../local/local.phtml" -->
 <!-- #INCLUDE File="../core/i_adoopen.phtml" -->
 <!-- #INCLUDE File="../util/xt_func_string.phtml" -->
+<!--#INCLUDE FILE="../util/xt_func_client.phtml"-->
 <!-- #INCLUDE File="../util/xt_func_shoppingcart.phtml" -->
 <%
 	sh_data = Trim(Request("sh_data"))
@@ -25,6 +26,17 @@
 	
 	cart_sub_total = FormatNumber(GetTotalAmountInCart,2)
 	cart_tax_total = FormatNumber(GetTaxInCart(),2)
+	
+	if IsNumeric(Session("CUSTOMER_CREDIT_ON_CART")) then
+		if Session("CUSTOMER_CREDIT_ON_CART") > 0 then
+			cart_store_credit = FormatNumber(Session("CUSTOMER_CREDIT_ON_CART"),2)
+		else
+			cart_store_credit = FormatNumber(0,2)
+		end if
+	else
+		cart_store_credit = FormatNumber(0,2)
+	end if
+	
 	if b_show then
 		cart_sh_total = FormatNumber(sh_price,2)
 		cart_grand_toal = FormatNumber(GetGrandTotalInCart() + sh_price,2)
@@ -43,7 +55,8 @@
 	s_total = s_total & "{""id"" : """ & "subtotal" & """,""amount"" : """ & cart_sub_total & """},"
 	s_total = s_total & "{""id"" : """ & "tax" & """,""amount"" : """ & cart_tax_total & """},"
 	s_total = s_total & "{""id"" : """ & "shipping" & """,""amount"" : """ & cart_sh_total & """},"
-	s_total = s_total & "{""id"" : """ & "grandtotal" & """,""amount"" : """ & cart_grand_toal & """},"
+	s_total = s_total & "{""id"" : """ & "store_credit" & """,""amount"" : """ & cart_store_credit & """},"
+	s_total = s_total & "{""id"" : """ & "grandtotal" & """,""amount"" : """ & cart_store_credit & """},"
 	
 	if Len(s_total) > 0 then
 		s_total = Left(s_total, Len(s_total)-1)

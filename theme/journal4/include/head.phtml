@@ -18,6 +18,9 @@
 <link rel="stylesheet" href="<%=skin_base_url%>theme/<%=THEME_TEMPLATE%>/lib/magnific-popup/magnific-popup.css"/>
 <link rel="stylesheet" href="<%=skin_base_url%>theme/<%=THEME_TEMPLATE%>/lib/rs-plugin/css/settings.css"/>
 <link rel="stylesheet" href="<%=skin_base_url%>theme/<%=THEME_TEMPLATE%>/css/hint.min.css"/>
+<% if g_route_page_id = "billing_list" OR g_route_page_id =  "account_profile" OR g_route_page_id =  "cart" then %>
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css"/>
+<% end if %>
 <link rel="stylesheet" href="<%=skin_base_url%>theme/<%=THEME_TEMPLATE%>/css/journal.css"/>
 <link rel="stylesheet" href="<%=skin_base_url%>theme/<%=THEME_TEMPLATE%>/css/features.css"/>
 <link rel="stylesheet" href="<%=skin_base_url%>theme/<%=THEME_TEMPLATE%>/css/header.css"/>
@@ -32,6 +35,13 @@
 <link rel="stylesheet" href="<%=skin_base_url%>theme/<%=THEME_TEMPLATE%>/css/icons.css"/>
 <link rel="stylesheet" href="<%=skin_base_url%>theme/<%=THEME_TEMPLATE%>/css/responsive.css"/>
 <link rel="stylesheet" href="<%=skin_base_url%>theme/<%=THEME_TEMPLATE%>/css/custom.css"/>
+<style>
+.required2 {
+    color: #e02222;
+    font-size: 12px;
+    padding-left: 2px;
+}
+</style>
 <script type="text/javascript" src="<%=skin_base_url%>theme/<%=THEME_TEMPLATE%>/javascript/jquery/jquery-2.1.1.min.js"></script>
 <script type="text/javascript" src="<%=skin_base_url%>theme/<%=THEME_TEMPLATE%>/javascript/bootstrap/js/bootstrap.min.js"></script>
 <script type="text/javascript" src="<%=skin_base_url%>theme/<%=THEME_TEMPLATE%>/lib/jquery/jquery-migrate-1.2.1.min.js"></script>
@@ -52,7 +62,7 @@
 <script type="text/javascript" src="<%=skin_base_url%>theme/<%=THEME_TEMPLATE%>/lib/isotope/jquery.isotope.sloppy-masonry.js"></script>
 <script type="text/javascript" src="<%=skin_base_url%>theme/<%=THEME_TEMPLATE%>/lib/swipebox/source/jquery.swipebox.js"></script>
 <script type="text/javascript" src="<%=skin_base_url%>theme/<%=THEME_TEMPLATE%>/lib/jqueryc/jqueryc.js"></script>
-<script type="text/javascript" src="<%=skin_base_url%>theme/<%=THEME_TEMPLATE%>/js/journal.js"></script>
+<script type="text/javascript" src="<%=skin_base_url%>theme/<%=THEME_TEMPLATE%>/js/journal.js?v=1.000.001"></script>
 
 
 

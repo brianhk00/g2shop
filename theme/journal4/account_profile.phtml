@@ -1,10 +1,10 @@
 <%
 	Response.CodePage = 65001
 	Response.CharSet = "UTF-8"
-	g_route_page_id = "index"
+	g_route_page_id = "account_profile"
 %>
 <!--#INCLUDE FILE="template_setting.phtml"-->
-<!--#INCLUDE FILE="../../core/include_index_start.phtml"-->
+<!--#INCLUDE FILE="../../core/account/include_account_profile_start.phtml"-->
 <!DOCTYPE html>
 <html dir="ltr" lang="en" class="webkit chrome chrome53 win journal-desktop is-guest skin-4 header-center header-center-sticky product-grid-second-image product-list-second-image home-page layout-1 route-common-home oc2 one-column">
 <head>
@@ -15,11 +15,24 @@
 <header class="journal-header-center nolang-nocurr">
 <!--#INCLUDE FILE="include/header.phtml"-->
 </header>
-<!--#INCLUDE FILE="custom/index_top.phtml"-->
 <div class="extended-container">
-<!--#INCLUDE FILE="include/index.phtml"-->	
+	<div class="container">
+		<div class="row">
+			<!--Middle Part Start-->
+			<div class="col-sm-9" id="content">
+			<!--#INCLUDE FILE="include/account_profile.phtml"-->
+			</div>
+			<!--Middle Part End -->
+			<!--Right Part Start -->
+			<aside id="column-right" class="col-sm-3 hidden-xs">
+			<!--#INCLUDE FILE="include/myaccount_menu.phtml"-->
+			</aside>
+			<!--Right Part End -->
+		</div>
+	</div>
 </div>
 <footer class="boxed-footer">
+<!--#INCLUDE FILE="include/footer.phtml"-->
 </footer>
 <div class="scroll-top">
 </div>
@@ -28,5 +41,4 @@
 <!--#INCLUDE FILE="include/AbsoluteFooter.phtml"-->
 </body>
 </html>
-<!--#INCLUDE FILE="../../core/include_index_end.phtml"-->
-
+<!--#INCLUDE FILE="../../core/account/include_account_profile_end.phtml"-->

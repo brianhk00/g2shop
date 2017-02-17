@@ -378,6 +378,8 @@ function GetClientSalesTaxRate(ByRef str_db,_
 	
 	end if
 	
+	
+	
 	'Headquater Information...
 	psql = "SELECT * FROM " & g_storeid & "_profile"
 	set rsProf = dbconnx.Execute(psql)
@@ -447,7 +449,7 @@ function GetClientSalesTaxRate(ByRef str_db,_
 			CASE 1 'ship-to sales tax
 			
 				if (n_state_id = shipping_state) then
-			
+					
 					tsql = "SELECT * FROM A_Sales_tax WHERE Zip='" & shipping_zip & "'"
 					set rsTax = dbconnx.Execute(tsql)
 					if not rsTax.EOF then
@@ -469,7 +471,7 @@ function GetClientSalesTaxRate(ByRef str_db,_
 					rsTax.Close
 					
 					x_num_sales_tax = (t_StateSalesTax + t_CountySalesTax + t_CitySalesTax + t_DistrictSalesTax) * 100
-										
+					
 					if x_num_sales_tax > 0 then
 						num_sales_tax = x_num_sales_tax
 					end if
