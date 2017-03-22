@@ -753,7 +753,19 @@
 																							</label>
 																							<div class="col-sm-8">
 																								<select id="pf_vendor_number" name="pf_vendor_number" class="form-control input-sm">
-																									
+																									<option value="--">Please Select</option>
+																									<%
+																										sql = "SELECT * FROM " & g_storeid & "_mfg ORDER BY mfg_name"
+																										set rsM = dbconn.Execute(sql)
+																										do while not rsM.EOF
+																									%>
+																									<option value="<%=rsM("mfg_id")%>" <%if pf_vendor_number = rsM("mfg_id") then %>selected<%end if%>><%=rsM("mfg_name")%></option>
+																									<%
+																											rsM.MoveNext
+																										loop
+																										rsM.Close
+																										set rsM = nothing
+																									%>
 																								</select>
 																							</div>
 																						</div>
@@ -1541,7 +1553,7 @@
 <div id="ajax-modal" class="modal container fade" tabindex="-1"> </div>
 <div id="ajax-modal2" class="modal container fade" tabindex="-1"> </div>
 <div id="ajax-modal3" class="modal fade" tabindex="-1" style="display: none;"></div>
-<div class="modal container fade " id="stack1" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+<div id="stack1" class="modal fade container" tabindex="-1" data-focus-on="input:first">
 	<div class="modal-header">
 		<button type="button" class="close" data-dismiss="modal" aria-hidden="true"></button>
 		<h4 class="modal-title">ICECAT Search</h4>
@@ -1572,28 +1584,29 @@
 					</select>
 				</div>
 			</div>
-			<div class="table-container">
-				<table class="table table-striped table-condensed table-bordered table-hover table-checkable" id="sample_2">
-					<thead>
+		</div>
+		<div class="table-container">
+			<table class="table table-striped table-condensed table-bordered table-hover table-checkable" id="sample_2">
+				<thead>
+				<tr>
+					<th width="90">SKU</th>
+					<th>Thumbnail</th>
+					<th>Name</th>
+					<th>Manufacturer</th>
+					<th>Mfg.Part #</th>
+					<th>Cost</th>
+					<th width="80">Qty.<br>(IM/TD/SY/DH)</th>
+					<th>Status</th>
+					<th>Action</th>
+				</tr>
+				</thead>
+				<tbody>
 					<tr>
-						<th>SKU</th>
-						<th>Thumbnail</th>
-						<th>Name</th>
-						<th>Manufacturer</th>
-						<th>Mfg.Part #</th>
-						<th>Cost</th>
-						<th width="80">Qty.<br>(IM/TD/SY/DH)</th>
-						<th>Status</th>
-						<th>Action</th>
+						<td colspan="9" class="dataTables_empty">Loading data from server</td>
 					</tr>
-					</thead>
-					<tbody>
-						<tr>
-							<td colspan="9" class="dataTables_empty">Loading data from server</td>
-						</tr>
-					</tbody>
-				</table>
-			</div>
+				</tbody>
+			</table>
+		</div>
 		</div>
 	</div>
 	<div class="modal-footer">
