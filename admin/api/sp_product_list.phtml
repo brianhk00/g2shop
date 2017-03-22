@@ -250,7 +250,7 @@
 						end if
 						rsPA.Close
 
-						sql = "SELECT cloudinary_url FROM [192.168.5.134].[icecat].dbo.cloudinary_images WHERE product_id = " & icecat_id
+						sql = "SELECT cloudinary_url FROM [icecat].dbo.cloudinary_images WHERE product_id = " & icecat_id
 						Set rsCloudImage = dbconn_icecat.Execute(sql)
 						If Not rsCloudImage.EOF Then
 							cloudImg = Trim(rsCloudImage("cloudinary_url"))

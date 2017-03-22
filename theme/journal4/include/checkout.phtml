@@ -489,3 +489,34 @@
 	<!--Middle Part End -->
 </div>
 </div>
+</div>
+
+<div id="myModal" class="modal fade">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+                <h4 class="modal-title">Confirmation</h4>
+            </div>
+            <div class="modal-body">
+                <p>There's a problem with the address provided - we've marked our suggestion in red below.</p>
+                <p class="text-warning"><small>Please choose which version of the address you want to use.</small></p>
+				
+				<div class="radio">
+				  <label>
+					<input type="radio" id="b_optradio0" name="b_optradio" value="0">Original address:<br>
+					<span id="o_billing_full_address"></span>
+				  </label>
+				</div>
+				<div class="radio">
+				  <input type="radio" id="b_optradio1" name="b_optradio" value="1">Suggested address:<br>
+					<span id="s_billing_full_address"></span>
+				</div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" id="b_save_billing_address">Save Address</button>
+            </div>
+        </div>
+    </div>
+</div>

@@ -925,31 +925,89 @@ var FormValidation = function () {
 			},
 
 			submitHandler: function (form) {
-				$('#button-confirm').button('loading');
+				//$('#button-confirm').button('loading');
 				success1.hide();
-				error1.hide
+				error1.hide();
 				warning1.hide();
+				
+				alert("yo");
+				
+				//Process Billing Address Verification
+				var billing_address_id = jQuery("#billing_address_id").val();
+				var new_billing_address = jQuery("#new_billing_address").val();
+				var new_billing_city = jQuery("#new_billing_city").val();
+				var new_billing_zip = jQuery("#new_billing_zip").val();
+				var new_billing_country_id = jQuery("#new_billing_country_id").val();
+				var new_billing_zone_id = jQuery("#new_billing_zone_id").val();
+				
+				var v_billing_address = "";
+				var v_billing_city = "";
+				var v_billing_state = "";
+				var v_billing_zip = "";
+				var billing_verified = "1";
+				
+				if (billing_address_id == "new" && new_billing_country_id == "US")
+				{
+					$.ajax({
+						type: "POST",
+						url: "api/sp_address_verification.phtml",
+						data: {sAddress: new_billing_address, sCity: new_billing_city, sState: new_billing_zone_id, sZip: new_billing_zip, 'isAjax':true},
+						dataType: 'json',
+						success: function(data) {
+							for (var i = 0; i < data.Address.length; i++){
+								//listItems+= "<option value='" + data.Zone[i].id + "'>" + data.Zone[i].name + "</option>";
+								v_billing_address= data.Address[i].Address2;
+								v_billing_city= data.Address[i].City;
+								v_billing_state= data.Address[i].State;
+								v_billing_zip= data.Address[i].Zip5;
+							}
+							
+							if (new_billing_address.toLowerCase() != v_billing_address.toLowerCase())
+							{
+								billing_verified = "0";
+							}
+							if (new_billing_city.toLowerCase() != v_billing_city.toLowerCase())
+							{
+								billing_verified = "0";
+							}
+							if (new_billing_zone_id != v_billing_state)
+							{
+								billing_verified = "0";
+							}
+							if (new_billing_zip != v_billing_zip)
+							{
+								billing_verified = "0";
+							}
+							
+							if (billing_verified == "0")
+							{
+								jQuery("#myModal").modal('show');
+							}
+						},
+						error: function() {
+						}
+					});
+				}
+				
+				//Porcess Shipping Address Verification
+				
+				
 				$.ajax({
 					type: "POST",
-					url: "api/sp_process_order.phtml",
+					url: "api/sp_process_orderxxxx.phtml",
 					data: form1.serialize(),
 					success: function() {
-						/*
-						success1.show();
-						setTimeout(function () {
-							window.location.replace('<%=g_secure_url%>shipping_list.phtml');
-						}, 500);
-						*/
 						setTimeout(function () {
 							$('#button-confirm').button('reset');
 						}, 5000);
 						
-						window.location.replace("<%=g_secure_url%>receipt.phtml");
+						//window.location.replace("<%=g_secure_url%>receipt.phtml");
 					},
 					error: function() {
 						warning1.show();
 					}
 				});
+				
 			}
 			
 		});
